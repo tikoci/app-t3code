@@ -1,0 +1,128 @@
+# tikoci/app-t3code — RouterOS /app container for T3 Code.
+#
+# Rebuilds the wodby/t3code approach from our own Dockerfile so the image we
+# ship on GHCR is one we control: Debian trixie-slim (glibc, which the T3 Code
+# release binaries need), per-arch t3 tarball from pingdotgg/t3code with
+# SHA256 verification, codex + opencode baked in, Claude Code installed to
+# the volume on first boot (license forbids redistribution).
+#
+# Build:
+#   docker buildx build --platform linux/amd64,linux/arm64 \
+#     --build-arg T3CODE_VER=0.1.6 -t ghcr.io/tikoci/app-t3code:0.1 .
+# Run (plain HTTP on 3773; terminate TLS in front for remote use):
+#   docker run -p 3773:3773 -v t3code:/data -e PUBLIC_URL=https://t3.example.com ghcr.io/tikoci/app-t3code:0.1
+
+ARG NODE_VER=24
+
+FROM node:${NODE_VER}-trixie-slim
+
+ARG TARGETARCH
+ARG T3CODE_VER=0.1.6
+ARG CODEX_VER=latest
+ARG OPENCODE_VER=latest
+
+ENV T3CODE_VER="${T3CODE_VER}"
+ENV T3CODE_HOST=0.0.0.0
+ENV T3CODE_PORT=3773
+
+ENV SHELL=/bin/bash
+
+# Browser dependencies for T3 Code's built-in browser, which downloads itself
+# on first use. `t3 browser setup` cannot run at build time: it needs the
+# browser downloaded first and fails on build hosts that restrict user
+# namespaces. (Same set as upstream wodby/t3code.)
+RUN echo 'Acquire::Retries "10";' > /etc/apt/apt.conf.d/80-retries && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        bash \
+        ca-certificates \
+        curl \
+        git \
+        jq \
+        less \
+        make \
+        openssh-client \
+        procps \
+        python3 \
+        ripgrep \
+        tini \
+        unzip \
+        fontconfig \
+        fonts-liberation \
+        libasound2t64 \
+        libatk-bridge2.0-0t64 \
+        libatk1.0-0t64 \
+        libatspi2.0-0t64 \
+        libdbus-1-3 \
+        libexpat1 \
+        libgbm1 \
+        libglib2.0-0t64 \
+        libnss3 \
+        libx11-6 \
+        libxcb1 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxext6 \
+        libxfixes3 \
+        libxkbcommon0 \
+        libxrandr2 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+RUN usermod --home /data --shell /bin/bash node && \
+    mkdir -p /data && \
+    chown node:node /data
+
+RUN set -eu; \
+    if [ -z "${T3CODE_VER}" ]; then \
+      echo "T3CODE_VER is required (example: 0.1.6)"; \
+      exit 1; \
+    fi; \
+    case "${TARGETARCH}" in \
+      amd64) arch=x64 ;; \
+      arm64) arch=arm64 ;; \
+      *) echo "Unsupported architecture ${TARGETARCH}"; exit 1 ;; \
+    esac; \
+    archive="t3-${T3CODE_VER}-linux-${arch}.tar.gz"; \
+    url="https://github.com/pingdotgg/t3code/releases/download/v${T3CODE_VER}"; \
+    cd /tmp; \
+    curl -fsSL --retry 3 -O "${url}/${archive}"; \
+    curl -fsSL --retry 3 -O "${url}/SHA256SUMS"; \
+    grep -E "[[:space:]]*?${archive}$" SHA256SUMS | sha256sum -c -; \
+    mkdir -p /opt/t3code; \
+    tar -xzof "${archive}" --strip-components=1 -C /opt/t3code; \
+    rm -f "${archive}" SHA256SUMS; \
+    ln -s /opt/t3code/t3 /usr/local/bin/t3
+
+# Agent CLIs baked into the image. Claude Code is intentionally absent here:
+# its license does not allow redistribution, so the entrypoint installs it to
+# the persistent volume on first start instead.
+RUN npm install -g --no-fund --no-audit \
+        "@openai/codex@${CODEX_VER}" \
+        "opencode-ai@${OPENCODE_VER}" && \
+    npm cache clean --force
+
+# Everything that must survive a restart lives in the home directory on the
+# volume: T3 Code's database, agent logins, projects, and tools the user
+# installs. Tools installed there with npm or a native installer win over the
+# image's copies.
+ENV HOME=/data
+ENV NPM_CONFIG_PREFIX=/data/.local
+ENV PATH="/data/.local/bin:${PATH}"
+
+COPY docker-entrypoint.sh /
+COPY bin /usr/local/bin
+COPY profile.sh /etc/profile.d/t3code.sh
+
+USER node
+
+WORKDIR /data
+
+VOLUME /data
+
+EXPOSE 3773
+
+# T3 Code runs many agent processes: tini reaps them and forwards signals.
+ENTRYPOINT ["/usr/bin/tini", "--", "/docker-entrypoint.sh"]
+
+CMD ["t3", "serve"]

@@ -1,0 +1,37 @@
+#!/bin/bash
+# install-claude-code: fetch the stable Claude Code native binary for this
+# arch into the persistent volume (~/.local/bin). The image never ships it
+# (license forbids redistribution); first container start downloads it from
+# Anthropic. Re-runs are cheap: skipped when `claude` is already on PATH.
+set -eu
+
+if command -v claude >/dev/null 2>&1; then
+	echo "claude already installed: $(command -v claude)"
+	exit 0
+fi
+
+case "$(uname -m)" in
+	x86_64) manifest_arch=linux-x64 ;;
+	aarch64) manifest_arch=linux-arm64 ;;
+	*) echo "Unsupported architecture $(uname -m)" >&2; exit 1 ;;
+esac
+
+manifest_url="https://downloads.claude.ai/claude-code/stable/manifest.json"
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+curl -fsSL --retry 3 -o "$tmp/manifest.json" "$manifest_url"
+asset="$(jq -r --arg arch "$manifest_arch" '.artifacts[] | select(.arch == $arch) | "\(.url) \(.sha256)"' "$tmp/manifest.json" | head -n 1)"
+url="${asset%% *}"
+sha="${asset##* }"
+
+if [ -z "$url" ] || [ -z "$sha" ]; then
+	echo "No Claude Code stable asset for $manifest_arch" >&2
+	exit 1
+fi
+
+curl -fsSL --retry 3 -o "$tmp/claude.tar.gz" "$url"
+echo "$sha  $tmp/claude.tar.gz" | sha256sum -c -
+mkdir -p "${HOME}/.local/bin"
+tar -xzof "$tmp/claude.tar.gz" -C "${HOME}/.local/bin"
+echo "Installed claude to ${HOME}/.local/bin"

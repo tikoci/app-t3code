@@ -1,0 +1,21 @@
+# App store document for tikoci/app-t3code (see .tikappstore.yaml convention:
+# a YAML array of /app documents). Points at ./t3code.tikapp.yaml content.
+- name: t3code
+  descr: T3 Code server — agentic coding in the browser (GHCR build for RouterOS)
+  page: https://github.com/tikoci/app-t3code
+  category: development
+  url-path: /
+  services:
+    t3code:
+      image: ghcr.io/tikoci/app-t3code:0.1
+      ports:
+        - "3773:3773:web:tcp"
+      environment:
+        T3CODE_HOST: 0.0.0.0
+        T3CODE_PORT: "3773"
+        T3CODE_TELEMETRY_ENABLED: "false"
+      volumes:
+        - t3code-data:/data
+      restart: unless-stopped
+  volumes:
+    t3code-data: {}

@@ -1,0 +1,66 @@
+name: integration
+
+# Full CHR proof: boot a real CHR per arch, install the /app from GHCR, and
+# assert the T3 Code web UI answers. Slow (multi-GB downloads + a ~650MB
+# image pull on a free-license CHR) — manual, weekly, and post-push only.
+# PRs rely on ci.yml (lint + offline YAML contract + image build).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ros:
+        description: "RouterOS version or channel for the CHR"
+        required: false
+        default: "stable"
+      t3code_ver:
+        description: "Expected T3 Code serverVersion"
+        required: false
+        default: "0.1.6"
+  schedule:
+    - cron: "37 4 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "test/integration/**"
+
+permissions:
+  contents: read
+
+jobs:
+  chr:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.4"
+      - name: Install QEMU
+        run: sudo apt-get update -y && sudo apt-get install -y qemu-system-x86 qemu-system-arm qemu-efi-aarch64 qemu-utils socat
+        if: matrix.arch == 'arm64'
+      - name: Install QEMU (x86)
+        run: sudo apt-get update -y && sudo apt-get install -y qemu-system-x86 qemu-utils socat
+        if: matrix.arch == 'x86'
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm || true
+          ls -la /dev/kvm || echo "::warning::no /dev/kvm — TCG fallback (slow)"
+      - run: bun install
+      - name: CHR app install + web UI probe
+        run: APP_T3CODE_INTEGRATION=1 bun test test/integration/
+        env:
+          APP_T3CODE_ROS: ${{ github.event.inputs.ros || 'stable' }}
+          APP_T3CODE_ARCH: ${{ matrix.arch }}
+          APP_T3CODE_T3VER: ${{ github.event.inputs.t3code_ver || '0.1.6' }}
+          APP_T3CODE_NAME: app-t3code-ci-${{ matrix.arch }}

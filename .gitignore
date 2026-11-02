@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.bun-cache/
+*.tgz
+.DS_Store

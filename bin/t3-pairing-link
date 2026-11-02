@@ -1,0 +1,13 @@
+#!/bin/bash
+# t3-pairing-link: print a one-time sign-in link (or token) for this server.
+# Mirrors upstream wodby/t3code: with PUBLIC_URL set, emits a full pairing
+# URL valid for ~5 minutes; without it, prints the raw token to paste into
+# the web UI's pairing prompt.
+set -eu
+
+label="${1:-RouterOS}"
+if [ -n "${PUBLIC_URL:-}" ]; then
+	exec t3 auth pairing create --label "$label" --base-url "$PUBLIC_URL"
+else
+	exec t3 auth pairing create --label "$label"
+fi
