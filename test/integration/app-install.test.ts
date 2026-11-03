@@ -12,6 +12,7 @@
  *   APP_T3CODE_ARCH     "x86" | "arm64" (default: host arch)
  *   APP_T3CODE_T3VER    expected T3 Code serverVersion (default: package.json version)
  *   APP_T3CODE_NAME     CHR machine name (default: per-arch fixed name)
+ *   APP_T3CODE_KEEP=1   leave the CHR machine behind for inspection (default: removed)
  *
  * RouterOS is driven through centrs (@tikoci/centrs@next) — quickchr boots
  * the VM, centrs talks to it. The only non-centrs HTTP call is the final
@@ -40,9 +41,11 @@ const ARCH = (process.env["APP_T3CODE_ARCH"] ?? (process.arch === "arm64" ? "arm
 	| "x86"
 	| "arm64";
 const NAME = process.env["APP_T3CODE_NAME"] ?? `app-t3code-${ARCH}-test`;
-const YAML_PATH = join(import.meta.dir, "..", "app", "t3code.tikapp.yaml");
+// NOTE: this file lives in test/integration/, so the repo root is two levels up.
+const YAML_PATH = join(import.meta.dir, "..", "..", "app", "t3code.tikapp.yaml");
+const KEEP = process.env["APP_T3CODE_KEEP"] === "1";
 
-const pkg = JSON.parse(readFileSync(join(import.meta.dir, "..", "package.json"), "utf8")) as {
+const pkg = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "package.json"), "utf8")) as {
 	version: string;
 };
 const EXPECTED_T3VER = process.env["APP_T3CODE_T3VER"] ?? pkg.version;
@@ -81,6 +84,10 @@ function envelopeData(env: unknown): Record<string, unknown>[] {
 }
 
 async function cleanup(): Promise<void> {
+	if (KEEP) {
+		console.log(`[integration] APP_T3CODE_KEEP=1 — leaving ${NAME} for inspection`);
+		return;
+	}
 	if (!instance) {
 		try {
 			instance = QuickCHR.get(NAME) as Instance | undefined;
