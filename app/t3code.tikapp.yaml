@@ -1,9 +1,9 @@
+# yaml-language-server: $schema=https://tikoci.dev/restraml/routeros-app-yaml-schema.latest.json
 # tikoci/app-t3code — RouterOS /app definition for the T3 Code server.
 #
-# Install on the router (test/CHR, no HTTPS reverse proxy):
-#   /app/add yaml=<contents-of-this-file> use-https=no
-# Production (valid certs via /ip/cloud, or your own domain):
+# Install on the router (production, HTTPS via /ip/cloud or your own domain):
 #   /app/add yaml=<contents-of-this-file> use-https=yes
+# On CHR (including tikoci/quickchr labs), use use-https=no instead.
 #
 # Image tags track upstream T3 Code stable releases only (no nightlies):
 # ghcr.io/tikoci/app-t3code:<T3CODE_VER> with :0.1 / :0 / :latest as

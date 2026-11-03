@@ -32,6 +32,12 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
 ## Gotchas
 
+- The README's `/app` YAML Editor share link embeds a snapshot of
+  `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
+  (including comments), regenerate the link's `yaml` query parameter from
+  the full file contents and verify decoding it reproduces the file exactly.
+  URL-based loading is requested in https://github.com/tikoci/restraml/issues/123;
+  once supported, prefer a link that loads the published YAML URL.
 - `deviceMode: { enable: ["container"] }` must be set at first boot;
   guest-side `/system/device-mode/update container=yes` never completes.
 - `installPackage("container")` reboots the guest; poll, don't assume.

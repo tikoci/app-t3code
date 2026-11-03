@@ -1,0 +1,48 @@
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.md"
+      - "**/*.tikapp.yaml"
+      - "**/*.tikappstore.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/configure-pages@v5
+      - name: Mirror Markdown and app YAML files
+        shell: bash
+        run: |
+          mkdir -p _site
+          while IFS= read -r -d '' file; do
+            cp --parents -- "$file" _site/
+          done < <(git ls-files -z -- '*.md' '*.tikapp.yaml' '*.tikappstore.yaml')
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

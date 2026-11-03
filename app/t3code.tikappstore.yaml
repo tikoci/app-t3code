@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://tikoci.dev/restraml/routeros-app-yaml-store-schema.latest.json
 # App store document for tikoci/app-t3code (see .tikappstore.yaml convention:
 # a YAML array of /app documents). Points at ./t3code.tikapp.yaml content.
 - name: t3code

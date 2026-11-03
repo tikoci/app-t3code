@@ -14,43 +14,66 @@ CHR-only workarounds are marked.
 
 Prerequisites on the router (one time):
 
-1. RouterOS 7.22+ (`/app/add` with custom YAML needs 7.22; colon-style
-   `host:ctr:label:tcp` ports need 7.23+ — just run stable).
+1. RouterOS 7.24.6 or newer (the minimum supported version).
 2. The `container` extra package installed.
 3. Device-mode with `container=yes` (RDS ships `rose` mode with it on;
    other hardware needs one physical confirm).
 4. A formatted disk for apps (see [Storage](#storage)).
 
-Then install the app. **Test/CHR** (no certs available without `/ip/cloud`):
+Then install the app for production (HTTPS via `/ip/cloud` or your own domain):
 
 ```routeros
-/app/add yaml=<paste app/t3code.tikapp.yaml> use-https=no
+/app/add yaml=([/tool/fetch url="https://tikoci.dev/app-t3code/app/t3code.tikapp.yaml" check-certificate=yes output=user as-value]->"data") use-https=yes
 /app/set [find where name="t3code"] disabled=no
 ```
 
-**Production** (valid certs via `/ip/cloud`, or your own domain):
+> [!NOTE]
+> When using CHR, such as with [tikoci/quickchr](https://github.com/tikoci/quickchr),
+> change `use-https=yes` to `use-https=no`. Free-license CHR has no `/ip/cloud`
+> for certificate provisioning. CI and the test commands below use this setting.
+
+Once the container is running, follow [Pairing with the web UI](#pairing-with-the-web-ui)
+to get its browser URL and a one-time pairing token. Storage persists on the
+app disk, so logins, the T3 database, and `~/projects` survive reboots.
+
+### Preview or edit the YAML
+
+[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++volumes%3A%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
+the single-app definition in our sister project, [tikoci/restraml](https://github.com/tikoci/restraml).
+The share link embeds the YAML as a snapshot; the downloads below track the
+current published files. Both YAML files include schema comments for editor validation.
+
+### YAML downloads and app store
+
+GitHub Pages mirrors the repository paths for Markdown and the two app YAML
+formats, serving the original files without rendering or rewriting them:
+
+- [App YAML](https://tikoci.dev/app-t3code/app/t3code.tikapp.yaml)
+- [App store YAML](https://tikoci.dev/app-t3code/app/t3code.tikappstore.yaml)
+- [README.md](https://tikoci.dev/app-t3code/README.md)
+
+The install command above fetches the app YAML into memory and passes its
+contents to `/app/add yaml=` for a one-time installation.
+
+> [!TIP]
+> Alternatively, add our app store to the router's catalog. This appends to
+> `app-store-urls`, preserving existing stores. Before you install the app,
+> the catalog can pick up changes to our template so installation uses the
+> latest YAML we publish.
 
 ```routeros
-/app/add yaml=<paste app/t3code.tikapp.yaml> use-https=yes
-/app/set [find where name="t3code"] disabled=no
+/app/settings/set app-store-urls=([get app-store-urls],"https://tikoci.dev/app-t3code/app/t3code.tikappstore.yaml")
 ```
 
-The only difference is the flag: `use-https=yes` drives the `[accessProto]`
-placeholder to `https` and mints Let's Encrypt certs through a hidden
-`/ip/reverse-proxy` SNI entry. On CHR with the free license there is no
-`/ip/cloud`, so `yes` can never complete — that is why CI and all test
-commands below use `no`.
-
-Open the WebFig entry (or `https://<router-ip>:3773` / `http://...`
-respectively) and pair: on the router host run the equivalent of
-`t3-pairing-link` inside the container to get a one-time link
-(~5 min expiry). Storage persists on the app disk, so logins, the T3
-database, and `~/projects` survive reboots — one container per volume.
+The store requires a YAML **array**, so use `.tikappstore.yaml` for
+`app-store-urls`, and `.tikapp.yaml` for a single app installation.
+See MikroTik's [custom app store documentation](https://manual.mikrotik.com/docs/containers/apps/#custom-app-store).
 
 ## Storage
 
-`/app` refuses to enable anything until a disk is configured
-(`need to configure disk to install apps to in /app settings`):
+Use a separate disk for apps; the RouterOS root volume cannot be used.
+Format the app disk as **ext4** or **btrfs**, then set its mount point in
+`/app/settings`. `/app` refuses to enable anything until this is configured:
 
 ```routeros
 /disk/print            # find the extra disk, e.g. *1
@@ -58,17 +81,53 @@ database, and `~/projects` survive reboots — one container per volume.
 /app/settings/set disk=<mount-point>
 ```
 
-On RDS this is an NVMe volume; on CHR attach a second virtual disk
-(`extraDisks: ["4G"]` in quickchr) — the stock CHR system disk is too
-small for a ~650MB image. The app then lives under
-`<disk>/apps/t3code/`. There is no second YAML file for prod: the YAML
-is identical, only the `use-https` flag differs.
+The disk can be any supported storage type with enough space for the image
+and persistent data. On CHR, attach a second virtual disk. The app then lives
+under `<disk>/apps/t3code/`.
 
 ## Using T3 Code
 
 The container serves plain HTTP on **3773** (`T3CODE_HOST=0.0.0.0`,
 `T3CODE_PORT=3773`). Put HTTPS in front for anything beyond localhost —
 the hosted web/mobile T3 apps require it.
+
+### Pairing with the web UI
+
+The browser needs a one-time token to connect to this container. Once the
+app is running, run this command in the **RouterOS terminal** to print both
+the app's browser URL and a fresh token from `t3-pairing-link` inside the
+`app-t3code` container:
+
+```routeros
+:put "** Using T3Code **\r\n\r\nIn your browser go to: $[/app/get t3code ui-url]\r\n\r\nThen, use the Token below in your browser to connect it with this container:\r\n$[/container/shell app-t3code cmd="t3-pairing-link" as-value]"
+```
+
+For example (illustrative token):
+
+```text
+** Using T3Code **
+
+In your browser go to: http://10.0.2.15:3773/
+
+Then, use the Token below in your browser to connect it with this container:
+Issued client pairing token 00000000-0000-4000-8000-000000000000.
+Token: EXAMPLEONLY
+Expires at: 2026-11-03T14:07:30.038Z
+```
+
+Open the printed URL and enter the value on the `Token:` line in the browser's
+pairing prompt. Tokens expire after about five minutes; run the command again
+if you need a fresh one.
+
+> [!NOTE]
+> `ui-url` reflects the app's `use-https` setting. With `use-https=yes`, it
+> reports the HTTPS URL (including the MikroTik hostname when using `/ip/cloud`).
+> With `use-https=no`, it reports an HTTP URL like the CHR example above.
+
+If `PUBLIC_URL` is set in the container, `t3-pairing-link` can print a full
+pairing URL instead of a raw token.
+
+### Environment and providers
 
 | Env | Default | Notes |
 |---|---|---|
@@ -78,8 +137,7 @@ the hosted web/mobile T3 apps require it.
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, … | inherited | agents see container env |
 | `T3CODE_*` | passthrough | e.g. `T3CODE_SERVER_BROWSER_SANDBOX=0` |
 
-Pairing: `t3-pairing-link` inside the container prints a one-time URL
-(with `PUBLIC_URL`) or token. Codex and opencode ship in the image;
+Codex and opencode ship in the image;
 Claude Code installs itself to the persistent volume on first boot
 (its license forbids redistributing it, so it cannot be baked in).
 
@@ -134,6 +192,12 @@ to [centrs](https://github.com/tikoci/centrs/issues) /
 working around it silently. CI (`ci.yml`) lints, tests, and builds
 both arches to GHCR; `integration.yml` runs the CHR matrix weekly,
 post-push on `app/` + `test/integration/`, and on demand.
+
+The `pages.yml` workflow publishes only tracked `*.md`, `*.tikapp.yaml`, and
+`*.tikappstore.yaml` files, preserving their paths and contents. Automatic
+deployments run only when those files change on `main`; manual dispatch is
+also available. Pages must use **GitHub Actions** as its publishing source
+in the repository's **Settings → Pages**. No site generator is used.
 
 Verified install flow on CHR 7.25 (x86, free license):
 
