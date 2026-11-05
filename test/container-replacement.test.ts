@@ -6,6 +6,7 @@ const image = process.env["APP_T3CODE_DOCKER_IMAGE"];
 const expectedVersion = process.env["APP_T3CODE_T3VER"] ??
 	(await Bun.file(new URL("../package.json", import.meta.url)).json()).version;
 
+/** Run Docker, returning stdout and reporting its output if the command fails. */
 async function docker(...args: string[]): Promise<string> {
 	const proc = Bun.spawn(["docker", ...args], {
 		stdout: "pipe",
@@ -21,6 +22,7 @@ async function docker(...args: string[]): Promise<string> {
 	return out.trim();
 }
 
+/** Wait up to two minutes for the expected server version, including logs on timeout. */
 async function waitForServer(name: string): Promise<void> {
 	const address = await docker("port", name, "3773/tcp");
 	const deadline = Date.now() + 120_000;
@@ -36,6 +38,65 @@ async function waitForServer(name: string): Promise<void> {
 		await Bun.sleep(1000);
 	}
 	throw new Error(`Server did not start:\n${await docker("logs", name)}`);
+}
+
+/** Read effective server preferences through MCP with a temporary read-only credential. */
+async function readEnvironment(name: string) {
+	const address = await docker("port", name, "3773/tcp");
+	const credential = JSON.parse(await docker(
+		"exec", name, "t3", "auth", "session", "issue",
+		"--subject", "mcp-client", "--scope", "orchestration:read",
+		"--ttl", "5m", "--json",
+	)) as { sessionId: string; token: string };
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		Accept: "application/json, text/event-stream",
+		Authorization: `Bearer ${credential.token}`,
+	};
+	const post = (body: object) => fetch(`http://${address}/mcp`, {
+		method: "POST", headers, body: JSON.stringify(body),
+		signal: AbortSignal.timeout(10_000),
+	});
+	try {
+		const initialized = await post({
+			jsonrpc: "2.0", id: 1, method: "initialize",
+			params: {
+				protocolVersion: "2025-06-18", capabilities: {},
+				clientInfo: { name: "container-replacement-test", version: "1.0.0" },
+			},
+		});
+		expect(initialized.status).toBe(200);
+		await initialized.arrayBuffer();
+		const sessionId = initialized.headers.get("mcp-session-id");
+		expect(sessionId).toBeString();
+		headers["Mcp-Session-Id"] = sessionId as string;
+		headers["Mcp-Protocol-Version"] = "2025-06-18";
+		const notification = await post({ jsonrpc: "2.0", method: "notifications/initialized" });
+		expect(notification.status).toBe(202);
+		await notification.arrayBuffer();
+		const response = await post({
+			jsonrpc: "2.0", id: 2, method: "tools/call",
+			params: { name: "t3_environment_read", arguments: {} },
+		});
+		expect(response.status).toBe(200);
+		const body = await response.json() as {
+			error?: unknown;
+			result?: {
+				isError?: boolean;
+				structuredContent?: {
+					environmentId: string;
+					preferences: { enableProviderUpdateChecks: boolean };
+				};
+			};
+		};
+		expect(body.error).toBeUndefined();
+		expect(body.result?.isError).not.toBe(true);
+		const environment = body.result?.structuredContent;
+		if (!environment) throw new Error("MCP environment read returned no structured result");
+		return environment;
+	} finally {
+		await docker("exec", name, "t3", "auth", "session", "revoke", credential.sessionId);
+	}
 }
 
 test.skipIf(!image)(
@@ -159,6 +220,9 @@ t3 project add /data/projects/survivor --title 'Survivor'
 				JSON.parse(await run("cat", "/data/.t3/userdata/settings.json"))
 					.enableProviderUpdateChecks,
 			).toBe(false);
+			const environment = await readEnvironment(name);
+			expect(environment.environmentId).toBe(identity);
+			expect(environment.preferences.enableProviderUpdateChecks).toBe(false);
 			expect(await run("bash", "-lc", "persistence-tool-fixture")).toBe(
 				"persistent-bun-tool",
 			);

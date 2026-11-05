@@ -136,9 +136,14 @@ and tools through this command; they do **not** need the YAML reapplied.
 > On CHR **7.25.1**, assigning `/app/set ... yaml=...` recreated the app
 > storage and deleted the existing named-volume contents. This reproduced
 > with a comment-only YAML change on a running app. Treat any YAML change as
-> a migration: stop the app, copy the complete `/data` volume somewhere
-> outside `<disk>/apps/t3code/`, apply the YAML, restore the backup into the
-> newly selected home volume while the app is stopped, then enable it.
+> a migration: stop the app and back up the complete `/data` volume, external
+> project volumes, and every other app-owned volume somewhere outside
+> `<disk>/apps/t3code/`. Record each volume's source and container destination.
+> Apply the YAML, then keep the app stopped while restoring the home and other
+> app-owned volumes into their newly selected mount sources. Verify external
+> project volumes are mounted at their recorded destinations; restore their
+> backups if their data was removed or their storage moved. Verify ownership
+> and mount mappings for every volume before enabling the app.
 > Splitting the home into more app-owned volumes does not avoid this reset.
 
 RouterOS
@@ -291,7 +296,8 @@ APP_T3CODE_ROS=stable APP_T3CODE_ARCH=arm64 APP_T3CODE_INTEGRATION=1 \
 
 The Docker replacement test removes the original container and starts a new
 one with only the same home volume. It checks tool discovery in ordinary and
-login shells, a real T3 project record and environment identity, settings,
+login shells, a real T3 project record and environment identity, settings
+(including the restarted server's effective preference through read-only MCP),
 uncommitted worktree/project files, and a user-installed Bun CLI. CI runs
 this against the built x86 image before publishing, and builds both image
 architectures. It does not authenticate providers or run paid model requests.

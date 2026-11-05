@@ -34,8 +34,11 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
 - On CHR 7.25.1, assigning `/app/set ... yaml=...` deletes app-owned volume
   contents, even for a comment-only change. Image upgrades use `/app/update`;
-  applying YAML requires an offline home backup outside the app directory
-  and a restore before enabling. More app-owned volumes do not prevent it.
+  applying YAML requires offline backups of the home, external project
+  volumes, and every other app-owned volume outside the app directory.
+  Restore the home and other app-owned volumes into their new mount sources;
+  verify external project mounts and restore their backups if needed, all
+  before enabling. More app-owned volumes do not prevent the reset.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
   (including comments), regenerate the link's `yaml` query parameter from
