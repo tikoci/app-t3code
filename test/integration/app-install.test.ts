@@ -3,7 +3,7 @@
  * tikoci/app-t3code /app, and prove the T3 Code web UI answers.
  *
  * Gated: APP_T3CODE_INTEGRATION=1 (needs QEMU + network for image downloads).
- * CHR runs the free license here, so the GHCR pull of the ~650MB image can
+ * CHR runs the free license here, so the GHCR pull of the ~1GB image can
  * take many minutes — the boot/install/probe budget below sizes from the
  * slow end (TCG) rather than the fast end (HVF/KVM).
  *
@@ -135,7 +135,7 @@ describe.skipIf(SKIP)("app-t3code on CHR", () => {
 					mem: 1024,
 					bootSize: "8G",
 					bootDiskFormat: "qcow2",
-					extraDisks: ["4G"],
+					extraDisks: ["8G"],
 					deviceMode: { enable: ["container"] },
 					extraPorts: [{ name: "t3web", host: 0, guest: 3773, proto: "tcp" }],
 					timeoutExtra: 240_000,

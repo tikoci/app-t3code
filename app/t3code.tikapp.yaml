@@ -21,10 +21,14 @@ services:
     ports:
       - "3773:3773:web:tcp"
     environment:
+      HOME: /data
+      T3CODE_HOME: /data/.t3
       T3CODE_HOST: 0.0.0.0
       T3CODE_PORT: "3773"
       T3CODE_TELEMETRY_ENABLED: "false"
     volumes:
+      # Keep this name and destination when upgrading: the whole home,
+      # including .t3/userdata, projects, worktrees, and provider logins.
       - t3code-data:/data
     restart: unless-stopped
 volumes:
