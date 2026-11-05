@@ -52,6 +52,23 @@ jobs:
           echo "ver=$VER" >> "$GITHUB_OUTPUT"
           echo "minor=$MINOR" >> "$GITHUB_OUTPUT"
           echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
+      - name: Load native image for replacement test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          build-args: T3CODE_VER=${{ steps.tags.outputs.ver }}
+          tags: app-t3code:test
+      - name: Install test runtime
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.4"
+      - name: Test container replacement
+        run: bun test test/container-replacement.test.ts
+        env:
+          APP_T3CODE_DOCKER_IMAGE: app-t3code:test
+          APP_T3CODE_T3VER: ${{ steps.tags.outputs.ver }}
       - name: Build (PR) or push (main / dispatch)
         uses: docker/build-push-action@v6
         with:

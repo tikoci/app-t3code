@@ -12,6 +12,8 @@
       ports:
         - "3773:3773:web:tcp"
       environment:
+        HOME: /data
+        T3CODE_HOME: /data/.t3
         T3CODE_HOST: 0.0.0.0
         T3CODE_PORT: "3773"
         T3CODE_TELEMETRY_ENABLED: "false"

@@ -120,6 +120,8 @@ describe("t3code.tikapp.yaml", () => {
 		expect(envHas(svc["environment"], "T3CODE_HOST", "0.0.0.0")).toBe(true);
 		expect(envHas(svc["environment"], "T3CODE_PORT", "3773")).toBe(true);
 		expect(envHas(svc["environment"], "T3CODE_TELEMETRY_ENABLED", "false")).toBe(true);
+		expect(envHas(svc["environment"], "HOME", "/data")).toBe(true);
+		expect(envHas(svc["environment"], "T3CODE_HOME", "/data/.t3")).toBe(true);
 	});
 
 	test("persists /data on a named volume and restarts with the router", () => {
@@ -136,7 +138,18 @@ describe("t3code.tikapp.yaml", () => {
 		expect(svc["restart"]).toBe("unless-stopped");
 
 		const topVolumes = asRecord(doc["volumes"]);
-		expect(Object.keys(topVolumes).length).toBeGreaterThan(0);
+		// Renaming the volume would select an empty home on an upgrade.
+		expect(volumes).toEqual(["t3code-data:/data"]);
+		expect(topVolumes["t3code-data"]).toEqual({});
+	});
+
+	test("README editor snapshot decodes to the complete published YAML", () => {
+		const readme = readFileSync(join(import.meta.dir, "..", "README.md"), "utf8");
+		const link = readme.match(/\[See in \/app YAML Editor\]\((https:[^)]+)\)/)?.[1];
+		expect(link).toBeDefined();
+		expect(new URL(link as string).searchParams.get("yaml")).toBe(
+			readFileSync(YAML_PATH, "utf8"),
+		);
 	});
 
 	test("category is a valid /app store category", () => {
@@ -168,5 +181,8 @@ describe("t3code.tikappstore.yaml", () => {
 		expect(docs.length).toBeGreaterThan(0);
 		const names = docs.map((d) => (d as Record<string, unknown>)["name"]);
 		expect(names).toContain("t3code");
+		expect(docs.find((d) => asRecord(d)["name"] === "t3code")).toEqual(
+			loadYaml(YAML_PATH),
+		);
 	});
 });

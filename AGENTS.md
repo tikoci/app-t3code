@@ -9,7 +9,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 - `bun test test/app-yaml.test.ts` — offline `/app` YAML contract (always runs).
 - `APP_T3CODE_INTEGRATION=1 bun test test/integration/` — full CHR
   boot + container install + web UI probe. Needs QEMU and network; slow
-  (the GHCR image pull alone is ~650MB on a free-license CHR).
+  (the GHCR image pull alone is ~1GB on a free-license CHR).
 - `make build T3CODE_VER=<ver>` — local multi-arch build.
 - `make push T3CODE_VER=<ver>` — multi-arch push to GHCR (`:<ver>` + `:latest`).
 
@@ -32,6 +32,13 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
 ## Gotchas
 
+- On CHR 7.25.1, assigning `/app/set ... yaml=...` deletes app-owned volume
+  contents, even for a comment-only change. Image upgrades use `/app/update`;
+  applying YAML requires offline backups of the home, external project
+  volumes, and every other app-owned volume outside the app directory.
+  Restore the home and other app-owned volumes into their new mount sources;
+  verify external project mounts and restore their backups if needed, all
+  before enabling. More app-owned volumes do not prevent the reset.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
   (including comments), regenerate the link's `yaml` query parameter from
@@ -51,6 +58,8 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   (`.running` is the string `"true"`, not a boolean).
 - CHR free license: 1 Mbps/interface upload cap; size all waits from TCG,
   not HVF. `bootSize: "8G"` is required — the image will not fit a stock
-  CHR disk. Extra RAM (`mem: 1024`) for the pull + unpack.
+  CHR disk. Use an 8G app disk: the image with agent tools extracts to
+  roughly 4GB, before projects and lab VMs. Extra RAM (`mem: 1024`) for
+  the pull + unpack.
 - `centrs api <router> app -X PUT` is the structured write path
   (PUT = RouterOS create). `execute` is the fallback if validation rejects.

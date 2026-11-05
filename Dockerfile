@@ -3,8 +3,9 @@
 # Rebuilds the wodby/t3code approach from our own Dockerfile so the image we
 # ship on GHCR is one we control: Debian trixie-slim (glibc, which the T3 Code
 # release binaries need), per-arch t3 tarball from pingdotgg/t3code with
-# SHA256 verification, codex + opencode baked in, Claude Code installed to
-# the volume on first boot (license forbids redistribution).
+# SHA256 verification, Codex + opencode + Muse Code and Bun/RouterOS tools
+# baked in, Claude Code installed to the volume on first boot (license
+# forbids redistribution).
 #
 # Build:
 #   docker buildx build --platform linux/amd64,linux/arm64 \
@@ -13,6 +14,9 @@
 #   docker run -p 3773:3773 -v t3code:/data -e PUBLIC_URL=https://t3.example.com ghcr.io/tikoci/app-t3code:0.1
 
 ARG NODE_VER=24
+ARG BUN_VER=1.4.4
+
+FROM oven/bun:${BUN_VER}-slim AS bun
 
 FROM node:${NODE_VER}-trixie-slim
 
@@ -20,6 +24,8 @@ ARG TARGETARCH
 ARG T3CODE_VER=0.1.6
 ARG CODEX_VER=latest
 ARG OPENCODE_VER=latest
+ARG QUICKCHR_VER=next
+ARG CENTRS_VER=next
 
 ENV T3CODE_VER="${T3CODE_VER}"
 ENV T3CODE_HOST=0.0.0.0
@@ -44,6 +50,10 @@ RUN echo 'Acquire::Retries "10";' > /etc/apt/apt.conf.d/80-retries && \
         openssh-client \
         procps \
         python3 \
+        qemu-system-x86 \
+        qemu-system-arm \
+        qemu-efi-aarch64 \
+        qemu-utils \
         ripgrep \
         tini \
         unzip \
@@ -68,6 +78,23 @@ RUN echo 'Acquire::Retries "10";' > /etc/apt/apt.conf.d/80-retries && \
         libxrandr2 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
+# Scope the image's global install to /opt. Runtime Bun installs instead use
+# the persistent user's /data/.bun, which precedes these tools on PATH.
+RUN ln -s bun /usr/local/bin/bunx && \
+    BUN_INSTALL=/opt/bun bun install --global \
+        "@tikoci/quickchr@${QUICKCHR_VER}" \
+        "@tikoci/centrs@${CENTRS_VER}" && \
+    rm -rf /root/.bun/install/cache
+
+# Meta's official installer verifies the platform binary's size and SHA256.
+# Ship that native binary directly: updates arrive with image replacements,
+# rather than a launcher trying to modify root-owned image files at runtime.
+RUN curl -fsSL --retry 3 https://dev.meta.ai/install.sh -o /tmp/install-muse.sh && \
+    MUSE_INSTALL_DIR=/opt/muse MUSE_LOGIN=0 MUSE_UPGRADE_MODE=1 bash /tmp/install-muse.sh && \
+    install -m 0755 "/opt/muse/muse-bin-$(cat /opt/muse/.muse-version)" /usr/local/bin/muse && \
+    rm -rf /opt/muse /tmp/install-muse.sh
 
 RUN usermod --home /data --shell /bin/bash node && \
     mkdir -p /data && \
@@ -107,8 +134,9 @@ RUN npm install -g --no-fund --no-audit \
 # installs. Tools installed there with npm or a native installer win over the
 # image's copies.
 ENV HOME=/data
+ENV T3CODE_HOME=/data/.t3
 ENV NPM_CONFIG_PREFIX=/data/.local
-ENV PATH="/data/.local/bin:${PATH}"
+ENV PATH="/data/.local/bin:/data/.bun/bin:/opt/bun/bin:${PATH}"
 
 COPY docker-entrypoint.sh /
 COPY bin /usr/local/bin
