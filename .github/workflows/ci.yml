@@ -64,12 +64,14 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"
+      # Starts T3 with T3CODE_TOOL_GROUPS=all, then with an unknown group.
       - name: Test container replacement
         run: bun test test/container-replacement.test.ts
         env:
           APP_T3CODE_DOCKER_IMAGE: app-t3code:test
           APP_T3CODE_T3VER: ${{ steps.tags.outputs.ver }}
       - name: Build (PR) or push (main / dispatch)
+        id: image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -81,3 +83,35 @@ jobs:
             ghcr.io/tikoci/app-t3code:${{ steps.tags.outputs.minor }}
             ghcr.io/tikoci/app-t3code:${{ steps.tags.outputs.major }}
             ghcr.io/tikoci/app-t3code:latest
+      - name: Export inventories from the cached image builds
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: inventory
+          platforms: linux/amd64,linux/arm64
+          build-args: T3CODE_VER=${{ steps.tags.outputs.ver }}
+          outputs: type=local,dest=image-inventory
+      - name: Record build identity
+        env:
+          BUILD_METADATA: ${{ steps.image.outputs.metadata }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          printf '%s\n' "$BUILD_METADATA" > image-inventory/build-metadata.json
+          printf '%s\n' "$IMAGE_DIGEST" > image-inventory/image-digest.txt
+          printf '%s\n' "$GITHUB_SHA" > image-inventory/source-commit.txt
+      - name: Record runtime tool-group status with every group selected
+        run: |
+          docker run --rm --network none --env T3CODE_TOOL_GROUPS=all \
+            --entrypoint t3code-tools app-t3code:test status --json \
+            > image-inventory/tool-groups-runtime-linux_amd64.json
+          jq -e '(.selector.selected | length) == (.groups | length)' image-inventory/tool-groups-runtime-linux_amd64.json
+          jq -r '.groups[] | "\(.name)\t\(.state)"' image-inventory/tool-groups-runtime-linux_amd64.json
+      - name: Record actual GitHub runner packages
+        run: bun scripts/runner-inventory.ts image-inventory/runner
+      - name: Upload image package and tool inventories
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-inventory-${{ github.sha }}
+          path: image-inventory/
+          if-no-files-found: error
+          retention-days: 90

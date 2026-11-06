@@ -3,3 +3,4 @@ dist/
 .bun-cache/
 *.tgz
 .DS_Store
+image-inventory/

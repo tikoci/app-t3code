@@ -39,6 +39,17 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   Restore the home and other app-owned volumes into their new mount sources;
   verify external project mounts and restore their backups if needed, all
   before enabling. More app-owned volumes do not prevent the reset.
+- The YAML wipe also reproduces on 7.26beta5, and `yaml=` leaves the app
+  disabled. `/app/set environment=` is safe: it restarts the container and keeps
+  volumes, and the override survives `/app/update` and reboot. But it replaces
+  the *whole* env list (YAML env is only the initial value), and the CLI and
+  REST split values on commas. See
+  `docs/research/2026-11-05/app-set-environment.md`.
+- Tool groups (`T3CODE_TOOL_GROUPS`, issue #5) live in
+  `scripts/tool-groups.ts`, shipped as `t3code-tools`. Any key added to the
+  YAML `environment:` must also be a Dockerfile `ENV` default with the same
+  value (a test enforces it), because an operator's `environment=` set
+  drops the YAML values. Never document group changes as a YAML edit.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
   (including comments), regenerate the link's `yaml` query parameter from

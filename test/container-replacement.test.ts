@@ -105,7 +105,9 @@ test.skipIf(!image)(
 		const name = `app-t3code-replacement-${randomUUID()}`;
 		const volume = `${name}-data`;
 		const run = (...args: string[]) => docker("exec", name, ...args);
-		const start = () =>
+		// No other --env: like a RouterOS env-list replacement that drops the
+		// YAML defaults, so the image ENV defaults must carry correct operation.
+		const start = (groups: string) =>
 			docker(
 				"run",
 				"--detach",
@@ -116,13 +118,42 @@ test.skipIf(!image)(
 				"--volume",
 				`${volume}:/data`,
 				"--env",
-				"T3CODE_TELEMETRY_ENABLED=false",
+				`T3CODE_TOOL_GROUPS=${groups}`,
 				image as string,
 			);
+		/** The agent-facing status (live) and the runtime JSON the entrypoint wrote. */
+		const toolStatus = async () => {
+			type Status = {
+				selector: { selected: string[]; unknown: string[]; warnings: string[] };
+				core: { state: string; missing: string[] };
+				groups: { name: string; selected: boolean; state: string }[];
+				buildInventory: { present: boolean };
+			};
+			const live = JSON.parse(await run("t3code-tools", "status", "--json")) as Status;
+			const written = JSON.parse(await run("cat", "/tmp/t3code-tools/status.json")) as Status;
+			expect(written.selector).toEqual(live.selector);
+			return live;
+		};
 		await docker("volume", "create", volume);
 		try {
-			await start();
+			// CI exercises every group so the reported states cover the full set.
+			await start("all");
 			await waitForServer(name);
+			expect(await run("printenv", "T3CODE_TELEMETRY_ENABLED")).toBe("false");
+			const all = await toolStatus();
+			expect(all.core).toMatchObject({ state: "ready", missing: [] });
+			expect(all.buildInventory.present).toBe(true);
+			expect(all.selector.warnings).toEqual([]);
+			expect(all.groups.every((group) => group.selected)).toBe(true);
+			expect(Object.fromEntries(all.groups.map((group) => [group.name, group.state]))).toEqual({
+				capture: "not-implemented",
+				labs: "ready",
+				vpn: "not-implemented",
+				routing: "not-implemented",
+				dev: "not-implemented",
+				browser: "ready",
+				"agents-extra": "ready",
+			});
 			for (const shell of ["-c", "-lc"]) {
 				await run(
 					"bash",
@@ -178,9 +209,16 @@ t3 project add /data/projects/survivor --title 'Survivor'
 				'const file = Bun.file("/data/.t3/userdata/settings.json"); const settings = await file.exists() ? await file.json() : {}; settings.enableProviderUpdateChecks = false; await Bun.write(file, JSON.stringify(settings));',
 			);
 
-			// A new writable layer and container id, with only the same named home volume.
-			await start();
+			// A new writable layer and container id, with only the same named home
+			// volume. An unknown group is a warning: T3 must still start.
+			await start("capture+bogus labs");
 			await waitForServer(name);
+			const partial = await toolStatus();
+			expect(partial.selector.selected).toEqual(["capture", "labs"]);
+			expect(partial.selector.unknown).toEqual(["bogus"]);
+			expect(partial.groups.find((group) => group.name === "vpn")?.state).toBe("not-selected");
+			const logs = Bun.spawnSync(["docker", "logs", name]);
+			expect(logs.stderr.toString()).toContain('unknown group "bogus" ignored');
 			await run("test", "!", "-e", "/tmp/replacement-fixture");
 			expect(
 				await run(

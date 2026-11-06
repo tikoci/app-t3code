@@ -2,6 +2,14 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import YAML from "js-yaml";
+import {
+	buildStatus,
+	GROUP_NAMES,
+	GROUPS,
+	NETWORK_PACKAGE_ASSIGNMENT,
+	type Probe,
+	parseToolGroups,
+} from "../scripts/tool-groups.ts";
 
 const APP_DIR = join(import.meta.dir, "..", "app");
 const YAML_PATH = join(APP_DIR, "t3code.tikapp.yaml");
@@ -184,5 +192,137 @@ describe("t3code.tikappstore.yaml", () => {
 		expect(docs.find((d) => asRecord(d)["name"] === "t3code")).toEqual(
 			loadYaml(YAML_PATH),
 		);
+	});
+});
+
+const ROOT = join(import.meta.dir, "..");
+const README = readFileSync(join(ROOT, "README.md"), "utf8");
+const DOCKERFILE = readFileSync(join(ROOT, "Dockerfile"), "utf8");
+
+/** `ENV KEY=value` / `ENV KEY="value"` defaults from the Dockerfile. */
+function dockerfileEnv(): Record<string, string> {
+	const env: Record<string, string> = {};
+	for (const match of DOCKERFILE.matchAll(/^ENV (\w+)=(?:"([^"]*)"|(\S+))$/gm)) {
+		env[match[1] as string] = (match[2] ?? match[3]) as string;
+	}
+	return env;
+}
+
+describe("T3CODE_TOOL_GROUPS selector", () => {
+	test("accepts space, + and comma separators, case-insensitively", () => {
+		for (const raw of ["capture labs", "capture+labs", "capture,labs", " LABS ,  Capture+", "labs capture capture"]) {
+			const selection = parseToolGroups(raw);
+			expect(selection.selected).toEqual(["capture", "labs"]);
+			expect(selection.warnings).toEqual([]);
+		}
+	});
+
+	test("unset, empty and none mean core only", () => {
+		for (const raw of [undefined, null, "", "  ", "none", "NONE"]) {
+			expect(parseToolGroups(raw).selected).toEqual([]);
+			expect(parseToolGroups(raw).warnings).toEqual([]);
+		}
+		expect(parseToolGroups(undefined).raw).toBeNull();
+	});
+
+	test("all selects every group in definition order", () => {
+		expect(parseToolGroups("all").selected).toEqual([...GROUP_NAMES]);
+		expect(parseToolGroups("vpn all").selected).toEqual([...GROUP_NAMES]);
+	});
+
+	test("unknown names warn and are ignored, never thrown", () => {
+		const selection = parseToolGroups("capture bogus+bogus;x");
+		expect(selection.selected).toEqual(["capture"]);
+		expect(selection.unknown).toEqual(["bogus", "bogus;x"]);
+		expect(selection.warnings).toHaveLength(2);
+		expect(selection.warnings[0]).toContain('unknown group "bogus" ignored');
+		const mixed = parseToolGroups("none vpn");
+		expect(mixed.selected).toEqual(["vpn"]);
+		expect(mixed.warnings[0]).toContain('"none" combined');
+	});
+
+	test("status reports every group with a truthful state", () => {
+		const nothing: Probe = { which: () => null, exists: () => false, library: () => null };
+		const everything: Probe = { which: (c) => `/usr/bin/${c}`, exists: () => true, library: (l) => `/lib/${l}` };
+		const missing = buildStatus("all", nothing, "/nonexistent");
+		expect(missing.core.state).toBe("degraded");
+		expect(missing.buildInventory.present).toBe(false);
+		for (const group of missing.groups) {
+			expect(group.selected).toBe(true);
+			expect(group.state).toBe(group.delivery === "image" ? "failed" : "not-implemented");
+		}
+		const present = buildStatus("labs", everything, "/nonexistent");
+		expect(present.core.state).toBe("ready");
+		expect(Object.fromEntries(present.groups.map((g) => [g.name, g.state]))).toEqual({
+			capture: "not-selected",
+			labs: "ready",
+			vpn: "not-selected",
+			routing: "not-selected",
+			dev: "not-selected",
+			browser: "not-selected",
+			"agents-extra": "not-selected",
+		});
+		// Groups without an installer never claim ready, even if tools happen to exist.
+		expect(buildStatus("dev", everything, "/nonexistent").groups.find((g) => g.name === "dev")?.state).toBe("not-implemented");
+	});
+});
+
+describe("tool groups: docs and image contract", () => {
+	test("README documents the selector with spaces and every group", () => {
+		expect(README).toContain('`T3CODE_TOOL_GROUPS`');
+		expect(README).toContain('`"capture labs"`');
+		for (const name of GROUP_NAMES) expect(README).toContain(`| \`${name}\` |`);
+		expect(README).toContain("t3code-tools status --json");
+	});
+
+	test("README carries the tested replace-one-key script for app and service t3code", () => {
+		expect(README).toContain(`\`\`\`routeros
+:local app "t3code"; :local key "t3code:T3CODE_TOOL_GROUPS="; :local val "capture labs"
+:local keep ({}); :foreach e in=[/app/get $app environment] do={ :if ([:find $e $key] != 0) do={ :set keep ($keep, $e) } }
+/app/set $app environment=($keep, ($key . $val))
+\`\`\``);
+		const doc = asRecord(loadYaml(YAML_PATH));
+		expect(Object.keys(asRecord(doc["services"]))).toEqual(["t3code"]);
+	});
+
+	test("YAML description does not advertise unimplemented group controls", () => {
+		const descr = asRecord(loadYaml(YAML_PATH))["descr"] as string;
+		expect(descr).not.toContain("T3CODE_TOOL_GROUPS");
+		// "browser" and "dev" are ordinary words; the distinctive names and "group" are not.
+		for (const word of ["group", "capture", "labs", "vpn", "routing", "agents-extra"]) {
+			expect(descr.toLowerCase()).not.toContain(word);
+		}
+	});
+
+	test("every YAML env value is also an image ENV default (environment= replaces the list)", () => {
+		const doc = asRecord(loadYaml(YAML_PATH));
+		const svc = asRecord(asRecord(doc["services"])["t3code"]);
+		const env = asRecord(svc["environment"]);
+		const defaults = dockerfileEnv();
+		for (const [key, value] of Object.entries(env)) {
+			expect({ key, value: defaults[key] }).toEqual({ key, value: String(value) });
+		}
+	});
+
+	test("every network package is assigned once; core ones are installed, group ones are not", () => {
+		const research = readFileSync(join(ROOT, "scripts", "research-package-costs.ts"), "utf8");
+		const networkBundle = research.match(/"network-extension": \[([^\]]+)\]/)?.[1] ?? "";
+		const baseBundle = research.match(/"network-tools": \[([^\]]+)\]/)?.[1] ?? "";
+		const researched = [...`${networkBundle},${baseBundle}`.matchAll(/"([^"]+)"/g)].map((m) => m[1] as string);
+		researched.push("nmap", "ike-scan", "openvpn", "sstp-client", "ppp", "xl2tpd", "pppoe", "nfdump", "bird2", "lldpd", "ndisc6", "arping");
+		expect(researched.length).toBeGreaterThan(25);
+		for (const name of researched) expect(Object.keys(NETWORK_PACKAGE_ASSIGNMENT)).toContain(name);
+
+		const places = new Set(["core", "lab-guest", ...GROUP_NAMES]);
+		for (const [name, place] of Object.entries(NETWORK_PACKAGE_ASSIGNMENT)) {
+			expect({ name, ok: places.has(place) || place.startsWith("not-shipped: ") }).toEqual({ name, ok: true });
+			if (GROUP_NAMES.includes(place)) {
+				expect(GROUPS.find((g) => g.name === place)?.packages).toContain(name);
+			}
+			const installed = new RegExp(`^\\s+${name.replace(/[.+]/g, "\\$&")} \\\\$|^\\s+${name.replace(/[.+]/g, "\\$&")} &&`, "m");
+			expect({ name, installed: installed.test(DOCKERFILE) }).toEqual({ name, installed: place === "core" });
+			if (place === "core" || GROUP_NAMES.includes(place)) expect(README).toContain(`\`${name}\``);
+			else expect(README.toLowerCase()).toContain(name.split(" ")[0] as string);
+		}
 	});
 });
