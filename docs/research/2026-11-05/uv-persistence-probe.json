@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2026-11-06T01:38:46.978Z",
+  "image": "app-t3code:agent-tools",
+  "imageId": "sha256:adf7208978175c2d732aa88d7a50f331d3a683a59b0f39d9eef15530d02e2200",
+  "method": "Two fresh containers from the same image with read-only root filesystems and the same home volume. First downloads verified standalone uv and installs a Python tool as node; second has no network and performs no installation. HOME data is removed after this research. No production image or Python runtime was changed.",
+  "installed": {
+    "phase": "install",
+    "version": "0.13.7",
+    "archiveUrl": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-unknown-linux-gnu.tar.gz",
+    "sha256": "c5221ff41b7892bfc223543883600125f6a47fe845093e0f5bdff4f359196d83",
+    "archiveBytes": 16671812,
+    "uv": "uv 0.13.7 (x86_64-unknown-linux-gnu)",
+    "uvx": "uvx 0.13.7 (x86_64-unknown-linux-gnu)",
+    "offlineUvx": "yamllint 1.38.0",
+    "installedTool": "yamllint 1.38.0",
+    "venvPython": "Python 3.13.5",
+    "cacheDir": "/data/.cache/uv",
+    "toolDir": "/data/.local/share/uv/tools",
+    "binaryBytes": [
+      {
+        "name": "uv",
+        "bytes": 37512936
+      },
+      {
+        "name": "uvx",
+        "bytes": 330440
+      }
+    ],
+    "managedPythonDownloads": "never"
+  },
+  "replaced": {
+    "phase": "replacement-offline",
+    "version": "0.13.7",
+    "archiveUrl": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-unknown-linux-gnu.tar.gz",
+    "sha256": "c5221ff41b7892bfc223543883600125f6a47fe845093e0f5bdff4f359196d83",
+    "archiveBytes": null,
+    "uv": "uv 0.13.7 (x86_64-unknown-linux-gnu)",
+    "uvx": "uvx 0.13.7 (x86_64-unknown-linux-gnu)",
+    "offlineUvx": "yamllint 1.38.0",
+    "installedTool": "yamllint 1.38.0",
+    "venvPython": "Python 3.13.5",
+    "cacheDir": "/data/.cache/uv",
+    "toolDir": "/data/.local/share/uv/tools",
+    "binaryBytes": [
+      {
+        "name": "uv",
+        "bytes": 37512936
+      },
+      {
+        "name": "uvx",
+        "bytes": 330440
+      }
+    ],
+    "managedPythonDownloads": "never"
+  }
+}

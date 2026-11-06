@@ -1,0 +1,87 @@
+# Published runner apt packages compared with our image
+
+Every row from all four published apt tables is included. NOT LISTED means absent from that table, not proven absent from the runner.
+
+Debian aliases are explicit. Mapping `ssh` to `openssh-client` compares only the client; we do not ship an SSH server. Presence of libraries does not imply their CLI tools (e.g. libsqlite3 vs sqlite3).
+
+| runner_package | debian_package | image_amd64 | ubuntu_24.04_x64 | ubuntu_24.04_arm64 | ubuntu_26.04_x64 | ubuntu_26.04_arm64 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 7zip | 7zip | MISSING | NOT LISTED | NOT LISTED | 26.00+dfsg-1 | 26.00+dfsg-1 |
+| 7zip-rar | 7zip-rar | MISSING | NOT LISTED | NOT LISTED | 26.00+ds-1 | 26.00+ds-1 |
+| acl | acl | MISSING | 2.3.2-1build1.1 | 2.3.2-1build1.1 | 2.3.2-2 | 2.3.2-2 |
+| aria2 | aria2 | MISSING | 1.37.0+debian-1build3 | 1.37.0+debian-1build3 | 1.37.0+debian-4 | 1.37.0+debian-4 |
+| autoconf | autoconf | MISSING | 2.71-3 | 2.71-3 | 2.72-3.1ubuntu2 | 2.72-3.1ubuntu2 |
+| automake | automake | MISSING | 1:1.16.5-1.3ubuntu1 | 1:1.16.5-1.3ubuntu1 | 1:1.18.1-3build1 | 1:1.18.1-3build1 |
+| bind9-dnsutils | bind9-dnsutils | MISSING | NOT LISTED | NOT LISTED | 1:9.20.24-1ubuntu0.4 | 1:9.20.24-1ubuntu0.4 |
+| binutils | binutils | MISSING | 2.42-4ubuntu2.10 | 2.42-4ubuntu2.10 | 2.46-3ubuntu2 | 2.46-3ubuntu2 |
+| bison | bison | MISSING | 2:3.8.2+dfsg-1ubuntu0.24.04.1 | 2:3.8.2+dfsg-1ubuntu0.24.04.1 | 2:3.8.2+dfsg-1ubuntu0.26.04.1 | 2:3.8.2+dfsg-1ubuntu0.26.04.1 |
+| brotli | brotli | MISSING | 1.1.0-2build2 | 1.1.0-2build2 | 1.2.0-3build1 | 1.2.0-3build1 |
+| bzip2 | bzip2 | MISSING | 1.0.8-5.1ubuntu0.1 | 1.0.8-5.1ubuntu0.1 | 1.0.8-6ubuntu0.1 | 1.0.8-6ubuntu0.1 |
+| coreutils | coreutils | 9.7-3 | 9.4-3ubuntu6.3 | 9.4-3ubuntu6.3 | 9.5-1ubuntu2+0.0.0~ubuntu25 | 9.5-1ubuntu2+0.0.0~ubuntu25 |
+| curl | curl | 8.14.1-2+deb13u7 | 8.5.0-2ubuntu10.16 | 8.5.0-2ubuntu10.16 | 8.18.0-1ubuntu2.8 | 8.18.0-1ubuntu2.8 |
+| dbus | dbus | MISSING | 1.14.10-4ubuntu4.1 | 1.14.10-4ubuntu4.1 | 1.16.2-2ubuntu4 | 1.16.2-2ubuntu4 |
+| dnsutils | bind9-dnsutils | MISSING | 1:9.18.39-0ubuntu0.24.04.8 | 1:9.18.39-0ubuntu0.24.04.8 | NOT LISTED | NOT LISTED |
+| dpkg | dpkg | 1.22.22 | 1.22.6ubuntu6.6 | 1.22.6ubuntu6.6 | 1.23.7ubuntu1 | 1.23.7ubuntu1 |
+| dpkg-dev | dpkg-dev | MISSING | 1.22.6ubuntu6.6 | 1.22.6ubuntu6.6 | 1.23.7ubuntu1 | 1.23.7ubuntu1 |
+| fakeroot | fakeroot | MISSING | 1.33-1 | 1.33-1 | 1.37.2-1 | 1.37.2-1 |
+| file | file | MISSING | 1:5.45-3build1 | 1:5.45-3build1 | 1:5.46-5build2 | 1:5.46-5build2 |
+| findutils | findutils | 4.10.0-3 | 4.9.0-5build1 | 4.9.0-5build1 | 4.10.0-3build2 | 4.10.0-3build2 |
+| flex | flex | MISSING | 2.6.4-8.2build1 | 2.6.4-8.2build1 | 2.6.4-8.2build2 | 2.6.4-8.2build2 |
+| fonts-noto-color-emoji | fonts-noto-color-emoji | MISSING | 2.047-0ubuntu0.24.04.1 | 2.047-0ubuntu0.24.04.1 | 2.051-1build1 | 2.051-1build1 |
+| ftp | ftp | MISSING | 20230507-2build3 | 20230507-2build3 | 20260211-1 | 20260211-1 |
+| g++ | g++ | MISSING | 4:13.2.0-7ubuntu1 | 4:13.2.0-7ubuntu1 | 4:15.2.0-5ubuntu1 | 4:15.2.0-5ubuntu1 |
+| gcc | gcc | MISSING | 4:13.2.0-7ubuntu1 | 4:13.2.0-7ubuntu1 | 4:15.2.0-5ubuntu1 | 4:15.2.0-5ubuntu1 |
+| gnupg2 | gnupg | MISSING | 2.4.4-2ubuntu17.6 | 2.4.4-2ubuntu17.6 | 2.4.8-4ubuntu3.1 | 2.4.8-4ubuntu3.1 |
+| haveged | haveged | MISSING | 1.9.14-1ubuntu2 | 1.9.14-1ubuntu2 | NOT LISTED | NOT LISTED |
+| iproute2 | iproute2 | MISSING | 6.1.0-1ubuntu6.4 | 6.1.0-1ubuntu6.4 | 6.19.0-1ubuntu1.1 | 6.19.0-1ubuntu1.1 |
+| iputils-ping | iputils-ping | MISSING | 3:20240117-1ubuntu0.1 | 3:20240117-1ubuntu0.1 | 3:20250605-1ubuntu1 | 3:20250605-1ubuntu1 |
+| jq | jq | 1.7.1-6+deb13u4 | 1.7.1-3ubuntu0.24.04.2 | 1.7.1-3ubuntu0.24.04.2 | 1.8.1-4ubuntu2 | 1.8.1-4ubuntu2 |
+| libcrypt-dev | libcrypt-dev | MISSING | NOT LISTED | NOT LISTED | 1:4.5.1-1 | 1:4.5.1-1 |
+| libgbm-dev | libgbm-dev | MISSING | NOT LISTED | 25.2.8-0ubuntu0.24.04.4 | NOT LISTED | 26.0.8-1ubuntu0.3 |
+| libicu-dev | libicu-dev | MISSING | 74.2-1ubuntu3.1 | 74.2-1ubuntu3.1 | 78.2-2ubuntu1 | 78.2-2ubuntu1 |
+| libnss3-tools | libnss3-tools | MISSING | 2:3.98-1ubuntu0.3 | 2:3.98-1ubuntu0.3 | 2:3.120-1ubuntu2.2 | 2:3.120-1ubuntu2.2 |
+| libsqlite3-dev | libsqlite3-dev | MISSING | 3.45.1-1ubuntu2.8 | 3.45.1-1ubuntu2.8 | 3.46.1-9ubuntu0.3 | 3.46.1-9ubuntu0.3 |
+| libssl-dev | libssl-dev | MISSING | 3.0.13-0ubuntu3.16 | 3.0.13-0ubuntu3.16 | 3.5.5-1ubuntu3.7 | 3.5.5-1ubuntu3.7 |
+| libtool | libtool | MISSING | 2.4.7-7build1 | 2.4.7-7build1 | 2.5.4-9 | 2.5.4-9 |
+| libyaml-dev | libyaml-dev | MISSING | 0.2.5-1build1 | 0.2.5-1build1 | 0.2.5-2build3 | 0.2.5-2build3 |
+| locales | locales | MISSING | 2.39-0ubuntu8.9 | 2.39-0ubuntu8.9 | 2.43-2ubuntu2.4 | 2.43-2ubuntu2.4 |
+| lz4 | lz4 | MISSING | 1.9.4-1build1.1 | 1.9.4-1build1.1 | 1.10.0-8 | 1.10.0-8 |
+| m4 | m4 | MISSING | 1.4.19-4build1 | 1.4.19-4build1 | 1.4.21-1 | 1.4.21-1 |
+| make | make | 4.4.1-2 | 4.3-4.1build2 | 4.3-4.1build2 | 4.4.1-3 | 4.4.1-3 |
+| mediainfo | mediainfo | MISSING | 24.01.1-1build2 | 24.01.1-1build2 | NOT LISTED | NOT LISTED |
+| mercurial | mercurial | MISSING | 6.7.2-1ubuntu2.2 | 6.7.2-1ubuntu2.2 | NOT LISTED | NOT LISTED |
+| net-tools | net-tools | MISSING | 2.10-0.1ubuntu4.4 | 2.10-0.1ubuntu4.4 | 2.10-2ubuntu1 | 2.10-2ubuntu1 |
+| netcat | netcat-openbsd | MISSING | 1.226-1ubuntu2 | 1.226-1ubuntu2 | 1.234-1 | 1.234-1 |
+| openssh-client | openssh-client | 1:10.0p1-7+deb13u4 | 1:9.6p1-3ubuntu13.20 | 1:9.6p1-3ubuntu13.20 | 1:10.2p1-2ubuntu3.8 | 1:10.2p1-2ubuntu3.8 |
+| p7zip-full | 7zip | MISSING | 16.02+transitional.1 | 16.02+transitional.1 | NOT LISTED | NOT LISTED |
+| p7zip-rar | 7zip-rar | MISSING | 16.02+transitional.1 | 16.02+transitional.1 | NOT LISTED | NOT LISTED |
+| parallel | parallel | MISSING | 20231122+ds-1 | 20231122+ds-1 | 20240222+ds-3 | 20240222+ds-3 |
+| patchelf | patchelf | MISSING | 0.18.0-1.1build1 | 0.18.0-1.1build1 | 0.18.0-1.4build1 | 0.18.0-1.4build1 |
+| pigz | pigz | MISSING | 2.8-1 | 2.8-1 | 2.8-1build1 | 2.8-1build1 |
+| pkg-config | pkg-config | MISSING | 1.8.1-2build1 | 1.8.1-2build1 | 2.5.1-4 | 2.5.1-4 |
+| pollinate | pollinate | MISSING | 4.33-3.1ubuntu1.3 | 4.33-3.1ubuntu1.3 | 4.33-4ubuntu6 | 4.33-4ubuntu6 |
+| python-is-python3 | python-is-python3 | MISSING | 3.11.4-1 | 3.11.4-1 | 3.13.3-1+build1 | 3.13.3-1+build1 |
+| rpm | rpm | MISSING | 4.18.2+dfsg-2.1build2 | 4.18.2+dfsg-2.1build2 | 6.0.1-1build1 | 6.0.1-1build1 |
+| rsync | rsync | MISSING | 3.2.7-1ubuntu1.5 | 3.2.7-1ubuntu1.5 | 3.4.1+ds1-7ubuntu0.3 | 3.4.1+ds1-7ubuntu0.3 |
+| shellcheck | shellcheck | MISSING | 0.9.0-1 | 0.9.0-1 | 0.11.0-2 | 0.11.0-2 |
+| sphinxsearch | sphinxsearch | MISSING | 2.2.11-8build1 | 2.2.11-8build1 | NOT LISTED | NOT LISTED |
+| sqlite3 | sqlite3 | MISSING | 3.45.1-1ubuntu2.8 | 3.45.1-1ubuntu2.8 | 3.46.1-9ubuntu0.3 | 3.46.1-9ubuntu0.3 |
+| ssh | openssh-client | 1:10.0p1-7+deb13u4 | 1:9.6p1-3ubuntu13.20 | 1:9.6p1-3ubuntu13.20 | 1:10.2p1-2ubuntu3.8 | 1:10.2p1-2ubuntu3.8 |
+| sshpass | sshpass | MISSING | 1.09-1 | 1.09-1 | 1.10-0.1build1 | 1.10-0.1build1 |
+| sudo | sudo | MISSING | 1.9.15p5-3ubuntu5.24.04.4 | 1.9.15p5-3ubuntu5.24.04.4 | 1.9.17p2-1ubuntu3.2 | 1.9.17p2-1ubuntu3.2 |
+| swig | swig | MISSING | 4.2.0-2ubuntu1 | 4.2.0-2ubuntu1 | 4.4.0-1 | 4.4.0-1 |
+| systemd-coredump | systemd-coredump | MISSING | 255.4-1ubuntu8.18 | 255.4-1ubuntu8.18 | 259.9-0ubuntu0.1 | 259.9-0ubuntu0.1 |
+| tar | tar | 1.35+dfsg-3.1 | 1.35+dfsg-3ubuntu0.4 | 1.35+dfsg-3ubuntu0.4 | 1.35+dfsg-4ubuntu0.4 | 1.35+dfsg-4ubuntu0.4 |
+| telnet | telnet | MISSING | 0.17+2.5-3ubuntu4.2 | 0.17+2.5-3ubuntu4.2 | 0.17+2.7-2ubuntu1.1 | 0.17+2.7-2ubuntu1.1 |
+| texinfo | texinfo | MISSING | 7.1-3build2 | 7.1-3build2 | 7.2-5ubuntu2 | 7.2-5ubuntu2 |
+| time | time | MISSING | 1.9-0.2build1 | 1.9-0.2build1 | 1.9-0.4 | 1.9-0.4 |
+| tk | tk | MISSING | 8.6.14build1 | 8.6.14build1 | 8.6.16build1 | 8.6.16build1 |
+| tree | tree | MISSING | 2.1.1-2ubuntu3.24.04.2 | 2.1.1-2ubuntu3.24.04.2 | 2.3.1-1 | 2.3.1-1 |
+| tzdata | tzdata | 2026f-0+deb13u1 | 2026e-0ubuntu0.24.04.1 | 2026e-0ubuntu0.24.04.1 | 2026e-0ubuntu0.26.04.1 | 2026e-0ubuntu0.26.04.1 |
+| unzip | unzip | 6.0-29+deb13u1 | 6.0-28ubuntu4.1 | 6.0-28ubuntu4.1 | 6.0-29ubuntu1 | 6.0-29ubuntu1 |
+| upx | upx | MISSING | 4.2.2-3 | 4.2.2-3 | 4.2.4-1.1build1 | 4.2.4-1.1build1 |
+| wget | wget | MISSING | 1.21.4-1ubuntu4.5 | 1.21.4-1ubuntu4.5 | 1.25.0-2ubuntu4.4 | 1.25.0-2ubuntu4.4 |
+| xvfb | xvfb | MISSING | 2:21.1.12-1ubuntu1.9 | 2:21.1.12-1ubuntu1.9 | 2:21.1.22-1ubuntu1.3 | 2:21.1.22-1ubuntu1.3 |
+| xz-utils | xz-utils | MISSING | 5.6.1+really5.4.5-1ubuntu0.4 | 5.6.1+really5.4.5-1ubuntu0.4 | 5.8.3-1ubuntu0.1 | 5.8.3-1ubuntu0.1 |
+| zip | zip | MISSING | 3.0-13ubuntu0.2 | 3.0-13ubuntu0.2 | 3.0-15ubuntu3 | 3.0-15ubuntu3 |
+| zsync | zsync | MISSING | 0.6.2-5build1 | 0.6.2-5build1 | 0.6.2-9 | 0.6.2-9 |

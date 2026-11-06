@@ -1,0 +1,779 @@
+{
+  "generatedAt": "2026-11-06T01:41:37.950Z",
+  "architecture": "x64",
+  "method": "Existing amd64 image, no apt indexes refreshed or installed-package state changed. For each scenario copy the apt auto/manual state into /tmp, mark only that group's explicit packages auto in the copy, and simulate autoremove using the copy. This retains packages required by other manual roots, e.g. Python's libexpat. Installed-Size metadata differs from du allocation; neither is a compressed OCI delta. Native application dependencies outside dpkg are not modeled. Browser removal can therefore still break native tools and requires runtime tests.",
+  "directories": [
+    {
+      "path": "/opt/t3code",
+      "allocatedBytes": 386306048
+    },
+    {
+      "path": "/opt/bun",
+      "allocatedBytes": 87662592
+    },
+    {
+      "path": "/usr/local/lib/node_modules/@openai/codex",
+      "allocatedBytes": 456273920
+    },
+    {
+      "path": "/usr/local/lib/node_modules/opencode-ai",
+      "allocatedBytes": 428802048
+    },
+    {
+      "path": "/usr/local/bin/muse",
+      "allocatedBytes": 414928896
+    },
+    {
+      "path": "/usr/local/bin/node",
+      "allocatedBytes": 126881792
+    },
+    {
+      "path": "/usr/local/bin/bun",
+      "allocatedBytes": 107311104
+    }
+  ],
+  "scenarios": [
+    {
+      "label": "unchanged",
+      "packages": [],
+      "removed": [],
+      "removedInstalledKiB": 0,
+      "simulation": "NOTE: This is only a simulation!\n      apt-get needs root privileges for real execution.\n      Keep also in mind that locking is deactivated,\n      so don't depend on the relevance to the real current situation!\nReading package lists...\nBuilding dependency tree...\nReading state information...\n0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded."
+    },
+    {
+      "label": "labs",
+      "packages": [
+        "qemu-system-x86",
+        "qemu-system-arm",
+        "qemu-efi-aarch64",
+        "qemu-utils"
+      ],
+      "removed": [
+        {
+          "name": "qemu-system-x86",
+          "installedSizeKiB": 64358
+        },
+        {
+          "name": "ipxe-qemu",
+          "installedSizeKiB": 2942
+        },
+        {
+          "name": "qemu-system-arm",
+          "installedSizeKiB": 63863
+        },
+        {
+          "name": "qemu-utils",
+          "installedSizeKiB": 12510
+        },
+        {
+          "name": "libaio1t64",
+          "installedSizeKiB": 39
+        },
+        {
+          "name": "libbpf1",
+          "installedSizeKiB": 452
+        },
+        {
+          "name": "qemu-system-common",
+          "installedSizeKiB": 4170
+        },
+        {
+          "name": "libbrlapi0.8",
+          "installedSizeKiB": 145
+        },
+        {
+          "name": "libcacard0",
+          "installedSizeKiB": 158
+        },
+        {
+          "name": "libcapstone5",
+          "installedSizeKiB": 9148
+        },
+        {
+          "name": "libpmem1",
+          "installedSizeKiB": 392
+        },
+        {
+          "name": "libndctl6",
+          "installedSizeKiB": 214
+        },
+        {
+          "name": "libdaxctl1",
+          "installedSizeKiB": 72
+        },
+        {
+          "name": "libvdeplug2t64",
+          "installedSizeKiB": 282
+        },
+        {
+          "name": "libexecs1",
+          "installedSizeKiB": 35
+        },
+        {
+          "name": "libfdt1",
+          "installedSizeKiB": 58
+        },
+        {
+          "name": "libfuse3-4",
+          "installedSizeKiB": 325
+        },
+        {
+          "name": "librdmacm1t64",
+          "installedSizeKiB": 209
+        },
+        {
+          "name": "libibverbs1",
+          "installedSizeKiB": 189
+        },
+        {
+          "name": "libjpeg62-turbo",
+          "installedSizeKiB": 694
+        },
+        {
+          "name": "libkmod2",
+          "installedSizeKiB": 144
+        },
+        {
+          "name": "libnl-route-3-200",
+          "installedSizeKiB": 648
+        },
+        {
+          "name": "libnl-3-200",
+          "installedSizeKiB": 180
+        },
+        {
+          "name": "libnuma1",
+          "installedSizeKiB": 75
+        },
+        {
+          "name": "libpcsclite1",
+          "installedSizeKiB": 113
+        },
+        {
+          "name": "libpixman-1-0",
+          "installedSizeKiB": 715
+        },
+        {
+          "name": "libslirp0",
+          "installedSizeKiB": 168
+        },
+        {
+          "name": "liburing2",
+          "installedSizeKiB": 117
+        },
+        {
+          "name": "libusb-1.0-0",
+          "installedSizeKiB": 157
+        },
+        {
+          "name": "libusbredirparser1t64",
+          "installedSizeKiB": 61
+        },
+        {
+          "name": "qemu-efi-aarch64",
+          "installedSizeKiB": 396344
+        },
+        {
+          "name": "qemu-system-data",
+          "installedSizeKiB": 18494
+        },
+        {
+          "name": "seabios",
+          "installedSizeKiB": 859
+        }
+      ],
+      "removedInstalledKiB": 578330,
+      "simulation": "NOTE: This is only a simulation!\n      apt-get needs root privileges for real execution.\n      Keep also in mind that locking is deactivated,\n      so don't depend on the relevance to the real current situation!\nReading package lists...\nBuilding dependency tree...\nReading state information...\nThe following packages will be REMOVED:\n  ipxe-qemu libaio1t64 libbpf1 libbrlapi0.8 libcacard0 libcapstone5 libdaxctl1\n  libexecs1 libfdt1 libfuse3-4 libibverbs1 libjpeg62-turbo libkmod2 libndctl6\n  libnl-3-200 libnl-route-3-200 libnuma1 libpcsclite1 libpixman-1-0 libpmem1\n  librdmacm1t64 libslirp0 liburing2 libusb-1.0-0 libusbredirparser1t64\n  libvdeplug2t64 qemu-efi-aarch64 qemu-system-arm qemu-system-common\n  qemu-system-data qemu-system-x86 qemu-utils seabios\n0 upgraded, 0 newly installed, 33 to remove and 0 not upgraded.\nRemv qemu-system-x86 [1:10.0.13+ds-0+deb13u1]\nRemv ipxe-qemu [1.21.1+git20250501.dad20602+dfsg-1]\nRemv qemu-system-arm [1:10.0.13+ds-0+deb13u1]\nRemv qemu-utils [1:10.0.13+ds-0+deb13u1]\nRemv libaio1t64 [0.3.113-8+b1]\nRemv libbpf1 [1:1.5.0-3]\nRemv qemu-system-common [1:10.0.13+ds-0+deb13u1]\nRemv libbrlapi0.8 [6.7-3.1+deb13u3]\nRemv libcacard0 [1:2.8.0-3+b2]\nRemv libcapstone5 [5.0.7-1~deb13u1]\nRemv libpmem1 [1.13.1-1.1+b1]\nRemv libndctl6 [81-1]\nRemv libdaxctl1 [81-1]\nRemv libvdeplug2t64 [4.0.1-5.1+b1]\nRemv libexecs1 [1.4-2+b2]\nRemv libfdt1 [1.7.2-2+b1]\nRemv libfuse3-4 [3.17.2-3]\nRemv librdmacm1t64 [56.1-1]\nRemv libibverbs1 [56.1-1]\nRemv libjpeg62-turbo [1:2.1.5-4]\nRemv libkmod2 [34.2-2]\nRemv libnl-route-3-200 [3.7.0-2]\nRemv libnl-3-200 [3.7.0-2]\nRemv libnuma1 [2.0.19-1]\nRemv libpcsclite1 [2.3.3-1]\nRemv libpixman-1-0 [0.44.0-3]\nRemv libslirp0 [4.8.0-1+deb13u1]\nRemv liburing2 [2.9-1]\nRemv libusb-1.0-0 [2:1.0.28-1]\nRemv libusbredirparser1t64 [0.15.0-1]\nRemv qemu-efi-aarch64 [2025.02-8+deb13u1]\nRemv qemu-system-data [1:10.0.13+ds-0+deb13u1]\nRemv seabios [1.16.3-2]"
+    },
+    {
+      "label": "browser",
+      "packages": [
+        "fontconfig",
+        "fonts-liberation",
+        "libasound2t64",
+        "libatk-bridge2.0-0t64",
+        "libatk1.0-0t64",
+        "libatspi2.0-0t64",
+        "libdbus-1-3",
+        "libexpat1",
+        "libgbm1",
+        "libglib2.0-0t64",
+        "libnss3",
+        "libx11-6",
+        "libxcb1",
+        "libxcomposite1",
+        "libxdamage1",
+        "libxext6",
+        "libxfixes3",
+        "libxkbcommon0",
+        "libxrandr2"
+      ],
+      "removed": [
+        {
+          "name": "libatk-bridge2.0-0t64",
+          "installedSizeKiB": 280
+        },
+        {
+          "name": "libatk1.0-0t64",
+          "installedSizeKiB": 206
+        },
+        {
+          "name": "at-spi2-common",
+          "installedSizeKiB": 1348
+        },
+        {
+          "name": "fontconfig",
+          "installedSizeKiB": 681
+        },
+        {
+          "name": "libfontconfig1",
+          "installedSizeKiB": 592
+        },
+        {
+          "name": "fontconfig-config",
+          "installedSizeKiB": 533
+        },
+        {
+          "name": "fonts-liberation",
+          "installedSizeKiB": 4287
+        },
+        {
+          "name": "libatspi2.0-0t64",
+          "installedSizeKiB": 279
+        },
+        {
+          "name": "libdbus-1-3",
+          "installedSizeKiB": 445
+        },
+        {
+          "name": "libgbm1",
+          "installedSizeKiB": 128
+        },
+        {
+          "name": "mesa-libgallium",
+          "installedSizeKiB": 41615
+        },
+        {
+          "name": "libdrm-amdgpu1",
+          "installedSizeKiB": 81
+        },
+        {
+          "name": "libdrm-intel1",
+          "installedSizeKiB": 182
+        },
+        {
+          "name": "libdrm2",
+          "installedSizeKiB": 128
+        },
+        {
+          "name": "libdrm-common",
+          "installedSizeKiB": 45
+        },
+        {
+          "name": "libfreetype6",
+          "installedSizeKiB": 963
+        },
+        {
+          "name": "libllvm19",
+          "installedSizeKiB": 126696
+        },
+        {
+          "name": "libpciaccess0",
+          "installedSizeKiB": 97
+        },
+        {
+          "name": "libsensors5",
+          "installedSizeKiB": 100
+        },
+        {
+          "name": "libsensors-config",
+          "installedSizeKiB": 37
+        },
+        {
+          "name": "libwayland-server0",
+          "installedSizeKiB": 112
+        },
+        {
+          "name": "libxi6",
+          "installedSizeKiB": 143
+        },
+        {
+          "name": "libxrandr2",
+          "installedSizeKiB": 85
+        },
+        {
+          "name": "libxext6",
+          "installedSizeKiB": 129
+        },
+        {
+          "name": "libxrender1",
+          "installedSizeKiB": 72
+        },
+        {
+          "name": "libx11-6",
+          "installedSizeKiB": 1638
+        },
+        {
+          "name": "libx11-data",
+          "installedSizeKiB": 1576
+        },
+        {
+          "name": "libx11-xcb1",
+          "installedSizeKiB": 306
+        },
+        {
+          "name": "libxcb-randr0",
+          "installedSizeKiB": 197
+        },
+        {
+          "name": "libxcb-xfixes0",
+          "installedSizeKiB": 152
+        },
+        {
+          "name": "libxcb1",
+          "installedSizeKiB": 301
+        },
+        {
+          "name": "libxau6",
+          "installedSizeKiB": 42
+        },
+        {
+          "name": "libxcb-dri3-0",
+          "installedSizeKiB": 137
+        },
+        {
+          "name": "libxcb-present0",
+          "installedSizeKiB": 128
+        },
+        {
+          "name": "libxcb-sync1",
+          "installedSizeKiB": 150
+        },
+        {
+          "name": "libxcomposite1",
+          "installedSizeKiB": 39
+        },
+        {
+          "name": "libxdamage1",
+          "installedSizeKiB": 39
+        },
+        {
+          "name": "libxdmcp6",
+          "installedSizeKiB": 59
+        },
+        {
+          "name": "libxfixes3",
+          "installedSizeKiB": 55
+        },
+        {
+          "name": "libxkbcommon0",
+          "installedSizeKiB": 317
+        },
+        {
+          "name": "libxml2",
+          "installedSizeKiB": 1916
+        },
+        {
+          "name": "libxshmfence1",
+          "installedSizeKiB": 36
+        },
+        {
+          "name": "libz3-4",
+          "installedSizeKiB": 27142
+        },
+        {
+          "name": "xkb-data",
+          "installedSizeKiB": 6911
+        }
+      ],
+      "removedInstalledKiB": 220405,
+      "simulation": "NOTE: This is only a simulation!\n      apt-get needs root privileges for real execution.\n      Keep also in mind that locking is deactivated,\n      so don't depend on the relevance to the real current situation!\nReading package lists...\nBuilding dependency tree...\nReading state information...\nThe following packages will be REMOVED:\n  at-spi2-common fontconfig fontconfig-config fonts-liberation\n  libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 libdbus-1-3\n  libdrm-amdgpu1 libdrm-common libdrm-intel1 libdrm2 libfontconfig1\n  libfreetype6 libgbm1 libllvm19 libpciaccess0 libsensors-config libsensors5\n  libwayland-server0 libx11-6 libx11-data libx11-xcb1 libxau6 libxcb-dri3-0\n  libxcb-present0 libxcb-randr0 libxcb-sync1 libxcb-xfixes0 libxcb1\n  libxcomposite1 libxdamage1 libxdmcp6 libxext6 libxfixes3 libxi6\n  libxkbcommon0 libxml2 libxrandr2 libxrender1 libxshmfence1 libz3-4\n  mesa-libgallium xkb-data\n0 upgraded, 0 newly installed, 44 to remove and 0 not upgraded.\nRemv libatk-bridge2.0-0t64 [2.56.2-1+deb13u2]\nRemv libatk1.0-0t64 [2.56.2-1+deb13u2]\nRemv at-spi2-common [2.56.2-1+deb13u2]\nRemv fontconfig [2.15.0-2.3]\nRemv libfontconfig1 [2.15.0-2.3]\nRemv fontconfig-config [2.15.0-2.3]\nRemv fonts-liberation [1:2.1.5-3]\nRemv libatspi2.0-0t64 [2.56.2-1+deb13u2]\nRemv libdbus-1-3 [1.16.2-2]\nRemv libgbm1 [25.0.7-2+deb13u1]\nRemv mesa-libgallium [25.0.7-2+deb13u1]\nRemv libdrm-amdgpu1 [2.4.124-2]\nRemv libdrm-intel1 [2.4.124-2]\nRemv libdrm2 [2.4.124-2]\nRemv libdrm-common [2.4.124-2]\nRemv libfreetype6 [2.13.3+dfsg-1+deb13u1]\nRemv libllvm19 [1:19.1.7-3+b1]\nRemv libpciaccess0 [0.17-3+b3]\nRemv libsensors5 [1:3.6.2-2]\nRemv libsensors-config [1:3.6.2-2]\nRemv libwayland-server0 [1.23.1-3]\nRemv libxi6 [2:1.8.2-1]\nRemv libxrandr2 [2:1.5.4-1+b3]\nRemv libxext6 [2:1.3.4-1+b3]\nRemv libxrender1 [1:0.9.12-1]\nRemv libx11-6 [2:1.8.12-1] [libx11-xcb1:amd64 libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libx11-data [2:1.8.12-1] [libx11-xcb1:amd64 libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libx11-xcb1 [2:1.8.12-1] [libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libxcb-randr0 [1.17.0-2+b1] [libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libxcb-xfixes0 [1.17.0-2+b1] [libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libxcb1 [1.17.0-2+b1] [libxcb-present0:amd64 libxcb-dri3-0:amd64 libxcomposite1:amd64 libxdamage1:amd64 libxcb-sync1:amd64 libxfixes3:amd64 ]\nRemv libxau6 [1:1.0.11-1] [libxcb-present0:amd64 libxcb-dri3-0:amd64 libxcomposite1:amd64 libxdamage1:amd64 libxcb-sync1:amd64 libxfixes3:amd64 ]\nRemv libxcb-dri3-0 [1.17.0-2+b1] [libxcb-present0:amd64 libxcomposite1:amd64 libxdamage1:amd64 libxcb-sync1:amd64 libxfixes3:amd64 ]\nRemv libxcb-present0 [1.17.0-2+b1] [libxcomposite1:amd64 libxdamage1:amd64 libxcb-sync1:amd64 libxfixes3:amd64 ]\nRemv libxcb-sync1 [1.17.0-2+b1] [libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libxcomposite1 [1:0.4.6-1] [libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libxdamage1 [1:1.1.6-1+b2] [libxfixes3:amd64 ]\nRemv libxdmcp6 [1:1.1.5-1] [libxfixes3:amd64 ]\nRemv libxfixes3 [1:6.0.0-2+b4]\nRemv libxkbcommon0 [1.7.0-2]\nRemv libxml2 [2.12.7+dfsg+really2.9.14-2.1+deb13u3]\nRemv libxshmfence1 [1.3.3-1]\nRemv libz3-4 [4.13.3-1]\nRemv xkb-data [2.42-1]"
+    },
+    {
+      "label": "labs-and-browser",
+      "packages": [
+        "qemu-system-x86",
+        "qemu-system-arm",
+        "qemu-efi-aarch64",
+        "qemu-utils",
+        "fontconfig",
+        "fonts-liberation",
+        "libasound2t64",
+        "libatk-bridge2.0-0t64",
+        "libatk1.0-0t64",
+        "libatspi2.0-0t64",
+        "libdbus-1-3",
+        "libexpat1",
+        "libgbm1",
+        "libglib2.0-0t64",
+        "libnss3",
+        "libx11-6",
+        "libxcb1",
+        "libxcomposite1",
+        "libxdamage1",
+        "libxext6",
+        "libxfixes3",
+        "libxkbcommon0",
+        "libxrandr2"
+      ],
+      "removed": [
+        {
+          "name": "libatk-bridge2.0-0t64",
+          "installedSizeKiB": 280
+        },
+        {
+          "name": "libatk1.0-0t64",
+          "installedSizeKiB": 206
+        },
+        {
+          "name": "at-spi2-common",
+          "installedSizeKiB": 1348
+        },
+        {
+          "name": "fontconfig",
+          "installedSizeKiB": 681
+        },
+        {
+          "name": "libfontconfig1",
+          "installedSizeKiB": 592
+        },
+        {
+          "name": "fontconfig-config",
+          "installedSizeKiB": 533
+        },
+        {
+          "name": "fonts-liberation",
+          "installedSizeKiB": 4287
+        },
+        {
+          "name": "qemu-system-x86",
+          "installedSizeKiB": 64358
+        },
+        {
+          "name": "ipxe-qemu",
+          "installedSizeKiB": 2942
+        },
+        {
+          "name": "qemu-system-arm",
+          "installedSizeKiB": 63863
+        },
+        {
+          "name": "qemu-utils",
+          "installedSizeKiB": 12510
+        },
+        {
+          "name": "libaio1t64",
+          "installedSizeKiB": 39
+        },
+        {
+          "name": "qemu-system-common",
+          "installedSizeKiB": 4170
+        },
+        {
+          "name": "libasound2t64",
+          "installedSizeKiB": 1265
+        },
+        {
+          "name": "libasound2-data",
+          "installedSizeKiB": 197
+        },
+        {
+          "name": "libslirp0",
+          "installedSizeKiB": 168
+        },
+        {
+          "name": "libcacard0",
+          "installedSizeKiB": 158
+        },
+        {
+          "name": "libglib2.0-0t64",
+          "installedSizeKiB": 4449
+        },
+        {
+          "name": "libatomic1",
+          "installedSizeKiB": 45
+        },
+        {
+          "name": "libatspi2.0-0t64",
+          "installedSizeKiB": 279
+        },
+        {
+          "name": "libbpf1",
+          "installedSizeKiB": 452
+        },
+        {
+          "name": "libbrlapi0.8",
+          "installedSizeKiB": 145
+        },
+        {
+          "name": "libcapstone5",
+          "installedSizeKiB": 9148
+        },
+        {
+          "name": "libpmem1",
+          "installedSizeKiB": 392
+        },
+        {
+          "name": "libndctl6",
+          "installedSizeKiB": 214
+        },
+        {
+          "name": "libdaxctl1",
+          "installedSizeKiB": 72
+        },
+        {
+          "name": "libdbus-1-3",
+          "installedSizeKiB": 445
+        },
+        {
+          "name": "libgbm1",
+          "installedSizeKiB": 128
+        },
+        {
+          "name": "mesa-libgallium",
+          "installedSizeKiB": 41615
+        },
+        {
+          "name": "libdrm-amdgpu1",
+          "installedSizeKiB": 81
+        },
+        {
+          "name": "libdrm-intel1",
+          "installedSizeKiB": 182
+        },
+        {
+          "name": "libdrm2",
+          "installedSizeKiB": 128
+        },
+        {
+          "name": "libdrm-common",
+          "installedSizeKiB": 45
+        },
+        {
+          "name": "libelf1t64",
+          "installedSizeKiB": 1228
+        },
+        {
+          "name": "libvdeplug2t64",
+          "installedSizeKiB": 282
+        },
+        {
+          "name": "libexecs1",
+          "installedSizeKiB": 35
+        },
+        {
+          "name": "libfdt1",
+          "installedSizeKiB": 58
+        },
+        {
+          "name": "libfreetype6",
+          "installedSizeKiB": 963
+        },
+        {
+          "name": "libfuse3-4",
+          "installedSizeKiB": 325
+        },
+        {
+          "name": "librdmacm1t64",
+          "installedSizeKiB": 209
+        },
+        {
+          "name": "libibverbs1",
+          "installedSizeKiB": 189
+        },
+        {
+          "name": "libjpeg62-turbo",
+          "installedSizeKiB": 694
+        },
+        {
+          "name": "libkmod2",
+          "installedSizeKiB": 144
+        },
+        {
+          "name": "libllvm19",
+          "installedSizeKiB": 126696
+        },
+        {
+          "name": "libnl-route-3-200",
+          "installedSizeKiB": 648
+        },
+        {
+          "name": "libnl-3-200",
+          "installedSizeKiB": 180
+        },
+        {
+          "name": "libnss3",
+          "installedSizeKiB": 4479
+        },
+        {
+          "name": "libnspr4",
+          "installedSizeKiB": 321
+        },
+        {
+          "name": "libnuma1",
+          "installedSizeKiB": 75
+        },
+        {
+          "name": "libpciaccess0",
+          "installedSizeKiB": 97
+        },
+        {
+          "name": "libpcsclite1",
+          "installedSizeKiB": 113
+        },
+        {
+          "name": "libpixman-1-0",
+          "installedSizeKiB": 715
+        },
+        {
+          "name": "libpng16-16t64",
+          "installedSizeKiB": 444
+        },
+        {
+          "name": "libsensors5",
+          "installedSizeKiB": 100
+        },
+        {
+          "name": "libsensors-config",
+          "installedSizeKiB": 37
+        },
+        {
+          "name": "liburing2",
+          "installedSizeKiB": 117
+        },
+        {
+          "name": "libusb-1.0-0",
+          "installedSizeKiB": 157
+        },
+        {
+          "name": "libusbredirparser1t64",
+          "installedSizeKiB": 61
+        },
+        {
+          "name": "libwayland-server0",
+          "installedSizeKiB": 112
+        },
+        {
+          "name": "libxi6",
+          "installedSizeKiB": 143
+        },
+        {
+          "name": "libxrandr2",
+          "installedSizeKiB": 85
+        },
+        {
+          "name": "libxext6",
+          "installedSizeKiB": 129
+        },
+        {
+          "name": "libxrender1",
+          "installedSizeKiB": 72
+        },
+        {
+          "name": "libx11-6",
+          "installedSizeKiB": 1638
+        },
+        {
+          "name": "libx11-data",
+          "installedSizeKiB": 1576
+        },
+        {
+          "name": "libx11-xcb1",
+          "installedSizeKiB": 306
+        },
+        {
+          "name": "libxcb-randr0",
+          "installedSizeKiB": 197
+        },
+        {
+          "name": "libxcb-xfixes0",
+          "installedSizeKiB": 152
+        },
+        {
+          "name": "libxcb1",
+          "installedSizeKiB": 301
+        },
+        {
+          "name": "libxau6",
+          "installedSizeKiB": 42
+        },
+        {
+          "name": "libxcb-dri3-0",
+          "installedSizeKiB": 137
+        },
+        {
+          "name": "libxcb-present0",
+          "installedSizeKiB": 128
+        },
+        {
+          "name": "libxcb-sync1",
+          "installedSizeKiB": 150
+        },
+        {
+          "name": "libxcomposite1",
+          "installedSizeKiB": 39
+        },
+        {
+          "name": "libxdamage1",
+          "installedSizeKiB": 39
+        },
+        {
+          "name": "libxdmcp6",
+          "installedSizeKiB": 59
+        },
+        {
+          "name": "libxfixes3",
+          "installedSizeKiB": 55
+        },
+        {
+          "name": "libxkbcommon0",
+          "installedSizeKiB": 317
+        },
+        {
+          "name": "libxml2",
+          "installedSizeKiB": 1916
+        },
+        {
+          "name": "libxshmfence1",
+          "installedSizeKiB": 36
+        },
+        {
+          "name": "libz3-4",
+          "installedSizeKiB": 27142
+        },
+        {
+          "name": "qemu-efi-aarch64",
+          "installedSizeKiB": 396344
+        },
+        {
+          "name": "qemu-system-data",
+          "installedSizeKiB": 18494
+        },
+        {
+          "name": "seabios",
+          "installedSizeKiB": 859
+        },
+        {
+          "name": "xkb-data",
+          "installedSizeKiB": 6911
+        }
+      ],
+      "removedInstalledKiB": 811163,
+      "simulation": "NOTE: This is only a simulation!\n      apt-get needs root privileges for real execution.\n      Keep also in mind that locking is deactivated,\n      so don't depend on the relevance to the real current situation!\nReading package lists...\nBuilding dependency tree...\nReading state information...\nThe following packages will be REMOVED:\n  at-spi2-common fontconfig fontconfig-config fonts-liberation ipxe-qemu\n  libaio1t64 libasound2-data libasound2t64 libatk-bridge2.0-0t64\n  libatk1.0-0t64 libatomic1 libatspi2.0-0t64 libbpf1 libbrlapi0.8 libcacard0\n  libcapstone5 libdaxctl1 libdbus-1-3 libdrm-amdgpu1 libdrm-common\n  libdrm-intel1 libdrm2 libelf1t64 libexecs1 libfdt1 libfontconfig1\n  libfreetype6 libfuse3-4 libgbm1 libglib2.0-0t64 libibverbs1 libjpeg62-turbo\n  libkmod2 libllvm19 libndctl6 libnl-3-200 libnl-route-3-200 libnspr4 libnss3\n  libnuma1 libpciaccess0 libpcsclite1 libpixman-1-0 libpmem1 libpng16-16t64\n  librdmacm1t64 libsensors-config libsensors5 libslirp0 liburing2 libusb-1.0-0\n  libusbredirparser1t64 libvdeplug2t64 libwayland-server0 libx11-6 libx11-data\n  libx11-xcb1 libxau6 libxcb-dri3-0 libxcb-present0 libxcb-randr0 libxcb-sync1\n  libxcb-xfixes0 libxcb1 libxcomposite1 libxdamage1 libxdmcp6 libxext6\n  libxfixes3 libxi6 libxkbcommon0 libxml2 libxrandr2 libxrender1 libxshmfence1\n  libz3-4 mesa-libgallium qemu-efi-aarch64 qemu-system-arm qemu-system-common\n  qemu-system-data qemu-system-x86 qemu-utils seabios xkb-data\n0 upgraded, 0 newly installed, 85 to remove and 0 not upgraded.\nRemv libatk-bridge2.0-0t64 [2.56.2-1+deb13u2]\nRemv libatk1.0-0t64 [2.56.2-1+deb13u2]\nRemv at-spi2-common [2.56.2-1+deb13u2]\nRemv fontconfig [2.15.0-2.3]\nRemv libfontconfig1 [2.15.0-2.3]\nRemv fontconfig-config [2.15.0-2.3]\nRemv fonts-liberation [1:2.1.5-3]\nRemv qemu-system-x86 [1:10.0.13+ds-0+deb13u1]\nRemv ipxe-qemu [1.21.1+git20250501.dad20602+dfsg-1]\nRemv qemu-system-arm [1:10.0.13+ds-0+deb13u1]\nRemv qemu-utils [1:10.0.13+ds-0+deb13u1]\nRemv libaio1t64 [0.3.113-8+b1]\nRemv qemu-system-common [1:10.0.13+ds-0+deb13u1]\nRemv libasound2t64 [1.2.14-1+deb13u1]\nRemv libasound2-data [1.2.14-1+deb13u1]\nRemv libslirp0 [4.8.0-1+deb13u1]\nRemv libcacard0 [1:2.8.0-3+b2]\nRemv libglib2.0-0t64 [2.84.4-3~deb13u5] [libatspi2.0-0t64:amd64 ]\nRemv libatomic1 [14.2.0-19] [libatspi2.0-0t64:amd64 ]\nRemv libatspi2.0-0t64 [2.56.2-1+deb13u2]\nRemv libbpf1 [1:1.5.0-3]\nRemv libbrlapi0.8 [6.7-3.1+deb13u3]\nRemv libcapstone5 [5.0.7-1~deb13u1]\nRemv libpmem1 [1.13.1-1.1+b1]\nRemv libndctl6 [81-1]\nRemv libdaxctl1 [81-1]\nRemv libdbus-1-3 [1.16.2-2]\nRemv libgbm1 [25.0.7-2+deb13u1]\nRemv mesa-libgallium [25.0.7-2+deb13u1]\nRemv libdrm-amdgpu1 [2.4.124-2]\nRemv libdrm-intel1 [2.4.124-2]\nRemv libdrm2 [2.4.124-2]\nRemv libdrm-common [2.4.124-2]\nRemv libelf1t64 [0.192-4]\nRemv libvdeplug2t64 [4.0.1-5.1+b1]\nRemv libexecs1 [1.4-2+b2]\nRemv libfdt1 [1.7.2-2+b1]\nRemv libfreetype6 [2.13.3+dfsg-1+deb13u1]\nRemv libfuse3-4 [3.17.2-3]\nRemv librdmacm1t64 [56.1-1]\nRemv libibverbs1 [56.1-1]\nRemv libjpeg62-turbo [1:2.1.5-4]\nRemv libkmod2 [34.2-2]\nRemv libllvm19 [1:19.1.7-3+b1]\nRemv libnl-route-3-200 [3.7.0-2]\nRemv libnl-3-200 [3.7.0-2]\nRemv libnss3 [2:3.110-1+deb13u5]\nRemv libnspr4 [2:4.36-1]\nRemv libnuma1 [2.0.19-1]\nRemv libpciaccess0 [0.17-3+b3]\nRemv libpcsclite1 [2.3.3-1]\nRemv libpixman-1-0 [0.44.0-3]\nRemv libpng16-16t64 [1.6.48-1+deb13u6]\nRemv libsensors5 [1:3.6.2-2]\nRemv libsensors-config [1:3.6.2-2]\nRemv liburing2 [2.9-1]\nRemv libusb-1.0-0 [2:1.0.28-1]\nRemv libusbredirparser1t64 [0.15.0-1]\nRemv libwayland-server0 [1.23.1-3]\nRemv libxi6 [2:1.8.2-1]\nRemv libxrandr2 [2:1.5.4-1+b3]\nRemv libxext6 [2:1.3.4-1+b3]\nRemv libxrender1 [1:0.9.12-1]\nRemv libx11-6 [2:1.8.12-1] [libx11-xcb1:amd64 libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libx11-data [2:1.8.12-1] [libx11-xcb1:amd64 libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libx11-xcb1 [2:1.8.12-1] [libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libxcb-randr0 [1.17.0-2+b1] [libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libxcb-xfixes0 [1.17.0-2+b1] [libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libxcb1 [1.17.0-2+b1] [libxcb-present0:amd64 libxcb-dri3-0:amd64 libxcomposite1:amd64 libxdamage1:amd64 libxcb-sync1:amd64 libxfixes3:amd64 ]\nRemv libxau6 [1:1.0.11-1] [libxcb-present0:amd64 libxcb-dri3-0:amd64 libxcomposite1:amd64 libxdamage1:amd64 libxcb-sync1:amd64 libxfixes3:amd64 ]\nRemv libxcb-dri3-0 [1.17.0-2+b1] [libxcb-present0:amd64 libxcomposite1:amd64 libxdamage1:amd64 libxcb-sync1:amd64 libxfixes3:amd64 ]\nRemv libxcb-present0 [1.17.0-2+b1] [libxcomposite1:amd64 libxdamage1:amd64 libxcb-sync1:amd64 libxfixes3:amd64 ]\nRemv libxcb-sync1 [1.17.0-2+b1] [libxcomposite1:amd64 libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libxcomposite1 [1:0.4.6-1] [libxdamage1:amd64 libxfixes3:amd64 ]\nRemv libxdamage1 [1:1.1.6-1+b2] [libxfixes3:amd64 ]\nRemv libxdmcp6 [1:1.1.5-1] [libxfixes3:amd64 ]\nRemv libxfixes3 [1:6.0.0-2+b4]\nRemv libxkbcommon0 [1.7.0-2]\nRemv libxml2 [2.12.7+dfsg+really2.9.14-2.1+deb13u3]\nRemv libxshmfence1 [1.3.3-1]\nRemv libz3-4 [4.13.3-1]\nRemv qemu-efi-aarch64 [2025.02-8+deb13u1]\nRemv qemu-system-data [1:10.0.13+ds-0+deb13u1]\nRemv seabios [1.16.3-2]\nRemv xkb-data [2.42-1]"
+    }
+  ],
+  "duplicateCandidates": [
+    {
+      "path": "/usr/local/lib/node_modules/opencode-ai/node_modules/opencode-linux-x64/bin/opencode",
+      "sha256": "7df4e4136301f16589b0f30bf91a61380fca5f8ef22dd36570f5ebe1d4ec802c",
+      "fileBytes": 214386864,
+      "inodeAndLinks": "1074887 2"
+    },
+    {
+      "path": "/usr/local/lib/node_modules/opencode-ai/node_modules/opencode-linux-x64-baseline/bin/opencode",
+      "sha256": "7df4e4136301f16589b0f30bf91a61380fca5f8ef22dd36570f5ebe1d4ec802c",
+      "fileBytes": 214386864,
+      "inodeAndLinks": "1074897 1"
+    }
+  ]
+}

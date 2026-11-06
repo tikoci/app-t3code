@@ -1,0 +1,1213 @@
+{
+  "repository": "actions/runner-images",
+  "commit": "42d27e4a2c1232e5640a88ed42a974c8918ecd28",
+  "note": "Published apt tables are selected inventories, not full dpkg databases. Software summaries retain the upstream runtime, package-manager, tools, and CLI sections. Markdown escapes in version cells are decoded; differing original cells are retained as publishedMarkdownVersion.",
+  "runners": [
+    {
+      "source": "https://github.com/actions/runner-images/blob/42d27e4a2c1232e5640a88ed42a974c8918ecd28/images/ubuntu/Ubuntu2404-Readme.md",
+      "sha": "97e7ec74186bddefe5bb53c8d3e573955364d89c",
+      "osVersion": "24.04.5 LTS",
+      "imageVersion": "20261026.354.1",
+      "aptPackages": [
+        {
+          "name": "acl",
+          "version": "2.3.2-1build1.1"
+        },
+        {
+          "name": "aria2",
+          "version": "1.37.0+debian-1build3"
+        },
+        {
+          "name": "autoconf",
+          "version": "2.71-3"
+        },
+        {
+          "name": "automake",
+          "version": "1:1.16.5-1.3ubuntu1"
+        },
+        {
+          "name": "binutils",
+          "version": "2.42-4ubuntu2.10"
+        },
+        {
+          "name": "bison",
+          "version": "2:3.8.2+dfsg-1ubuntu0.24.04.1"
+        },
+        {
+          "name": "brotli",
+          "version": "1.1.0-2build2"
+        },
+        {
+          "name": "bzip2",
+          "version": "1.0.8-5.1ubuntu0.1"
+        },
+        {
+          "name": "coreutils",
+          "version": "9.4-3ubuntu6.3"
+        },
+        {
+          "name": "curl",
+          "version": "8.5.0-2ubuntu10.16"
+        },
+        {
+          "name": "dbus",
+          "version": "1.14.10-4ubuntu4.1"
+        },
+        {
+          "name": "dnsutils",
+          "version": "1:9.18.39-0ubuntu0.24.04.8"
+        },
+        {
+          "name": "dpkg",
+          "version": "1.22.6ubuntu6.6"
+        },
+        {
+          "name": "dpkg-dev",
+          "version": "1.22.6ubuntu6.6"
+        },
+        {
+          "name": "fakeroot",
+          "version": "1.33-1"
+        },
+        {
+          "name": "file",
+          "version": "1:5.45-3build1"
+        },
+        {
+          "name": "findutils",
+          "version": "4.9.0-5build1"
+        },
+        {
+          "name": "flex",
+          "version": "2.6.4-8.2build1"
+        },
+        {
+          "name": "fonts-noto-color-emoji",
+          "version": "2.047-0ubuntu0.24.04.1"
+        },
+        {
+          "name": "ftp",
+          "version": "20230507-2build3"
+        },
+        {
+          "name": "g++",
+          "version": "4:13.2.0-7ubuntu1"
+        },
+        {
+          "name": "gcc",
+          "version": "4:13.2.0-7ubuntu1"
+        },
+        {
+          "name": "gnupg2",
+          "version": "2.4.4-2ubuntu17.6"
+        },
+        {
+          "name": "haveged",
+          "version": "1.9.14-1ubuntu2"
+        },
+        {
+          "name": "iproute2",
+          "version": "6.1.0-1ubuntu6.4"
+        },
+        {
+          "name": "iputils-ping",
+          "version": "3:20240117-1ubuntu0.1"
+        },
+        {
+          "name": "jq",
+          "version": "1.7.1-3ubuntu0.24.04.2"
+        },
+        {
+          "name": "libicu-dev",
+          "version": "74.2-1ubuntu3.1"
+        },
+        {
+          "name": "libnss3-tools",
+          "version": "2:3.98-1ubuntu0.3"
+        },
+        {
+          "name": "libsqlite3-dev",
+          "version": "3.45.1-1ubuntu2.8"
+        },
+        {
+          "name": "libssl-dev",
+          "version": "3.0.13-0ubuntu3.16"
+        },
+        {
+          "name": "libtool",
+          "version": "2.4.7-7build1"
+        },
+        {
+          "name": "libyaml-dev",
+          "version": "0.2.5-1build1"
+        },
+        {
+          "name": "locales",
+          "version": "2.39-0ubuntu8.9"
+        },
+        {
+          "name": "lz4",
+          "version": "1.9.4-1build1.1"
+        },
+        {
+          "name": "m4",
+          "version": "1.4.19-4build1"
+        },
+        {
+          "name": "make",
+          "version": "4.3-4.1build2"
+        },
+        {
+          "name": "mediainfo",
+          "version": "24.01.1-1build2"
+        },
+        {
+          "name": "mercurial",
+          "version": "6.7.2-1ubuntu2.2"
+        },
+        {
+          "name": "net-tools",
+          "version": "2.10-0.1ubuntu4.4"
+        },
+        {
+          "name": "netcat",
+          "version": "1.226-1ubuntu2"
+        },
+        {
+          "name": "openssh-client",
+          "version": "1:9.6p1-3ubuntu13.20"
+        },
+        {
+          "name": "p7zip-full",
+          "version": "16.02+transitional.1"
+        },
+        {
+          "name": "p7zip-rar",
+          "version": "16.02+transitional.1"
+        },
+        {
+          "name": "parallel",
+          "version": "20231122+ds-1"
+        },
+        {
+          "name": "patchelf",
+          "version": "0.18.0-1.1build1"
+        },
+        {
+          "name": "pigz",
+          "version": "2.8-1"
+        },
+        {
+          "name": "pkg-config",
+          "version": "1.8.1-2build1"
+        },
+        {
+          "name": "pollinate",
+          "version": "4.33-3.1ubuntu1.3"
+        },
+        {
+          "name": "python-is-python3",
+          "version": "3.11.4-1"
+        },
+        {
+          "name": "rpm",
+          "version": "4.18.2+dfsg-2.1build2"
+        },
+        {
+          "name": "rsync",
+          "version": "3.2.7-1ubuntu1.5"
+        },
+        {
+          "name": "shellcheck",
+          "version": "0.9.0-1"
+        },
+        {
+          "name": "sphinxsearch",
+          "version": "2.2.11-8build1"
+        },
+        {
+          "name": "sqlite3",
+          "version": "3.45.1-1ubuntu2.8"
+        },
+        {
+          "name": "ssh",
+          "version": "1:9.6p1-3ubuntu13.20"
+        },
+        {
+          "name": "sshpass",
+          "version": "1.09-1"
+        },
+        {
+          "name": "sudo",
+          "version": "1.9.15p5-3ubuntu5.24.04.4"
+        },
+        {
+          "name": "swig",
+          "version": "4.2.0-2ubuntu1"
+        },
+        {
+          "name": "systemd-coredump",
+          "version": "255.4-1ubuntu8.18"
+        },
+        {
+          "name": "tar",
+          "version": "1.35+dfsg-3ubuntu0.4"
+        },
+        {
+          "name": "telnet",
+          "version": "0.17+2.5-3ubuntu4.2"
+        },
+        {
+          "name": "texinfo",
+          "version": "7.1-3build2"
+        },
+        {
+          "name": "time",
+          "version": "1.9-0.2build1"
+        },
+        {
+          "name": "tk",
+          "version": "8.6.14build1"
+        },
+        {
+          "name": "tree",
+          "version": "2.1.1-2ubuntu3.24.04.2"
+        },
+        {
+          "name": "tzdata",
+          "version": "2026e-0ubuntu0.24.04.1"
+        },
+        {
+          "name": "unzip",
+          "version": "6.0-28ubuntu4.1"
+        },
+        {
+          "name": "upx",
+          "version": "4.2.2-3"
+        },
+        {
+          "name": "wget",
+          "version": "1.21.4-1ubuntu4.5"
+        },
+        {
+          "name": "xvfb",
+          "version": "2:21.1.12-1ubuntu1.9"
+        },
+        {
+          "name": "xz-utils",
+          "version": "5.6.1+really5.4.5-1ubuntu0.4"
+        },
+        {
+          "name": "zip",
+          "version": "3.0-13ubuntu0.2"
+        },
+        {
+          "name": "zsync",
+          "version": "0.6.2-5build1"
+        }
+      ],
+      "softwareSummary": "### Language and Runtime\n- Bash 5.2.21(1)-release\n- Clang: 16.0.6, 17.0.6, 18.1.3\n- Clang-format: 16.0.6, 17.0.6, 18.1.3\n- Clang-tidy: 16.0.6, 17.0.6, 18.1.3\n- Dash 0.5.12-6ubuntu5\n- GNU C++: 12.4.0, 13.3.0, 14.2.0\n- GNU Fortran: 12.4.0, 13.3.0, 14.2.0\n- Julia 1.13.2\n- Kotlin 2.4.21\n- Node.js 22.23.4\n- Perl 5.38.2\n- Python 3.12.3\n- Ruby 3.2.3\n- Swift 6.4.1\n\n### Package Management\n- cpan 1.64\n- Helm 3.22.1\n- Homebrew 7.0.10\n- Miniconda 26.9.4\n- Npm 10.9.9\n- Pip 24.0\n- Pip3 24.0\n- Pipx 1.16.7\n- RubyGems 3.4.20\n- Vcpkg (build from commit 817892b0ec)\n- Yarn 1.22.22\n\n#### Environment variables\n| Name                    | Value                  |\n| ----------------------- | ---------------------- |\n| CONDA                   | /usr/share/miniconda   |\n| VCPKG_INSTALLATION_ROOT | /usr/local/share/vcpkg |\n\n#### Homebrew note\n```\nLocation: /home/linuxbrew\nNote: Homebrew is pre-installed on image but not added to PATH.\nrun the eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" command\nto accomplish this.\n```\n\n### Project Management\n- Ant 1.10.14\n- Gradle 9.8.2\n- Lerna 10.1.1\n- Maven 3.10.0\n\n### Tools\n- Ansible 2.21.5\n- AzCopy 10.34.1 - available by `azcopy` and `azcopy10` aliases\n- Bazel 9.3.1\n- Bazelisk 1.28.1\n- Bicep 0.48.1\n- Buildah 1.33.7\n- CMake 3.31.6\n- CodeQL Action Bundle 2.27.3\n- Docker Amazon ECR Credential Helper 0.12.0\n- Docker Compose 2.38.2\n- Docker-Buildx 0.38.1\n- Docker Client 28.0.4\n- Docker Server 28.0.4\n- Fastlane 2.241.1\n- Git 2.56.0\n- Git LFS 3.8.1\n- Git-ftp 1.6.0\n- Haveged 1.9.14\n- jq 1.7\n- Kind 0.33.0\n- Kubectl 1.37.1\n- Kustomize 5.8.3\n- MediaInfo 24.01\n- Mercurial 6.7.2\n- Minikube 1.39.0\n- n 11.0.0\n- Newman 6.2.3\n- nvm 0.40.8\n- OpenSSL 3.0.13-0ubuntu3.16\n- Packer 1.16.2\n- Parcel 2.16.4\n- Podman 4.9.3\n- Pulumi 3.272.0\n- Skopeo 1.13.3\n- Sphinx Open Source Search Server 2.2.11\n- yamllint 1.38.0\n- yq 4.54.1\n- zstd 1.5.7\n- Ninja 1.13.2\n\n### CLI Tools\n- AWS CLI 2.38.5\n- AWS CLI Session Manager Plugin 1.2.896.0\n- AWS SAM CLI 1.170.0\n- Azure CLI 2.91.0\n- Azure CLI (azure-devops) 1.0.10\n- GitHub CLI 2.103.2\n- Google Cloud CLI 590.0.1\n\n"
+    },
+    {
+      "source": "https://github.com/actions/runner-images/blob/42d27e4a2c1232e5640a88ed42a974c8918ecd28/images/ubuntu/Ubuntu2404-Arm64-Readme.md",
+      "sha": "6379de67724ad999e5faa5c9cc0839aaad4b0d86",
+      "osVersion": "24.04.5 LTS",
+      "imageVersion": "20261026.166.1",
+      "aptPackages": [
+        {
+          "name": "acl",
+          "version": "2.3.2-1build1.1"
+        },
+        {
+          "name": "aria2",
+          "version": "1.37.0+debian-1build3"
+        },
+        {
+          "name": "autoconf",
+          "version": "2.71-3"
+        },
+        {
+          "name": "automake",
+          "version": "1:1.16.5-1.3ubuntu1"
+        },
+        {
+          "name": "binutils",
+          "version": "2.42-4ubuntu2.10"
+        },
+        {
+          "name": "bison",
+          "version": "2:3.8.2+dfsg-1ubuntu0.24.04.1"
+        },
+        {
+          "name": "brotli",
+          "version": "1.1.0-2build2"
+        },
+        {
+          "name": "bzip2",
+          "version": "1.0.8-5.1ubuntu0.1"
+        },
+        {
+          "name": "coreutils",
+          "version": "9.4-3ubuntu6.3"
+        },
+        {
+          "name": "curl",
+          "version": "8.5.0-2ubuntu10.16"
+        },
+        {
+          "name": "dbus",
+          "version": "1.14.10-4ubuntu4.1"
+        },
+        {
+          "name": "dnsutils",
+          "version": "1:9.18.39-0ubuntu0.24.04.8"
+        },
+        {
+          "name": "dpkg",
+          "version": "1.22.6ubuntu6.6"
+        },
+        {
+          "name": "dpkg-dev",
+          "version": "1.22.6ubuntu6.6"
+        },
+        {
+          "name": "fakeroot",
+          "version": "1.33-1"
+        },
+        {
+          "name": "file",
+          "version": "1:5.45-3build1"
+        },
+        {
+          "name": "findutils",
+          "version": "4.9.0-5build1"
+        },
+        {
+          "name": "flex",
+          "version": "2.6.4-8.2build1"
+        },
+        {
+          "name": "fonts-noto-color-emoji",
+          "version": "2.047-0ubuntu0.24.04.1"
+        },
+        {
+          "name": "ftp",
+          "version": "20230507-2build3"
+        },
+        {
+          "name": "g++",
+          "version": "4:13.2.0-7ubuntu1"
+        },
+        {
+          "name": "gcc",
+          "version": "4:13.2.0-7ubuntu1"
+        },
+        {
+          "name": "gnupg2",
+          "version": "2.4.4-2ubuntu17.6"
+        },
+        {
+          "name": "haveged",
+          "version": "1.9.14-1ubuntu2"
+        },
+        {
+          "name": "iproute2",
+          "version": "6.1.0-1ubuntu6.4"
+        },
+        {
+          "name": "iputils-ping",
+          "version": "3:20240117-1ubuntu0.1"
+        },
+        {
+          "name": "jq",
+          "version": "1.7.1-3ubuntu0.24.04.2"
+        },
+        {
+          "name": "libgbm-dev",
+          "version": "25.2.8-0ubuntu0.24.04.4"
+        },
+        {
+          "name": "libicu-dev",
+          "version": "74.2-1ubuntu3.1"
+        },
+        {
+          "name": "libnss3-tools",
+          "version": "2:3.98-1ubuntu0.3"
+        },
+        {
+          "name": "libsqlite3-dev",
+          "version": "3.45.1-1ubuntu2.8"
+        },
+        {
+          "name": "libssl-dev",
+          "version": "3.0.13-0ubuntu3.16"
+        },
+        {
+          "name": "libtool",
+          "version": "2.4.7-7build1"
+        },
+        {
+          "name": "libyaml-dev",
+          "version": "0.2.5-1build1"
+        },
+        {
+          "name": "locales",
+          "version": "2.39-0ubuntu8.9"
+        },
+        {
+          "name": "lz4",
+          "version": "1.9.4-1build1.1"
+        },
+        {
+          "name": "m4",
+          "version": "1.4.19-4build1"
+        },
+        {
+          "name": "make",
+          "version": "4.3-4.1build2"
+        },
+        {
+          "name": "mediainfo",
+          "version": "24.01.1-1build2"
+        },
+        {
+          "name": "mercurial",
+          "version": "6.7.2-1ubuntu2.2"
+        },
+        {
+          "name": "net-tools",
+          "version": "2.10-0.1ubuntu4.4"
+        },
+        {
+          "name": "netcat",
+          "version": "1.226-1ubuntu2"
+        },
+        {
+          "name": "openssh-client",
+          "version": "1:9.6p1-3ubuntu13.20"
+        },
+        {
+          "name": "p7zip-full",
+          "version": "16.02+transitional.1"
+        },
+        {
+          "name": "p7zip-rar",
+          "version": "16.02+transitional.1"
+        },
+        {
+          "name": "parallel",
+          "version": "20231122+ds-1"
+        },
+        {
+          "name": "patchelf",
+          "version": "0.18.0-1.1build1"
+        },
+        {
+          "name": "pigz",
+          "version": "2.8-1"
+        },
+        {
+          "name": "pkg-config",
+          "version": "1.8.1-2build1"
+        },
+        {
+          "name": "pollinate",
+          "version": "4.33-3.1ubuntu1.3"
+        },
+        {
+          "name": "python-is-python3",
+          "version": "3.11.4-1"
+        },
+        {
+          "name": "rpm",
+          "version": "4.18.2+dfsg-2.1build2"
+        },
+        {
+          "name": "rsync",
+          "version": "3.2.7-1ubuntu1.5"
+        },
+        {
+          "name": "shellcheck",
+          "version": "0.9.0-1"
+        },
+        {
+          "name": "sphinxsearch",
+          "version": "2.2.11-8build1"
+        },
+        {
+          "name": "sqlite3",
+          "version": "3.45.1-1ubuntu2.8"
+        },
+        {
+          "name": "ssh",
+          "version": "1:9.6p1-3ubuntu13.20"
+        },
+        {
+          "name": "sshpass",
+          "version": "1.09-1"
+        },
+        {
+          "name": "sudo",
+          "version": "1.9.15p5-3ubuntu5.24.04.4"
+        },
+        {
+          "name": "swig",
+          "version": "4.2.0-2ubuntu1"
+        },
+        {
+          "name": "systemd-coredump",
+          "version": "255.4-1ubuntu8.18"
+        },
+        {
+          "name": "tar",
+          "version": "1.35+dfsg-3ubuntu0.4"
+        },
+        {
+          "name": "telnet",
+          "version": "0.17+2.5-3ubuntu4.2"
+        },
+        {
+          "name": "texinfo",
+          "version": "7.1-3build2"
+        },
+        {
+          "name": "time",
+          "version": "1.9-0.2build1"
+        },
+        {
+          "name": "tk",
+          "version": "8.6.14build1"
+        },
+        {
+          "name": "tree",
+          "version": "2.1.1-2ubuntu3.24.04.2"
+        },
+        {
+          "name": "tzdata",
+          "version": "2026e-0ubuntu0.24.04.1"
+        },
+        {
+          "name": "unzip",
+          "version": "6.0-28ubuntu4.1"
+        },
+        {
+          "name": "upx",
+          "version": "4.2.2-3"
+        },
+        {
+          "name": "wget",
+          "version": "1.21.4-1ubuntu4.5"
+        },
+        {
+          "name": "xvfb",
+          "version": "2:21.1.12-1ubuntu1.9"
+        },
+        {
+          "name": "xz-utils",
+          "version": "5.6.1+really5.4.5-1ubuntu0.4"
+        },
+        {
+          "name": "zip",
+          "version": "3.0-13ubuntu0.2"
+        },
+        {
+          "name": "zsync",
+          "version": "0.6.2-5build1"
+        }
+      ],
+      "softwareSummary": "### Language and Runtime\n- Bash 5.2.21(1)-release\n- Clang: 16.0.6, 17.0.6, 18.1.3\n- Clang-format: 16.0.6, 17.0.6, 18.1.3\n- Clang-tidy: 16.0.6, 17.0.6, 18.1.3\n- Dash 0.5.12-6ubuntu5\n- GNU C++: 12.4.0, 13.3.0, 14.2.0\n- GNU Fortran: 12.4.0, 13.3.0, 14.2.0\n- Kotlin 2.4.21\n- Node.js 22.23.4\n- Perl 5.38.2\n- Python 3.12.3\n- Ruby 3.2.3\n- Swift 6.4.1\n\n### Package Management\n- cpan 1.64\n- Helm 3.22.1\n- Homebrew 7.0.10\n- Npm 10.9.9\n- Pip 24.0\n- Pip3 24.0\n- Pipx 1.16.7\n- RubyGems 3.4.20\n- Vcpkg (build from commit 827a2e1203)\n- Yarn 1.22.22\n\n#### Environment variables\n| Name                    | Value                  |\n| ----------------------- | ---------------------- |\n| CONDA                   |                        |\n| VCPKG_INSTALLATION_ROOT | /usr/local/share/vcpkg |\n\n#### Homebrew note\n```\nLocation: /home/linuxbrew\nNote: Homebrew is pre-installed on image but not added to PATH.\nrun the eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" command\nto accomplish this.\n```\n\n### Project Management\n- Ant 1.10.14\n- Gradle 9.8.2\n- Lerna 10.1.1\n- Maven 3.9.12\n\n### Tools\n- Ansible 2.21.5\n- AzCopy 10.34.1 - available by `azcopy` and `azcopy10` aliases\n- Bazel 9.3.1\n- Bazelisk 1.28.1\n- Buildah 1.33.7\n- CMake 3.31.6\n- Docker Amazon ECR Credential Helper 0.12.0\n- Docker Compose 2.38.2\n- Docker-Buildx 0.38.1\n- Docker Client 28.0.4\n- Docker Server 28.0.4\n- Fastlane 2.241.1\n- Git 2.56.0\n- Git LFS 3.8.1\n- Git-ftp 1.6.0\n- Haveged 1.9.14\n- jq 1.7\n- Kind 0.33.0\n- Kubectl 1.37.1\n- Kustomize 5.8.3\n- MediaInfo 24.01\n- Mercurial 6.7.2\n- Minikube 1.39.0\n- n 11.0.0\n- Newman 6.2.3\n- nvm 0.40.8\n- OpenSSL 3.0.13-0ubuntu3.16\n- Packer 1.16.2\n- Parcel 2.16.4\n- Podman 4.9.3\n- Pulumi 3.272.0\n- Skopeo 1.13.3\n- Sphinx Open Source Search Server 2.2.11\n- yamllint 1.38.0\n- yq 4.54.1\n- zstd 1.5.7\n- Ninja 1.13.2\n\n### CLI Tools\n- AWS CLI 2.38.5\n- AWS CLI Session Manager Plugin 1.2.896.0\n- AWS SAM CLI 1.170.0\n- Azure CLI 2.91.0\n- Azure CLI (azure-devops) 1.0.10\n- GitHub CLI 2.103.2\n- Google Cloud CLI 590.0.1\n\n"
+    },
+    {
+      "source": "https://github.com/actions/runner-images/blob/42d27e4a2c1232e5640a88ed42a974c8918ecd28/images/ubuntu/Ubuntu2604-Readme.md",
+      "sha": "f2f1f601bf7b8d747d6e8222efbee10c69eec254",
+      "osVersion": "26.04.1 LTS",
+      "imageVersion": "20261026.180.1",
+      "aptPackages": [
+        {
+          "name": "7zip",
+          "version": "26.00+dfsg-1"
+        },
+        {
+          "name": "7zip-rar",
+          "version": "26.00+ds-1"
+        },
+        {
+          "name": "acl",
+          "version": "2.3.2-2"
+        },
+        {
+          "name": "aria2",
+          "version": "1.37.0+debian-4"
+        },
+        {
+          "name": "autoconf",
+          "version": "2.72-3.1ubuntu2"
+        },
+        {
+          "name": "automake",
+          "version": "1:1.18.1-3build1"
+        },
+        {
+          "name": "bind9-dnsutils",
+          "version": "1:9.20.24-1ubuntu0.4"
+        },
+        {
+          "name": "binutils",
+          "version": "2.46-3ubuntu2"
+        },
+        {
+          "name": "bison",
+          "version": "2:3.8.2+dfsg-1ubuntu0.26.04.1"
+        },
+        {
+          "name": "brotli",
+          "version": "1.2.0-3build1"
+        },
+        {
+          "name": "bzip2",
+          "version": "1.0.8-6ubuntu0.1"
+        },
+        {
+          "name": "coreutils",
+          "version": "9.5-1ubuntu2+0.0.0~ubuntu25",
+          "publishedMarkdownVersion": "9.5-1ubuntu2+0.0.0\\~ubuntu25"
+        },
+        {
+          "name": "curl",
+          "version": "8.18.0-1ubuntu2.8"
+        },
+        {
+          "name": "dbus",
+          "version": "1.16.2-2ubuntu4"
+        },
+        {
+          "name": "dpkg",
+          "version": "1.23.7ubuntu1"
+        },
+        {
+          "name": "dpkg-dev",
+          "version": "1.23.7ubuntu1"
+        },
+        {
+          "name": "fakeroot",
+          "version": "1.37.2-1"
+        },
+        {
+          "name": "file",
+          "version": "1:5.46-5build2"
+        },
+        {
+          "name": "findutils",
+          "version": "4.10.0-3build2"
+        },
+        {
+          "name": "flex",
+          "version": "2.6.4-8.2build2"
+        },
+        {
+          "name": "fonts-noto-color-emoji",
+          "version": "2.051-1build1"
+        },
+        {
+          "name": "ftp",
+          "version": "20260211-1"
+        },
+        {
+          "name": "g++",
+          "version": "4:15.2.0-5ubuntu1"
+        },
+        {
+          "name": "gcc",
+          "version": "4:15.2.0-5ubuntu1"
+        },
+        {
+          "name": "gnupg2",
+          "version": "2.4.8-4ubuntu3.1"
+        },
+        {
+          "name": "iproute2",
+          "version": "6.19.0-1ubuntu1.1"
+        },
+        {
+          "name": "iputils-ping",
+          "version": "3:20250605-1ubuntu1"
+        },
+        {
+          "name": "jq",
+          "version": "1.8.1-4ubuntu2"
+        },
+        {
+          "name": "libcrypt-dev",
+          "version": "1:4.5.1-1"
+        },
+        {
+          "name": "libicu-dev",
+          "version": "78.2-2ubuntu1"
+        },
+        {
+          "name": "libnss3-tools",
+          "version": "2:3.120-1ubuntu2.2"
+        },
+        {
+          "name": "libsqlite3-dev",
+          "version": "3.46.1-9ubuntu0.3"
+        },
+        {
+          "name": "libssl-dev",
+          "version": "3.5.5-1ubuntu3.7"
+        },
+        {
+          "name": "libtool",
+          "version": "2.5.4-9"
+        },
+        {
+          "name": "libyaml-dev",
+          "version": "0.2.5-2build3"
+        },
+        {
+          "name": "locales",
+          "version": "2.43-2ubuntu2.4"
+        },
+        {
+          "name": "lz4",
+          "version": "1.10.0-8"
+        },
+        {
+          "name": "m4",
+          "version": "1.4.21-1"
+        },
+        {
+          "name": "make",
+          "version": "4.4.1-3"
+        },
+        {
+          "name": "net-tools",
+          "version": "2.10-2ubuntu1"
+        },
+        {
+          "name": "netcat",
+          "version": "1.234-1"
+        },
+        {
+          "name": "openssh-client",
+          "version": "1:10.2p1-2ubuntu3.8"
+        },
+        {
+          "name": "parallel",
+          "version": "20240222+ds-3"
+        },
+        {
+          "name": "patchelf",
+          "version": "0.18.0-1.4build1"
+        },
+        {
+          "name": "pigz",
+          "version": "2.8-1build1"
+        },
+        {
+          "name": "pkg-config",
+          "version": "2.5.1-4"
+        },
+        {
+          "name": "pollinate",
+          "version": "4.33-4ubuntu6"
+        },
+        {
+          "name": "python-is-python3",
+          "version": "3.13.3-1+build1"
+        },
+        {
+          "name": "rpm",
+          "version": "6.0.1-1build1"
+        },
+        {
+          "name": "rsync",
+          "version": "3.4.1+ds1-7ubuntu0.3"
+        },
+        {
+          "name": "shellcheck",
+          "version": "0.11.0-2"
+        },
+        {
+          "name": "sqlite3",
+          "version": "3.46.1-9ubuntu0.3"
+        },
+        {
+          "name": "ssh",
+          "version": "1:10.2p1-2ubuntu3.8"
+        },
+        {
+          "name": "sshpass",
+          "version": "1.10-0.1build1"
+        },
+        {
+          "name": "sudo",
+          "version": "1.9.17p2-1ubuntu3.2"
+        },
+        {
+          "name": "swig",
+          "version": "4.4.0-1"
+        },
+        {
+          "name": "systemd-coredump",
+          "version": "259.9-0ubuntu0.1"
+        },
+        {
+          "name": "tar",
+          "version": "1.35+dfsg-4ubuntu0.4"
+        },
+        {
+          "name": "telnet",
+          "version": "0.17+2.7-2ubuntu1.1"
+        },
+        {
+          "name": "texinfo",
+          "version": "7.2-5ubuntu2"
+        },
+        {
+          "name": "time",
+          "version": "1.9-0.4"
+        },
+        {
+          "name": "tk",
+          "version": "8.6.16build1"
+        },
+        {
+          "name": "tree",
+          "version": "2.3.1-1"
+        },
+        {
+          "name": "tzdata",
+          "version": "2026e-0ubuntu0.26.04.1"
+        },
+        {
+          "name": "unzip",
+          "version": "6.0-29ubuntu1"
+        },
+        {
+          "name": "upx",
+          "version": "4.2.4-1.1build1"
+        },
+        {
+          "name": "wget",
+          "version": "1.25.0-2ubuntu4.4"
+        },
+        {
+          "name": "xvfb",
+          "version": "2:21.1.22-1ubuntu1.3"
+        },
+        {
+          "name": "xz-utils",
+          "version": "5.8.3-1ubuntu0.1"
+        },
+        {
+          "name": "zip",
+          "version": "3.0-15ubuntu3"
+        },
+        {
+          "name": "zsync",
+          "version": "0.6.2-9"
+        }
+      ],
+      "softwareSummary": "### Language and Runtime\n- Bash 5.3.9(1)-release\n- Clang: 20.1.8, 21.1.8, 22.1.2\n- Clang-format: 20.1.8, 21.1.8, 22.1.2\n- Clang-tidy: 20.1.8, 21.1.8, 22.1.2\n- Dash 0.5.12-12ubuntu3\n- GNU C++: 13.4.0, 14.3.0, 15.2.0\n- GNU Fortran: 13.4.0, 14.3.0, 15.2.0\n- Kotlin 2.4.21\n- Node.js 24.22.1\n- Perl 5.40.1\n- Python 3.14.4\n- Ruby 3.3.8\n- Swift 6.4.1\n\n### Package Management\n- cpan 1.64\n- Helm 4.3.1\n- Homebrew 7.0.10\n- Npm 11.19.1\n- Pip 25.1.1\n- Pip3 25.1.1\n- Pipx 1.17.10\n- RubyGems 3.6.7\n- Vcpkg (build from commit 817892b0ec)\n- Yarn 1.22.22\n\n#### Environment variables\n| Name                    | Value                  |\n| ----------------------- | ---------------------- |\n| CONDA                   |                        |\n| VCPKG_INSTALLATION_ROOT | /usr/local/share/vcpkg |\n\n#### Homebrew note\n```\nLocation: /home/linuxbrew\nNote: Homebrew is pre-installed on image but not added to PATH.\nrun the eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" command\nto accomplish this.\n```\n\n### Project Management\n- Ant 1.10.15\n- Gradle 9.8.2\n- Maven 3.9.15\n\n### Tools\n- Ansible 2.21.5\n- AzCopy 10.34.1 - available by `azcopy` and `azcopy10` aliases\n- Bazel 9.3.1\n- Bazelisk 1.28.1\n- Bicep 0.48.1\n- Buildah 1.42.1\n- CMake 4.4.4\n- CodeQL Action Bundle 2.27.3\n- Docker Amazon ECR Credential Helper 0.12.0\n- Docker Compose 5.1.3\n- Docker-Buildx 0.38.1\n- Docker Client 29.4.2\n- Docker Server 29.4.2\n- Git 2.56.0\n- Git LFS 3.8.1\n- Git-ftp 1.6.0\n- jq 1.8.1\n- Kind 0.33.0\n- Kubectl 1.37.1\n- Kustomize 5.8.3\n- Minikube 1.39.0\n- n 11.0.0\n- nvm 0.40.8\n- OpenSSL 3.5.5-1ubuntu3.7\n- Packer 1.16.2\n- Podman 5.7.0\n- Skopeo 1.21.0-dev\n- yamllint 1.38.0\n- yq 4.54.1\n- zstd 1.5.7\n- Ninja 1.13.2\n\n### CLI Tools\n- AWS CLI 2.38.5\n- AWS CLI Session Manager Plugin 1.2.896.0\n- AWS SAM CLI 1.170.0\n- Azure CLI 2.91.0\n- Azure CLI (azure-devops) 1.0.10\n- GitHub CLI 2.103.2\n- Google Cloud CLI 590.0.1\n\n"
+    },
+    {
+      "source": "https://github.com/actions/runner-images/blob/42d27e4a2c1232e5640a88ed42a974c8918ecd28/images/ubuntu/Ubuntu2604-Arm64-Readme.md",
+      "sha": "67e09a08673b21e4716b47c8e9ead49a4dfc5f5a",
+      "osVersion": "26.04.1 LTS",
+      "imageVersion": "20261026.168.1",
+      "aptPackages": [
+        {
+          "name": "7zip",
+          "version": "26.00+dfsg-1"
+        },
+        {
+          "name": "7zip-rar",
+          "version": "26.00+ds-1"
+        },
+        {
+          "name": "acl",
+          "version": "2.3.2-2"
+        },
+        {
+          "name": "aria2",
+          "version": "1.37.0+debian-4"
+        },
+        {
+          "name": "autoconf",
+          "version": "2.72-3.1ubuntu2"
+        },
+        {
+          "name": "automake",
+          "version": "1:1.18.1-3build1"
+        },
+        {
+          "name": "bind9-dnsutils",
+          "version": "1:9.20.24-1ubuntu0.4"
+        },
+        {
+          "name": "binutils",
+          "version": "2.46-3ubuntu2"
+        },
+        {
+          "name": "bison",
+          "version": "2:3.8.2+dfsg-1ubuntu0.26.04.1"
+        },
+        {
+          "name": "brotli",
+          "version": "1.2.0-3build1"
+        },
+        {
+          "name": "bzip2",
+          "version": "1.0.8-6ubuntu0.1"
+        },
+        {
+          "name": "coreutils",
+          "version": "9.5-1ubuntu2+0.0.0~ubuntu25",
+          "publishedMarkdownVersion": "9.5-1ubuntu2+0.0.0\\~ubuntu25"
+        },
+        {
+          "name": "curl",
+          "version": "8.18.0-1ubuntu2.8"
+        },
+        {
+          "name": "dbus",
+          "version": "1.16.2-2ubuntu4"
+        },
+        {
+          "name": "dpkg",
+          "version": "1.23.7ubuntu1"
+        },
+        {
+          "name": "dpkg-dev",
+          "version": "1.23.7ubuntu1"
+        },
+        {
+          "name": "fakeroot",
+          "version": "1.37.2-1"
+        },
+        {
+          "name": "file",
+          "version": "1:5.46-5build2"
+        },
+        {
+          "name": "findutils",
+          "version": "4.10.0-3build2"
+        },
+        {
+          "name": "flex",
+          "version": "2.6.4-8.2build2"
+        },
+        {
+          "name": "fonts-noto-color-emoji",
+          "version": "2.051-1build1"
+        },
+        {
+          "name": "ftp",
+          "version": "20260211-1"
+        },
+        {
+          "name": "g++",
+          "version": "4:15.2.0-5ubuntu1"
+        },
+        {
+          "name": "gcc",
+          "version": "4:15.2.0-5ubuntu1"
+        },
+        {
+          "name": "gnupg2",
+          "version": "2.4.8-4ubuntu3.1"
+        },
+        {
+          "name": "iproute2",
+          "version": "6.19.0-1ubuntu1.1"
+        },
+        {
+          "name": "iputils-ping",
+          "version": "3:20250605-1ubuntu1"
+        },
+        {
+          "name": "jq",
+          "version": "1.8.1-4ubuntu2"
+        },
+        {
+          "name": "libcrypt-dev",
+          "version": "1:4.5.1-1"
+        },
+        {
+          "name": "libgbm-dev",
+          "version": "26.0.8-1ubuntu0.3"
+        },
+        {
+          "name": "libicu-dev",
+          "version": "78.2-2ubuntu1"
+        },
+        {
+          "name": "libnss3-tools",
+          "version": "2:3.120-1ubuntu2.2"
+        },
+        {
+          "name": "libsqlite3-dev",
+          "version": "3.46.1-9ubuntu0.3"
+        },
+        {
+          "name": "libssl-dev",
+          "version": "3.5.5-1ubuntu3.7"
+        },
+        {
+          "name": "libtool",
+          "version": "2.5.4-9"
+        },
+        {
+          "name": "libyaml-dev",
+          "version": "0.2.5-2build3"
+        },
+        {
+          "name": "locales",
+          "version": "2.43-2ubuntu2.4"
+        },
+        {
+          "name": "lz4",
+          "version": "1.10.0-8"
+        },
+        {
+          "name": "m4",
+          "version": "1.4.21-1"
+        },
+        {
+          "name": "make",
+          "version": "4.4.1-3"
+        },
+        {
+          "name": "net-tools",
+          "version": "2.10-2ubuntu1"
+        },
+        {
+          "name": "netcat",
+          "version": "1.234-1"
+        },
+        {
+          "name": "openssh-client",
+          "version": "1:10.2p1-2ubuntu3.8"
+        },
+        {
+          "name": "parallel",
+          "version": "20240222+ds-3"
+        },
+        {
+          "name": "patchelf",
+          "version": "0.18.0-1.4build1"
+        },
+        {
+          "name": "pigz",
+          "version": "2.8-1build1"
+        },
+        {
+          "name": "pkg-config",
+          "version": "2.5.1-4"
+        },
+        {
+          "name": "pollinate",
+          "version": "4.33-4ubuntu6"
+        },
+        {
+          "name": "python-is-python3",
+          "version": "3.13.3-1+build1"
+        },
+        {
+          "name": "rpm",
+          "version": "6.0.1-1build1"
+        },
+        {
+          "name": "rsync",
+          "version": "3.4.1+ds1-7ubuntu0.3"
+        },
+        {
+          "name": "shellcheck",
+          "version": "0.11.0-2"
+        },
+        {
+          "name": "sqlite3",
+          "version": "3.46.1-9ubuntu0.3"
+        },
+        {
+          "name": "ssh",
+          "version": "1:10.2p1-2ubuntu3.8"
+        },
+        {
+          "name": "sshpass",
+          "version": "1.10-0.1build1"
+        },
+        {
+          "name": "sudo",
+          "version": "1.9.17p2-1ubuntu3.2"
+        },
+        {
+          "name": "swig",
+          "version": "4.4.0-1"
+        },
+        {
+          "name": "systemd-coredump",
+          "version": "259.9-0ubuntu0.1"
+        },
+        {
+          "name": "tar",
+          "version": "1.35+dfsg-4ubuntu0.4"
+        },
+        {
+          "name": "telnet",
+          "version": "0.17+2.7-2ubuntu1.1"
+        },
+        {
+          "name": "texinfo",
+          "version": "7.2-5ubuntu2"
+        },
+        {
+          "name": "time",
+          "version": "1.9-0.4"
+        },
+        {
+          "name": "tk",
+          "version": "8.6.16build1"
+        },
+        {
+          "name": "tree",
+          "version": "2.3.1-1"
+        },
+        {
+          "name": "tzdata",
+          "version": "2026e-0ubuntu0.26.04.1"
+        },
+        {
+          "name": "unzip",
+          "version": "6.0-29ubuntu1"
+        },
+        {
+          "name": "upx",
+          "version": "4.2.4-1.1build1"
+        },
+        {
+          "name": "wget",
+          "version": "1.25.0-2ubuntu4.4"
+        },
+        {
+          "name": "xvfb",
+          "version": "2:21.1.22-1ubuntu1.3"
+        },
+        {
+          "name": "xz-utils",
+          "version": "5.8.3-1ubuntu0.1"
+        },
+        {
+          "name": "zip",
+          "version": "3.0-15ubuntu3"
+        },
+        {
+          "name": "zsync",
+          "version": "0.6.2-9"
+        }
+      ],
+      "softwareSummary": "### Language and Runtime\n- Bash 5.3.9(1)-release\n- Clang: 20.1.8, 21.1.8, 22.1.2\n- Clang-format: 20.1.8, 21.1.8, 22.1.2\n- Clang-tidy: 20.1.8, 21.1.8, 22.1.2\n- Dash 0.5.12-12ubuntu3\n- GNU C++: 13.4.0, 14.3.0, 15.2.0\n- GNU Fortran: 13.4.0, 14.3.0, 15.2.0\n- Kotlin 2.4.21\n- Node.js 24.22.1\n- Perl 5.40.1\n- Python 3.14.4\n- Ruby 3.3.8\n- Swift 6.4.1\n\n### Package Management\n- cpan 1.64\n- Helm 4.3.1\n- Homebrew 7.0.10\n- Npm 11.19.1\n- Pip 25.1.1\n- Pip3 25.1.1\n- Pipx 1.17.10\n- RubyGems 3.6.7\n- Vcpkg (build from commit 817892b0ec)\n- Yarn 1.22.22\n\n#### Environment variables\n| Name                    | Value                  |\n| ----------------------- | ---------------------- |\n| CONDA                   |                        |\n| VCPKG_INSTALLATION_ROOT | /usr/local/share/vcpkg |\n\n#### Homebrew note\n```\nLocation: /home/linuxbrew\nNote: Homebrew is pre-installed on image but not added to PATH.\nrun the eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" command\nto accomplish this.\n```\n\n### Project Management\n- Ant 1.10.15\n- Gradle 9.8.2\n- Maven 3.9.15\n\n### Tools\n- Ansible 2.21.5\n- AzCopy 10.34.1 - available by `azcopy` and `azcopy10` aliases\n- Bazel 9.3.1\n- Bazelisk 1.28.1\n- Buildah 1.42.1\n- CMake 4.4.4\n- Docker Amazon ECR Credential Helper 0.12.0\n- Docker Compose 5.1.3\n- Docker-Buildx 0.38.1\n- Docker Client 29.4.2\n- Docker Server 29.4.2\n- Git 2.56.0\n- Git LFS 3.8.1\n- Git-ftp 1.6.0\n- jq 1.8.1\n- Kind 0.33.0\n- Kubectl 1.37.1\n- Kustomize 5.8.3\n- Minikube 1.39.0\n- n 11.0.0\n- nvm 0.40.8\n- OpenSSL 3.5.5-1ubuntu3.7\n- Packer 1.16.2\n- Podman 5.7.0\n- Skopeo 1.21.0-dev\n- yamllint 1.38.0\n- yq 4.54.1\n- zstd 1.5.7\n- Ninja 1.13.2\n\n### CLI Tools\n- AWS CLI 2.38.5\n- AWS CLI Session Manager Plugin 1.2.896.0\n- AWS SAM CLI 1.170.0\n- Azure CLI 2.91.0\n- Azure CLI (azure-devops) 1.0.10\n- GitHub CLI 2.103.2\n- Google Cloud CLI 590.0.1\n\n"
+    }
+  ]
+}

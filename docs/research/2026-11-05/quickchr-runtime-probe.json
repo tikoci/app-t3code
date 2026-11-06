@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-11-06T01:26:59.992Z",
+  "quickchrVersion": "0.5.5",
+  "method": "Disposable image container, node user, TCG (no KVM exposed), real CHR 7.25.1, managed login, qcow2 boot resize and extra disk, read-only centrs resource query. Test-only storage reserve reduced to 512M for the constrained research host. No production router or image was changed.",
+  "findings": [
+    {
+      "arch": "x86",
+      "elapsedMs": 69815,
+      "ready": true,
+      "version": "7.25.1",
+      "reportedArchitecture": "x86_64",
+      "qcow2BootAndExtraDisk": true,
+      "managedLoginProvisioned": true,
+      "centrsRead": true
+    },
+    {
+      "arch": "arm64",
+      "elapsedMs": 67538,
+      "ready": true,
+      "version": "7.25.1",
+      "reportedArchitecture": "arm64",
+      "qcow2BootAndExtraDisk": true,
+      "managedLoginProvisioned": true,
+      "centrsRead": true
+    }
+  ]
+}

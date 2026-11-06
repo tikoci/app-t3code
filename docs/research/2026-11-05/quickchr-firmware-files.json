@@ -1,0 +1,47 @@
+[
+  {
+    "file": "AAVMF_CODE.fd",
+    "link": "AAVMF_CODE.no-secboot.fd",
+    "bytes": 67108864
+  },
+  {
+    "file": "AAVMF_CODE.ms.fd",
+    "link": "AAVMF_CODE.secboot.fd",
+    "bytes": 67108864
+  },
+  {
+    "file": "AAVMF_CODE.no-secboot.fd",
+    "link": null,
+    "bytes": 67108864
+  },
+  {
+    "file": "AAVMF_CODE.secboot.fd",
+    "link": null,
+    "bytes": 67108864
+  },
+  {
+    "file": "AAVMF_CODE.secboot.strictnx.fd",
+    "link": null,
+    "bytes": 67108864
+  },
+  {
+    "file": "AAVMF_CODE.snakeoil.fd",
+    "link": "AAVMF_CODE.secboot.fd",
+    "bytes": 67108864
+  },
+  {
+    "file": "AAVMF_VARS.fd",
+    "link": null,
+    "bytes": 67108864
+  },
+  {
+    "file": "AAVMF_VARS.ms.fd",
+    "link": null,
+    "bytes": 67108864
+  },
+  {
+    "file": "AAVMF_VARS.snakeoil.fd",
+    "link": null,
+    "bytes": 67108864
+  }
+]

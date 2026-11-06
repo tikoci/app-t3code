@@ -1,0 +1,76 @@
+{
+  "ok": false,
+  "checks": [
+    {
+      "label": "Bun runtime",
+      "status": "ok",
+      "detail": "bun 1.4.4; tested with Bun 1.4.4"
+    },
+    {
+      "label": "qemu-system-aarch64",
+      "status": "ok",
+      "detail": "10.0.13"
+    },
+    {
+      "label": "qemu-system-x86_64",
+      "status": "ok",
+      "detail": "10.0.13"
+    },
+    {
+      "label": "UEFI firmware",
+      "status": "ok",
+      "detail": "/usr/share/AAVMF/AAVMF_CODE.fd"
+    },
+    {
+      "label": "Acceleration",
+      "status": "warn",
+      "detail": "tcg (host: x64) — TCG software emulation only (no KVM/HVF); expect slow boots"
+    },
+    {
+      "label": "HTTPS proxy",
+      "status": "ok",
+      "detail": "not set (direct egress)"
+    },
+    {
+      "label": "Data directory",
+      "status": "ok",
+      "detail": "/data/.local/share/quickchr"
+    },
+    {
+      "label": "Cache",
+      "status": "ok",
+      "detail": "empty (0 B)"
+    },
+    {
+      "label": "Machines",
+      "status": "ok",
+      "detail": "0 instances (0 running, 0 B on disk)"
+    },
+    {
+      "label": "Storage",
+      "status": "error",
+      "detail": "/data: 2.0 GiB free; quickchr uses 0 B (cache 0 B, machines 0 B) — below the 2.0 GiB reserve: new machines and image downloads are refused (after evicting what the cache can spare)"
+    },
+    {
+      "label": "socat",
+      "status": "warn",
+      "detail": "not found (optional, for serial console access)"
+    },
+    {
+      "label": "qemu-img",
+      "status": "ok",
+      "detail": "/usr/bin/qemu-img"
+    },
+    {
+      "label": "Shell",
+      "status": "ok",
+      "detail": "bash 5.2.37 (/bin/bash)"
+    },
+    {
+      "label": "Shell completions",
+      "status": "warn",
+      "detail": "bash: not installed — run 'quickchr completions --install'"
+    }
+  ],
+  "staleImages": []
+}

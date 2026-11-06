@@ -1,0 +1,1875 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-06T00:29:20.601Z",
+  "osRelease": "PRETTY_NAME=\"Debian GNU/Linux 13 (trixie)\"\nNAME=\"Debian GNU/Linux\"\nVERSION_ID=\"13\"\nVERSION=\"13 (trixie)\"\nVERSION_CODENAME=trixie\nDEBIAN_VERSION_FULL=13.7\nID=debian\nHOME_URL=\"https://www.debian.org/\"\nSUPPORT_URL=\"https://www.debian.org/support\"\nBUG_REPORT_URL=\"https://bugs.debian.org/\"\n",
+  "architecture": "amd64",
+  "path": "/data/.local/bin:/data/.bun/bin:/opt/bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+  "packages": [
+    {
+      "name": "adduser",
+      "version": "3.152",
+      "architecture": "all",
+      "installedSizeKiB": 428
+    },
+    {
+      "name": "apt",
+      "version": "3.0.4",
+      "architecture": "amd64",
+      "installedSizeKiB": 4481
+    },
+    {
+      "name": "at-spi2-common",
+      "version": "2.56.2-1+deb13u2",
+      "architecture": "all",
+      "installedSizeKiB": 1348
+    },
+    {
+      "name": "base-files",
+      "version": "13.8+deb13u7",
+      "architecture": "amd64",
+      "installedSizeKiB": 500
+    },
+    {
+      "name": "base-passwd",
+      "version": "3.6.7",
+      "architecture": "amd64",
+      "installedSizeKiB": 272
+    },
+    {
+      "name": "bash",
+      "version": "5.2.37-2+b10",
+      "architecture": "amd64",
+      "installedSizeKiB": 7196
+    },
+    {
+      "name": "bsdutils",
+      "version": "1:2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 401
+    },
+    {
+      "name": "ca-certificates",
+      "version": "20250419+deb13u1",
+      "architecture": "all",
+      "installedSizeKiB": 387
+    },
+    {
+      "name": "coreutils",
+      "version": "9.7-3",
+      "architecture": "amd64",
+      "installedSizeKiB": 18457
+    },
+    {
+      "name": "curl",
+      "version": "8.14.1-2+deb13u7",
+      "architecture": "amd64",
+      "installedSizeKiB": 495
+    },
+    {
+      "name": "dash",
+      "version": "0.5.12-12",
+      "architecture": "amd64",
+      "installedSizeKiB": 207
+    },
+    {
+      "name": "debconf",
+      "version": "1.5.91",
+      "architecture": "all",
+      "installedSizeKiB": 497
+    },
+    {
+      "name": "debian-archive-keyring",
+      "version": "2025.1",
+      "architecture": "all",
+      "installedSizeKiB": 302
+    },
+    {
+      "name": "debianutils",
+      "version": "5.23.2",
+      "architecture": "amd64",
+      "installedSizeKiB": 225
+    },
+    {
+      "name": "diffutils",
+      "version": "1:3.10-4",
+      "architecture": "amd64",
+      "installedSizeKiB": 1768
+    },
+    {
+      "name": "dpkg",
+      "version": "1.22.22",
+      "architecture": "amd64",
+      "installedSizeKiB": 6587
+    },
+    {
+      "name": "findutils",
+      "version": "4.10.0-3",
+      "architecture": "amd64",
+      "installedSizeKiB": 2160
+    },
+    {
+      "name": "fontconfig",
+      "version": "2.15.0-2.3",
+      "architecture": "amd64",
+      "installedSizeKiB": 681
+    },
+    {
+      "name": "fontconfig-config",
+      "version": "2.15.0-2.3",
+      "architecture": "amd64",
+      "installedSizeKiB": 533
+    },
+    {
+      "name": "fonts-liberation",
+      "version": "1:2.1.5-3",
+      "architecture": "all",
+      "installedSizeKiB": 4287
+    },
+    {
+      "name": "gcc-14-base:amd64",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "installedSizeKiB": 112
+    },
+    {
+      "name": "git",
+      "version": "1:2.47.3-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 49154
+    },
+    {
+      "name": "git-man",
+      "version": "1:2.47.3-0+deb13u1",
+      "architecture": "all",
+      "installedSizeKiB": 2251
+    },
+    {
+      "name": "grep",
+      "version": "3.11-4",
+      "architecture": "amd64",
+      "installedSizeKiB": 1266
+    },
+    {
+      "name": "gzip",
+      "version": "1.13-1+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 256
+    },
+    {
+      "name": "hostname",
+      "version": "3.25",
+      "architecture": "amd64",
+      "installedSizeKiB": 50
+    },
+    {
+      "name": "init-system-helpers",
+      "version": "1.69~deb13u1",
+      "architecture": "all",
+      "installedSizeKiB": 133
+    },
+    {
+      "name": "ipxe-qemu",
+      "version": "1.21.1+git20250501.dad20602+dfsg-1",
+      "architecture": "all",
+      "installedSizeKiB": 2942
+    },
+    {
+      "name": "jq",
+      "version": "1.7.1-6+deb13u4",
+      "architecture": "amd64",
+      "installedSizeKiB": 125
+    },
+    {
+      "name": "less",
+      "version": "668-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 376
+    },
+    {
+      "name": "libacl1:amd64",
+      "version": "2.3.2-2+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 74
+    },
+    {
+      "name": "libaio1t64:amd64",
+      "version": "0.3.113-8+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 39
+    },
+    {
+      "name": "libapt-pkg7.0:amd64",
+      "version": "3.0.4",
+      "architecture": "amd64",
+      "installedSizeKiB": 3856
+    },
+    {
+      "name": "libasound2-data",
+      "version": "1.2.14-1+deb13u1",
+      "architecture": "all",
+      "installedSizeKiB": 197
+    },
+    {
+      "name": "libasound2t64:amd64",
+      "version": "1.2.14-1+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 1265
+    },
+    {
+      "name": "libatk-bridge2.0-0t64:amd64",
+      "version": "2.56.2-1+deb13u2",
+      "architecture": "amd64",
+      "installedSizeKiB": 280
+    },
+    {
+      "name": "libatk1.0-0t64:amd64",
+      "version": "2.56.2-1+deb13u2",
+      "architecture": "amd64",
+      "installedSizeKiB": 206
+    },
+    {
+      "name": "libatomic1:amd64",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "installedSizeKiB": 45
+    },
+    {
+      "name": "libatspi2.0-0t64:amd64",
+      "version": "2.56.2-1+deb13u2",
+      "architecture": "amd64",
+      "installedSizeKiB": 279
+    },
+    {
+      "name": "libattr1:amd64",
+      "version": "1:2.5.2-3",
+      "architecture": "amd64",
+      "installedSizeKiB": 60
+    },
+    {
+      "name": "libaudit-common",
+      "version": "1:4.0.2-2+deb13u1",
+      "architecture": "all",
+      "installedSizeKiB": 25
+    },
+    {
+      "name": "libaudit1:amd64",
+      "version": "1:4.0.2-2+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 198
+    },
+    {
+      "name": "libblkid1:amd64",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 453
+    },
+    {
+      "name": "libbpf1:amd64",
+      "version": "1:1.5.0-3",
+      "architecture": "amd64",
+      "installedSizeKiB": 452
+    },
+    {
+      "name": "libbrlapi0.8:amd64",
+      "version": "6.7-3.1+deb13u3",
+      "architecture": "amd64",
+      "installedSizeKiB": 145
+    },
+    {
+      "name": "libbrotli1:amd64",
+      "version": "1.1.0-2+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 865
+    },
+    {
+      "name": "libbsd0:amd64",
+      "version": "0.12.2-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 214
+    },
+    {
+      "name": "libbz2-1.0:amd64",
+      "version": "1.0.8-6",
+      "architecture": "amd64",
+      "installedSizeKiB": 96
+    },
+    {
+      "name": "libc-bin",
+      "version": "2.41-12+deb13u4",
+      "architecture": "amd64",
+      "installedSizeKiB": 2122
+    },
+    {
+      "name": "libc6:amd64",
+      "version": "2.41-12+deb13u4",
+      "architecture": "amd64",
+      "installedSizeKiB": 13226
+    },
+    {
+      "name": "libcacard0:amd64",
+      "version": "1:2.8.0-3+b2",
+      "architecture": "amd64",
+      "installedSizeKiB": 158
+    },
+    {
+      "name": "libcap-ng0:amd64",
+      "version": "0.8.5-4+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 66
+    },
+    {
+      "name": "libcap2:amd64",
+      "version": "1:2.75-10+deb13u1+b3",
+      "architecture": "amd64",
+      "installedSizeKiB": 92
+    },
+    {
+      "name": "libcapstone5:amd64",
+      "version": "5.0.7-1~deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 9148
+    },
+    {
+      "name": "libcbor0.10:amd64",
+      "version": "0.10.2-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 94
+    },
+    {
+      "name": "libcom-err2:amd64",
+      "version": "1.47.2-3+b12",
+      "architecture": "amd64",
+      "installedSizeKiB": 64
+    },
+    {
+      "name": "libcrypt1:amd64",
+      "version": "1:4.4.38-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 234
+    },
+    {
+      "name": "libcurl3t64-gnutls:amd64",
+      "version": "8.14.1-2+deb13u7",
+      "architecture": "amd64",
+      "installedSizeKiB": 997
+    },
+    {
+      "name": "libcurl4t64:amd64",
+      "version": "8.14.1-2+deb13u7",
+      "architecture": "amd64",
+      "installedSizeKiB": 1013
+    },
+    {
+      "name": "libdaxctl1:amd64",
+      "version": "81-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 72
+    },
+    {
+      "name": "libdb5.3t64:amd64",
+      "version": "5.3.28+dfsg2-9",
+      "architecture": "amd64",
+      "installedSizeKiB": 1854
+    },
+    {
+      "name": "libdbus-1-3:amd64",
+      "version": "1.16.2-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 445
+    },
+    {
+      "name": "libdebconfclient0:amd64",
+      "version": "0.280",
+      "architecture": "amd64",
+      "installedSizeKiB": 38
+    },
+    {
+      "name": "libdrm-amdgpu1:amd64",
+      "version": "2.4.124-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 81
+    },
+    {
+      "name": "libdrm-common",
+      "version": "2.4.124-2",
+      "architecture": "all",
+      "installedSizeKiB": 45
+    },
+    {
+      "name": "libdrm-intel1:amd64",
+      "version": "2.4.124-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 182
+    },
+    {
+      "name": "libdrm2:amd64",
+      "version": "2.4.124-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 128
+    },
+    {
+      "name": "libedit2:amd64",
+      "version": "3.1-20250104-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 262
+    },
+    {
+      "name": "libelf1t64:amd64",
+      "version": "0.192-4",
+      "architecture": "amd64",
+      "installedSizeKiB": 1228
+    },
+    {
+      "name": "liberror-perl",
+      "version": "0.17030-1",
+      "architecture": "all",
+      "installedSizeKiB": 71
+    },
+    {
+      "name": "libexecs1:amd64",
+      "version": "1.4-2+b2",
+      "architecture": "amd64",
+      "installedSizeKiB": 35
+    },
+    {
+      "name": "libexpat1:amd64",
+      "version": "2.9.0-1~deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 427
+    },
+    {
+      "name": "libfdt1:amd64",
+      "version": "1.7.2-2+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 58
+    },
+    {
+      "name": "libffi8:amd64",
+      "version": "3.4.8-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 72
+    },
+    {
+      "name": "libfido2-1:amd64",
+      "version": "1.15.0-1+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 250
+    },
+    {
+      "name": "libfontconfig1:amd64",
+      "version": "2.15.0-2.3",
+      "architecture": "amd64",
+      "installedSizeKiB": 592
+    },
+    {
+      "name": "libfreetype6:amd64",
+      "version": "2.13.3+dfsg-1+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 963
+    },
+    {
+      "name": "libfuse3-4:amd64",
+      "version": "3.17.2-3",
+      "architecture": "amd64",
+      "installedSizeKiB": 325
+    },
+    {
+      "name": "libgbm1:amd64",
+      "version": "25.0.7-2+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 128
+    },
+    {
+      "name": "libgcc-s1:amd64",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "installedSizeKiB": 197
+    },
+    {
+      "name": "libgdbm-compat4t64:amd64",
+      "version": "1.24-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 75
+    },
+    {
+      "name": "libgdbm6t64:amd64",
+      "version": "1.24-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 138
+    },
+    {
+      "name": "libglib2.0-0t64:amd64",
+      "version": "2.84.4-3~deb13u5",
+      "architecture": "amd64",
+      "installedSizeKiB": 4449
+    },
+    {
+      "name": "libgmp10:amd64",
+      "version": "2:6.3.0+dfsg-3",
+      "architecture": "amd64",
+      "installedSizeKiB": 882
+    },
+    {
+      "name": "libgnutls30t64:amd64",
+      "version": "3.8.9-3+deb13u4",
+      "architecture": "amd64",
+      "installedSizeKiB": 3504
+    },
+    {
+      "name": "libgssapi-krb5-2:amd64",
+      "version": "1.21.3-5+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 434
+    },
+    {
+      "name": "libhogweed6t64:amd64",
+      "version": "3.10.1-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 483
+    },
+    {
+      "name": "libibverbs1:amd64",
+      "version": "56.1-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 189
+    },
+    {
+      "name": "libidn2-0:amd64",
+      "version": "2.3.8-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 446
+    },
+    {
+      "name": "libjpeg62-turbo:amd64",
+      "version": "1:2.1.5-4",
+      "architecture": "amd64",
+      "installedSizeKiB": 694
+    },
+    {
+      "name": "libjq1:amd64",
+      "version": "1.7.1-6+deb13u4",
+      "architecture": "amd64",
+      "installedSizeKiB": 439
+    },
+    {
+      "name": "libk5crypto3:amd64",
+      "version": "1.21.3-5+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 266
+    },
+    {
+      "name": "libkeyutils1:amd64",
+      "version": "1.6.3-6",
+      "architecture": "amd64",
+      "installedSizeKiB": 41
+    },
+    {
+      "name": "libkmod2:amd64",
+      "version": "34.2-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 144
+    },
+    {
+      "name": "libkrb5-3:amd64",
+      "version": "1.21.3-5+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 1074
+    },
+    {
+      "name": "libkrb5support0:amd64",
+      "version": "1.21.3-5+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 137
+    },
+    {
+      "name": "liblastlog2-2:amd64",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 75
+    },
+    {
+      "name": "libldap2:amd64",
+      "version": "2.6.10+dfsg-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 576
+    },
+    {
+      "name": "libllvm19:amd64",
+      "version": "1:19.1.7-3+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 126696
+    },
+    {
+      "name": "liblz4-1:amd64",
+      "version": "1.10.0-4",
+      "architecture": "amd64",
+      "installedSizeKiB": 173
+    },
+    {
+      "name": "liblzma5:amd64",
+      "version": "5.8.1-1+deb13u2",
+      "architecture": "amd64",
+      "installedSizeKiB": 435
+    },
+    {
+      "name": "libmd0:amd64",
+      "version": "1.1.0-2+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 94
+    },
+    {
+      "name": "libmount1:amd64",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 565
+    },
+    {
+      "name": "libncursesw6:amd64",
+      "version": "6.5+20250216-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 419
+    },
+    {
+      "name": "libndctl6:amd64",
+      "version": "81-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 214
+    },
+    {
+      "name": "libnettle8t64:amd64",
+      "version": "3.10.1-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 560
+    },
+    {
+      "name": "libnghttp2-14:amd64",
+      "version": "1.64.0-1.1+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 229
+    },
+    {
+      "name": "libnghttp3-9:amd64",
+      "version": "1.8.0-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 201
+    },
+    {
+      "name": "libngtcp2-16:amd64",
+      "version": "1.11.0-1+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 335
+    },
+    {
+      "name": "libngtcp2-crypto-gnutls8:amd64",
+      "version": "1.11.0-1+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 80
+    },
+    {
+      "name": "libnl-3-200:amd64",
+      "version": "3.7.0-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 180
+    },
+    {
+      "name": "libnl-route-3-200:amd64",
+      "version": "3.7.0-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 648
+    },
+    {
+      "name": "libnspr4:amd64",
+      "version": "2:4.36-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 321
+    },
+    {
+      "name": "libnss3:amd64",
+      "version": "2:3.110-1+deb13u5",
+      "architecture": "amd64",
+      "installedSizeKiB": 4479
+    },
+    {
+      "name": "libnuma1:amd64",
+      "version": "2.0.19-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 75
+    },
+    {
+      "name": "libonig5:amd64",
+      "version": "6.9.9-1+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 677
+    },
+    {
+      "name": "libp11-kit0:amd64",
+      "version": "0.25.5-3",
+      "architecture": "amd64",
+      "installedSizeKiB": 1882
+    },
+    {
+      "name": "libpam-modules-bin",
+      "version": "1.7.0-5",
+      "architecture": "amd64",
+      "installedSizeKiB": 206
+    },
+    {
+      "name": "libpam-modules:amd64",
+      "version": "1.7.0-5",
+      "architecture": "amd64",
+      "installedSizeKiB": 923
+    },
+    {
+      "name": "libpam-runtime",
+      "version": "1.7.0-5",
+      "architecture": "all",
+      "installedSizeKiB": 1028
+    },
+    {
+      "name": "libpam0g:amd64",
+      "version": "1.7.0-5",
+      "architecture": "amd64",
+      "installedSizeKiB": 194
+    },
+    {
+      "name": "libpciaccess0:amd64",
+      "version": "0.17-3+b3",
+      "architecture": "amd64",
+      "installedSizeKiB": 97
+    },
+    {
+      "name": "libpcre2-8-0:amd64",
+      "version": "10.46-1~deb13u3",
+      "architecture": "amd64",
+      "installedSizeKiB": 774
+    },
+    {
+      "name": "libpcsclite1:amd64",
+      "version": "2.3.3-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 113
+    },
+    {
+      "name": "libperl5.40:amd64",
+      "version": "5.40.1-6+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 29322
+    },
+    {
+      "name": "libpixman-1-0:amd64",
+      "version": "0.44.0-3",
+      "architecture": "amd64",
+      "installedSizeKiB": 715
+    },
+    {
+      "name": "libpmem1:amd64",
+      "version": "1.13.1-1.1+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 392
+    },
+    {
+      "name": "libpng16-16t64:amd64",
+      "version": "1.6.48-1+deb13u6",
+      "architecture": "amd64",
+      "installedSizeKiB": 444
+    },
+    {
+      "name": "libproc2-0:amd64",
+      "version": "2:4.0.4-9",
+      "architecture": "amd64",
+      "installedSizeKiB": 237
+    },
+    {
+      "name": "libpsl5t64:amd64",
+      "version": "0.21.2-1.1+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 100
+    },
+    {
+      "name": "libpython3-stdlib:amd64",
+      "version": "3.13.5-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 28
+    },
+    {
+      "name": "libpython3.13-minimal:amd64",
+      "version": "3.13.5-2+deb13u5",
+      "architecture": "amd64",
+      "installedSizeKiB": 5452
+    },
+    {
+      "name": "libpython3.13-stdlib:amd64",
+      "version": "3.13.5-2+deb13u5",
+      "architecture": "amd64",
+      "installedSizeKiB": 8898
+    },
+    {
+      "name": "librdmacm1t64:amd64",
+      "version": "56.1-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 209
+    },
+    {
+      "name": "libreadline8t64:amd64",
+      "version": "8.2-6",
+      "architecture": "amd64",
+      "installedSizeKiB": 485
+    },
+    {
+      "name": "librtmp1:amd64",
+      "version": "2.4+20151223.gitfa8646d.1-2+b5",
+      "architecture": "amd64",
+      "installedSizeKiB": 144
+    },
+    {
+      "name": "libsasl2-2:amd64",
+      "version": "2.1.28+dfsg1-9",
+      "architecture": "amd64",
+      "installedSizeKiB": 156
+    },
+    {
+      "name": "libsasl2-modules-db:amd64",
+      "version": "2.1.28+dfsg1-9",
+      "architecture": "amd64",
+      "installedSizeKiB": 70
+    },
+    {
+      "name": "libseccomp2:amd64",
+      "version": "2.6.0-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 201
+    },
+    {
+      "name": "libselinux1:amd64",
+      "version": "3.8.1-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 229
+    },
+    {
+      "name": "libsemanage-common",
+      "version": "3.8.1-1",
+      "architecture": "all",
+      "installedSizeKiB": 21
+    },
+    {
+      "name": "libsemanage2:amd64",
+      "version": "3.8.1-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 313
+    },
+    {
+      "name": "libsensors-config",
+      "version": "1:3.6.2-2",
+      "architecture": "all",
+      "installedSizeKiB": 37
+    },
+    {
+      "name": "libsensors5:amd64",
+      "version": "1:3.6.2-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 100
+    },
+    {
+      "name": "libsepol2:amd64",
+      "version": "3.8.1-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 835
+    },
+    {
+      "name": "libslirp0:amd64",
+      "version": "4.8.0-1+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 168
+    },
+    {
+      "name": "libsmartcols1:amd64",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 377
+    },
+    {
+      "name": "libsqlite3-0:amd64",
+      "version": "3.46.1-7+deb13u2",
+      "architecture": "amd64",
+      "installedSizeKiB": 1834
+    },
+    {
+      "name": "libssh2-1t64:amd64",
+      "version": "1.11.1-1+deb13u2",
+      "architecture": "amd64",
+      "installedSizeKiB": 441
+    },
+    {
+      "name": "libssl3t64:amd64",
+      "version": "3.5.7-1~deb13u3",
+      "architecture": "amd64",
+      "installedSizeKiB": 8115
+    },
+    {
+      "name": "libstdc++6:amd64",
+      "version": "14.2.0-19",
+      "architecture": "amd64",
+      "installedSizeKiB": 3019
+    },
+    {
+      "name": "libsystemd0:amd64",
+      "version": "257.13-1~deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 1223
+    },
+    {
+      "name": "libtasn1-6:amd64",
+      "version": "4.20.0-2+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 122
+    },
+    {
+      "name": "libtinfo6:amd64",
+      "version": "6.5+20250216-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 569
+    },
+    {
+      "name": "libudev1:amd64",
+      "version": "257.13-1~deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 357
+    },
+    {
+      "name": "libunistring5:amd64",
+      "version": "1.3-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 2092
+    },
+    {
+      "name": "liburing2:amd64",
+      "version": "2.9-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 117
+    },
+    {
+      "name": "libusb-1.0-0:amd64",
+      "version": "2:1.0.28-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 157
+    },
+    {
+      "name": "libusbredirparser1t64:amd64",
+      "version": "0.15.0-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 61
+    },
+    {
+      "name": "libuuid1:amd64",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 98
+    },
+    {
+      "name": "libvdeplug2t64:amd64",
+      "version": "4.0.1-5.1+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 282
+    },
+    {
+      "name": "libwayland-server0:amd64",
+      "version": "1.23.1-3",
+      "architecture": "amd64",
+      "installedSizeKiB": 112
+    },
+    {
+      "name": "libx11-6:amd64",
+      "version": "2:1.8.12-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 1638
+    },
+    {
+      "name": "libx11-data",
+      "version": "2:1.8.12-1",
+      "architecture": "all",
+      "installedSizeKiB": 1576
+    },
+    {
+      "name": "libx11-xcb1:amd64",
+      "version": "2:1.8.12-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 306
+    },
+    {
+      "name": "libxau6:amd64",
+      "version": "1:1.0.11-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 42
+    },
+    {
+      "name": "libxcb-dri3-0:amd64",
+      "version": "1.17.0-2+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 137
+    },
+    {
+      "name": "libxcb-present0:amd64",
+      "version": "1.17.0-2+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 128
+    },
+    {
+      "name": "libxcb-randr0:amd64",
+      "version": "1.17.0-2+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 197
+    },
+    {
+      "name": "libxcb-sync1:amd64",
+      "version": "1.17.0-2+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 150
+    },
+    {
+      "name": "libxcb-xfixes0:amd64",
+      "version": "1.17.0-2+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 152
+    },
+    {
+      "name": "libxcb1:amd64",
+      "version": "1.17.0-2+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 301
+    },
+    {
+      "name": "libxcomposite1:amd64",
+      "version": "1:0.4.6-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 39
+    },
+    {
+      "name": "libxdamage1:amd64",
+      "version": "1:1.1.6-1+b2",
+      "architecture": "amd64",
+      "installedSizeKiB": 39
+    },
+    {
+      "name": "libxdmcp6:amd64",
+      "version": "1:1.1.5-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 59
+    },
+    {
+      "name": "libxext6:amd64",
+      "version": "2:1.3.4-1+b3",
+      "architecture": "amd64",
+      "installedSizeKiB": 129
+    },
+    {
+      "name": "libxfixes3:amd64",
+      "version": "1:6.0.0-2+b4",
+      "architecture": "amd64",
+      "installedSizeKiB": 55
+    },
+    {
+      "name": "libxi6:amd64",
+      "version": "2:1.8.2-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 143
+    },
+    {
+      "name": "libxkbcommon0:amd64",
+      "version": "1.7.0-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 317
+    },
+    {
+      "name": "libxml2:amd64",
+      "version": "2.12.7+dfsg+really2.9.14-2.1+deb13u3",
+      "architecture": "amd64",
+      "installedSizeKiB": 1916
+    },
+    {
+      "name": "libxrandr2:amd64",
+      "version": "2:1.5.4-1+b3",
+      "architecture": "amd64",
+      "installedSizeKiB": 85
+    },
+    {
+      "name": "libxrender1:amd64",
+      "version": "1:0.9.12-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 72
+    },
+    {
+      "name": "libxshmfence1:amd64",
+      "version": "1.3.3-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 36
+    },
+    {
+      "name": "libxxhash0:amd64",
+      "version": "0.8.3-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 92
+    },
+    {
+      "name": "libz3-4:amd64",
+      "version": "4.13.3-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 27142
+    },
+    {
+      "name": "libzstd1:amd64",
+      "version": "1.5.7+dfsg-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 847
+    },
+    {
+      "name": "login",
+      "version": "1:4.16.0-2+really2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 287
+    },
+    {
+      "name": "login.defs",
+      "version": "1:4.17.4-2",
+      "architecture": "all",
+      "installedSizeKiB": 214
+    },
+    {
+      "name": "make",
+      "version": "4.4.1-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 1766
+    },
+    {
+      "name": "mawk",
+      "version": "1.3.4.20250131-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 292
+    },
+    {
+      "name": "media-types",
+      "version": "13.0.0",
+      "architecture": "all",
+      "installedSizeKiB": 98
+    },
+    {
+      "name": "mesa-libgallium:amd64",
+      "version": "25.0.7-2+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 41615
+    },
+    {
+      "name": "mount",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 497
+    },
+    {
+      "name": "ncurses-base",
+      "version": "6.5+20250216-2",
+      "architecture": "all",
+      "installedSizeKiB": 389
+    },
+    {
+      "name": "ncurses-bin",
+      "version": "6.5+20250216-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 665
+    },
+    {
+      "name": "netbase",
+      "version": "6.5",
+      "architecture": "all",
+      "installedSizeKiB": 35
+    },
+    {
+      "name": "openssh-client",
+      "version": "1:10.0p1-7+deb13u4",
+      "architecture": "amd64",
+      "installedSizeKiB": 5011
+    },
+    {
+      "name": "openssl",
+      "version": "3.5.7-1~deb13u3",
+      "architecture": "amd64",
+      "installedSizeKiB": 2510
+    },
+    {
+      "name": "openssl-provider-legacy",
+      "version": "3.5.7-1~deb13u3",
+      "architecture": "amd64",
+      "installedSizeKiB": 424
+    },
+    {
+      "name": "passwd",
+      "version": "1:4.17.4-2",
+      "architecture": "amd64",
+      "installedSizeKiB": 4758
+    },
+    {
+      "name": "perl",
+      "version": "5.40.1-6+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 841
+    },
+    {
+      "name": "perl-base",
+      "version": "5.40.1-6+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 7815
+    },
+    {
+      "name": "perl-modules-5.40",
+      "version": "5.40.1-6+deb13u1",
+      "architecture": "all",
+      "installedSizeKiB": 19993
+    },
+    {
+      "name": "procps",
+      "version": "2:4.0.4-9",
+      "architecture": "amd64",
+      "installedSizeKiB": 2395
+    },
+    {
+      "name": "python3",
+      "version": "3.13.5-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 83
+    },
+    {
+      "name": "python3-minimal",
+      "version": "3.13.5-1",
+      "architecture": "amd64",
+      "installedSizeKiB": 112
+    },
+    {
+      "name": "python3.13",
+      "version": "3.13.5-2+deb13u5",
+      "architecture": "amd64",
+      "installedSizeKiB": 830
+    },
+    {
+      "name": "python3.13-minimal",
+      "version": "3.13.5-2+deb13u5",
+      "architecture": "amd64",
+      "installedSizeKiB": 6768
+    },
+    {
+      "name": "qemu-efi-aarch64",
+      "version": "2025.02-8+deb13u1",
+      "architecture": "all",
+      "installedSizeKiB": 396344
+    },
+    {
+      "name": "qemu-system-arm",
+      "version": "1:10.0.13+ds-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 63863
+    },
+    {
+      "name": "qemu-system-common",
+      "version": "1:10.0.13+ds-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 4170
+    },
+    {
+      "name": "qemu-system-data",
+      "version": "1:10.0.13+ds-0+deb13u1",
+      "architecture": "all",
+      "installedSizeKiB": 18494
+    },
+    {
+      "name": "qemu-system-x86",
+      "version": "1:10.0.13+ds-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 64358
+    },
+    {
+      "name": "qemu-utils",
+      "version": "1:10.0.13+ds-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 12510
+    },
+    {
+      "name": "readline-common",
+      "version": "8.2-6",
+      "architecture": "all",
+      "installedSizeKiB": 89
+    },
+    {
+      "name": "ripgrep",
+      "version": "14.1.1-1+b4",
+      "architecture": "amd64",
+      "installedSizeKiB": 5278
+    },
+    {
+      "name": "seabios",
+      "version": "1.16.3-2",
+      "architecture": "all",
+      "installedSizeKiB": 859
+    },
+    {
+      "name": "sed",
+      "version": "4.9-2+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 991
+    },
+    {
+      "name": "sqv",
+      "version": "1.3.0-3+b2",
+      "architecture": "amd64",
+      "installedSizeKiB": 1855
+    },
+    {
+      "name": "sysvinit-utils",
+      "version": "3.14-4",
+      "architecture": "amd64",
+      "installedSizeKiB": 104
+    },
+    {
+      "name": "tar",
+      "version": "1.35+dfsg-3.1",
+      "architecture": "amd64",
+      "installedSizeKiB": 3085
+    },
+    {
+      "name": "tini",
+      "version": "0.19.0-3+b8",
+      "architecture": "amd64",
+      "installedSizeKiB": 765
+    },
+    {
+      "name": "tzdata",
+      "version": "2026f-0+deb13u1",
+      "architecture": "all",
+      "installedSizeKiB": 1360
+    },
+    {
+      "name": "unzip",
+      "version": "6.0-29+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 387
+    },
+    {
+      "name": "util-linux",
+      "version": "2.41.5-0+deb13u1",
+      "architecture": "amd64",
+      "installedSizeKiB": 4986
+    },
+    {
+      "name": "xkb-data",
+      "version": "2.42-1",
+      "architecture": "all",
+      "installedSizeKiB": 6911
+    },
+    {
+      "name": "zlib1g:amd64",
+      "version": "1:1.3.dfsg+really1.3.1-1+b1",
+      "architecture": "amd64",
+      "installedSizeKiB": 173
+    }
+  ],
+  "commands": [
+    {
+      "command": "ar",
+      "path": null
+    },
+    {
+      "command": "autoconf",
+      "path": null
+    },
+    {
+      "command": "automake",
+      "path": null
+    },
+    {
+      "command": "awk",
+      "path": "/usr/bin/awk"
+    },
+    {
+      "command": "bash",
+      "path": "/usr/bin/bash"
+    },
+    {
+      "command": "bun",
+      "path": "/usr/local/bin/bun"
+    },
+    {
+      "command": "bunx",
+      "path": "/usr/local/bin/bunx"
+    },
+    {
+      "command": "bzip2",
+      "path": null
+    },
+    {
+      "command": "c++",
+      "path": null
+    },
+    {
+      "command": "cargo",
+      "path": null
+    },
+    {
+      "command": "cc",
+      "path": null
+    },
+    {
+      "command": "centrs",
+      "path": "/opt/bun/bin/centrs"
+    },
+    {
+      "command": "claude",
+      "path": null
+    },
+    {
+      "command": "cmake",
+      "path": null
+    },
+    {
+      "command": "codex",
+      "path": "/usr/local/bin/codex"
+    },
+    {
+      "command": "corepack",
+      "path": "/usr/local/bin/corepack"
+    },
+    {
+      "command": "curl",
+      "path": "/usr/bin/curl"
+    },
+    {
+      "command": "cut",
+      "path": "/usr/bin/cut"
+    },
+    {
+      "command": "dash",
+      "path": "/usr/bin/dash"
+    },
+    {
+      "command": "diff",
+      "path": "/usr/bin/diff"
+    },
+    {
+      "command": "dig",
+      "path": null
+    },
+    {
+      "command": "docker",
+      "path": null
+    },
+    {
+      "command": "dotnet",
+      "path": null
+    },
+    {
+      "command": "env",
+      "path": "/usr/bin/env"
+    },
+    {
+      "command": "file",
+      "path": null
+    },
+    {
+      "command": "find",
+      "path": "/usr/bin/find"
+    },
+    {
+      "command": "free",
+      "path": "/usr/bin/free"
+    },
+    {
+      "command": "g++",
+      "path": null
+    },
+    {
+      "command": "gcc",
+      "path": null
+    },
+    {
+      "command": "gh",
+      "path": null
+    },
+    {
+      "command": "git",
+      "path": "/usr/bin/git"
+    },
+    {
+      "command": "git-lfs",
+      "path": null
+    },
+    {
+      "command": "go",
+      "path": null
+    },
+    {
+      "command": "gpg",
+      "path": null
+    },
+    {
+      "command": "grep",
+      "path": "/usr/bin/grep"
+    },
+    {
+      "command": "gzip",
+      "path": "/usr/bin/gzip"
+    },
+    {
+      "command": "head",
+      "path": "/usr/bin/head"
+    },
+    {
+      "command": "hexdump",
+      "path": null
+    },
+    {
+      "command": "ip",
+      "path": null
+    },
+    {
+      "command": "java",
+      "path": null
+    },
+    {
+      "command": "jq",
+      "path": "/usr/bin/jq"
+    },
+    {
+      "command": "kubectl",
+      "path": null
+    },
+    {
+      "command": "ld",
+      "path": null
+    },
+    {
+      "command": "less",
+      "path": "/usr/bin/less"
+    },
+    {
+      "command": "libtool",
+      "path": null
+    },
+    {
+      "command": "locale",
+      "path": "/usr/bin/locale"
+    },
+    {
+      "command": "make",
+      "path": "/usr/bin/make"
+    },
+    {
+      "command": "muse",
+      "path": "/usr/local/bin/muse"
+    },
+    {
+      "command": "nc",
+      "path": null
+    },
+    {
+      "command": "ninja",
+      "path": null
+    },
+    {
+      "command": "node",
+      "path": "/usr/local/bin/node"
+    },
+    {
+      "command": "npm",
+      "path": "/usr/local/bin/npm"
+    },
+    {
+      "command": "npx",
+      "path": "/usr/local/bin/npx"
+    },
+    {
+      "command": "nslookup",
+      "path": null
+    },
+    {
+      "command": "opencode",
+      "path": "/usr/local/bin/opencode"
+    },
+    {
+      "command": "openssl",
+      "path": "/usr/bin/openssl"
+    },
+    {
+      "command": "patch",
+      "path": null
+    },
+    {
+      "command": "pgrep",
+      "path": "/usr/bin/pgrep"
+    },
+    {
+      "command": "ping",
+      "path": null
+    },
+    {
+      "command": "pip",
+      "path": null
+    },
+    {
+      "command": "pip3",
+      "path": null
+    },
+    {
+      "command": "pipx",
+      "path": null
+    },
+    {
+      "command": "pkg-config",
+      "path": null
+    },
+    {
+      "command": "pkill",
+      "path": "/usr/bin/pkill"
+    },
+    {
+      "command": "pnpm",
+      "path": null
+    },
+    {
+      "command": "podman",
+      "path": null
+    },
+    {
+      "command": "ps",
+      "path": "/usr/bin/ps"
+    },
+    {
+      "command": "python",
+      "path": null
+    },
+    {
+      "command": "python3",
+      "path": "/usr/bin/python3"
+    },
+    {
+      "command": "qemu-img",
+      "path": "/usr/bin/qemu-img"
+    },
+    {
+      "command": "qemu-system-aarch64",
+      "path": "/usr/bin/qemu-system-aarch64"
+    },
+    {
+      "command": "qemu-system-x86_64",
+      "path": "/usr/bin/qemu-system-x86_64"
+    },
+    {
+      "command": "quickchr",
+      "path": "/opt/bun/bin/quickchr"
+    },
+    {
+      "command": "readelf",
+      "path": null
+    },
+    {
+      "command": "rg",
+      "path": "/usr/bin/rg"
+    },
+    {
+      "command": "rsync",
+      "path": null
+    },
+    {
+      "command": "ruby",
+      "path": null
+    },
+    {
+      "command": "rustc",
+      "path": null
+    },
+    {
+      "command": "scp",
+      "path": "/usr/bin/scp"
+    },
+    {
+      "command": "sed",
+      "path": "/usr/bin/sed"
+    },
+    {
+      "command": "sftp",
+      "path": "/usr/bin/sftp"
+    },
+    {
+      "command": "sh",
+      "path": "/usr/bin/sh"
+    },
+    {
+      "command": "shellcheck",
+      "path": null
+    },
+    {
+      "command": "shfmt",
+      "path": null
+    },
+    {
+      "command": "socat",
+      "path": null
+    },
+    {
+      "command": "sort",
+      "path": "/usr/bin/sort"
+    },
+    {
+      "command": "sqlite3",
+      "path": null
+    },
+    {
+      "command": "ss",
+      "path": null
+    },
+    {
+      "command": "ssh",
+      "path": "/usr/bin/ssh"
+    },
+    {
+      "command": "strings",
+      "path": null
+    },
+    {
+      "command": "sudo",
+      "path": null
+    },
+    {
+      "command": "t3",
+      "path": "/usr/local/bin/t3"
+    },
+    {
+      "command": "tail",
+      "path": "/usr/bin/tail"
+    },
+    {
+      "command": "tar",
+      "path": "/usr/bin/tar"
+    },
+    {
+      "command": "tee",
+      "path": "/usr/bin/tee"
+    },
+    {
+      "command": "time",
+      "path": null
+    },
+    {
+      "command": "timeout",
+      "path": "/usr/bin/timeout"
+    },
+    {
+      "command": "top",
+      "path": "/usr/bin/top"
+    },
+    {
+      "command": "tr",
+      "path": "/usr/bin/tr"
+    },
+    {
+      "command": "tree",
+      "path": null
+    },
+    {
+      "command": "uniq",
+      "path": "/usr/bin/uniq"
+    },
+    {
+      "command": "unzip",
+      "path": "/usr/bin/unzip"
+    },
+    {
+      "command": "uv",
+      "path": null
+    },
+    {
+      "command": "wc",
+      "path": "/usr/bin/wc"
+    },
+    {
+      "command": "wget",
+      "path": null
+    },
+    {
+      "command": "which",
+      "path": "/usr/bin/which"
+    },
+    {
+      "command": "xargs",
+      "path": "/usr/bin/xargs"
+    },
+    {
+      "command": "xxd",
+      "path": null
+    },
+    {
+      "command": "xz",
+      "path": null
+    },
+    {
+      "command": "yarn",
+      "path": "/usr/local/bin/yarn"
+    },
+    {
+      "command": "yq",
+      "path": null
+    },
+    {
+      "command": "zip",
+      "path": null
+    },
+    {
+      "command": "zstd",
+      "path": null
+    }
+  ],
+  "versions": {
+    "node": "v24.22.2",
+    "npm": "11.19.1",
+    "bun": "1.4.4",
+    "python3": "Python 3.13.5",
+    "git": "git version 2.47.3",
+    "jq": "jq-1.7",
+    "rg": "ripgrep 14.1.1\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.43 is available (JIT is available)",
+    "t3": "t3 v0.1.6",
+    "codex": "codex-cli 0.166.0",
+    "muse": "Muse Code 1.4.14 (1.4.14-R7309.1)"
+  },
+  "npmPackages": {
+    "@openai/codex": {
+      "version": "0.166.0",
+      "overridden": false
+    },
+    "corepack": {
+      "version": "0.36.0",
+      "overridden": false
+    },
+    "npm": {
+      "version": "11.19.1",
+      "overridden": false
+    },
+    "opencode-ai": {
+      "version": "1.19.5",
+      "overridden": false
+    }
+  },
+  "bunPackages": {
+    "@tikoci/centrs": "0.1.10",
+    "@tikoci/quickchr": "0.5.5"
+  },
+  "notes": [
+    "Image contents before entrypoint/first boot; Claude and browser downloads are excluded.",
+    "Commands are curated executable PATH probes, not an exhaustive list or functional tests; shims can need downloads.",
+    "Installed-Size is dpkg metadata in KiB, not compressed image size.",
+    "npm/Bun list top-level global packages; this is not a complete dependency SBOM."
+  ],
+  "image": {
+    "reference": "app-t3code:agent-tools",
+    "id": "sha256:adf7208978175c2d732aa88d7a50f331d3a683a59b0f39d9eef15530d02e2200",
+    "repoDigests": [
+      "app-t3code@sha256:adf7208978175c2d732aa88d7a50f331d3a683a59b0f39d9eef15530d02e2200"
+    ],
+    "created": "2026-11-05T13:07:22.354131072-08:00",
+    "architecture": "amd64",
+    "sizeBytes": 4076909402
+  }
+}

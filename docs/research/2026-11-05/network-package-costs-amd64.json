@@ -1,0 +1,2742 @@
+{
+  "generatedAt": "2026-11-06T00:54:48.897Z",
+  "architecture": "amd64",
+  "method": "apt-get --simulate --no-install-recommends; candidate metadata Size and Installed-Size; subtract installed sizes for upgrades. Indexes refreshed, no packages installed. Independent scenarios from the same image, not additive. These are apt estimates, not measured OCI layers.",
+  "aptSources": "Types: deb\n# http://snapshot.debian.org/archive/debian/20261104T212339Z\nURIs: http://deb.debian.org/debian\nSuites: trixie trixie-updates\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.pgp\n\nTypes: deb\n# http://snapshot.debian.org/archive/debian-security/20261104T212339Z\nURIs: http://deb.debian.org/debian-security\nSuites: trixie-security\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.pgp\n",
+  "aptUpdate": "Get:1 http://deb.debian.org/debian trixie InRelease [140 kB]\nGet:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]\nGet:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]\nGet:4 http://deb.debian.org/debian trixie/main amd64 Packages [9678 kB]\nGet:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [1108 B]\nGet:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [298 kB]\nFetched 10.2 MB in 1s (8849 kB/s)\nReading package lists...\n",
+  "measurements": [
+    {
+      "label": "tcpdump",
+      "packages": [
+        "tcpdump"
+      ],
+      "downloadBytes": 639656,
+      "installedDeltaKiB": 1733,
+      "changes": [
+        {
+          "name": "libpcap0.8t64",
+          "version": "1.10.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 390,
+          "downloadBytes": 168608,
+          "installedDeltaKiB": 390
+        },
+        {
+          "name": "tcpdump",
+          "version": "4.99.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 1343,
+          "downloadBytes": 471048,
+          "installedDeltaKiB": 1343
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libpcap0.8t64\nSuggested packages:\n  apparmor\nThe following NEW packages will be installed:\n  libpcap0.8t64 tcpdump\n0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.\nInst libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nInst tcpdump (4.99.5-2 Debian:13.7/stable [amd64])\nConf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nConf tcpdump (4.99.5-2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "tshark",
+      "packages": [
+        "tshark"
+      ],
+      "downloadBytes": 29081712,
+      "installedDeltaKiB": 148660,
+      "changes": [
+        {
+          "name": "libbcg729-0",
+          "version": "1.1.1-3+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 85,
+          "downloadBytes": 35608,
+          "installedDeltaKiB": 85
+        },
+        {
+          "name": "libcap2-bin",
+          "version": "1:2.75-10+deb13u1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 132,
+          "downloadBytes": 36456,
+          "installedDeltaKiB": 132
+        },
+        {
+          "name": "libcares2",
+          "version": "1.34.5-1+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 282,
+          "downloadBytes": 98272,
+          "installedDeltaKiB": 282
+        },
+        {
+          "name": "libdeflate0",
+          "version": "1.23-2",
+          "previousVersion": null,
+          "installedSizeKiB": 102,
+          "downloadBytes": 47344,
+          "installedDeltaKiB": 102
+        },
+        {
+          "name": "libgpg-error0",
+          "version": "1.51-4",
+          "previousVersion": null,
+          "installedSizeKiB": 208,
+          "downloadBytes": 82108,
+          "installedDeltaKiB": 208
+        },
+        {
+          "name": "libgcrypt20",
+          "version": "1.11.0-7+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1999,
+          "downloadBytes": 843104,
+          "installedDeltaKiB": 1999
+        },
+        {
+          "name": "libjbig0",
+          "version": "2.1-6.1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 85,
+          "downloadBytes": 32116,
+          "installedDeltaKiB": 85
+        },
+        {
+          "name": "liblerc4",
+          "version": "4.0.0+ds-5",
+          "previousVersion": null,
+          "installedSizeKiB": 603,
+          "downloadBytes": 182976,
+          "installedDeltaKiB": 603
+        },
+        {
+          "name": "liblua5.4-0",
+          "version": "5.4.7-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 580,
+          "downloadBytes": 146640,
+          "installedDeltaKiB": 580
+        },
+        {
+          "name": "libmaxminddb0",
+          "version": "1.12.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 57,
+          "downloadBytes": 25800,
+          "installedDeltaKiB": 57
+        },
+        {
+          "name": "libnl-genl-3-200",
+          "version": "3.7.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 53,
+          "downloadBytes": 18136,
+          "installedDeltaKiB": 53
+        },
+        {
+          "name": "libopencore-amrnb0",
+          "version": "0.1.6-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 196,
+          "downloadBytes": 97456,
+          "installedDeltaKiB": 196
+        },
+        {
+          "name": "libopus0",
+          "version": "1.5.2-2",
+          "previousVersion": null,
+          "installedSizeKiB": 3494,
+          "downloadBytes": 2851932,
+          "installedDeltaKiB": 3494
+        },
+        {
+          "name": "libpcap0.8t64",
+          "version": "1.10.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 390,
+          "downloadBytes": 168608,
+          "installedDeltaKiB": 390
+        },
+        {
+          "name": "libsbc1",
+          "version": "2.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 88,
+          "downloadBytes": 32020,
+          "installedDeltaKiB": 88
+        },
+        {
+          "name": "libsharpyuv0",
+          "version": "1.5.0-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 143,
+          "downloadBytes": 115612,
+          "installedDeltaKiB": 143
+        },
+        {
+          "name": "libsmi2t64",
+          "version": "0.4.8+dfsg2-17+b1",
+          "previousVersion": null,
+          "installedSizeKiB": 443,
+          "downloadBytes": 120768,
+          "installedDeltaKiB": 443
+        },
+        {
+          "name": "libsnappy1v5",
+          "version": "1.2.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 93,
+          "downloadBytes": 29252,
+          "installedDeltaKiB": 93
+        },
+        {
+          "name": "libwebp7",
+          "version": "1.5.0-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 631,
+          "downloadBytes": 317856,
+          "installedDeltaKiB": 631
+        },
+        {
+          "name": "libtiff6",
+          "version": "4.7.0-3+deb13u3",
+          "previousVersion": null,
+          "installedSizeKiB": 766,
+          "downloadBytes": 345492,
+          "installedDeltaKiB": 766
+        },
+        {
+          "name": "libspandsp2t64",
+          "version": "0.0.6+dfsg-2.2",
+          "previousVersion": null,
+          "installedSizeKiB": 875,
+          "downloadBytes": 282180,
+          "installedDeltaKiB": 875
+        },
+        {
+          "name": "libspeexdsp1",
+          "version": "1.2.1-3",
+          "previousVersion": null,
+          "installedSizeKiB": 102,
+          "downloadBytes": 42864,
+          "installedDeltaKiB": 102
+        },
+        {
+          "name": "libssh-4",
+          "version": "0.11.5-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 583,
+          "downloadBytes": 211924,
+          "installedDeltaKiB": 583
+        },
+        {
+          "name": "libwireshark-data",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 3613,
+          "downloadBytes": 464736,
+          "installedDeltaKiB": 3613
+        },
+        {
+          "name": "libwsutil16",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 338,
+          "downloadBytes": 135392,
+          "installedDeltaKiB": 338
+        },
+        {
+          "name": "libwiretap15",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 780,
+          "downloadBytes": 276964,
+          "installedDeltaKiB": 780
+        },
+        {
+          "name": "libwireshark18",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 129825,
+          "downloadBytes": 21248072,
+          "installedDeltaKiB": 129825
+        },
+        {
+          "name": "wireshark-common",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1679,
+          "downloadBytes": 608300,
+          "installedDeltaKiB": 1679
+        },
+        {
+          "name": "tshark",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 435,
+          "downloadBytes": 183724,
+          "installedDeltaKiB": 435
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libbcg729-0 libcap2-bin libcares2 libdeflate0 libgcrypt20 libgpg-error0\n  libjbig0 liblerc4 liblua5.4-0 libmaxminddb0 libnl-genl-3-200\n  libopencore-amrnb0 libopus0 libpcap0.8t64 libsbc1 libsharpyuv0 libsmi2t64\n  libsnappy1v5 libspandsp2t64 libspeexdsp1 libssh-4 libtiff6 libwebp7\n  libwireshark-data libwireshark18 libwiretap15 libwsutil16 wireshark-common\nSuggested packages:\n  rng-tools mmdb-bin opus-tools snmp-mibs-downloader geoipupdate\n  geoip-database geoip-database-extra libjs-leaflet\n  libjs-leaflet.markercluster wireshark-doc\nRecommended packages:\n  libpam-cap libgpg-error-l10n\nThe following NEW packages will be installed:\n  libbcg729-0 libcap2-bin libcares2 libdeflate0 libgcrypt20 libgpg-error0\n  libjbig0 liblerc4 liblua5.4-0 libmaxminddb0 libnl-genl-3-200\n  libopencore-amrnb0 libopus0 libpcap0.8t64 libsbc1 libsharpyuv0 libsmi2t64\n  libsnappy1v5 libspandsp2t64 libspeexdsp1 libssh-4 libtiff6 libwebp7\n  libwireshark-data libwireshark18 libwiretap15 libwsutil16 tshark\n  wireshark-common\n0 upgraded, 29 newly installed, 0 to remove and 0 not upgraded.\nInst libbcg729-0 (1.1.1-3+deb13u1 Debian:13.7/stable [amd64])\nInst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nInst libcares2 (1.34.5-1+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libdeflate0 (1.23-2 Debian:13.7/stable [amd64])\nInst libgpg-error0 (1.51-4 Debian:13.7/stable [amd64])\nInst libgcrypt20 (1.11.0-7+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libjbig0 (2.1-6.1+b2 Debian:13.7/stable [amd64])\nInst liblerc4 (4.0.0+ds-5 Debian:13.7/stable [amd64])\nInst liblua5.4-0 (5.4.7-1+b2 Debian:13.7/stable [amd64])\nInst libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nInst libnl-genl-3-200 (3.7.0-2 Debian:13.7/stable [amd64])\nInst libopencore-amrnb0 (0.1.6-1+b2 Debian:13.7/stable [amd64])\nInst libopus0 (1.5.2-2 Debian:13.7/stable [amd64])\nInst libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nInst libsbc1 (2.1-1 Debian:13.7/stable [amd64])\nInst libsharpyuv0 (1.5.0-0.1 Debian:13.7/stable [amd64])\nInst libsmi2t64 (0.4.8+dfsg2-17+b1 Debian:13.7/stable [amd64])\nInst libsnappy1v5 (1.2.2-1 Debian:13.7/stable [amd64])\nInst libwebp7 (1.5.0-0.1 Debian:13.7/stable [amd64])\nInst libtiff6 (4.7.0-3+deb13u3 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libspandsp2t64 (0.0.6+dfsg-2.2 Debian:13.7/stable [amd64])\nInst libspeexdsp1 (1.2.1-3 Debian:13.7/stable [amd64])\nInst libssh-4 (0.11.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libwireshark-data (4.4.19-0+deb13u1 Debian-Security:13/stable-security [all])\nInst libwsutil16 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst libwiretap15 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst libwireshark18 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst wireshark-common (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst tshark (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libbcg729-0 (1.1.1-3+deb13u1 Debian:13.7/stable [amd64])\nConf libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nConf libcares2 (1.34.5-1+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libdeflate0 (1.23-2 Debian:13.7/stable [amd64])\nConf libgpg-error0 (1.51-4 Debian:13.7/stable [amd64])\nConf libgcrypt20 (1.11.0-7+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libjbig0 (2.1-6.1+b2 Debian:13.7/stable [amd64])\nConf liblerc4 (4.0.0+ds-5 Debian:13.7/stable [amd64])\nConf liblua5.4-0 (5.4.7-1+b2 Debian:13.7/stable [amd64])\nConf libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nConf libnl-genl-3-200 (3.7.0-2 Debian:13.7/stable [amd64])\nConf libopencore-amrnb0 (0.1.6-1+b2 Debian:13.7/stable [amd64])\nConf libopus0 (1.5.2-2 Debian:13.7/stable [amd64])\nConf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nConf libsbc1 (2.1-1 Debian:13.7/stable [amd64])\nConf libsharpyuv0 (1.5.0-0.1 Debian:13.7/stable [amd64])\nConf libsmi2t64 (0.4.8+dfsg2-17+b1 Debian:13.7/stable [amd64])\nConf libsnappy1v5 (1.2.2-1 Debian:13.7/stable [amd64])\nConf libwebp7 (1.5.0-0.1 Debian:13.7/stable [amd64])\nConf libtiff6 (4.7.0-3+deb13u3 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libspandsp2t64 (0.0.6+dfsg-2.2 Debian:13.7/stable [amd64])\nConf libspeexdsp1 (1.2.1-3 Debian:13.7/stable [amd64])\nConf libssh-4 (0.11.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libwireshark-data (4.4.19-0+deb13u1 Debian-Security:13/stable-security [all])\nConf libwsutil16 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libwiretap15 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libwireshark18 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf wireshark-common (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf tshark (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "wireshark-common",
+      "packages": [
+        "wireshark-common"
+      ],
+      "downloadBytes": 28897988,
+      "installedDeltaKiB": 148225,
+      "changes": [
+        {
+          "name": "libbcg729-0",
+          "version": "1.1.1-3+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 85,
+          "downloadBytes": 35608,
+          "installedDeltaKiB": 85
+        },
+        {
+          "name": "libcap2-bin",
+          "version": "1:2.75-10+deb13u1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 132,
+          "downloadBytes": 36456,
+          "installedDeltaKiB": 132
+        },
+        {
+          "name": "libcares2",
+          "version": "1.34.5-1+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 282,
+          "downloadBytes": 98272,
+          "installedDeltaKiB": 282
+        },
+        {
+          "name": "libdeflate0",
+          "version": "1.23-2",
+          "previousVersion": null,
+          "installedSizeKiB": 102,
+          "downloadBytes": 47344,
+          "installedDeltaKiB": 102
+        },
+        {
+          "name": "libgpg-error0",
+          "version": "1.51-4",
+          "previousVersion": null,
+          "installedSizeKiB": 208,
+          "downloadBytes": 82108,
+          "installedDeltaKiB": 208
+        },
+        {
+          "name": "libgcrypt20",
+          "version": "1.11.0-7+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1999,
+          "downloadBytes": 843104,
+          "installedDeltaKiB": 1999
+        },
+        {
+          "name": "libjbig0",
+          "version": "2.1-6.1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 85,
+          "downloadBytes": 32116,
+          "installedDeltaKiB": 85
+        },
+        {
+          "name": "liblerc4",
+          "version": "4.0.0+ds-5",
+          "previousVersion": null,
+          "installedSizeKiB": 603,
+          "downloadBytes": 182976,
+          "installedDeltaKiB": 603
+        },
+        {
+          "name": "liblua5.4-0",
+          "version": "5.4.7-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 580,
+          "downloadBytes": 146640,
+          "installedDeltaKiB": 580
+        },
+        {
+          "name": "libmaxminddb0",
+          "version": "1.12.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 57,
+          "downloadBytes": 25800,
+          "installedDeltaKiB": 57
+        },
+        {
+          "name": "libnl-genl-3-200",
+          "version": "3.7.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 53,
+          "downloadBytes": 18136,
+          "installedDeltaKiB": 53
+        },
+        {
+          "name": "libopencore-amrnb0",
+          "version": "0.1.6-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 196,
+          "downloadBytes": 97456,
+          "installedDeltaKiB": 196
+        },
+        {
+          "name": "libopus0",
+          "version": "1.5.2-2",
+          "previousVersion": null,
+          "installedSizeKiB": 3494,
+          "downloadBytes": 2851932,
+          "installedDeltaKiB": 3494
+        },
+        {
+          "name": "libpcap0.8t64",
+          "version": "1.10.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 390,
+          "downloadBytes": 168608,
+          "installedDeltaKiB": 390
+        },
+        {
+          "name": "libsbc1",
+          "version": "2.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 88,
+          "downloadBytes": 32020,
+          "installedDeltaKiB": 88
+        },
+        {
+          "name": "libsharpyuv0",
+          "version": "1.5.0-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 143,
+          "downloadBytes": 115612,
+          "installedDeltaKiB": 143
+        },
+        {
+          "name": "libsmi2t64",
+          "version": "0.4.8+dfsg2-17+b1",
+          "previousVersion": null,
+          "installedSizeKiB": 443,
+          "downloadBytes": 120768,
+          "installedDeltaKiB": 443
+        },
+        {
+          "name": "libsnappy1v5",
+          "version": "1.2.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 93,
+          "downloadBytes": 29252,
+          "installedDeltaKiB": 93
+        },
+        {
+          "name": "libwebp7",
+          "version": "1.5.0-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 631,
+          "downloadBytes": 317856,
+          "installedDeltaKiB": 631
+        },
+        {
+          "name": "libtiff6",
+          "version": "4.7.0-3+deb13u3",
+          "previousVersion": null,
+          "installedSizeKiB": 766,
+          "downloadBytes": 345492,
+          "installedDeltaKiB": 766
+        },
+        {
+          "name": "libspandsp2t64",
+          "version": "0.0.6+dfsg-2.2",
+          "previousVersion": null,
+          "installedSizeKiB": 875,
+          "downloadBytes": 282180,
+          "installedDeltaKiB": 875
+        },
+        {
+          "name": "libspeexdsp1",
+          "version": "1.2.1-3",
+          "previousVersion": null,
+          "installedSizeKiB": 102,
+          "downloadBytes": 42864,
+          "installedDeltaKiB": 102
+        },
+        {
+          "name": "libssh-4",
+          "version": "0.11.5-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 583,
+          "downloadBytes": 211924,
+          "installedDeltaKiB": 583
+        },
+        {
+          "name": "libwireshark-data",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 3613,
+          "downloadBytes": 464736,
+          "installedDeltaKiB": 3613
+        },
+        {
+          "name": "libwsutil16",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 338,
+          "downloadBytes": 135392,
+          "installedDeltaKiB": 338
+        },
+        {
+          "name": "libwiretap15",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 780,
+          "downloadBytes": 276964,
+          "installedDeltaKiB": 780
+        },
+        {
+          "name": "libwireshark18",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 129825,
+          "downloadBytes": 21248072,
+          "installedDeltaKiB": 129825
+        },
+        {
+          "name": "wireshark-common",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1679,
+          "downloadBytes": 608300,
+          "installedDeltaKiB": 1679
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libbcg729-0 libcap2-bin libcares2 libdeflate0 libgcrypt20 libgpg-error0\n  libjbig0 liblerc4 liblua5.4-0 libmaxminddb0 libnl-genl-3-200\n  libopencore-amrnb0 libopus0 libpcap0.8t64 libsbc1 libsharpyuv0 libsmi2t64\n  libsnappy1v5 libspandsp2t64 libspeexdsp1 libssh-4 libtiff6 libwebp7\n  libwireshark-data libwireshark18 libwiretap15 libwsutil16\nSuggested packages:\n  rng-tools mmdb-bin opus-tools snmp-mibs-downloader geoipupdate\n  geoip-database geoip-database-extra libjs-leaflet\n  libjs-leaflet.markercluster wireshark-doc\nRecommended packages:\n  libpam-cap libgpg-error-l10n wireshark | tshark\nThe following NEW packages will be installed:\n  libbcg729-0 libcap2-bin libcares2 libdeflate0 libgcrypt20 libgpg-error0\n  libjbig0 liblerc4 liblua5.4-0 libmaxminddb0 libnl-genl-3-200\n  libopencore-amrnb0 libopus0 libpcap0.8t64 libsbc1 libsharpyuv0 libsmi2t64\n  libsnappy1v5 libspandsp2t64 libspeexdsp1 libssh-4 libtiff6 libwebp7\n  libwireshark-data libwireshark18 libwiretap15 libwsutil16 wireshark-common\n0 upgraded, 28 newly installed, 0 to remove and 0 not upgraded.\nInst libbcg729-0 (1.1.1-3+deb13u1 Debian:13.7/stable [amd64])\nInst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nInst libcares2 (1.34.5-1+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libdeflate0 (1.23-2 Debian:13.7/stable [amd64])\nInst libgpg-error0 (1.51-4 Debian:13.7/stable [amd64])\nInst libgcrypt20 (1.11.0-7+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libjbig0 (2.1-6.1+b2 Debian:13.7/stable [amd64])\nInst liblerc4 (4.0.0+ds-5 Debian:13.7/stable [amd64])\nInst liblua5.4-0 (5.4.7-1+b2 Debian:13.7/stable [amd64])\nInst libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nInst libnl-genl-3-200 (3.7.0-2 Debian:13.7/stable [amd64])\nInst libopencore-amrnb0 (0.1.6-1+b2 Debian:13.7/stable [amd64])\nInst libopus0 (1.5.2-2 Debian:13.7/stable [amd64])\nInst libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nInst libsbc1 (2.1-1 Debian:13.7/stable [amd64])\nInst libsharpyuv0 (1.5.0-0.1 Debian:13.7/stable [amd64])\nInst libsmi2t64 (0.4.8+dfsg2-17+b1 Debian:13.7/stable [amd64])\nInst libsnappy1v5 (1.2.2-1 Debian:13.7/stable [amd64])\nInst libwebp7 (1.5.0-0.1 Debian:13.7/stable [amd64])\nInst libtiff6 (4.7.0-3+deb13u3 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libspandsp2t64 (0.0.6+dfsg-2.2 Debian:13.7/stable [amd64])\nInst libspeexdsp1 (1.2.1-3 Debian:13.7/stable [amd64])\nInst libssh-4 (0.11.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libwireshark-data (4.4.19-0+deb13u1 Debian-Security:13/stable-security [all])\nInst libwsutil16 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst libwiretap15 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst libwireshark18 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst wireshark-common (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libbcg729-0 (1.1.1-3+deb13u1 Debian:13.7/stable [amd64])\nConf libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nConf libcares2 (1.34.5-1+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libdeflate0 (1.23-2 Debian:13.7/stable [amd64])\nConf libgpg-error0 (1.51-4 Debian:13.7/stable [amd64])\nConf libgcrypt20 (1.11.0-7+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libjbig0 (2.1-6.1+b2 Debian:13.7/stable [amd64])\nConf liblerc4 (4.0.0+ds-5 Debian:13.7/stable [amd64])\nConf liblua5.4-0 (5.4.7-1+b2 Debian:13.7/stable [amd64])\nConf libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nConf libnl-genl-3-200 (3.7.0-2 Debian:13.7/stable [amd64])\nConf libopencore-amrnb0 (0.1.6-1+b2 Debian:13.7/stable [amd64])\nConf libopus0 (1.5.2-2 Debian:13.7/stable [amd64])\nConf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nConf libsbc1 (2.1-1 Debian:13.7/stable [amd64])\nConf libsharpyuv0 (1.5.0-0.1 Debian:13.7/stable [amd64])\nConf libsmi2t64 (0.4.8+dfsg2-17+b1 Debian:13.7/stable [amd64])\nConf libsnappy1v5 (1.2.2-1 Debian:13.7/stable [amd64])\nConf libwebp7 (1.5.0-0.1 Debian:13.7/stable [amd64])\nConf libtiff6 (4.7.0-3+deb13u3 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libspandsp2t64 (0.0.6+dfsg-2.2 Debian:13.7/stable [amd64])\nConf libspeexdsp1 (1.2.1-3 Debian:13.7/stable [amd64])\nConf libssh-4 (0.11.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libwireshark-data (4.4.19-0+deb13u1 Debian-Security:13/stable-security [all])\nConf libwsutil16 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libwiretap15 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libwireshark18 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf wireshark-common (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "strongswan-swanctl",
+      "packages": [
+        "strongswan-swanctl"
+      ],
+      "downloadBytes": 641504,
+      "installedDeltaKiB": 1998,
+      "changes": [
+        {
+          "name": "libstrongswan",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1413,
+          "downloadBytes": 445624,
+          "installedDeltaKiB": 1413
+        },
+        {
+          "name": "strongswan-swanctl",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 585,
+          "downloadBytes": 195880,
+          "installedDeltaKiB": 585
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libstrongswan\nSuggested packages:\n  libstrongswan-extra-plugins\nRecommended packages:\n  libstrongswan-standard-plugins\nThe following NEW packages will be installed:\n  libstrongswan strongswan-swanctl\n0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.\nInst libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-swanctl (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-swanctl (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "strongswan-pki",
+      "packages": [
+        "strongswan-pki"
+      ],
+      "downloadBytes": 922540,
+      "installedDeltaKiB": 3067,
+      "changes": [
+        {
+          "name": "libstrongswan",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1413,
+          "downloadBytes": 445624,
+          "installedDeltaKiB": 1413
+        },
+        {
+          "name": "libip4tc2",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 66,
+          "downloadBytes": 19964,
+          "installedDeltaKiB": 66
+        },
+        {
+          "name": "libcharon-extra-plugins",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1169,
+          "downloadBytes": 291692,
+          "installedDeltaKiB": 1169
+        },
+        {
+          "name": "strongswan-pki",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 419,
+          "downloadBytes": 165260,
+          "installedDeltaKiB": 419
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libcharon-extra-plugins libip4tc2 libstrongswan\nSuggested packages:\n  libstrongswan-extra-plugins\nRecommended packages:\n  libstrongswan-standard-plugins\nThe following NEW packages will be installed:\n  libcharon-extra-plugins libip4tc2 libstrongswan strongswan-pki\n0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.\nInst libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst libip4tc2 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcharon-extra-plugins (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-pki (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf libip4tc2 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcharon-extra-plugins (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-pki (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "strongswan-charon",
+      "packages": [
+        "strongswan-charon"
+      ],
+      "downloadBytes": 2377812,
+      "installedDeltaKiB": 7768,
+      "changes": [
+        {
+          "name": "libmnl0",
+          "version": "1.0.5-3",
+          "previousVersion": null,
+          "installedSizeKiB": 45,
+          "downloadBytes": 11928,
+          "installedDeltaKiB": 45
+        },
+        {
+          "name": "libtirpc-common",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 32,
+          "downloadBytes": 11004,
+          "installedDeltaKiB": 32
+        },
+        {
+          "name": "libtirpc3t64",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 236,
+          "downloadBytes": 83300,
+          "installedDeltaKiB": 236
+        },
+        {
+          "name": "libxtables12",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 101,
+          "downloadBytes": 31896,
+          "installedDeltaKiB": 101
+        },
+        {
+          "name": "libcap2-bin",
+          "version": "1:2.75-10+deb13u1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 132,
+          "downloadBytes": 36456,
+          "installedDeltaKiB": 132
+        },
+        {
+          "name": "iproute2",
+          "version": "6.15.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 3774,
+          "downloadBytes": 1089184,
+          "installedDeltaKiB": 3774
+        },
+        {
+          "name": "libstrongswan",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1413,
+          "downloadBytes": 445624,
+          "installedDeltaKiB": 1413
+        },
+        {
+          "name": "strongswan-starter",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 668,
+          "downloadBytes": 226468,
+          "installedDeltaKiB": 668
+        },
+        {
+          "name": "strongswan-libcharon",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1067,
+          "downloadBytes": 341496,
+          "installedDeltaKiB": 1067
+        },
+        {
+          "name": "strongswan-charon",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 300,
+          "downloadBytes": 100456,
+          "installedDeltaKiB": 300
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  iproute2 libcap2-bin libmnl0 libstrongswan libtirpc-common libtirpc3t64\n  libxtables12 strongswan-libcharon strongswan-starter\nSuggested packages:\n  libstrongswan-extra-plugins libcharon-extra-plugins\nRecommended packages:\n  libpam-cap libstrongswan-standard-plugins libcharon-extauth-plugins\nThe following NEW packages will be installed:\n  iproute2 libcap2-bin libmnl0 libstrongswan libtirpc-common libtirpc3t64\n  libxtables12 strongswan-charon strongswan-libcharon strongswan-starter\n0 upgraded, 10 newly installed, 0 to remove and 0 not upgraded.\nInst libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nInst libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nInst libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nInst libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nInst iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nInst libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-starter (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-libcharon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-charon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nConf libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nConf libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nConf libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nConf iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nConf libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-starter (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-libcharon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-charon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "ike-scan",
+      "packages": [
+        "ike-scan"
+      ],
+      "downloadBytes": 1041440,
+      "installedDeltaKiB": 4274,
+      "changes": [
+        {
+          "name": "ike-scan",
+          "version": "1.9.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 4274,
+          "downloadBytes": 1041440,
+          "installedDeltaKiB": 4274
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  ike-scan\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst ike-scan (1.9.5-2 Debian:13.7/stable [amd64])\nConf ike-scan (1.9.5-2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "wireguard-tools",
+      "packages": [
+        "wireguard-tools"
+      ],
+      "downloadBytes": 84924,
+      "installedDeltaKiB": 318,
+      "changes": [
+        {
+          "name": "wireguard-tools",
+          "version": "1.0.20210914-3",
+          "previousVersion": null,
+          "installedSizeKiB": 318,
+          "downloadBytes": 84924,
+          "installedDeltaKiB": 318
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nSuggested packages:\n  openresolv | resolvconf\nRecommended packages:\n  nftables | iptables wireguard-modules | wireguard-dkms\nThe following NEW packages will be installed:\n  wireguard-tools\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst wireguard-tools (1.0.20210914-3 Debian:13.7/stable [amd64])\nConf wireguard-tools (1.0.20210914-3 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "traceroute",
+      "packages": [
+        "traceroute"
+      ],
+      "downloadBytes": 54588,
+      "installedDeltaKiB": 160,
+      "changes": [
+        {
+          "name": "traceroute",
+          "version": "1:2.1.6-1",
+          "previousVersion": null,
+          "installedSizeKiB": 160,
+          "downloadBytes": 54588,
+          "installedDeltaKiB": 160
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  traceroute\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst traceroute (1:2.1.6-1 Debian:13.7/stable [amd64])\nConf traceroute (1:2.1.6-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "mtr-tiny",
+      "packages": [
+        "mtr-tiny"
+      ],
+      "downloadBytes": 212496,
+      "installedDeltaKiB": 599,
+      "changes": [
+        {
+          "name": "libjansson4",
+          "version": "2.14-2+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 100,
+          "downloadBytes": 39792,
+          "installedDeltaKiB": 100
+        },
+        {
+          "name": "libncurses6",
+          "version": "6.5+20250216-2",
+          "previousVersion": null,
+          "installedSizeKiB": 342,
+          "downloadBytes": 105036,
+          "installedDeltaKiB": 342
+        },
+        {
+          "name": "mtr-tiny",
+          "version": "0.95-1.1+b1",
+          "previousVersion": null,
+          "installedSizeKiB": 157,
+          "downloadBytes": 67668,
+          "installedDeltaKiB": 157
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libjansson4 libncurses6\nRecommended packages:\n  libgpm2\nThe following NEW packages will be installed:\n  libjansson4 libncurses6 mtr-tiny\n0 upgraded, 3 newly installed, 0 to remove and 0 not upgraded.\nInst libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nInst libncurses6 (6.5+20250216-2 Debian:13.7/stable [amd64])\nInst mtr-tiny (0.95-1.1+b1 Debian:13.7/stable [amd64])\nConf libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nConf libncurses6 (6.5+20250216-2 Debian:13.7/stable [amd64])\nConf mtr-tiny (0.95-1.1+b1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "iperf3",
+      "packages": [
+        "iperf3"
+      ],
+      "downloadBytes": 163192,
+      "installedDeltaKiB": 415,
+      "changes": [
+        {
+          "name": "libsctp1",
+          "version": "1.0.21+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 52,
+          "downloadBytes": 25760,
+          "installedDeltaKiB": 52
+        },
+        {
+          "name": "libiperf0",
+          "version": "3.18-2+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 273,
+          "downloadBytes": 100104,
+          "installedDeltaKiB": 273
+        },
+        {
+          "name": "iperf3",
+          "version": "3.18-2+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 90,
+          "downloadBytes": 37328,
+          "installedDeltaKiB": 90
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libiperf0 libsctp1\nSuggested packages:\n  lksctp-tools\nThe following NEW packages will be installed:\n  iperf3 libiperf0 libsctp1\n0 upgraded, 3 newly installed, 0 to remove and 0 not upgraded.\nInst libsctp1 (1.0.21+dfsg-1 Debian:13.7/stable [amd64])\nInst libiperf0 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nInst iperf3 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nConf libsctp1 (1.0.21+dfsg-1 Debian:13.7/stable [amd64])\nConf libiperf0 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nConf iperf3 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "ethtool",
+      "packages": [
+        "ethtool"
+      ],
+      "downloadBytes": 238964,
+      "installedDeltaKiB": 820,
+      "changes": [
+        {
+          "name": "libmnl0",
+          "version": "1.0.5-3",
+          "previousVersion": null,
+          "installedSizeKiB": 45,
+          "downloadBytes": 11928,
+          "installedDeltaKiB": 45
+        },
+        {
+          "name": "ethtool",
+          "version": "1:6.14.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 775,
+          "downloadBytes": 227036,
+          "installedDeltaKiB": 775
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libmnl0\nThe following NEW packages will be installed:\n  ethtool libmnl0\n0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.\nInst libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nInst ethtool (1:6.14.2-1 Debian:13.7/stable [amd64])\nConf libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nConf ethtool (1:6.14.2-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "whois",
+      "packages": [
+        "whois"
+      ],
+      "downloadBytes": 72412,
+      "installedDeltaKiB": 388,
+      "changes": [
+        {
+          "name": "whois",
+          "version": "5.6.3",
+          "previousVersion": null,
+          "installedSizeKiB": 388,
+          "downloadBytes": 72412,
+          "installedDeltaKiB": 388
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  whois\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst whois (5.6.3 Debian:13.7/stable [amd64])\nConf whois (5.6.3 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "conntrack",
+      "packages": [
+        "conntrack"
+      ],
+      "downloadBytes": 104044,
+      "installedDeltaKiB": 356,
+      "changes": [
+        {
+          "name": "libmnl0",
+          "version": "1.0.5-3",
+          "previousVersion": null,
+          "installedSizeKiB": 45,
+          "downloadBytes": 11928,
+          "installedDeltaKiB": 45
+        },
+        {
+          "name": "libnfnetlink0",
+          "version": "1.0.2-3",
+          "previousVersion": null,
+          "installedSizeKiB": 51,
+          "downloadBytes": 14416,
+          "installedDeltaKiB": 51
+        },
+        {
+          "name": "libnetfilter-conntrack3",
+          "version": "1.1.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 144,
+          "downloadBytes": 42064,
+          "installedDeltaKiB": 144
+        },
+        {
+          "name": "conntrack",
+          "version": "1:1.4.8-2",
+          "previousVersion": null,
+          "installedSizeKiB": 116,
+          "downloadBytes": 35636,
+          "installedDeltaKiB": 116
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libmnl0 libnetfilter-conntrack3 libnfnetlink0\nSuggested packages:\n  nftables\nThe following NEW packages will be installed:\n  conntrack libmnl0 libnetfilter-conntrack3 libnfnetlink0\n0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.\nInst libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nInst libnfnetlink0 (1.0.2-3 Debian:13.7/stable [amd64])\nInst libnetfilter-conntrack3 (1.1.0-1 Debian:13.7/stable [amd64])\nInst conntrack (1:1.4.8-2 Debian:13.7/stable [amd64])\nConf libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nConf libnfnetlink0 (1.0.2-3 Debian:13.7/stable [amd64])\nConf libnetfilter-conntrack3 (1.1.0-1 Debian:13.7/stable [amd64])\nConf conntrack (1:1.4.8-2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "nftables",
+      "packages": [
+        "nftables"
+      ],
+      "downloadBytes": 556940,
+      "installedDeltaKiB": 1729,
+      "changes": [
+        {
+          "name": "libjansson4",
+          "version": "2.14-2+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 100,
+          "downloadBytes": 39792,
+          "installedDeltaKiB": 100
+        },
+        {
+          "name": "libmnl0",
+          "version": "1.0.5-3",
+          "previousVersion": null,
+          "installedSizeKiB": 45,
+          "downloadBytes": 11928,
+          "installedDeltaKiB": 45
+        },
+        {
+          "name": "libnftnl11",
+          "version": "1.2.9-1",
+          "previousVersion": null,
+          "installedSizeKiB": 244,
+          "downloadBytes": 65012,
+          "installedDeltaKiB": 244
+        },
+        {
+          "name": "libxtables12",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 101,
+          "downloadBytes": 31896,
+          "installedDeltaKiB": 101
+        },
+        {
+          "name": "libnftables1",
+          "version": "1.1.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1054,
+          "downloadBytes": 332448,
+          "installedDeltaKiB": 1054
+        },
+        {
+          "name": "nftables",
+          "version": "1.1.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 185,
+          "downloadBytes": 75864,
+          "installedDeltaKiB": 185
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libjansson4 libmnl0 libnftables1 libnftnl11 libxtables12\nSuggested packages:\n  firewalld\nThe following NEW packages will be installed:\n  libjansson4 libmnl0 libnftables1 libnftnl11 libxtables12 nftables\n0 upgraded, 6 newly installed, 0 to remove and 0 not upgraded.\nInst libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nInst libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nInst libnftnl11 (1.2.9-1 Debian:13.7/stable [amd64])\nInst libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libnftables1 (1.1.3-1 Debian:13.7/stable [amd64])\nInst nftables (1.1.3-1 Debian:13.7/stable [amd64])\nConf libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nConf libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nConf libnftnl11 (1.2.9-1 Debian:13.7/stable [amd64])\nConf libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libnftables1 (1.1.3-1 Debian:13.7/stable [amd64])\nConf nftables (1.1.3-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "snmp",
+      "packages": [
+        "snmp"
+      ],
+      "downloadBytes": 4926648,
+      "installedDeltaKiB": 10107,
+      "changes": [
+        {
+          "name": "pci.ids",
+          "version": "0.0~2025.06.09-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1509,
+          "downloadBytes": 269172,
+          "installedDeltaKiB": 1509
+        },
+        {
+          "name": "libpci3",
+          "version": "1:3.13.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 143,
+          "downloadBytes": 75572,
+          "installedDeltaKiB": 143
+        },
+        {
+          "name": "libsnmp-base",
+          "version": "5.9.4+dfsg-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 2183,
+          "downloadBytes": 1769852,
+          "installedDeltaKiB": 2183
+        },
+        {
+          "name": "libwrap0",
+          "version": "7.6.q-36",
+          "previousVersion": null,
+          "installedSizeKiB": 110,
+          "downloadBytes": 55256,
+          "installedDeltaKiB": 110
+        },
+        {
+          "name": "libsnmp40t64",
+          "version": "5.9.4+dfsg-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 5462,
+          "downloadBytes": 2579228,
+          "installedDeltaKiB": 5462
+        },
+        {
+          "name": "snmp",
+          "version": "5.9.4+dfsg-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 700,
+          "downloadBytes": 177568,
+          "installedDeltaKiB": 700
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libpci3 libsnmp-base libsnmp40t64 libwrap0 pci.ids\nSuggested packages:\n  snmp-mibs-downloader\nThe following NEW packages will be installed:\n  libpci3 libsnmp-base libsnmp40t64 libwrap0 pci.ids snmp\n0 upgraded, 6 newly installed, 0 to remove and 0 not upgraded.\nInst pci.ids (0.0~2025.06.09-1 Debian:13.7/stable [all])\nInst libpci3 (1:3.13.0-2 Debian:13.7/stable [amd64])\nInst libsnmp-base (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [all])\nInst libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nInst libsnmp40t64 (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst snmp (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf pci.ids (0.0~2025.06.09-1 Debian:13.7/stable [all])\nConf libpci3 (1:3.13.0-2 Debian:13.7/stable [amd64])\nConf libsnmp-base (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [all])\nConf libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nConf libsnmp40t64 (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf snmp (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "freeradius-utils",
+      "packages": [
+        "freeradius-utils"
+      ],
+      "downloadBytes": 1035388,
+      "installedDeltaKiB": 4114,
+      "changes": [
+        {
+          "name": "freeradius-common",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1307,
+          "downloadBytes": 245268,
+          "installedDeltaKiB": 1307
+        },
+        {
+          "name": "ssl-cert",
+          "version": "1.1.3",
+          "previousVersion": null,
+          "installedSizeKiB": 61,
+          "downloadBytes": 16816,
+          "installedDeltaKiB": 61
+        },
+        {
+          "name": "freeradius-config",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1288,
+          "downloadBytes": 225620,
+          "installedDeltaKiB": 1288
+        },
+        {
+          "name": "libpcap0.8t64",
+          "version": "1.10.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 390,
+          "downloadBytes": 168608,
+          "installedDeltaKiB": 390
+        },
+        {
+          "name": "libtalloc2",
+          "version": "2:2.4.3+samba4.22.11+dfsg-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 126,
+          "downloadBytes": 63644,
+          "installedDeltaKiB": 126
+        },
+        {
+          "name": "libfreeradius3",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 565,
+          "downloadBytes": 200920,
+          "installedDeltaKiB": 565
+        },
+        {
+          "name": "freeradius-utils",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 377,
+          "downloadBytes": 114512,
+          "installedDeltaKiB": 377
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  freeradius-common freeradius-config libfreeradius3 libpcap0.8t64 libtalloc2\n  ssl-cert\nRecommended packages:\n  libdbi-perl\nThe following NEW packages will be installed:\n  freeradius-common freeradius-config freeradius-utils libfreeradius3\n  libpcap0.8t64 libtalloc2 ssl-cert\n0 upgraded, 7 newly installed, 0 to remove and 0 not upgraded.\nInst freeradius-common (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [all])\nInst ssl-cert (1.1.3 Debian:13.7/stable [all])\nInst freeradius-config (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nInst libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nInst libtalloc2 (2:2.4.3+samba4.22.11+dfsg-0+deb13u1 Debian:13.7/stable [amd64])\nInst libfreeradius3 (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nInst freeradius-utils (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nConf freeradius-common (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [all])\nConf ssl-cert (1.1.3 Debian:13.7/stable [all])\nConf freeradius-config (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nConf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nConf libtalloc2 (2:2.4.3+samba4.22.11+dfsg-0+deb13u1 Debian:13.7/stable [amd64])\nConf libfreeradius3 (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nConf freeradius-utils (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "nmap",
+      "packages": [
+        "nmap"
+      ],
+      "downloadBytes": 6838900,
+      "installedDeltaKiB": 28372,
+      "changes": [
+        {
+          "name": "libblas3",
+          "version": "3.12.1-6",
+          "previousVersion": null,
+          "installedSizeKiB": 521,
+          "downloadBytes": 159604,
+          "installedDeltaKiB": 521
+        },
+        {
+          "name": "liblinear4",
+          "version": "2.3.0+dfsg-5+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 108,
+          "downloadBytes": 41684,
+          "installedDeltaKiB": 108
+        },
+        {
+          "name": "liblua5.4-0",
+          "version": "5.4.7-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 580,
+          "downloadBytes": 146640,
+          "installedDeltaKiB": 580
+        },
+        {
+          "name": "libpcap0.8t64",
+          "version": "1.10.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 390,
+          "downloadBytes": 168608,
+          "installedDeltaKiB": 390
+        },
+        {
+          "name": "nmap-common",
+          "version": "7.95+dfsg-3",
+          "previousVersion": null,
+          "installedSizeKiB": 22237,
+          "downloadBytes": 4391504,
+          "installedDeltaKiB": 22237
+        },
+        {
+          "name": "nmap",
+          "version": "7.95+dfsg-3",
+          "previousVersion": null,
+          "installedSizeKiB": 4536,
+          "downloadBytes": 1930860,
+          "installedDeltaKiB": 4536
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libblas3 liblinear4 liblua5.4-0 libpcap0.8t64 nmap-common\nSuggested packages:\n  liblinear-tools liblinear-dev ncat ndiff zenmap\nThe following NEW packages will be installed:\n  libblas3 liblinear4 liblua5.4-0 libpcap0.8t64 nmap nmap-common\n0 upgraded, 6 newly installed, 0 to remove and 0 not upgraded.\nInst libblas3 (3.12.1-6 Debian:13.7/stable [amd64])\nInst liblinear4 (2.3.0+dfsg-5+b2 Debian:13.7/stable [amd64])\nInst liblua5.4-0 (5.4.7-1+b2 Debian:13.7/stable [amd64])\nInst libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nInst nmap-common (7.95+dfsg-3 Debian:13.7/stable [all])\nInst nmap (7.95+dfsg-3 Debian:13.7/stable [amd64])\nConf libblas3 (3.12.1-6 Debian:13.7/stable [amd64])\nConf liblinear4 (2.3.0+dfsg-5+b2 Debian:13.7/stable [amd64])\nConf liblua5.4-0 (5.4.7-1+b2 Debian:13.7/stable [amd64])\nConf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nConf nmap-common (7.95+dfsg-3 Debian:13.7/stable [all])\nConf nmap (7.95+dfsg-3 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "ipsec-peer",
+      "packages": [
+        "strongswan-swanctl",
+        "strongswan-pki",
+        "strongswan-charon"
+      ],
+      "downloadBytes": 3050608,
+      "installedDeltaKiB": 10007,
+      "changes": [
+        {
+          "name": "libmnl0",
+          "version": "1.0.5-3",
+          "previousVersion": null,
+          "installedSizeKiB": 45,
+          "downloadBytes": 11928,
+          "installedDeltaKiB": 45
+        },
+        {
+          "name": "libtirpc-common",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 32,
+          "downloadBytes": 11004,
+          "installedDeltaKiB": 32
+        },
+        {
+          "name": "libtirpc3t64",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 236,
+          "downloadBytes": 83300,
+          "installedDeltaKiB": 236
+        },
+        {
+          "name": "libxtables12",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 101,
+          "downloadBytes": 31896,
+          "installedDeltaKiB": 101
+        },
+        {
+          "name": "libcap2-bin",
+          "version": "1:2.75-10+deb13u1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 132,
+          "downloadBytes": 36456,
+          "installedDeltaKiB": 132
+        },
+        {
+          "name": "iproute2",
+          "version": "6.15.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 3774,
+          "downloadBytes": 1089184,
+          "installedDeltaKiB": 3774
+        },
+        {
+          "name": "libstrongswan",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1413,
+          "downloadBytes": 445624,
+          "installedDeltaKiB": 1413
+        },
+        {
+          "name": "strongswan-starter",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 668,
+          "downloadBytes": 226468,
+          "installedDeltaKiB": 668
+        },
+        {
+          "name": "strongswan-libcharon",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1067,
+          "downloadBytes": 341496,
+          "installedDeltaKiB": 1067
+        },
+        {
+          "name": "strongswan-charon",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 300,
+          "downloadBytes": 100456,
+          "installedDeltaKiB": 300
+        },
+        {
+          "name": "libip4tc2",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 66,
+          "downloadBytes": 19964,
+          "installedDeltaKiB": 66
+        },
+        {
+          "name": "libcharon-extra-plugins",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1169,
+          "downloadBytes": 291692,
+          "installedDeltaKiB": 1169
+        },
+        {
+          "name": "strongswan-pki",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 419,
+          "downloadBytes": 165260,
+          "installedDeltaKiB": 419
+        },
+        {
+          "name": "strongswan-swanctl",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 585,
+          "downloadBytes": 195880,
+          "installedDeltaKiB": 585
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  iproute2 libcap2-bin libcharon-extra-plugins libip4tc2 libmnl0 libstrongswan\n  libtirpc-common libtirpc3t64 libxtables12 strongswan-libcharon\n  strongswan-starter\nSuggested packages:\n  libstrongswan-extra-plugins\nRecommended packages:\n  libpam-cap libstrongswan-standard-plugins libcharon-extauth-plugins\nThe following NEW packages will be installed:\n  iproute2 libcap2-bin libcharon-extra-plugins libip4tc2 libmnl0 libstrongswan\n  libtirpc-common libtirpc3t64 libxtables12 strongswan-charon\n  strongswan-libcharon strongswan-pki strongswan-starter strongswan-swanctl\n0 upgraded, 14 newly installed, 0 to remove and 0 not upgraded.\nInst libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nInst libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nInst libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nInst libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nInst iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nInst libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-starter (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-libcharon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-charon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst libip4tc2 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcharon-extra-plugins (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-pki (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-swanctl (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nConf libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nConf libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nConf libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nConf iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nConf libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-starter (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-libcharon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-charon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf libip4tc2 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcharon-extra-plugins (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-pki (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-swanctl (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "network-extension",
+      "packages": [
+        "tcpdump",
+        "tshark",
+        "traceroute",
+        "mtr-tiny",
+        "iperf3",
+        "ethtool",
+        "whois",
+        "wireguard-tools",
+        "strongswan-swanctl",
+        "strongswan-pki",
+        "strongswan-charon",
+        "conntrack",
+        "nftables",
+        "snmp",
+        "freeradius-utils"
+      ],
+      "downloadBytes": 39740428,
+      "installedDeltaKiB": 178158,
+      "changes": [
+        {
+          "name": "libsctp1",
+          "version": "1.0.21+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 52,
+          "downloadBytes": 25760,
+          "installedDeltaKiB": 52
+        },
+        {
+          "name": "libiperf0",
+          "version": "3.18-2+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 273,
+          "downloadBytes": 100104,
+          "installedDeltaKiB": 273
+        },
+        {
+          "name": "iperf3",
+          "version": "3.18-2+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 90,
+          "downloadBytes": 37328,
+          "installedDeltaKiB": 90
+        },
+        {
+          "name": "libmnl0",
+          "version": "1.0.5-3",
+          "previousVersion": null,
+          "installedSizeKiB": 45,
+          "downloadBytes": 11928,
+          "installedDeltaKiB": 45
+        },
+        {
+          "name": "libtirpc-common",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 32,
+          "downloadBytes": 11004,
+          "installedDeltaKiB": 32
+        },
+        {
+          "name": "libtirpc3t64",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 236,
+          "downloadBytes": 83300,
+          "installedDeltaKiB": 236
+        },
+        {
+          "name": "libxtables12",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 101,
+          "downloadBytes": 31896,
+          "installedDeltaKiB": 101
+        },
+        {
+          "name": "libcap2-bin",
+          "version": "1:2.75-10+deb13u1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 132,
+          "downloadBytes": 36456,
+          "installedDeltaKiB": 132
+        },
+        {
+          "name": "iproute2",
+          "version": "6.15.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 3774,
+          "downloadBytes": 1089184,
+          "installedDeltaKiB": 3774
+        },
+        {
+          "name": "libstrongswan",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1413,
+          "downloadBytes": 445624,
+          "installedDeltaKiB": 1413
+        },
+        {
+          "name": "strongswan-starter",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 668,
+          "downloadBytes": 226468,
+          "installedDeltaKiB": 668
+        },
+        {
+          "name": "strongswan-libcharon",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1067,
+          "downloadBytes": 341496,
+          "installedDeltaKiB": 1067
+        },
+        {
+          "name": "strongswan-charon",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 300,
+          "downloadBytes": 100456,
+          "installedDeltaKiB": 300
+        },
+        {
+          "name": "libjansson4",
+          "version": "2.14-2+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 100,
+          "downloadBytes": 39792,
+          "installedDeltaKiB": 100
+        },
+        {
+          "name": "libnftnl11",
+          "version": "1.2.9-1",
+          "previousVersion": null,
+          "installedSizeKiB": 244,
+          "downloadBytes": 65012,
+          "installedDeltaKiB": 244
+        },
+        {
+          "name": "libnftables1",
+          "version": "1.1.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1054,
+          "downloadBytes": 332448,
+          "installedDeltaKiB": 1054
+        },
+        {
+          "name": "nftables",
+          "version": "1.1.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 185,
+          "downloadBytes": 75864,
+          "installedDeltaKiB": 185
+        },
+        {
+          "name": "traceroute",
+          "version": "1:2.1.6-1",
+          "previousVersion": null,
+          "installedSizeKiB": 160,
+          "downloadBytes": 54588,
+          "installedDeltaKiB": 160
+        },
+        {
+          "name": "libnfnetlink0",
+          "version": "1.0.2-3",
+          "previousVersion": null,
+          "installedSizeKiB": 51,
+          "downloadBytes": 14416,
+          "installedDeltaKiB": 51
+        },
+        {
+          "name": "libnetfilter-conntrack3",
+          "version": "1.1.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 144,
+          "downloadBytes": 42064,
+          "installedDeltaKiB": 144
+        },
+        {
+          "name": "conntrack",
+          "version": "1:1.4.8-2",
+          "previousVersion": null,
+          "installedSizeKiB": 116,
+          "downloadBytes": 35636,
+          "installedDeltaKiB": 116
+        },
+        {
+          "name": "ethtool",
+          "version": "1:6.14.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 775,
+          "downloadBytes": 227036,
+          "installedDeltaKiB": 775
+        },
+        {
+          "name": "freeradius-common",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1307,
+          "downloadBytes": 245268,
+          "installedDeltaKiB": 1307
+        },
+        {
+          "name": "ssl-cert",
+          "version": "1.1.3",
+          "previousVersion": null,
+          "installedSizeKiB": 61,
+          "downloadBytes": 16816,
+          "installedDeltaKiB": 61
+        },
+        {
+          "name": "freeradius-config",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1288,
+          "downloadBytes": 225620,
+          "installedDeltaKiB": 1288
+        },
+        {
+          "name": "libpcap0.8t64",
+          "version": "1.10.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 390,
+          "downloadBytes": 168608,
+          "installedDeltaKiB": 390
+        },
+        {
+          "name": "libtalloc2",
+          "version": "2:2.4.3+samba4.22.11+dfsg-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 126,
+          "downloadBytes": 63644,
+          "installedDeltaKiB": 126
+        },
+        {
+          "name": "libfreeradius3",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 565,
+          "downloadBytes": 200920,
+          "installedDeltaKiB": 565
+        },
+        {
+          "name": "freeradius-utils",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 377,
+          "downloadBytes": 114512,
+          "installedDeltaKiB": 377
+        },
+        {
+          "name": "libbcg729-0",
+          "version": "1.1.1-3+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 85,
+          "downloadBytes": 35608,
+          "installedDeltaKiB": 85
+        },
+        {
+          "name": "libcares2",
+          "version": "1.34.5-1+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 282,
+          "downloadBytes": 98272,
+          "installedDeltaKiB": 282
+        },
+        {
+          "name": "libip4tc2",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 66,
+          "downloadBytes": 19964,
+          "installedDeltaKiB": 66
+        },
+        {
+          "name": "libcharon-extra-plugins",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1169,
+          "downloadBytes": 291692,
+          "installedDeltaKiB": 1169
+        },
+        {
+          "name": "libdeflate0",
+          "version": "1.23-2",
+          "previousVersion": null,
+          "installedSizeKiB": 102,
+          "downloadBytes": 47344,
+          "installedDeltaKiB": 102
+        },
+        {
+          "name": "libgpg-error0",
+          "version": "1.51-4",
+          "previousVersion": null,
+          "installedSizeKiB": 208,
+          "downloadBytes": 82108,
+          "installedDeltaKiB": 208
+        },
+        {
+          "name": "libgcrypt20",
+          "version": "1.11.0-7+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1999,
+          "downloadBytes": 843104,
+          "installedDeltaKiB": 1999
+        },
+        {
+          "name": "libjbig0",
+          "version": "2.1-6.1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 85,
+          "downloadBytes": 32116,
+          "installedDeltaKiB": 85
+        },
+        {
+          "name": "liblerc4",
+          "version": "4.0.0+ds-5",
+          "previousVersion": null,
+          "installedSizeKiB": 603,
+          "downloadBytes": 182976,
+          "installedDeltaKiB": 603
+        },
+        {
+          "name": "liblua5.4-0",
+          "version": "5.4.7-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 580,
+          "downloadBytes": 146640,
+          "installedDeltaKiB": 580
+        },
+        {
+          "name": "libmaxminddb0",
+          "version": "1.12.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 57,
+          "downloadBytes": 25800,
+          "installedDeltaKiB": 57
+        },
+        {
+          "name": "libncurses6",
+          "version": "6.5+20250216-2",
+          "previousVersion": null,
+          "installedSizeKiB": 342,
+          "downloadBytes": 105036,
+          "installedDeltaKiB": 342
+        },
+        {
+          "name": "libnl-genl-3-200",
+          "version": "3.7.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 53,
+          "downloadBytes": 18136,
+          "installedDeltaKiB": 53
+        },
+        {
+          "name": "libopencore-amrnb0",
+          "version": "0.1.6-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 196,
+          "downloadBytes": 97456,
+          "installedDeltaKiB": 196
+        },
+        {
+          "name": "libopus0",
+          "version": "1.5.2-2",
+          "previousVersion": null,
+          "installedSizeKiB": 3494,
+          "downloadBytes": 2851932,
+          "installedDeltaKiB": 3494
+        },
+        {
+          "name": "pci.ids",
+          "version": "0.0~2025.06.09-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1509,
+          "downloadBytes": 269172,
+          "installedDeltaKiB": 1509
+        },
+        {
+          "name": "libpci3",
+          "version": "1:3.13.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 143,
+          "downloadBytes": 75572,
+          "installedDeltaKiB": 143
+        },
+        {
+          "name": "libsbc1",
+          "version": "2.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 88,
+          "downloadBytes": 32020,
+          "installedDeltaKiB": 88
+        },
+        {
+          "name": "libsharpyuv0",
+          "version": "1.5.0-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 143,
+          "downloadBytes": 115612,
+          "installedDeltaKiB": 143
+        },
+        {
+          "name": "libsmi2t64",
+          "version": "0.4.8+dfsg2-17+b1",
+          "previousVersion": null,
+          "installedSizeKiB": 443,
+          "downloadBytes": 120768,
+          "installedDeltaKiB": 443
+        },
+        {
+          "name": "libsnappy1v5",
+          "version": "1.2.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 93,
+          "downloadBytes": 29252,
+          "installedDeltaKiB": 93
+        },
+        {
+          "name": "libsnmp-base",
+          "version": "5.9.4+dfsg-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 2183,
+          "downloadBytes": 1769852,
+          "installedDeltaKiB": 2183
+        },
+        {
+          "name": "libwrap0",
+          "version": "7.6.q-36",
+          "previousVersion": null,
+          "installedSizeKiB": 110,
+          "downloadBytes": 55256,
+          "installedDeltaKiB": 110
+        },
+        {
+          "name": "libsnmp40t64",
+          "version": "5.9.4+dfsg-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 5462,
+          "downloadBytes": 2579228,
+          "installedDeltaKiB": 5462
+        },
+        {
+          "name": "libwebp7",
+          "version": "1.5.0-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 631,
+          "downloadBytes": 317856,
+          "installedDeltaKiB": 631
+        },
+        {
+          "name": "libtiff6",
+          "version": "4.7.0-3+deb13u3",
+          "previousVersion": null,
+          "installedSizeKiB": 766,
+          "downloadBytes": 345492,
+          "installedDeltaKiB": 766
+        },
+        {
+          "name": "libspandsp2t64",
+          "version": "0.0.6+dfsg-2.2",
+          "previousVersion": null,
+          "installedSizeKiB": 875,
+          "downloadBytes": 282180,
+          "installedDeltaKiB": 875
+        },
+        {
+          "name": "libspeexdsp1",
+          "version": "1.2.1-3",
+          "previousVersion": null,
+          "installedSizeKiB": 102,
+          "downloadBytes": 42864,
+          "installedDeltaKiB": 102
+        },
+        {
+          "name": "libssh-4",
+          "version": "0.11.5-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 583,
+          "downloadBytes": 211924,
+          "installedDeltaKiB": 583
+        },
+        {
+          "name": "libwireshark-data",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 3613,
+          "downloadBytes": 464736,
+          "installedDeltaKiB": 3613
+        },
+        {
+          "name": "libwsutil16",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 338,
+          "downloadBytes": 135392,
+          "installedDeltaKiB": 338
+        },
+        {
+          "name": "libwiretap15",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 780,
+          "downloadBytes": 276964,
+          "installedDeltaKiB": 780
+        },
+        {
+          "name": "libwireshark18",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 129825,
+          "downloadBytes": 21248072,
+          "installedDeltaKiB": 129825
+        },
+        {
+          "name": "mtr-tiny",
+          "version": "0.95-1.1+b1",
+          "previousVersion": null,
+          "installedSizeKiB": 157,
+          "downloadBytes": 67668,
+          "installedDeltaKiB": 157
+        },
+        {
+          "name": "snmp",
+          "version": "5.9.4+dfsg-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 700,
+          "downloadBytes": 177568,
+          "installedDeltaKiB": 700
+        },
+        {
+          "name": "strongswan-pki",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 419,
+          "downloadBytes": 165260,
+          "installedDeltaKiB": 419
+        },
+        {
+          "name": "strongswan-swanctl",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 585,
+          "downloadBytes": 195880,
+          "installedDeltaKiB": 585
+        },
+        {
+          "name": "tcpdump",
+          "version": "4.99.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 1343,
+          "downloadBytes": 471048,
+          "installedDeltaKiB": 1343
+        },
+        {
+          "name": "wireshark-common",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1679,
+          "downloadBytes": 608300,
+          "installedDeltaKiB": 1679
+        },
+        {
+          "name": "tshark",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 435,
+          "downloadBytes": 183724,
+          "installedDeltaKiB": 435
+        },
+        {
+          "name": "whois",
+          "version": "5.6.3",
+          "previousVersion": null,
+          "installedSizeKiB": 388,
+          "downloadBytes": 72412,
+          "installedDeltaKiB": 388
+        },
+        {
+          "name": "wireguard-tools",
+          "version": "1.0.20210914-3",
+          "previousVersion": null,
+          "installedSizeKiB": 318,
+          "downloadBytes": 84924,
+          "installedDeltaKiB": 318
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  freeradius-common freeradius-config iproute2 libbcg729-0 libcap2-bin\n  libcares2 libcharon-extra-plugins libdeflate0 libfreeradius3 libgcrypt20\n  libgpg-error0 libip4tc2 libiperf0 libjansson4 libjbig0 liblerc4 liblua5.4-0\n  libmaxminddb0 libmnl0 libncurses6 libnetfilter-conntrack3 libnfnetlink0\n  libnftables1 libnftnl11 libnl-genl-3-200 libopencore-amrnb0 libopus0\n  libpcap0.8t64 libpci3 libsbc1 libsctp1 libsharpyuv0 libsmi2t64 libsnappy1v5\n  libsnmp-base libsnmp40t64 libspandsp2t64 libspeexdsp1 libssh-4 libstrongswan\n  libtalloc2 libtiff6 libtirpc-common libtirpc3t64 libwebp7 libwireshark-data\n  libwireshark18 libwiretap15 libwrap0 libwsutil16 libxtables12 pci.ids\n  ssl-cert strongswan-libcharon strongswan-starter wireshark-common\nSuggested packages:\n  rng-tools mmdb-bin opus-tools lksctp-tools snmp-mibs-downloader\n  libstrongswan-extra-plugins geoipupdate geoip-database geoip-database-extra\n  libjs-leaflet libjs-leaflet.markercluster wireshark-doc firewalld apparmor\n  openresolv | resolvconf\nRecommended packages:\n  libdbi-perl libpam-cap libgpg-error-l10n libgpm2\n  libstrongswan-standard-plugins libcharon-extauth-plugins wireguard-modules\n  | wireguard-dkms\nThe following NEW packages will be installed:\n  conntrack ethtool freeradius-common freeradius-config freeradius-utils\n  iperf3 iproute2 libbcg729-0 libcap2-bin libcares2 libcharon-extra-plugins\n  libdeflate0 libfreeradius3 libgcrypt20 libgpg-error0 libip4tc2 libiperf0\n  libjansson4 libjbig0 liblerc4 liblua5.4-0 libmaxminddb0 libmnl0 libncurses6\n  libnetfilter-conntrack3 libnfnetlink0 libnftables1 libnftnl11\n  libnl-genl-3-200 libopencore-amrnb0 libopus0 libpcap0.8t64 libpci3 libsbc1\n  libsctp1 libsharpyuv0 libsmi2t64 libsnappy1v5 libsnmp-base libsnmp40t64\n  libspandsp2t64 libspeexdsp1 libssh-4 libstrongswan libtalloc2 libtiff6\n  libtirpc-common libtirpc3t64 libwebp7 libwireshark-data libwireshark18\n  libwiretap15 libwrap0 libwsutil16 libxtables12 mtr-tiny nftables pci.ids\n  snmp ssl-cert strongswan-charon strongswan-libcharon strongswan-pki\n  strongswan-starter strongswan-swanctl tcpdump traceroute tshark whois\n  wireguard-tools wireshark-common\n0 upgraded, 71 newly installed, 0 to remove and 0 not upgraded.\nInst libsctp1 (1.0.21+dfsg-1 Debian:13.7/stable [amd64])\nInst libiperf0 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nInst iperf3 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nInst libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nInst libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nInst libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nInst libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nInst iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nInst libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-starter (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-libcharon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-charon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nInst libnftnl11 (1.2.9-1 Debian:13.7/stable [amd64])\nInst libnftables1 (1.1.3-1 Debian:13.7/stable [amd64])\nInst nftables (1.1.3-1 Debian:13.7/stable [amd64])\nInst traceroute (1:2.1.6-1 Debian:13.7/stable [amd64])\nInst libnfnetlink0 (1.0.2-3 Debian:13.7/stable [amd64])\nInst libnetfilter-conntrack3 (1.1.0-1 Debian:13.7/stable [amd64])\nInst conntrack (1:1.4.8-2 Debian:13.7/stable [amd64])\nInst ethtool (1:6.14.2-1 Debian:13.7/stable [amd64])\nInst freeradius-common (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [all])\nInst ssl-cert (1.1.3 Debian:13.7/stable [all])\nInst freeradius-config (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nInst libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nInst libtalloc2 (2:2.4.3+samba4.22.11+dfsg-0+deb13u1 Debian:13.7/stable [amd64])\nInst libfreeradius3 (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nInst freeradius-utils (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nInst libbcg729-0 (1.1.1-3+deb13u1 Debian:13.7/stable [amd64])\nInst libcares2 (1.34.5-1+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libip4tc2 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcharon-extra-plugins (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst libdeflate0 (1.23-2 Debian:13.7/stable [amd64])\nInst libgpg-error0 (1.51-4 Debian:13.7/stable [amd64])\nInst libgcrypt20 (1.11.0-7+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libjbig0 (2.1-6.1+b2 Debian:13.7/stable [amd64])\nInst liblerc4 (4.0.0+ds-5 Debian:13.7/stable [amd64])\nInst liblua5.4-0 (5.4.7-1+b2 Debian:13.7/stable [amd64])\nInst libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nInst libncurses6 (6.5+20250216-2 Debian:13.7/stable [amd64])\nInst libnl-genl-3-200 (3.7.0-2 Debian:13.7/stable [amd64])\nInst libopencore-amrnb0 (0.1.6-1+b2 Debian:13.7/stable [amd64])\nInst libopus0 (1.5.2-2 Debian:13.7/stable [amd64])\nInst pci.ids (0.0~2025.06.09-1 Debian:13.7/stable [all])\nInst libpci3 (1:3.13.0-2 Debian:13.7/stable [amd64])\nInst libsbc1 (2.1-1 Debian:13.7/stable [amd64])\nInst libsharpyuv0 (1.5.0-0.1 Debian:13.7/stable [amd64])\nInst libsmi2t64 (0.4.8+dfsg2-17+b1 Debian:13.7/stable [amd64])\nInst libsnappy1v5 (1.2.2-1 Debian:13.7/stable [amd64])\nInst libsnmp-base (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [all])\nInst libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nInst libsnmp40t64 (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libwebp7 (1.5.0-0.1 Debian:13.7/stable [amd64])\nInst libtiff6 (4.7.0-3+deb13u3 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libspandsp2t64 (0.0.6+dfsg-2.2 Debian:13.7/stable [amd64])\nInst libspeexdsp1 (1.2.1-3 Debian:13.7/stable [amd64])\nInst libssh-4 (0.11.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libwireshark-data (4.4.19-0+deb13u1 Debian-Security:13/stable-security [all])\nInst libwsutil16 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst libwiretap15 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst libwireshark18 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst mtr-tiny (0.95-1.1+b1 Debian:13.7/stable [amd64])\nInst snmp (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst strongswan-pki (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-swanctl (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst tcpdump (4.99.5-2 Debian:13.7/stable [amd64])\nInst wireshark-common (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst tshark (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst whois (5.6.3 Debian:13.7/stable [amd64])\nInst wireguard-tools (1.0.20210914-3 Debian:13.7/stable [amd64])\nConf libsctp1 (1.0.21+dfsg-1 Debian:13.7/stable [amd64])\nConf libiperf0 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nConf iperf3 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nConf libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nConf libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nConf libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nConf libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nConf iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nConf libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-starter (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-libcharon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-charon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nConf libnftnl11 (1.2.9-1 Debian:13.7/stable [amd64])\nConf libnftables1 (1.1.3-1 Debian:13.7/stable [amd64])\nConf nftables (1.1.3-1 Debian:13.7/stable [amd64])\nConf traceroute (1:2.1.6-1 Debian:13.7/stable [amd64])\nConf libnfnetlink0 (1.0.2-3 Debian:13.7/stable [amd64])\nConf libnetfilter-conntrack3 (1.1.0-1 Debian:13.7/stable [amd64])\nConf conntrack (1:1.4.8-2 Debian:13.7/stable [amd64])\nConf ethtool (1:6.14.2-1 Debian:13.7/stable [amd64])\nConf freeradius-common (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [all])\nConf ssl-cert (1.1.3 Debian:13.7/stable [all])\nConf freeradius-config (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nConf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nConf libtalloc2 (2:2.4.3+samba4.22.11+dfsg-0+deb13u1 Debian:13.7/stable [amd64])\nConf libfreeradius3 (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nConf freeradius-utils (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nConf libbcg729-0 (1.1.1-3+deb13u1 Debian:13.7/stable [amd64])\nConf libcares2 (1.34.5-1+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libip4tc2 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcharon-extra-plugins (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf libdeflate0 (1.23-2 Debian:13.7/stable [amd64])\nConf libgpg-error0 (1.51-4 Debian:13.7/stable [amd64])\nConf libgcrypt20 (1.11.0-7+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libjbig0 (2.1-6.1+b2 Debian:13.7/stable [amd64])\nConf liblerc4 (4.0.0+ds-5 Debian:13.7/stable [amd64])\nConf liblua5.4-0 (5.4.7-1+b2 Debian:13.7/stable [amd64])\nConf libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nConf libncurses6 (6.5+20250216-2 Debian:13.7/stable [amd64])\nConf libnl-genl-3-200 (3.7.0-2 Debian:13.7/stable [amd64])\nConf libopencore-amrnb0 (0.1.6-1+b2 Debian:13.7/stable [amd64])\nConf libopus0 (1.5.2-2 Debian:13.7/stable [amd64])\nConf pci.ids (0.0~2025.06.09-1 Debian:13.7/stable [all])\nConf libpci3 (1:3.13.0-2 Debian:13.7/stable [amd64])\nConf libsbc1 (2.1-1 Debian:13.7/stable [amd64])\nConf libsharpyuv0 (1.5.0-0.1 Debian:13.7/stable [amd64])\nConf libsmi2t64 (0.4.8+dfsg2-17+b1 Debian:13.7/stable [amd64])\nConf libsnappy1v5 (1.2.2-1 Debian:13.7/stable [amd64])\nConf libsnmp-base (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [all])\nConf libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nConf libsnmp40t64 (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libwebp7 (1.5.0-0.1 Debian:13.7/stable [amd64])\nConf libtiff6 (4.7.0-3+deb13u3 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libspandsp2t64 (0.0.6+dfsg-2.2 Debian:13.7/stable [amd64])\nConf libspeexdsp1 (1.2.1-3 Debian:13.7/stable [amd64])\nConf libssh-4 (0.11.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libwireshark-data (4.4.19-0+deb13u1 Debian-Security:13/stable-security [all])\nConf libwsutil16 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libwiretap15 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libwireshark18 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf mtr-tiny (0.95-1.1+b1 Debian:13.7/stable [amd64])\nConf snmp (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf strongswan-pki (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-swanctl (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf tcpdump (4.99.5-2 Debian:13.7/stable [amd64])\nConf wireshark-common (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf tshark (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf whois (5.6.3 Debian:13.7/stable [amd64])\nConf wireguard-tools (1.0.20210914-3 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "routeros-network-baseline",
+      "packages": [
+        "patch",
+        "file",
+        "bzip2",
+        "xz-utils",
+        "zip",
+        "zstd",
+        "wget",
+        "rsync",
+        "tree",
+        "time",
+        "python-is-python3",
+        "iproute2",
+        "iputils-ping",
+        "bind9-dnsutils",
+        "netcat-openbsd",
+        "socat",
+        "python3-venv",
+        "sqlite3",
+        "xxd",
+        "bsdextrautils",
+        "tcpdump",
+        "tshark",
+        "traceroute",
+        "mtr-tiny",
+        "iperf3",
+        "ethtool",
+        "whois",
+        "wireguard-tools",
+        "strongswan-swanctl",
+        "strongswan-pki",
+        "strongswan-charon",
+        "conntrack",
+        "nftables",
+        "snmp",
+        "freeradius-utils"
+      ],
+      "downloadBytes": 49690136,
+      "installedDeltaKiB": 210909,
+      "changes": [
+        {
+          "name": "libsctp1",
+          "version": "1.0.21+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 52,
+          "downloadBytes": 25760,
+          "installedDeltaKiB": 52
+        },
+        {
+          "name": "libiperf0",
+          "version": "3.18-2+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 273,
+          "downloadBytes": 100104,
+          "installedDeltaKiB": 273
+        },
+        {
+          "name": "iperf3",
+          "version": "3.18-2+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 90,
+          "downloadBytes": 37328,
+          "installedDeltaKiB": 90
+        },
+        {
+          "name": "libpopt0",
+          "version": "1.19+dfsg-2",
+          "previousVersion": null,
+          "installedSizeKiB": 245,
+          "downloadBytes": 43844,
+          "installedDeltaKiB": 245
+        },
+        {
+          "name": "rsync",
+          "version": "3.5.0+ds1-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 955,
+          "downloadBytes": 501964,
+          "installedDeltaKiB": 955
+        },
+        {
+          "name": "libmnl0",
+          "version": "1.0.5-3",
+          "previousVersion": null,
+          "installedSizeKiB": 45,
+          "downloadBytes": 11928,
+          "installedDeltaKiB": 45
+        },
+        {
+          "name": "libtirpc-common",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 32,
+          "downloadBytes": 11004,
+          "installedDeltaKiB": 32
+        },
+        {
+          "name": "libtirpc3t64",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 236,
+          "downloadBytes": 83300,
+          "installedDeltaKiB": 236
+        },
+        {
+          "name": "libxtables12",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 101,
+          "downloadBytes": 31896,
+          "installedDeltaKiB": 101
+        },
+        {
+          "name": "libcap2-bin",
+          "version": "1:2.75-10+deb13u1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 132,
+          "downloadBytes": 36456,
+          "installedDeltaKiB": 132
+        },
+        {
+          "name": "iproute2",
+          "version": "6.15.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 3774,
+          "downloadBytes": 1089184,
+          "installedDeltaKiB": 3774
+        },
+        {
+          "name": "libstrongswan",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1413,
+          "downloadBytes": 445624,
+          "installedDeltaKiB": 1413
+        },
+        {
+          "name": "strongswan-starter",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 668,
+          "downloadBytes": 226468,
+          "installedDeltaKiB": 668
+        },
+        {
+          "name": "strongswan-libcharon",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1067,
+          "downloadBytes": 341496,
+          "installedDeltaKiB": 1067
+        },
+        {
+          "name": "strongswan-charon",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 300,
+          "downloadBytes": 100456,
+          "installedDeltaKiB": 300
+        },
+        {
+          "name": "iputils-ping",
+          "version": "3:20240905-3",
+          "previousVersion": null,
+          "installedSizeKiB": 187,
+          "downloadBytes": 51248,
+          "installedDeltaKiB": 187
+        },
+        {
+          "name": "libjansson4",
+          "version": "2.14-2+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 100,
+          "downloadBytes": 39792,
+          "installedDeltaKiB": 100
+        },
+        {
+          "name": "libnftnl11",
+          "version": "1.2.9-1",
+          "previousVersion": null,
+          "installedSizeKiB": 244,
+          "downloadBytes": 65012,
+          "installedDeltaKiB": 244
+        },
+        {
+          "name": "libnftables1",
+          "version": "1.1.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1054,
+          "downloadBytes": 332448,
+          "installedDeltaKiB": 1054
+        },
+        {
+          "name": "nftables",
+          "version": "1.1.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 185,
+          "downloadBytes": 75864,
+          "installedDeltaKiB": 185
+        },
+        {
+          "name": "libfstrm0",
+          "version": "0.6.1-1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 71,
+          "downloadBytes": 21924,
+          "installedDeltaKiB": 71
+        },
+        {
+          "name": "libjemalloc2",
+          "version": "5.3.0-3",
+          "previousVersion": null,
+          "installedSizeKiB": 876,
+          "downloadBytes": 274324,
+          "installedDeltaKiB": 876
+        },
+        {
+          "name": "libjson-c5",
+          "version": "0.18+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 112,
+          "downloadBytes": 45956,
+          "installedDeltaKiB": 112
+        },
+        {
+          "name": "liblmdb0",
+          "version": "0.9.31-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 104,
+          "downloadBytes": 45240,
+          "installedDeltaKiB": 104
+        },
+        {
+          "name": "libmaxminddb0",
+          "version": "1.12.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 57,
+          "downloadBytes": 25800,
+          "installedDeltaKiB": 57
+        },
+        {
+          "name": "libprotobuf-c1",
+          "version": "1.5.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 62,
+          "downloadBytes": 20536,
+          "installedDeltaKiB": 62
+        },
+        {
+          "name": "liburcu8t64",
+          "version": "0.15.2-2",
+          "previousVersion": null,
+          "installedSizeKiB": 363,
+          "downloadBytes": 76304,
+          "installedDeltaKiB": 363
+        },
+        {
+          "name": "libuv1t64",
+          "version": "1.50.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 321,
+          "downloadBytes": 153752,
+          "installedDeltaKiB": 321
+        },
+        {
+          "name": "bind9-libs",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 3649,
+          "downloadBytes": 1250200,
+          "installedDeltaKiB": 3649
+        },
+        {
+          "name": "bind9-host",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 141,
+          "downloadBytes": 56596,
+          "installedDeltaKiB": 141
+        },
+        {
+          "name": "bind9-dnsutils",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 525,
+          "downloadBytes": 167084,
+          "installedDeltaKiB": 525
+        },
+        {
+          "name": "bzip2",
+          "version": "1.0.8-6",
+          "previousVersion": null,
+          "installedSizeKiB": 113,
+          "downloadBytes": 40520,
+          "installedDeltaKiB": 113
+        },
+        {
+          "name": "libmagic-mgc",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 10154,
+          "downloadBytes": 337800,
+          "installedDeltaKiB": 10154
+        },
+        {
+          "name": "libmagic1t64",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 244,
+          "downloadBytes": 109312,
+          "installedDeltaKiB": 244
+        },
+        {
+          "name": "file",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 79,
+          "downloadBytes": 43560,
+          "installedDeltaKiB": 79
+        },
+        {
+          "name": "traceroute",
+          "version": "1:2.1.6-1",
+          "previousVersion": null,
+          "installedSizeKiB": 160,
+          "downloadBytes": 54588,
+          "installedDeltaKiB": 160
+        },
+        {
+          "name": "wget",
+          "version": "1.25.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 3784,
+          "downloadBytes": 984500,
+          "installedDeltaKiB": 3784
+        },
+        {
+          "name": "xz-utils",
+          "version": "5.8.1-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1424,
+          "downloadBytes": 659760,
+          "installedDeltaKiB": 1424
+        },
+        {
+          "name": "bsdextrautils",
+          "version": "2.41.5-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 339,
+          "downloadBytes": 94796,
+          "installedDeltaKiB": 339
+        },
+        {
+          "name": "libnfnetlink0",
+          "version": "1.0.2-3",
+          "previousVersion": null,
+          "installedSizeKiB": 51,
+          "downloadBytes": 14416,
+          "installedDeltaKiB": 51
+        },
+        {
+          "name": "libnetfilter-conntrack3",
+          "version": "1.1.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 144,
+          "downloadBytes": 42064,
+          "installedDeltaKiB": 144
+        },
+        {
+          "name": "conntrack",
+          "version": "1:1.4.8-2",
+          "previousVersion": null,
+          "installedSizeKiB": 116,
+          "downloadBytes": 35636,
+          "installedDeltaKiB": 116
+        },
+        {
+          "name": "ethtool",
+          "version": "1:6.14.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 775,
+          "downloadBytes": 227036,
+          "installedDeltaKiB": 775
+        },
+        {
+          "name": "freeradius-common",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1307,
+          "downloadBytes": 245268,
+          "installedDeltaKiB": 1307
+        },
+        {
+          "name": "ssl-cert",
+          "version": "1.1.3",
+          "previousVersion": null,
+          "installedSizeKiB": 61,
+          "downloadBytes": 16816,
+          "installedDeltaKiB": 61
+        },
+        {
+          "name": "freeradius-config",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1288,
+          "downloadBytes": 225620,
+          "installedDeltaKiB": 1288
+        },
+        {
+          "name": "libpcap0.8t64",
+          "version": "1.10.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 390,
+          "downloadBytes": 168608,
+          "installedDeltaKiB": 390
+        },
+        {
+          "name": "libtalloc2",
+          "version": "2:2.4.3+samba4.22.11+dfsg-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 126,
+          "downloadBytes": 63644,
+          "installedDeltaKiB": 126
+        },
+        {
+          "name": "libfreeradius3",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 565,
+          "downloadBytes": 200920,
+          "installedDeltaKiB": 565
+        },
+        {
+          "name": "freeradius-utils",
+          "version": "3.2.7+dfsg-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 377,
+          "downloadBytes": 114512,
+          "installedDeltaKiB": 377
+        },
+        {
+          "name": "libbcg729-0",
+          "version": "1.1.1-3+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 85,
+          "downloadBytes": 35608,
+          "installedDeltaKiB": 85
+        },
+        {
+          "name": "libcares2",
+          "version": "1.34.5-1+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 282,
+          "downloadBytes": 98272,
+          "installedDeltaKiB": 282
+        },
+        {
+          "name": "libip4tc2",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 66,
+          "downloadBytes": 19964,
+          "installedDeltaKiB": 66
+        },
+        {
+          "name": "libcharon-extra-plugins",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 1169,
+          "downloadBytes": 291692,
+          "installedDeltaKiB": 1169
+        },
+        {
+          "name": "libdeflate0",
+          "version": "1.23-2",
+          "previousVersion": null,
+          "installedSizeKiB": 102,
+          "downloadBytes": 47344,
+          "installedDeltaKiB": 102
+        },
+        {
+          "name": "libgpg-error0",
+          "version": "1.51-4",
+          "previousVersion": null,
+          "installedSizeKiB": 208,
+          "downloadBytes": 82108,
+          "installedDeltaKiB": 208
+        },
+        {
+          "name": "libgcrypt20",
+          "version": "1.11.0-7+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1999,
+          "downloadBytes": 843104,
+          "installedDeltaKiB": 1999
+        },
+        {
+          "name": "libjbig0",
+          "version": "2.1-6.1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 85,
+          "downloadBytes": 32116,
+          "installedDeltaKiB": 85
+        },
+        {
+          "name": "liblerc4",
+          "version": "4.0.0+ds-5",
+          "previousVersion": null,
+          "installedSizeKiB": 603,
+          "downloadBytes": 182976,
+          "installedDeltaKiB": 603
+        },
+        {
+          "name": "liblua5.4-0",
+          "version": "5.4.7-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 580,
+          "downloadBytes": 146640,
+          "installedDeltaKiB": 580
+        },
+        {
+          "name": "libncurses6",
+          "version": "6.5+20250216-2",
+          "previousVersion": null,
+          "installedSizeKiB": 342,
+          "downloadBytes": 105036,
+          "installedDeltaKiB": 342
+        },
+        {
+          "name": "libnl-genl-3-200",
+          "version": "3.7.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 53,
+          "downloadBytes": 18136,
+          "installedDeltaKiB": 53
+        },
+        {
+          "name": "libopencore-amrnb0",
+          "version": "0.1.6-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 196,
+          "downloadBytes": 97456,
+          "installedDeltaKiB": 196
+        },
+        {
+          "name": "libopus0",
+          "version": "1.5.2-2",
+          "previousVersion": null,
+          "installedSizeKiB": 3494,
+          "downloadBytes": 2851932,
+          "installedDeltaKiB": 3494
+        },
+        {
+          "name": "pci.ids",
+          "version": "0.0~2025.06.09-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1509,
+          "downloadBytes": 269172,
+          "installedDeltaKiB": 1509
+        },
+        {
+          "name": "libpci3",
+          "version": "1:3.13.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 143,
+          "downloadBytes": 75572,
+          "installedDeltaKiB": 143
+        },
+        {
+          "name": "libsbc1",
+          "version": "2.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 88,
+          "downloadBytes": 32020,
+          "installedDeltaKiB": 88
+        },
+        {
+          "name": "libsharpyuv0",
+          "version": "1.5.0-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 143,
+          "downloadBytes": 115612,
+          "installedDeltaKiB": 143
+        },
+        {
+          "name": "libsmi2t64",
+          "version": "0.4.8+dfsg2-17+b1",
+          "previousVersion": null,
+          "installedSizeKiB": 443,
+          "downloadBytes": 120768,
+          "installedDeltaKiB": 443
+        },
+        {
+          "name": "libsnappy1v5",
+          "version": "1.2.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 93,
+          "downloadBytes": 29252,
+          "installedDeltaKiB": 93
+        },
+        {
+          "name": "libsnmp-base",
+          "version": "5.9.4+dfsg-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 2183,
+          "downloadBytes": 1769852,
+          "installedDeltaKiB": 2183
+        },
+        {
+          "name": "libwrap0",
+          "version": "7.6.q-36",
+          "previousVersion": null,
+          "installedSizeKiB": 110,
+          "downloadBytes": 55256,
+          "installedDeltaKiB": 110
+        },
+        {
+          "name": "libsnmp40t64",
+          "version": "5.9.4+dfsg-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 5462,
+          "downloadBytes": 2579228,
+          "installedDeltaKiB": 5462
+        },
+        {
+          "name": "libwebp7",
+          "version": "1.5.0-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 631,
+          "downloadBytes": 317856,
+          "installedDeltaKiB": 631
+        },
+        {
+          "name": "libtiff6",
+          "version": "4.7.0-3+deb13u3",
+          "previousVersion": null,
+          "installedSizeKiB": 766,
+          "downloadBytes": 345492,
+          "installedDeltaKiB": 766
+        },
+        {
+          "name": "libspandsp2t64",
+          "version": "0.0.6+dfsg-2.2",
+          "previousVersion": null,
+          "installedSizeKiB": 875,
+          "downloadBytes": 282180,
+          "installedDeltaKiB": 875
+        },
+        {
+          "name": "libspeexdsp1",
+          "version": "1.2.1-3",
+          "previousVersion": null,
+          "installedSizeKiB": 102,
+          "downloadBytes": 42864,
+          "installedDeltaKiB": 102
+        },
+        {
+          "name": "libssh-4",
+          "version": "0.11.5-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 583,
+          "downloadBytes": 211924,
+          "installedDeltaKiB": 583
+        },
+        {
+          "name": "libwireshark-data",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 3613,
+          "downloadBytes": 464736,
+          "installedDeltaKiB": 3613
+        },
+        {
+          "name": "libwsutil16",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 338,
+          "downloadBytes": 135392,
+          "installedDeltaKiB": 338
+        },
+        {
+          "name": "libwiretap15",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 780,
+          "downloadBytes": 276964,
+          "installedDeltaKiB": 780
+        },
+        {
+          "name": "libwireshark18",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 129825,
+          "downloadBytes": 21248072,
+          "installedDeltaKiB": 129825
+        },
+        {
+          "name": "mtr-tiny",
+          "version": "0.95-1.1+b1",
+          "previousVersion": null,
+          "installedSizeKiB": 157,
+          "downloadBytes": 67668,
+          "installedDeltaKiB": 157
+        },
+        {
+          "name": "netcat-openbsd",
+          "version": "1.229-1",
+          "previousVersion": null,
+          "installedSizeKiB": 109,
+          "downloadBytes": 42520,
+          "installedDeltaKiB": 109
+        },
+        {
+          "name": "patch",
+          "version": "2.8-2",
+          "previousVersion": null,
+          "installedSizeKiB": 242,
+          "downloadBytes": 134328,
+          "installedDeltaKiB": 242
+        },
+        {
+          "name": "python-is-python3",
+          "version": "3.13.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 16,
+          "downloadBytes": 3204,
+          "installedDeltaKiB": 16
+        },
+        {
+          "name": "python3-pip-whl",
+          "version": "25.1.1+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1531,
+          "downloadBytes": 1507328,
+          "installedDeltaKiB": 1531
+        },
+        {
+          "name": "python3-setuptools-whl",
+          "version": "78.1.1-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 1324,
+          "downloadBytes": 1268108,
+          "installedDeltaKiB": 1324
+        },
+        {
+          "name": "python3.13-venv",
+          "version": "3.13.5-2+deb13u5",
+          "previousVersion": null,
+          "installedSizeKiB": 27,
+          "downloadBytes": 5476,
+          "installedDeltaKiB": 27
+        },
+        {
+          "name": "python3-venv",
+          "version": "3.13.5-1",
+          "previousVersion": null,
+          "installedSizeKiB": 6,
+          "downloadBytes": 1180,
+          "installedDeltaKiB": 6
+        },
+        {
+          "name": "snmp",
+          "version": "5.9.4+dfsg-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 700,
+          "downloadBytes": 177568,
+          "installedDeltaKiB": 700
+        },
+        {
+          "name": "socat",
+          "version": "1.8.0.3-1+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1802,
+          "downloadBytes": 423768,
+          "installedDeltaKiB": 1802
+        },
+        {
+          "name": "sqlite3",
+          "version": "3.46.1-7+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 587,
+          "downloadBytes": 384144,
+          "installedDeltaKiB": 587
+        },
+        {
+          "name": "strongswan-pki",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 419,
+          "downloadBytes": 165260,
+          "installedDeltaKiB": 419
+        },
+        {
+          "name": "strongswan-swanctl",
+          "version": "6.0.1-6+deb13u7",
+          "previousVersion": null,
+          "installedSizeKiB": 585,
+          "downloadBytes": 195880,
+          "installedDeltaKiB": 585
+        },
+        {
+          "name": "tcpdump",
+          "version": "4.99.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 1343,
+          "downloadBytes": 471048,
+          "installedDeltaKiB": 1343
+        },
+        {
+          "name": "time",
+          "version": "1.9-0.2",
+          "previousVersion": null,
+          "installedSizeKiB": 129,
+          "downloadBytes": 50776,
+          "installedDeltaKiB": 129
+        },
+        {
+          "name": "tree",
+          "version": "2.2.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 129,
+          "downloadBytes": 59392,
+          "installedDeltaKiB": 129
+        },
+        {
+          "name": "wireshark-common",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1679,
+          "downloadBytes": 608300,
+          "installedDeltaKiB": 1679
+        },
+        {
+          "name": "tshark",
+          "version": "4.4.19-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 435,
+          "downloadBytes": 183724,
+          "installedDeltaKiB": 435
+        },
+        {
+          "name": "whois",
+          "version": "5.6.3",
+          "previousVersion": null,
+          "installedSizeKiB": 388,
+          "downloadBytes": 72412,
+          "installedDeltaKiB": 388
+        },
+        {
+          "name": "wireguard-tools",
+          "version": "1.0.20210914-3",
+          "previousVersion": null,
+          "installedSizeKiB": 318,
+          "downloadBytes": 84924,
+          "installedDeltaKiB": 318
+        },
+        {
+          "name": "xxd",
+          "version": "2:9.1.1230-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 154,
+          "downloadBytes": 99056,
+          "installedDeltaKiB": 154
+        },
+        {
+          "name": "zip",
+          "version": "3.0-15+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 627,
+          "downloadBytes": 234964,
+          "installedDeltaKiB": 627
+        },
+        {
+          "name": "zstd",
+          "version": "1.5.7+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 2320,
+          "downloadBytes": 756244,
+          "installedDeltaKiB": 2320
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  bind9-host bind9-libs freeradius-common freeradius-config libbcg729-0\n  libcap2-bin libcares2 libcharon-extra-plugins libdeflate0 libfreeradius3\n  libfstrm0 libgcrypt20 libgpg-error0 libip4tc2 libiperf0 libjansson4 libjbig0\n  libjemalloc2 libjson-c5 liblerc4 liblmdb0 liblua5.4-0 libmagic-mgc\n  libmagic1t64 libmaxminddb0 libmnl0 libncurses6 libnetfilter-conntrack3\n  libnfnetlink0 libnftables1 libnftnl11 libnl-genl-3-200 libopencore-amrnb0\n  libopus0 libpcap0.8t64 libpci3 libpopt0 libprotobuf-c1 libsbc1 libsctp1\n  libsharpyuv0 libsmi2t64 libsnappy1v5 libsnmp-base libsnmp40t64\n  libspandsp2t64 libspeexdsp1 libssh-4 libstrongswan libtalloc2 libtiff6\n  libtirpc-common libtirpc3t64 liburcu8t64 libuv1t64 libwebp7\n  libwireshark-data libwireshark18 libwiretap15 libwrap0 libwsutil16\n  libxtables12 pci.ids python3-pip-whl python3-setuptools-whl python3.13-venv\n  ssl-cert strongswan-libcharon strongswan-starter wireshark-common\nSuggested packages:\n  bzip2-doc rng-tools mmdb-bin opus-tools lksctp-tools snmp-mibs-downloader\n  libstrongswan-extra-plugins geoipupdate geoip-database geoip-database-extra\n  libjs-leaflet libjs-leaflet.markercluster wireshark-doc firewalld ed\n  diffutils-doc openssh-server python3-braceexpand sqlite3-doc apparmor\n  openresolv | resolvconf\nRecommended packages:\n  libdbi-perl linux-sysctl-defaults libpam-cap libgpg-error-l10n libgpm2\n  libstrongswan-standard-plugins libcharon-extauth-plugins wireguard-modules\n  | wireguard-dkms\nThe following NEW packages will be installed:\n  bind9-dnsutils bind9-host bind9-libs bsdextrautils bzip2 conntrack ethtool\n  file freeradius-common freeradius-config freeradius-utils iperf3 iproute2\n  iputils-ping libbcg729-0 libcap2-bin libcares2 libcharon-extra-plugins\n  libdeflate0 libfreeradius3 libfstrm0 libgcrypt20 libgpg-error0 libip4tc2\n  libiperf0 libjansson4 libjbig0 libjemalloc2 libjson-c5 liblerc4 liblmdb0\n  liblua5.4-0 libmagic-mgc libmagic1t64 libmaxminddb0 libmnl0 libncurses6\n  libnetfilter-conntrack3 libnfnetlink0 libnftables1 libnftnl11\n  libnl-genl-3-200 libopencore-amrnb0 libopus0 libpcap0.8t64 libpci3 libpopt0\n  libprotobuf-c1 libsbc1 libsctp1 libsharpyuv0 libsmi2t64 libsnappy1v5\n  libsnmp-base libsnmp40t64 libspandsp2t64 libspeexdsp1 libssh-4 libstrongswan\n  libtalloc2 libtiff6 libtirpc-common libtirpc3t64 liburcu8t64 libuv1t64\n  libwebp7 libwireshark-data libwireshark18 libwiretap15 libwrap0 libwsutil16\n  libxtables12 mtr-tiny netcat-openbsd nftables patch pci.ids\n  python-is-python3 python3-pip-whl python3-setuptools-whl python3-venv\n  python3.13-venv rsync snmp socat sqlite3 ssl-cert strongswan-charon\n  strongswan-libcharon strongswan-pki strongswan-starter strongswan-swanctl\n  tcpdump time traceroute tree tshark wget whois wireguard-tools\n  wireshark-common xxd xz-utils zip zstd\n0 upgraded, 105 newly installed, 0 to remove and 0 not upgraded.\nInst libsctp1 (1.0.21+dfsg-1 Debian:13.7/stable [amd64])\nInst libiperf0 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nInst iperf3 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nInst libpopt0 (1.19+dfsg-2 Debian:13.7/stable [amd64])\nInst rsync (3.5.0+ds1-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nInst libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nInst libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nInst libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nInst iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nInst libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-starter (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-libcharon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-charon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst iputils-ping (3:20240905-3 Debian:13.7/stable [amd64])\nInst libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nInst libnftnl11 (1.2.9-1 Debian:13.7/stable [amd64])\nInst libnftables1 (1.1.3-1 Debian:13.7/stable [amd64])\nInst nftables (1.1.3-1 Debian:13.7/stable [amd64])\nInst libfstrm0 (0.6.1-1+b3 Debian:13.7/stable [amd64])\nInst libjemalloc2 (5.3.0-3 Debian:13.7/stable [amd64])\nInst libjson-c5 (0.18+ds-1 Debian:13.7/stable [amd64])\nInst liblmdb0 (0.9.31-1+b2 Debian:13.7/stable [amd64])\nInst libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nInst libprotobuf-c1 (1.5.1-1 Debian:13.7/stable [amd64])\nInst liburcu8t64 (0.15.2-2 Debian:13.7/stable [amd64])\nInst libuv1t64 (1.50.0-2 Debian:13.7/stable [amd64])\nInst bind9-libs (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst bind9-host (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst bind9-dnsutils (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nInst libmagic-mgc (1:5.46-5 Debian:13.7/stable [amd64])\nInst libmagic1t64 (1:5.46-5 Debian:13.7/stable [amd64])\nInst file (1:5.46-5 Debian:13.7/stable [amd64])\nInst traceroute (1:2.1.6-1 Debian:13.7/stable [amd64])\nInst wget (1.25.0-2 Debian:13.7/stable [amd64])\nInst xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nInst bsdextrautils (2.41.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libnfnetlink0 (1.0.2-3 Debian:13.7/stable [amd64])\nInst libnetfilter-conntrack3 (1.1.0-1 Debian:13.7/stable [amd64])\nInst conntrack (1:1.4.8-2 Debian:13.7/stable [amd64])\nInst ethtool (1:6.14.2-1 Debian:13.7/stable [amd64])\nInst freeradius-common (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [all])\nInst ssl-cert (1.1.3 Debian:13.7/stable [all])\nInst freeradius-config (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nInst libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nInst libtalloc2 (2:2.4.3+samba4.22.11+dfsg-0+deb13u1 Debian:13.7/stable [amd64])\nInst libfreeradius3 (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nInst freeradius-utils (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nInst libbcg729-0 (1.1.1-3+deb13u1 Debian:13.7/stable [amd64])\nInst libcares2 (1.34.5-1+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libip4tc2 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcharon-extra-plugins (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst libdeflate0 (1.23-2 Debian:13.7/stable [amd64])\nInst libgpg-error0 (1.51-4 Debian:13.7/stable [amd64])\nInst libgcrypt20 (1.11.0-7+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libjbig0 (2.1-6.1+b2 Debian:13.7/stable [amd64])\nInst liblerc4 (4.0.0+ds-5 Debian:13.7/stable [amd64])\nInst liblua5.4-0 (5.4.7-1+b2 Debian:13.7/stable [amd64])\nInst libncurses6 (6.5+20250216-2 Debian:13.7/stable [amd64])\nInst libnl-genl-3-200 (3.7.0-2 Debian:13.7/stable [amd64])\nInst libopencore-amrnb0 (0.1.6-1+b2 Debian:13.7/stable [amd64])\nInst libopus0 (1.5.2-2 Debian:13.7/stable [amd64])\nInst pci.ids (0.0~2025.06.09-1 Debian:13.7/stable [all])\nInst libpci3 (1:3.13.0-2 Debian:13.7/stable [amd64])\nInst libsbc1 (2.1-1 Debian:13.7/stable [amd64])\nInst libsharpyuv0 (1.5.0-0.1 Debian:13.7/stable [amd64])\nInst libsmi2t64 (0.4.8+dfsg2-17+b1 Debian:13.7/stable [amd64])\nInst libsnappy1v5 (1.2.2-1 Debian:13.7/stable [amd64])\nInst libsnmp-base (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [all])\nInst libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nInst libsnmp40t64 (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libwebp7 (1.5.0-0.1 Debian:13.7/stable [amd64])\nInst libtiff6 (4.7.0-3+deb13u3 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libspandsp2t64 (0.0.6+dfsg-2.2 Debian:13.7/stable [amd64])\nInst libspeexdsp1 (1.2.1-3 Debian:13.7/stable [amd64])\nInst libssh-4 (0.11.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libwireshark-data (4.4.19-0+deb13u1 Debian-Security:13/stable-security [all])\nInst libwsutil16 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst libwiretap15 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst libwireshark18 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst mtr-tiny (0.95-1.1+b1 Debian:13.7/stable [amd64])\nInst netcat-openbsd (1.229-1 Debian:13.7/stable [amd64])\nInst patch (2.8-2 Debian:13.7/stable [amd64])\nInst python-is-python3 (3.13.3-1 Debian:13.7/stable [all])\nInst python3-pip-whl (25.1.1+dfsg-1 Debian:13.7/stable [all])\nInst python3-setuptools-whl (78.1.1-0.1 Debian:13.7/stable [all])\nInst python3.13-venv (3.13.5-2+deb13u5 Debian:13.7/stable [amd64])\nInst python3-venv (3.13.5-1 Debian:13.7/stable [amd64])\nInst snmp (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst socat (1.8.0.3-1+deb13u1 Debian:13.7/stable [amd64])\nInst sqlite3 (3.46.1-7+deb13u2 Debian:13.7/stable [amd64])\nInst strongswan-pki (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst strongswan-swanctl (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nInst tcpdump (4.99.5-2 Debian:13.7/stable [amd64])\nInst time (1.9-0.2 Debian:13.7/stable [amd64])\nInst tree (2.2.1-1 Debian:13.7/stable [amd64])\nInst wireshark-common (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst tshark (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst whois (5.6.3 Debian:13.7/stable [amd64])\nInst wireguard-tools (1.0.20210914-3 Debian:13.7/stable [amd64])\nInst xxd (2:9.1.1230-2+deb13u1 Debian-Security:13/stable-security [amd64])\nInst zip (3.0-15+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst zstd (1.5.7+dfsg-1 Debian:13.7/stable [amd64])\nConf libsctp1 (1.0.21+dfsg-1 Debian:13.7/stable [amd64])\nConf libiperf0 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nConf iperf3 (3.18-2+deb13u2 Debian:13.7/stable [amd64])\nConf libpopt0 (1.19+dfsg-2 Debian:13.7/stable [amd64])\nConf rsync (3.5.0+ds1-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nConf libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nConf libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nConf libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nConf iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nConf libstrongswan (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-starter (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-libcharon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-charon (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf iputils-ping (3:20240905-3 Debian:13.7/stable [amd64])\nConf libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nConf libnftnl11 (1.2.9-1 Debian:13.7/stable [amd64])\nConf libnftables1 (1.1.3-1 Debian:13.7/stable [amd64])\nConf nftables (1.1.3-1 Debian:13.7/stable [amd64])\nConf libfstrm0 (0.6.1-1+b3 Debian:13.7/stable [amd64])\nConf libjemalloc2 (5.3.0-3 Debian:13.7/stable [amd64])\nConf libjson-c5 (0.18+ds-1 Debian:13.7/stable [amd64])\nConf liblmdb0 (0.9.31-1+b2 Debian:13.7/stable [amd64])\nConf libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nConf libprotobuf-c1 (1.5.1-1 Debian:13.7/stable [amd64])\nConf liburcu8t64 (0.15.2-2 Debian:13.7/stable [amd64])\nConf libuv1t64 (1.50.0-2 Debian:13.7/stable [amd64])\nConf bind9-libs (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf bind9-host (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf bind9-dnsutils (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nConf libmagic-mgc (1:5.46-5 Debian:13.7/stable [amd64])\nConf libmagic1t64 (1:5.46-5 Debian:13.7/stable [amd64])\nConf file (1:5.46-5 Debian:13.7/stable [amd64])\nConf traceroute (1:2.1.6-1 Debian:13.7/stable [amd64])\nConf wget (1.25.0-2 Debian:13.7/stable [amd64])\nConf xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nConf bsdextrautils (2.41.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libnfnetlink0 (1.0.2-3 Debian:13.7/stable [amd64])\nConf libnetfilter-conntrack3 (1.1.0-1 Debian:13.7/stable [amd64])\nConf conntrack (1:1.4.8-2 Debian:13.7/stable [amd64])\nConf ethtool (1:6.14.2-1 Debian:13.7/stable [amd64])\nConf freeradius-common (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [all])\nConf ssl-cert (1.1.3 Debian:13.7/stable [all])\nConf freeradius-config (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nConf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])\nConf libtalloc2 (2:2.4.3+samba4.22.11+dfsg-0+deb13u1 Debian:13.7/stable [amd64])\nConf libfreeradius3 (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nConf freeradius-utils (3.2.7+dfsg-1+deb13u2 Debian:13.7/stable [amd64])\nConf libbcg729-0 (1.1.1-3+deb13u1 Debian:13.7/stable [amd64])\nConf libcares2 (1.34.5-1+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libip4tc2 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcharon-extra-plugins (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf libdeflate0 (1.23-2 Debian:13.7/stable [amd64])\nConf libgpg-error0 (1.51-4 Debian:13.7/stable [amd64])\nConf libgcrypt20 (1.11.0-7+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libjbig0 (2.1-6.1+b2 Debian:13.7/stable [amd64])\nConf liblerc4 (4.0.0+ds-5 Debian:13.7/stable [amd64])\nConf liblua5.4-0 (5.4.7-1+b2 Debian:13.7/stable [amd64])\nConf libncurses6 (6.5+20250216-2 Debian:13.7/stable [amd64])\nConf libnl-genl-3-200 (3.7.0-2 Debian:13.7/stable [amd64])\nConf libopencore-amrnb0 (0.1.6-1+b2 Debian:13.7/stable [amd64])\nConf libopus0 (1.5.2-2 Debian:13.7/stable [amd64])\nConf pci.ids (0.0~2025.06.09-1 Debian:13.7/stable [all])\nConf libpci3 (1:3.13.0-2 Debian:13.7/stable [amd64])\nConf libsbc1 (2.1-1 Debian:13.7/stable [amd64])\nConf libsharpyuv0 (1.5.0-0.1 Debian:13.7/stable [amd64])\nConf libsmi2t64 (0.4.8+dfsg2-17+b1 Debian:13.7/stable [amd64])\nConf libsnappy1v5 (1.2.2-1 Debian:13.7/stable [amd64])\nConf libsnmp-base (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [all])\nConf libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nConf libsnmp40t64 (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libwebp7 (1.5.0-0.1 Debian:13.7/stable [amd64])\nConf libtiff6 (4.7.0-3+deb13u3 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libspandsp2t64 (0.0.6+dfsg-2.2 Debian:13.7/stable [amd64])\nConf libspeexdsp1 (1.2.1-3 Debian:13.7/stable [amd64])\nConf libssh-4 (0.11.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libwireshark-data (4.4.19-0+deb13u1 Debian-Security:13/stable-security [all])\nConf libwsutil16 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libwiretap15 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libwireshark18 (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf mtr-tiny (0.95-1.1+b1 Debian:13.7/stable [amd64])\nConf netcat-openbsd (1.229-1 Debian:13.7/stable [amd64])\nConf patch (2.8-2 Debian:13.7/stable [amd64])\nConf python-is-python3 (3.13.3-1 Debian:13.7/stable [all])\nConf python3-pip-whl (25.1.1+dfsg-1 Debian:13.7/stable [all])\nConf python3-setuptools-whl (78.1.1-0.1 Debian:13.7/stable [all])\nConf python3.13-venv (3.13.5-2+deb13u5 Debian:13.7/stable [amd64])\nConf python3-venv (3.13.5-1 Debian:13.7/stable [amd64])\nConf snmp (5.9.4+dfsg-2+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf socat (1.8.0.3-1+deb13u1 Debian:13.7/stable [amd64])\nConf sqlite3 (3.46.1-7+deb13u2 Debian:13.7/stable [amd64])\nConf strongswan-pki (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf strongswan-swanctl (6.0.1-6+deb13u7 Debian-Security:13/stable-security [amd64])\nConf tcpdump (4.99.5-2 Debian:13.7/stable [amd64])\nConf time (1.9-0.2 Debian:13.7/stable [amd64])\nConf tree (2.2.1-1 Debian:13.7/stable [amd64])\nConf wireshark-common (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf tshark (4.4.19-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf whois (5.6.3 Debian:13.7/stable [amd64])\nConf wireguard-tools (1.0.20210914-3 Debian:13.7/stable [amd64])\nConf xxd (2:9.1.1230-2+deb13u1 Debian-Security:13/stable-security [amd64])\nConf zip (3.0-15+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf zstd (1.5.7+dfsg-1 Debian:13.7/stable [amd64])\n"
+    }
+  ],
+  "combinedScenarioProvenance": {
+    "generatedAt": "2026-11-06T00:57:00.155Z",
+    "aptUpdate": "Get:1 http://deb.debian.org/debian trixie InRelease [140 kB]\nGet:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]\nGet:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]\nGet:4 http://deb.debian.org/debian trixie/main amd64 Packages [9678 kB]\nGet:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [1108 B]\nGet:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [298 kB]\nFetched 10.2 MB in 1s (8752 kB/s)\nReading package lists...\n"
+  }
+}

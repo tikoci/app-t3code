@@ -1,0 +1,3093 @@
+{
+  "generatedAt": "2026-11-06T00:31:30.492Z",
+  "architecture": "amd64",
+  "method": "apt-get --simulate --no-install-recommends; candidate metadata Size and Installed-Size; subtract installed sizes for upgrades. Indexes refreshed, no packages installed. Independent scenarios from the same image, not additive. These are apt estimates, not measured OCI layers.",
+  "aptSources": "Types: deb\n# http://snapshot.debian.org/archive/debian/20261104T212339Z\nURIs: http://deb.debian.org/debian\nSuites: trixie trixie-updates\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.pgp\n\nTypes: deb\n# http://snapshot.debian.org/archive/debian-security/20261104T212339Z\nURIs: http://deb.debian.org/debian-security\nSuites: trixie-security\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.pgp\n",
+  "aptUpdate": "Get:1 http://deb.debian.org/debian trixie InRelease [140 kB]\nGet:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]\nGet:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]\nGet:4 http://deb.debian.org/debian trixie/main amd64 Packages [9678 kB]\nGet:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [1108 B]\nGet:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [298 kB]\nFetched 10.2 MB in 1s (8905 kB/s)\nReading package lists...\n",
+  "measurements": [
+    {
+      "label": "patch",
+      "packages": [
+        "patch"
+      ],
+      "downloadBytes": 134328,
+      "installedDeltaKiB": 242,
+      "changes": [
+        {
+          "name": "patch",
+          "version": "2.8-2",
+          "previousVersion": null,
+          "installedSizeKiB": 242,
+          "downloadBytes": 134328,
+          "installedDeltaKiB": 242
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nSuggested packages:\n  ed diffutils-doc\nThe following NEW packages will be installed:\n  patch\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst patch (2.8-2 Debian:13.7/stable [amd64])\nConf patch (2.8-2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "file",
+      "packages": [
+        "file"
+      ],
+      "downloadBytes": 490672,
+      "installedDeltaKiB": 10477,
+      "changes": [
+        {
+          "name": "libmagic-mgc",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 10154,
+          "downloadBytes": 337800,
+          "installedDeltaKiB": 10154
+        },
+        {
+          "name": "libmagic1t64",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 244,
+          "downloadBytes": 109312,
+          "installedDeltaKiB": 244
+        },
+        {
+          "name": "file",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 79,
+          "downloadBytes": 43560,
+          "installedDeltaKiB": 79
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libmagic-mgc libmagic1t64\nThe following NEW packages will be installed:\n  file libmagic-mgc libmagic1t64\n0 upgraded, 3 newly installed, 0 to remove and 0 not upgraded.\nInst libmagic-mgc (1:5.46-5 Debian:13.7/stable [amd64])\nInst libmagic1t64 (1:5.46-5 Debian:13.7/stable [amd64])\nInst file (1:5.46-5 Debian:13.7/stable [amd64])\nConf libmagic-mgc (1:5.46-5 Debian:13.7/stable [amd64])\nConf libmagic1t64 (1:5.46-5 Debian:13.7/stable [amd64])\nConf file (1:5.46-5 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "bzip2",
+      "packages": [
+        "bzip2"
+      ],
+      "downloadBytes": 40520,
+      "installedDeltaKiB": 113,
+      "changes": [
+        {
+          "name": "bzip2",
+          "version": "1.0.8-6",
+          "previousVersion": null,
+          "installedSizeKiB": 113,
+          "downloadBytes": 40520,
+          "installedDeltaKiB": 113
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nSuggested packages:\n  bzip2-doc\nThe following NEW packages will be installed:\n  bzip2\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nConf bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "xz-utils",
+      "packages": [
+        "xz-utils"
+      ],
+      "downloadBytes": 659760,
+      "installedDeltaKiB": 1424,
+      "changes": [
+        {
+          "name": "xz-utils",
+          "version": "5.8.1-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1424,
+          "downloadBytes": 659760,
+          "installedDeltaKiB": 1424
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  xz-utils\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nConf xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "zip",
+      "packages": [
+        "zip"
+      ],
+      "downloadBytes": 234964,
+      "installedDeltaKiB": 627,
+      "changes": [
+        {
+          "name": "zip",
+          "version": "3.0-15+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 627,
+          "downloadBytes": 234964,
+          "installedDeltaKiB": 627
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  zip\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst zip (3.0-15+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf zip (3.0-15+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "zstd",
+      "packages": [
+        "zstd"
+      ],
+      "downloadBytes": 756244,
+      "installedDeltaKiB": 2320,
+      "changes": [
+        {
+          "name": "zstd",
+          "version": "1.5.7+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 2320,
+          "downloadBytes": 756244,
+          "installedDeltaKiB": 2320
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  zstd\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst zstd (1.5.7+dfsg-1 Debian:13.7/stable [amd64])\nConf zstd (1.5.7+dfsg-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "wget",
+      "packages": [
+        "wget"
+      ],
+      "downloadBytes": 984500,
+      "installedDeltaKiB": 3784,
+      "changes": [
+        {
+          "name": "wget",
+          "version": "1.25.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 3784,
+          "downloadBytes": 984500,
+          "installedDeltaKiB": 3784
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  wget\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst wget (1.25.0-2 Debian:13.7/stable [amd64])\nConf wget (1.25.0-2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "rsync",
+      "packages": [
+        "rsync"
+      ],
+      "downloadBytes": 545808,
+      "installedDeltaKiB": 1200,
+      "changes": [
+        {
+          "name": "libpopt0",
+          "version": "1.19+dfsg-2",
+          "previousVersion": null,
+          "installedSizeKiB": 245,
+          "downloadBytes": 43844,
+          "installedDeltaKiB": 245
+        },
+        {
+          "name": "rsync",
+          "version": "3.5.0+ds1-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 955,
+          "downloadBytes": 501964,
+          "installedDeltaKiB": 955
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libpopt0\nSuggested packages:\n  openssh-server python3-braceexpand\nThe following NEW packages will be installed:\n  libpopt0 rsync\n0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.\nInst libpopt0 (1.19+dfsg-2 Debian:13.7/stable [amd64])\nInst rsync (3.5.0+ds1-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libpopt0 (1.19+dfsg-2 Debian:13.7/stable [amd64])\nConf rsync (3.5.0+ds1-0+deb13u1 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "tree",
+      "packages": [
+        "tree"
+      ],
+      "downloadBytes": 59392,
+      "installedDeltaKiB": 129,
+      "changes": [
+        {
+          "name": "tree",
+          "version": "2.2.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 129,
+          "downloadBytes": 59392,
+          "installedDeltaKiB": 129
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  tree\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst tree (2.2.1-1 Debian:13.7/stable [amd64])\nConf tree (2.2.1-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "time",
+      "packages": [
+        "time"
+      ],
+      "downloadBytes": 50776,
+      "installedDeltaKiB": 129,
+      "changes": [
+        {
+          "name": "time",
+          "version": "1.9-0.2",
+          "previousVersion": null,
+          "installedSizeKiB": 129,
+          "downloadBytes": 50776,
+          "installedDeltaKiB": 129
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  time\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst time (1.9-0.2 Debian:13.7/stable [amd64])\nConf time (1.9-0.2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "python-is-python3",
+      "packages": [
+        "python-is-python3"
+      ],
+      "downloadBytes": 3204,
+      "installedDeltaKiB": 16,
+      "changes": [
+        {
+          "name": "python-is-python3",
+          "version": "3.13.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 16,
+          "downloadBytes": 3204,
+          "installedDeltaKiB": 16
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  python-is-python3\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst python-is-python3 (3.13.3-1 Debian:13.7/stable [all])\nConf python-is-python3 (3.13.3-1 Debian:13.7/stable [all])\n"
+    },
+    {
+      "label": "iproute2",
+      "packages": [
+        "iproute2"
+      ],
+      "downloadBytes": 1263768,
+      "installedDeltaKiB": 4320,
+      "changes": [
+        {
+          "name": "libmnl0",
+          "version": "1.0.5-3",
+          "previousVersion": null,
+          "installedSizeKiB": 45,
+          "downloadBytes": 11928,
+          "installedDeltaKiB": 45
+        },
+        {
+          "name": "libtirpc-common",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 32,
+          "downloadBytes": 11004,
+          "installedDeltaKiB": 32
+        },
+        {
+          "name": "libtirpc3t64",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 236,
+          "downloadBytes": 83300,
+          "installedDeltaKiB": 236
+        },
+        {
+          "name": "libxtables12",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 101,
+          "downloadBytes": 31896,
+          "installedDeltaKiB": 101
+        },
+        {
+          "name": "libcap2-bin",
+          "version": "1:2.75-10+deb13u1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 132,
+          "downloadBytes": 36456,
+          "installedDeltaKiB": 132
+        },
+        {
+          "name": "iproute2",
+          "version": "6.15.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 3774,
+          "downloadBytes": 1089184,
+          "installedDeltaKiB": 3774
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libcap2-bin libmnl0 libtirpc-common libtirpc3t64 libxtables12\nRecommended packages:\n  libpam-cap\nThe following NEW packages will be installed:\n  iproute2 libcap2-bin libmnl0 libtirpc-common libtirpc3t64 libxtables12\n0 upgraded, 6 newly installed, 0 to remove and 0 not upgraded.\nInst libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nInst libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nInst libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nInst libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nInst iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nConf libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nConf libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nConf libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nConf libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nConf iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "iputils-ping",
+      "packages": [
+        "iputils-ping"
+      ],
+      "downloadBytes": 51248,
+      "installedDeltaKiB": 187,
+      "changes": [
+        {
+          "name": "iputils-ping",
+          "version": "3:20240905-3",
+          "previousVersion": null,
+          "installedSizeKiB": 187,
+          "downloadBytes": 51248,
+          "installedDeltaKiB": 187
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nRecommended packages:\n  linux-sysctl-defaults\nThe following NEW packages will be installed:\n  iputils-ping\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst iputils-ping (3:20240905-3 Debian:13.7/stable [amd64])\nConf iputils-ping (3:20240905-3 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "bind9-dnsutils",
+      "packages": [
+        "bind9-dnsutils"
+      ],
+      "downloadBytes": 2137716,
+      "installedDeltaKiB": 6281,
+      "changes": [
+        {
+          "name": "libfstrm0",
+          "version": "0.6.1-1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 71,
+          "downloadBytes": 21924,
+          "installedDeltaKiB": 71
+        },
+        {
+          "name": "libjemalloc2",
+          "version": "5.3.0-3",
+          "previousVersion": null,
+          "installedSizeKiB": 876,
+          "downloadBytes": 274324,
+          "installedDeltaKiB": 876
+        },
+        {
+          "name": "libjson-c5",
+          "version": "0.18+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 112,
+          "downloadBytes": 45956,
+          "installedDeltaKiB": 112
+        },
+        {
+          "name": "liblmdb0",
+          "version": "0.9.31-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 104,
+          "downloadBytes": 45240,
+          "installedDeltaKiB": 104
+        },
+        {
+          "name": "libmaxminddb0",
+          "version": "1.12.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 57,
+          "downloadBytes": 25800,
+          "installedDeltaKiB": 57
+        },
+        {
+          "name": "libprotobuf-c1",
+          "version": "1.5.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 62,
+          "downloadBytes": 20536,
+          "installedDeltaKiB": 62
+        },
+        {
+          "name": "liburcu8t64",
+          "version": "0.15.2-2",
+          "previousVersion": null,
+          "installedSizeKiB": 363,
+          "downloadBytes": 76304,
+          "installedDeltaKiB": 363
+        },
+        {
+          "name": "libuv1t64",
+          "version": "1.50.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 321,
+          "downloadBytes": 153752,
+          "installedDeltaKiB": 321
+        },
+        {
+          "name": "bind9-libs",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 3649,
+          "downloadBytes": 1250200,
+          "installedDeltaKiB": 3649
+        },
+        {
+          "name": "bind9-host",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 141,
+          "downloadBytes": 56596,
+          "installedDeltaKiB": 141
+        },
+        {
+          "name": "bind9-dnsutils",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 525,
+          "downloadBytes": 167084,
+          "installedDeltaKiB": 525
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  bind9-host bind9-libs libfstrm0 libjemalloc2 libjson-c5 liblmdb0\n  libmaxminddb0 libprotobuf-c1 liburcu8t64 libuv1t64\nSuggested packages:\n  mmdb-bin\nThe following NEW packages will be installed:\n  bind9-dnsutils bind9-host bind9-libs libfstrm0 libjemalloc2 libjson-c5\n  liblmdb0 libmaxminddb0 libprotobuf-c1 liburcu8t64 libuv1t64\n0 upgraded, 11 newly installed, 0 to remove and 0 not upgraded.\nInst libfstrm0 (0.6.1-1+b3 Debian:13.7/stable [amd64])\nInst libjemalloc2 (5.3.0-3 Debian:13.7/stable [amd64])\nInst libjson-c5 (0.18+ds-1 Debian:13.7/stable [amd64])\nInst liblmdb0 (0.9.31-1+b2 Debian:13.7/stable [amd64])\nInst libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nInst libprotobuf-c1 (1.5.1-1 Debian:13.7/stable [amd64])\nInst liburcu8t64 (0.15.2-2 Debian:13.7/stable [amd64])\nInst libuv1t64 (1.50.0-2 Debian:13.7/stable [amd64])\nInst bind9-libs (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst bind9-host (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst bind9-dnsutils (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf libfstrm0 (0.6.1-1+b3 Debian:13.7/stable [amd64])\nConf libjemalloc2 (5.3.0-3 Debian:13.7/stable [amd64])\nConf libjson-c5 (0.18+ds-1 Debian:13.7/stable [amd64])\nConf liblmdb0 (0.9.31-1+b2 Debian:13.7/stable [amd64])\nConf libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nConf libprotobuf-c1 (1.5.1-1 Debian:13.7/stable [amd64])\nConf liburcu8t64 (0.15.2-2 Debian:13.7/stable [amd64])\nConf libuv1t64 (1.50.0-2 Debian:13.7/stable [amd64])\nConf bind9-libs (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf bind9-host (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf bind9-dnsutils (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "netcat-openbsd",
+      "packages": [
+        "netcat-openbsd"
+      ],
+      "downloadBytes": 42520,
+      "installedDeltaKiB": 109,
+      "changes": [
+        {
+          "name": "netcat-openbsd",
+          "version": "1.229-1",
+          "previousVersion": null,
+          "installedSizeKiB": 109,
+          "downloadBytes": 42520,
+          "installedDeltaKiB": 109
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  netcat-openbsd\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst netcat-openbsd (1.229-1 Debian:13.7/stable [amd64])\nConf netcat-openbsd (1.229-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "socat",
+      "packages": [
+        "socat"
+      ],
+      "downloadBytes": 479024,
+      "installedDeltaKiB": 1912,
+      "changes": [
+        {
+          "name": "libwrap0",
+          "version": "7.6.q-36",
+          "previousVersion": null,
+          "installedSizeKiB": 110,
+          "downloadBytes": 55256,
+          "installedDeltaKiB": 110
+        },
+        {
+          "name": "socat",
+          "version": "1.8.0.3-1+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1802,
+          "downloadBytes": 423768,
+          "installedDeltaKiB": 1802
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libwrap0\nThe following NEW packages will be installed:\n  libwrap0 socat\n0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.\nInst libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nInst socat (1.8.0.3-1+deb13u1 Debian:13.7/stable [amd64])\nConf libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nConf socat (1.8.0.3-1+deb13u1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "sqlite3",
+      "packages": [
+        "sqlite3"
+      ],
+      "downloadBytes": 384144,
+      "installedDeltaKiB": 587,
+      "changes": [
+        {
+          "name": "sqlite3",
+          "version": "3.46.1-7+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 587,
+          "downloadBytes": 384144,
+          "installedDeltaKiB": 587
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nSuggested packages:\n  sqlite3-doc\nThe following NEW packages will be installed:\n  sqlite3\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst sqlite3 (3.46.1-7+deb13u2 Debian:13.7/stable [amd64])\nConf sqlite3 (3.46.1-7+deb13u2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "xxd",
+      "packages": [
+        "xxd"
+      ],
+      "downloadBytes": 99056,
+      "installedDeltaKiB": 154,
+      "changes": [
+        {
+          "name": "xxd",
+          "version": "2:9.1.1230-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 154,
+          "downloadBytes": 99056,
+          "installedDeltaKiB": 154
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  xxd\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst xxd (2:9.1.1230-2+deb13u1 Debian-Security:13/stable-security [amd64])\nConf xxd (2:9.1.1230-2+deb13u1 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "bsdextrautils",
+      "packages": [
+        "bsdextrautils"
+      ],
+      "downloadBytes": 94796,
+      "installedDeltaKiB": 339,
+      "changes": [
+        {
+          "name": "bsdextrautils",
+          "version": "2.41.5-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 339,
+          "downloadBytes": 94796,
+          "installedDeltaKiB": 339
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  bsdextrautils\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst bsdextrautils (2.41.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf bsdextrautils (2.41.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "shellcheck",
+      "packages": [
+        "shellcheck"
+      ],
+      "downloadBytes": 4907584,
+      "installedDeltaKiB": 34787,
+      "changes": [
+        {
+          "name": "shellcheck",
+          "version": "0.10.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 34787,
+          "downloadBytes": 4907584,
+          "installedDeltaKiB": 34787
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  shellcheck\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst shellcheck (0.10.0-1 Debian:13.7/stable [amd64])\nConf shellcheck (0.10.0-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "shfmt",
+      "packages": [
+        "shfmt"
+      ],
+      "downloadBytes": 1029552,
+      "installedDeltaKiB": 2854,
+      "changes": [
+        {
+          "name": "shfmt",
+          "version": "3.8.0-1+b8",
+          "previousVersion": null,
+          "installedSizeKiB": 2854,
+          "downloadBytes": 1029552,
+          "installedDeltaKiB": 2854
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  shfmt\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst shfmt (3.8.0-1+b8 Debian:13.7/stable [amd64])\nConf shfmt (3.8.0-1+b8 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "gh",
+      "packages": [
+        "gh"
+      ],
+      "downloadBytes": 7615896,
+      "installedDeltaKiB": 34662,
+      "changes": [
+        {
+          "name": "gh",
+          "version": "2.46.0-3",
+          "previousVersion": null,
+          "installedSizeKiB": 34662,
+          "downloadBytes": 7615896,
+          "installedDeltaKiB": 34662
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  gh\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst gh (2.46.0-3 Debian:13.7/stable [amd64])\nConf gh (2.46.0-3 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "git-lfs",
+      "packages": [
+        "git-lfs"
+      ],
+      "downloadBytes": 3933320,
+      "installedDeltaKiB": 12608,
+      "changes": [
+        {
+          "name": "git-lfs",
+          "version": "3.6.1-1+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 12608,
+          "downloadBytes": 3933320,
+          "installedDeltaKiB": 12608
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  git-lfs\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst git-lfs (3.6.1-1+deb13u1 Debian:13.7/stable [amd64])\nConf git-lfs (3.6.1-1+deb13u1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "gnupg",
+      "packages": [
+        "gnupg"
+      ],
+      "downloadBytes": 4093964,
+      "installedDeltaKiB": 12853,
+      "changes": [
+        {
+          "name": "libgpg-error0",
+          "version": "1.51-4",
+          "previousVersion": null,
+          "installedSizeKiB": 208,
+          "downloadBytes": 82108,
+          "installedDeltaKiB": 208
+        },
+        {
+          "name": "libassuan9",
+          "version": "3.0.2-2",
+          "previousVersion": null,
+          "installedSizeKiB": 136,
+          "downloadBytes": 61520,
+          "installedDeltaKiB": 136
+        },
+        {
+          "name": "libgcrypt20",
+          "version": "1.11.0-7+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1999,
+          "downloadBytes": 843104,
+          "installedDeltaKiB": 1999
+        },
+        {
+          "name": "gpgconf",
+          "version": "2.4.7-21+deb13u1+b5",
+          "previousVersion": null,
+          "installedSizeKiB": 371,
+          "downloadBytes": 128880,
+          "installedDeltaKiB": 371
+        },
+        {
+          "name": "libksba8",
+          "version": "1.6.7-2+b1",
+          "previousVersion": null,
+          "installedSizeKiB": 330,
+          "downloadBytes": 136048,
+          "installedDeltaKiB": 330
+        },
+        {
+          "name": "libnpth0t64",
+          "version": "1.8-3",
+          "previousVersion": null,
+          "installedSizeKiB": 57,
+          "downloadBytes": 23248,
+          "installedDeltaKiB": 57
+        },
+        {
+          "name": "dirmngr",
+          "version": "2.4.7-21+deb13u1+b5",
+          "previousVersion": null,
+          "installedSizeKiB": 967,
+          "downloadBytes": 383892,
+          "installedDeltaKiB": 967
+        },
+        {
+          "name": "gnupg-l10n",
+          "version": "2.4.7-21+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 5010,
+          "downloadBytes": 748620,
+          "installedDeltaKiB": 5010
+        },
+        {
+          "name": "gpg",
+          "version": "2.4.7-21+deb13u1+b5",
+          "previousVersion": null,
+          "installedSizeKiB": 1594,
+          "downloadBytes": 636212,
+          "installedDeltaKiB": 1594
+        },
+        {
+          "name": "pinentry-curses",
+          "version": "1.3.1-2",
+          "previousVersion": null,
+          "installedSizeKiB": 150,
+          "downloadBytes": 86388,
+          "installedDeltaKiB": 150
+        },
+        {
+          "name": "gpg-agent",
+          "version": "2.4.7-21+deb13u1+b5",
+          "previousVersion": null,
+          "installedSizeKiB": 899,
+          "downloadBytes": 271000,
+          "installedDeltaKiB": 899
+        },
+        {
+          "name": "gpgsm",
+          "version": "2.4.7-21+deb13u1+b5",
+          "previousVersion": null,
+          "installedSizeKiB": 664,
+          "downloadBytes": 275832,
+          "installedDeltaKiB": 664
+        },
+        {
+          "name": "gnupg",
+          "version": "2.4.7-21+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 468,
+          "downloadBytes": 417112,
+          "installedDeltaKiB": 468
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  dirmngr gnupg-l10n gpg gpg-agent gpgconf gpgsm libassuan9 libgcrypt20\n  libgpg-error0 libksba8 libnpth0t64 pinentry-curses\nSuggested packages:\n  dbus-user-session libpam-systemd pinentry-gnome3 tor gpg-wks-server\n  parcimonie xloadimage scdaemon tpm2daemon rng-tools pinentry-doc\nRecommended packages:\n  gnupg-utils gpg-wks-client gpgv libgpg-error-l10n\nThe following NEW packages will be installed:\n  dirmngr gnupg gnupg-l10n gpg gpg-agent gpgconf gpgsm libassuan9 libgcrypt20\n  libgpg-error0 libksba8 libnpth0t64 pinentry-curses\n0 upgraded, 13 newly installed, 0 to remove and 0 not upgraded.\nInst libgpg-error0 (1.51-4 Debian:13.7/stable [amd64])\nInst libassuan9 (3.0.2-2 Debian:13.7/stable [amd64])\nInst libgcrypt20 (1.11.0-7+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst gpgconf (2.4.7-21+deb13u1+b5 Debian:13.7/stable [amd64])\nInst libksba8 (1.6.7-2+b1 Debian:13.7/stable [amd64])\nInst libnpth0t64 (1.8-3 Debian:13.7/stable [amd64])\nInst dirmngr (2.4.7-21+deb13u1+b5 Debian:13.7/stable [amd64])\nInst gnupg-l10n (2.4.7-21+deb13u1 Debian:13.7/stable [all])\nInst gpg (2.4.7-21+deb13u1+b5 Debian:13.7/stable [amd64])\nInst pinentry-curses (1.3.1-2 Debian:13.7/stable [amd64])\nInst gpg-agent (2.4.7-21+deb13u1+b5 Debian:13.7/stable [amd64])\nInst gpgsm (2.4.7-21+deb13u1+b5 Debian:13.7/stable [amd64])\nInst gnupg (2.4.7-21+deb13u1 Debian:13.7/stable [all])\nConf libgpg-error0 (1.51-4 Debian:13.7/stable [amd64])\nConf libassuan9 (3.0.2-2 Debian:13.7/stable [amd64])\nConf libgcrypt20 (1.11.0-7+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf gpgconf (2.4.7-21+deb13u1+b5 Debian:13.7/stable [amd64])\nConf libksba8 (1.6.7-2+b1 Debian:13.7/stable [amd64])\nConf libnpth0t64 (1.8-3 Debian:13.7/stable [amd64])\nConf dirmngr (2.4.7-21+deb13u1+b5 Debian:13.7/stable [amd64])\nConf gnupg-l10n (2.4.7-21+deb13u1 Debian:13.7/stable [all])\nConf gpg (2.4.7-21+deb13u1+b5 Debian:13.7/stable [amd64])\nConf pinentry-curses (1.3.1-2 Debian:13.7/stable [amd64])\nConf gpg-agent (2.4.7-21+deb13u1+b5 Debian:13.7/stable [amd64])\nConf gpgsm (2.4.7-21+deb13u1+b5 Debian:13.7/stable [amd64])\nConf gnupg (2.4.7-21+deb13u1 Debian:13.7/stable [all])\n"
+    },
+    {
+      "label": "sudo",
+      "packages": [
+        "sudo"
+      ],
+      "downloadBytes": 2130144,
+      "installedDeltaKiB": 6820,
+      "changes": [
+        {
+          "name": "libapparmor1",
+          "version": "4.1.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 115,
+          "downloadBytes": 43688,
+          "installedDeltaKiB": 115
+        },
+        {
+          "name": "sudo",
+          "version": "1.9.16p2-3+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 6705,
+          "downloadBytes": 2086456,
+          "installedDeltaKiB": 6705
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libapparmor1\nThe following NEW packages will be installed:\n  libapparmor1 sudo\n0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.\nInst libapparmor1 (4.1.0-1 Debian:13.7/stable [amd64])\nInst sudo (1.9.16p2-3+deb13u2 Debian:13.7/stable [amd64])\nConf libapparmor1 (4.1.0-1 Debian:13.7/stable [amd64])\nConf sudo (1.9.16p2-3+deb13u2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "locales",
+      "packages": [
+        "locales"
+      ],
+      "downloadBytes": 4671532,
+      "installedDeltaKiB": 20514,
+      "changes": [
+        {
+          "name": "libc-l10n",
+          "version": "2.41-12+deb13u4",
+          "previousVersion": null,
+          "installedSizeKiB": 4739,
+          "downloadBytes": 740236,
+          "installedDeltaKiB": 4739
+        },
+        {
+          "name": "locales",
+          "version": "2.41-12+deb13u4",
+          "previousVersion": null,
+          "installedSizeKiB": 15775,
+          "downloadBytes": 3931296,
+          "installedDeltaKiB": 15775
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libc-l10n\nThe following NEW packages will be installed:\n  libc-l10n locales\n0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.\nInst libc-l10n (2.41-12+deb13u4 Debian:13.7/stable [all])\nInst locales (2.41-12+deb13u4 Debian:13.7/stable [all])\nConf libc-l10n (2.41-12+deb13u4 Debian:13.7/stable [all])\nConf locales (2.41-12+deb13u4 Debian:13.7/stable [all])\n"
+    },
+    {
+      "label": "python3-venv",
+      "packages": [
+        "python3-venv"
+      ],
+      "downloadBytes": 2782092,
+      "installedDeltaKiB": 2888,
+      "changes": [
+        {
+          "name": "python3-pip-whl",
+          "version": "25.1.1+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1531,
+          "downloadBytes": 1507328,
+          "installedDeltaKiB": 1531
+        },
+        {
+          "name": "python3-setuptools-whl",
+          "version": "78.1.1-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 1324,
+          "downloadBytes": 1268108,
+          "installedDeltaKiB": 1324
+        },
+        {
+          "name": "python3.13-venv",
+          "version": "3.13.5-2+deb13u5",
+          "previousVersion": null,
+          "installedSizeKiB": 27,
+          "downloadBytes": 5476,
+          "installedDeltaKiB": 27
+        },
+        {
+          "name": "python3-venv",
+          "version": "3.13.5-1",
+          "previousVersion": null,
+          "installedSizeKiB": 6,
+          "downloadBytes": 1180,
+          "installedDeltaKiB": 6
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  python3-pip-whl python3-setuptools-whl python3.13-venv\nThe following NEW packages will be installed:\n  python3-pip-whl python3-setuptools-whl python3-venv python3.13-venv\n0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.\nInst python3-pip-whl (25.1.1+dfsg-1 Debian:13.7/stable [all])\nInst python3-setuptools-whl (78.1.1-0.1 Debian:13.7/stable [all])\nInst python3.13-venv (3.13.5-2+deb13u5 Debian:13.7/stable [amd64])\nInst python3-venv (3.13.5-1 Debian:13.7/stable [amd64])\nConf python3-pip-whl (25.1.1+dfsg-1 Debian:13.7/stable [all])\nConf python3-setuptools-whl (78.1.1-0.1 Debian:13.7/stable [all])\nConf python3.13-venv (3.13.5-2+deb13u5 Debian:13.7/stable [amd64])\nConf python3-venv (3.13.5-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "python3-pip",
+      "packages": [
+        "python3-pip"
+      ],
+      "downloadBytes": 1534848,
+      "installedDeltaKiB": 10514,
+      "changes": [
+        {
+          "name": "python3-packaging",
+          "version": "25.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 257,
+          "downloadBytes": 56568,
+          "installedDeltaKiB": 257
+        },
+        {
+          "name": "python3-wheel",
+          "version": "0.46.1-2",
+          "previousVersion": null,
+          "installedSizeKiB": 91,
+          "downloadBytes": 21672,
+          "installedDeltaKiB": 91
+        },
+        {
+          "name": "python3-pip",
+          "version": "25.1.1+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 10166,
+          "downloadBytes": 1456608,
+          "installedDeltaKiB": 10166
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  python3-packaging python3-wheel\nSuggested packages:\n  python3-setuptools\nRecommended packages:\n  build-essential python3-dev libjs-sphinxdoc\nThe following NEW packages will be installed:\n  python3-packaging python3-pip python3-wheel\n0 upgraded, 3 newly installed, 0 to remove and 0 not upgraded.\nInst python3-packaging (25.0-1 Debian:13.7/stable [all])\nInst python3-wheel (0.46.1-2 Debian:13.7/stable [all])\nInst python3-pip (25.1.1+dfsg-1 Debian:13.7/stable [all])\nConf python3-packaging (25.0-1 Debian:13.7/stable [all])\nConf python3-wheel (0.46.1-2 Debian:13.7/stable [all])\nConf python3-pip (25.1.1+dfsg-1 Debian:13.7/stable [all])\n"
+    },
+    {
+      "label": "pipx",
+      "packages": [
+        "pipx"
+      ],
+      "downloadBytes": 3830300,
+      "installedDeltaKiB": 7563,
+      "changes": [
+        {
+          "name": "python3-pip-whl",
+          "version": "25.1.1+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1531,
+          "downloadBytes": 1507328,
+          "installedDeltaKiB": 1531
+        },
+        {
+          "name": "python3-setuptools-whl",
+          "version": "78.1.1-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 1324,
+          "downloadBytes": 1268108,
+          "installedDeltaKiB": 1324
+        },
+        {
+          "name": "python3.13-venv",
+          "version": "3.13.5-2+deb13u5",
+          "previousVersion": null,
+          "installedSizeKiB": 27,
+          "downloadBytes": 5476,
+          "installedDeltaKiB": 27
+        },
+        {
+          "name": "python3-venv",
+          "version": "3.13.5-1",
+          "previousVersion": null,
+          "installedSizeKiB": 6,
+          "downloadBytes": 1180,
+          "installedDeltaKiB": 6
+        },
+        {
+          "name": "python3-argcomplete",
+          "version": "3.6.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 168,
+          "downloadBytes": 40864,
+          "installedDeltaKiB": 168
+        },
+        {
+          "name": "python3-packaging",
+          "version": "25.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 257,
+          "downloadBytes": 56568,
+          "installedDeltaKiB": 257
+        },
+        {
+          "name": "python3-platformdirs",
+          "version": "4.3.7-1",
+          "previousVersion": null,
+          "installedSizeKiB": 106,
+          "downloadBytes": 16608,
+          "installedDeltaKiB": 106
+        },
+        {
+          "name": "python3-click",
+          "version": "8.2.0+0.really.8.1.8-1",
+          "previousVersion": null,
+          "installedSizeKiB": 390,
+          "downloadBytes": 95388,
+          "installedDeltaKiB": 390
+        },
+        {
+          "name": "python3-userpath",
+          "version": "1.9.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 46,
+          "downloadBytes": 10292,
+          "installedDeltaKiB": 46
+        },
+        {
+          "name": "pipx",
+          "version": "1.7.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 3708,
+          "downloadBytes": 828488,
+          "installedDeltaKiB": 3708
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  python3-argcomplete python3-click python3-packaging python3-pip-whl\n  python3-platformdirs python3-setuptools-whl python3-userpath python3-venv\n  python3.13-venv\nRecommended packages:\n  python3-psutil\nThe following NEW packages will be installed:\n  pipx python3-argcomplete python3-click python3-packaging python3-pip-whl\n  python3-platformdirs python3-setuptools-whl python3-userpath python3-venv\n  python3.13-venv\n0 upgraded, 10 newly installed, 0 to remove and 0 not upgraded.\nInst python3-pip-whl (25.1.1+dfsg-1 Debian:13.7/stable [all])\nInst python3-setuptools-whl (78.1.1-0.1 Debian:13.7/stable [all])\nInst python3.13-venv (3.13.5-2+deb13u5 Debian:13.7/stable [amd64])\nInst python3-venv (3.13.5-1 Debian:13.7/stable [amd64])\nInst python3-argcomplete (3.6.2-1 Debian:13.7/stable [all])\nInst python3-packaging (25.0-1 Debian:13.7/stable [all])\nInst python3-platformdirs (4.3.7-1 Debian:13.7/stable [all])\nInst python3-click (8.2.0+0.really.8.1.8-1 Debian:13.7/stable [all])\nInst python3-userpath (1.9.2-1 Debian:13.7/stable [all])\nInst pipx (1.7.1-1 Debian:13.7/stable [all])\nConf python3-pip-whl (25.1.1+dfsg-1 Debian:13.7/stable [all])\nConf python3-setuptools-whl (78.1.1-0.1 Debian:13.7/stable [all])\nConf python3.13-venv (3.13.5-2+deb13u5 Debian:13.7/stable [amd64])\nConf python3-venv (3.13.5-1 Debian:13.7/stable [amd64])\nConf python3-argcomplete (3.6.2-1 Debian:13.7/stable [all])\nConf python3-packaging (25.0-1 Debian:13.7/stable [all])\nConf python3-platformdirs (4.3.7-1 Debian:13.7/stable [all])\nConf python3-click (8.2.0+0.really.8.1.8-1 Debian:13.7/stable [all])\nConf python3-userpath (1.9.2-1 Debian:13.7/stable [all])\nConf pipx (1.7.1-1 Debian:13.7/stable [all])\n"
+    },
+    {
+      "label": "build-essential",
+      "packages": [
+        "build-essential"
+      ],
+      "downloadBytes": 74529768,
+      "installedDeltaKiB": 276400,
+      "changes": [
+        {
+          "name": "bzip2",
+          "version": "1.0.8-6",
+          "previousVersion": null,
+          "installedSizeKiB": 113,
+          "downloadBytes": 40520,
+          "installedDeltaKiB": 113
+        },
+        {
+          "name": "xz-utils",
+          "version": "5.8.1-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1424,
+          "downloadBytes": 659760,
+          "installedDeltaKiB": 1424
+        },
+        {
+          "name": "libsframe1",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 110,
+          "downloadBytes": 78360,
+          "installedDeltaKiB": 110
+        },
+        {
+          "name": "binutils-common",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 16098,
+          "downloadBytes": 2508768,
+          "installedDeltaKiB": 16098
+        },
+        {
+          "name": "libbinutils",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 2390,
+          "downloadBytes": 534440,
+          "installedDeltaKiB": 2390
+        },
+        {
+          "name": "libgprofng0",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 4034,
+          "downloadBytes": 807764,
+          "installedDeltaKiB": 4034
+        },
+        {
+          "name": "libctf-nobfd0",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 293,
+          "downloadBytes": 155672,
+          "installedDeltaKiB": 293
+        },
+        {
+          "name": "libctf0",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 232,
+          "downloadBytes": 88616,
+          "installedDeltaKiB": 232
+        },
+        {
+          "name": "libjansson4",
+          "version": "2.14-2+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 100,
+          "downloadBytes": 39792,
+          "installedDeltaKiB": 100
+        },
+        {
+          "name": "binutils-x86-64-linux-gnu",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 5990,
+          "downloadBytes": 1013844,
+          "installedDeltaKiB": 5990
+        },
+        {
+          "name": "binutils",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 1073,
+          "downloadBytes": 265400,
+          "installedDeltaKiB": 1073
+        },
+        {
+          "name": "libc-dev-bin",
+          "version": "2.41-12+deb13u4",
+          "previousVersion": null,
+          "installedSizeKiB": 126,
+          "downloadBytes": 59960,
+          "installedDeltaKiB": 126
+        },
+        {
+          "name": "linux-libc-dev",
+          "version": "6.12.115-2",
+          "previousVersion": null,
+          "installedSizeKiB": 11103,
+          "downloadBytes": 3049692,
+          "installedDeltaKiB": 11103
+        },
+        {
+          "name": "libcrypt-dev",
+          "version": "1:4.4.38-1",
+          "previousVersion": null,
+          "installedSizeKiB": 345,
+          "downloadBytes": 119040,
+          "installedDeltaKiB": 345
+        },
+        {
+          "name": "rpcsvc-proto",
+          "version": "1.4.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 246,
+          "downloadBytes": 63268,
+          "installedDeltaKiB": 246
+        },
+        {
+          "name": "libc6-dev",
+          "version": "2.41-12+deb13u4",
+          "previousVersion": null,
+          "installedSizeKiB": 12542,
+          "downloadBytes": 1994660,
+          "installedDeltaKiB": 12542
+        },
+        {
+          "name": "libisl23",
+          "version": "0.27-1",
+          "previousVersion": null,
+          "installedSizeKiB": 2253,
+          "downloadBytes": 659152,
+          "installedDeltaKiB": 2253
+        },
+        {
+          "name": "libmpfr6",
+          "version": "4.2.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1225,
+          "downloadBytes": 729320,
+          "installedDeltaKiB": 1225
+        },
+        {
+          "name": "libmpc3",
+          "version": "1.3.1-1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 154,
+          "downloadBytes": 52244,
+          "installedDeltaKiB": 154
+        },
+        {
+          "name": "cpp-14-x86-64-linux-gnu",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 34503,
+          "downloadBytes": 11047460,
+          "installedDeltaKiB": 34503
+        },
+        {
+          "name": "cpp-14",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 11,
+          "downloadBytes": 1280,
+          "installedDeltaKiB": 11
+        },
+        {
+          "name": "cpp-x86-64-linux-gnu",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 17,
+          "downloadBytes": 4840,
+          "installedDeltaKiB": 17
+        },
+        {
+          "name": "cpp",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 18,
+          "downloadBytes": 1568,
+          "installedDeltaKiB": 18
+        },
+        {
+          "name": "libcc1-0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 140,
+          "downloadBytes": 42796,
+          "installedDeltaKiB": 140
+        },
+        {
+          "name": "libgomp1",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 368,
+          "downloadBytes": 137148,
+          "installedDeltaKiB": 368
+        },
+        {
+          "name": "libitm1",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 115,
+          "downloadBytes": 25956,
+          "installedDeltaKiB": 115
+        },
+        {
+          "name": "libasan8",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 10695,
+          "downloadBytes": 2725272,
+          "installedDeltaKiB": 10695
+        },
+        {
+          "name": "liblsan0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 3782,
+          "downloadBytes": 1204164,
+          "installedDeltaKiB": 3782
+        },
+        {
+          "name": "libtsan2",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 8807,
+          "downloadBytes": 2460216,
+          "installedDeltaKiB": 8807
+        },
+        {
+          "name": "libubsan1",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 3319,
+          "downloadBytes": 1074340,
+          "installedDeltaKiB": 3319
+        },
+        {
+          "name": "libhwasan0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 4850,
+          "downloadBytes": 1487768,
+          "installedDeltaKiB": 4850
+        },
+        {
+          "name": "libquadmath0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 296,
+          "downloadBytes": 145068,
+          "installedDeltaKiB": 296
+        },
+        {
+          "name": "libgcc-14-dev",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 17357,
+          "downloadBytes": 2672328,
+          "installedDeltaKiB": 17357
+        },
+        {
+          "name": "gcc-14-x86-64-linux-gnu",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 68460,
+          "downloadBytes": 21389968,
+          "installedDeltaKiB": 68460
+        },
+        {
+          "name": "gcc-14",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 622,
+          "downloadBytes": 540064,
+          "installedDeltaKiB": 622
+        },
+        {
+          "name": "gcc-x86-64-linux-gnu",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 23,
+          "downloadBytes": 1436,
+          "installedDeltaKiB": 23
+        },
+        {
+          "name": "gcc",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 36,
+          "downloadBytes": 5136,
+          "installedDeltaKiB": 36
+        },
+        {
+          "name": "libstdc++-14-dev",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 22065,
+          "downloadBytes": 2375760,
+          "installedDeltaKiB": 22065
+        },
+        {
+          "name": "g++-14-x86-64-linux-gnu",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 36931,
+          "downloadBytes": 12114812,
+          "installedDeltaKiB": 36931
+        },
+        {
+          "name": "g++-14",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 35,
+          "downloadBytes": 22544,
+          "installedDeltaKiB": 35
+        },
+        {
+          "name": "g++-x86-64-linux-gnu",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 11,
+          "downloadBytes": 1200,
+          "installedDeltaKiB": 11
+        },
+        {
+          "name": "g++",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 13,
+          "downloadBytes": 1344,
+          "installedDeltaKiB": 13
+        },
+        {
+          "name": "libdpkg-perl",
+          "version": "1.22.22",
+          "previousVersion": null,
+          "installedSizeKiB": 2091,
+          "downloadBytes": 650808,
+          "installedDeltaKiB": 2091
+        },
+        {
+          "name": "patch",
+          "version": "2.8-2",
+          "previousVersion": null,
+          "installedSizeKiB": 242,
+          "downloadBytes": 134328,
+          "installedDeltaKiB": 242
+        },
+        {
+          "name": "dpkg-dev",
+          "version": "1.22.22",
+          "previousVersion": null,
+          "installedSizeKiB": 1725,
+          "downloadBytes": 1337268,
+          "installedDeltaKiB": 1725
+        },
+        {
+          "name": "build-essential",
+          "version": "12.12",
+          "previousVersion": null,
+          "installedSizeKiB": 17,
+          "downloadBytes": 4624,
+          "installedDeltaKiB": 17
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  binutils binutils-common binutils-x86-64-linux-gnu bzip2 cpp cpp-14\n  cpp-14-x86-64-linux-gnu cpp-x86-64-linux-gnu dpkg-dev g++ g++-14\n  g++-14-x86-64-linux-gnu g++-x86-64-linux-gnu gcc gcc-14\n  gcc-14-x86-64-linux-gnu gcc-x86-64-linux-gnu libasan8 libbinutils\n  libc-dev-bin libc6-dev libcc1-0 libcrypt-dev libctf-nobfd0 libctf0\n  libdpkg-perl libgcc-14-dev libgomp1 libgprofng0 libhwasan0 libisl23 libitm1\n  libjansson4 liblsan0 libmpc3 libmpfr6 libquadmath0 libsframe1\n  libstdc++-14-dev libtsan2 libubsan1 linux-libc-dev patch rpcsvc-proto\n  xz-utils\nSuggested packages:\n  binutils-doc gprofng-gui binutils-gold bzip2-doc cpp-doc gcc-14-locales\n  cpp-14-doc debian-keyring debian-tag2upload-keyring g++-multilib\n  g++-14-multilib gcc-14-doc gcc-multilib manpages-dev autoconf automake\n  libtool flex bison gdb gcc-doc gcc-14-multilib gdb-x86-64-linux-gnu\n  libc-devtools glibc-doc sq | sqop | rsop | gosop | pgpainless-cli | gpg-sq\n  | gnupg sensible-utils bzr libstdc++-14-doc ed diffutils-doc\nRecommended packages:\n  fakeroot sq | sqop | rsop | gosop | pgpainless-cli | gpg-sq | gnupg\n  libalgorithm-merge-perl manpages manpages-dev libfile-fcntllock-perl\n  liblocale-gettext-perl\nThe following NEW packages will be installed:\n  binutils binutils-common binutils-x86-64-linux-gnu build-essential bzip2 cpp\n  cpp-14 cpp-14-x86-64-linux-gnu cpp-x86-64-linux-gnu dpkg-dev g++ g++-14\n  g++-14-x86-64-linux-gnu g++-x86-64-linux-gnu gcc gcc-14\n  gcc-14-x86-64-linux-gnu gcc-x86-64-linux-gnu libasan8 libbinutils\n  libc-dev-bin libc6-dev libcc1-0 libcrypt-dev libctf-nobfd0 libctf0\n  libdpkg-perl libgcc-14-dev libgomp1 libgprofng0 libhwasan0 libisl23 libitm1\n  libjansson4 liblsan0 libmpc3 libmpfr6 libquadmath0 libsframe1\n  libstdc++-14-dev libtsan2 libubsan1 linux-libc-dev patch rpcsvc-proto\n  xz-utils\n0 upgraded, 46 newly installed, 0 to remove and 0 not upgraded.\nInst bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nInst xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nInst libsframe1 (2.44-3 Debian:13.7/stable [amd64])\nInst binutils-common (2.44-3 Debian:13.7/stable [amd64])\nInst libbinutils (2.44-3 Debian:13.7/stable [amd64])\nInst libgprofng0 (2.44-3 Debian:13.7/stable [amd64])\nInst libctf-nobfd0 (2.44-3 Debian:13.7/stable [amd64])\nInst libctf0 (2.44-3 Debian:13.7/stable [amd64])\nInst libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nInst binutils-x86-64-linux-gnu (2.44-3 Debian:13.7/stable [amd64])\nInst binutils (2.44-3 Debian:13.7/stable [amd64])\nInst libc-dev-bin (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nInst linux-libc-dev (6.12.115-2 Debian-Security:13/stable-security [all])\nInst libcrypt-dev (1:4.4.38-1 Debian:13.7/stable [amd64])\nInst rpcsvc-proto (1.4.3-1 Debian:13.7/stable [amd64])\nInst libc6-dev (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nInst libisl23 (0.27-1 Debian:13.7/stable [amd64])\nInst libmpfr6 (4.2.2-1 Debian:13.7/stable [amd64])\nInst libmpc3 (1.3.1-1+b3 Debian:13.7/stable [amd64])\nInst cpp-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nInst cpp-14 (14.2.0-19 Debian:13.7/stable [amd64])\nInst cpp-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst cpp (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst libcc1-0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libgomp1 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libitm1 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libasan8 (14.2.0-19 Debian:13.7/stable [amd64])\nInst liblsan0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libtsan2 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libubsan1 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libhwasan0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libquadmath0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libgcc-14-dev (14.2.0-19 Debian:13.7/stable [amd64])\nInst gcc-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nInst gcc-14 (14.2.0-19 Debian:13.7/stable [amd64])\nInst gcc-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst gcc (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst libstdc++-14-dev (14.2.0-19 Debian:13.7/stable [amd64])\nInst g++-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nInst g++-14 (14.2.0-19 Debian:13.7/stable [amd64])\nInst g++-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst g++ (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst libdpkg-perl (1.22.22 Debian:13.7/stable [all])\nInst patch (2.8-2 Debian:13.7/stable [amd64])\nInst dpkg-dev (1.22.22 Debian:13.7/stable [all])\nInst build-essential (12.12 Debian:13.7/stable [amd64])\nConf bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nConf xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nConf libsframe1 (2.44-3 Debian:13.7/stable [amd64])\nConf binutils-common (2.44-3 Debian:13.7/stable [amd64])\nConf libbinutils (2.44-3 Debian:13.7/stable [amd64])\nConf libgprofng0 (2.44-3 Debian:13.7/stable [amd64])\nConf libctf-nobfd0 (2.44-3 Debian:13.7/stable [amd64])\nConf libctf0 (2.44-3 Debian:13.7/stable [amd64])\nConf libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nConf binutils-x86-64-linux-gnu (2.44-3 Debian:13.7/stable [amd64])\nConf binutils (2.44-3 Debian:13.7/stable [amd64])\nConf libc-dev-bin (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nConf linux-libc-dev (6.12.115-2 Debian-Security:13/stable-security [all])\nConf libcrypt-dev (1:4.4.38-1 Debian:13.7/stable [amd64])\nConf rpcsvc-proto (1.4.3-1 Debian:13.7/stable [amd64])\nConf libc6-dev (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nConf libisl23 (0.27-1 Debian:13.7/stable [amd64])\nConf libmpfr6 (4.2.2-1 Debian:13.7/stable [amd64])\nConf libmpc3 (1.3.1-1+b3 Debian:13.7/stable [amd64])\nConf cpp-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nConf cpp-14 (14.2.0-19 Debian:13.7/stable [amd64])\nConf cpp-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf cpp (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf libcc1-0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libgomp1 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libitm1 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libasan8 (14.2.0-19 Debian:13.7/stable [amd64])\nConf liblsan0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libtsan2 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libubsan1 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libhwasan0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libquadmath0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libgcc-14-dev (14.2.0-19 Debian:13.7/stable [amd64])\nConf gcc-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nConf gcc-14 (14.2.0-19 Debian:13.7/stable [amd64])\nConf gcc-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf gcc (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf libstdc++-14-dev (14.2.0-19 Debian:13.7/stable [amd64])\nConf g++-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nConf g++-14 (14.2.0-19 Debian:13.7/stable [amd64])\nConf g++-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf g++ (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf libdpkg-perl (1.22.22 Debian:13.7/stable [all])\nConf patch (2.8-2 Debian:13.7/stable [amd64])\nConf dpkg-dev (1.22.22 Debian:13.7/stable [all])\nConf build-essential (12.12 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "pkg-config",
+      "packages": [
+        "pkg-config"
+      ],
+      "downloadBytes": 106796,
+      "installedDeltaKiB": 278,
+      "changes": [
+        {
+          "name": "libpkgconf3",
+          "version": "1.8.1-4",
+          "previousVersion": null,
+          "installedSizeKiB": 101,
+          "downloadBytes": 36436,
+          "installedDeltaKiB": 101
+        },
+        {
+          "name": "pkgconf-bin",
+          "version": "1.8.1-4",
+          "previousVersion": null,
+          "installedSizeKiB": 83,
+          "downloadBytes": 30220,
+          "installedDeltaKiB": 83
+        },
+        {
+          "name": "pkgconf",
+          "version": "1.8.1-4",
+          "previousVersion": null,
+          "installedSizeKiB": 65,
+          "downloadBytes": 26172,
+          "installedDeltaKiB": 65
+        },
+        {
+          "name": "pkg-config",
+          "version": "1.8.1-4",
+          "previousVersion": null,
+          "installedSizeKiB": 29,
+          "downloadBytes": 13968,
+          "installedDeltaKiB": 29
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libpkgconf3 pkgconf pkgconf-bin\nThe following NEW packages will be installed:\n  libpkgconf3 pkg-config pkgconf pkgconf-bin\n0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.\nInst libpkgconf3 (1.8.1-4 Debian:13.7/stable [amd64])\nInst pkgconf-bin (1.8.1-4 Debian:13.7/stable [amd64])\nInst pkgconf (1.8.1-4 Debian:13.7/stable [amd64])\nInst pkg-config (1.8.1-4 Debian:13.7/stable [amd64])\nConf libpkgconf3 (1.8.1-4 Debian:13.7/stable [amd64])\nConf pkgconf-bin (1.8.1-4 Debian:13.7/stable [amd64])\nConf pkgconf (1.8.1-4 Debian:13.7/stable [amd64])\nConf pkg-config (1.8.1-4 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "cmake",
+      "packages": [
+        "cmake"
+      ],
+      "downloadBytes": 14955164,
+      "installedDeltaKiB": 54605,
+      "changes": [
+        {
+          "name": "cmake-data",
+          "version": "3.31.6-2",
+          "previousVersion": null,
+          "installedSizeKiB": 11883,
+          "downloadBytes": 2268208,
+          "installedDeltaKiB": 11883
+        },
+        {
+          "name": "libarchive13t64",
+          "version": "3.7.4-4+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 881,
+          "downloadBytes": 350192,
+          "installedDeltaKiB": 881
+        },
+        {
+          "name": "libjsoncpp26",
+          "version": "1.9.6-3",
+          "previousVersion": null,
+          "installedSizeKiB": 265,
+          "downloadBytes": 81684,
+          "installedDeltaKiB": 265
+        },
+        {
+          "name": "librhash1",
+          "version": "1.4.5-1",
+          "previousVersion": null,
+          "installedSizeKiB": 243,
+          "downloadBytes": 132184,
+          "installedDeltaKiB": 243
+        },
+        {
+          "name": "libuv1t64",
+          "version": "1.50.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 321,
+          "downloadBytes": 153752,
+          "installedDeltaKiB": 321
+        },
+        {
+          "name": "cmake",
+          "version": "3.31.6-2",
+          "previousVersion": null,
+          "installedSizeKiB": 41012,
+          "downloadBytes": 11969144,
+          "installedDeltaKiB": 41012
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  cmake-data libarchive13t64 libjsoncpp26 librhash1 libuv1t64\nSuggested packages:\n  cmake-doc cmake-format elpa-cmake-mode ninja-build lrzip\nRecommended packages:\n  gcc\nThe following NEW packages will be installed:\n  cmake cmake-data libarchive13t64 libjsoncpp26 librhash1 libuv1t64\n0 upgraded, 6 newly installed, 0 to remove and 0 not upgraded.\nInst cmake-data (3.31.6-2 Debian:13.7/stable [all])\nInst libarchive13t64 (3.7.4-4+deb13u1 Debian:13.7/stable [amd64])\nInst libjsoncpp26 (1.9.6-3 Debian:13.7/stable [amd64])\nInst librhash1 (1.4.5-1 Debian:13.7/stable [amd64])\nInst libuv1t64 (1.50.0-2 Debian:13.7/stable [amd64])\nInst cmake (3.31.6-2 Debian:13.7/stable [amd64])\nConf cmake-data (3.31.6-2 Debian:13.7/stable [all])\nConf libarchive13t64 (3.7.4-4+deb13u1 Debian:13.7/stable [amd64])\nConf libjsoncpp26 (1.9.6-3 Debian:13.7/stable [amd64])\nConf librhash1 (1.4.5-1 Debian:13.7/stable [amd64])\nConf libuv1t64 (1.50.0-2 Debian:13.7/stable [amd64])\nConf cmake (3.31.6-2 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "ninja-build",
+      "packages": [
+        "ninja-build"
+      ],
+      "downloadBytes": 142132,
+      "installedDeltaKiB": 401,
+      "changes": [
+        {
+          "name": "ninja-build",
+          "version": "1.12.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 401,
+          "downloadBytes": 142132,
+          "installedDeltaKiB": 401
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  ninja-build\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nInst ninja-build (1.12.1-1 Debian:13.7/stable [amd64])\nConf ninja-build (1.12.1-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "autoconf",
+      "packages": [
+        "autoconf"
+      ],
+      "downloadBytes": 788244,
+      "installedDeltaKiB": 2880,
+      "changes": [
+        {
+          "name": "m4",
+          "version": "1.4.19-8",
+          "previousVersion": null,
+          "installedSizeKiB": 683,
+          "downloadBytes": 293956,
+          "installedDeltaKiB": 683
+        },
+        {
+          "name": "autoconf",
+          "version": "2.72-3.1",
+          "previousVersion": null,
+          "installedSizeKiB": 2197,
+          "downloadBytes": 494288,
+          "installedDeltaKiB": 2197
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  m4\nSuggested packages:\n  autoconf-archive gnu-standards autoconf-doc libtool gettext m4-doc\nRecommended packages:\n  automake | automaken\nThe following NEW packages will be installed:\n  autoconf m4\n0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.\nInst m4 (1.4.19-8 Debian:13.7/stable [amd64])\nInst autoconf (2.72-3.1 Debian:13.7/stable [all])\nConf m4 (1.4.19-8 Debian:13.7/stable [amd64])\nConf autoconf (2.72-3.1 Debian:13.7/stable [all])\n"
+    },
+    {
+      "label": "automake",
+      "packages": [
+        "automake"
+      ],
+      "downloadBytes": 1709988,
+      "installedDeltaKiB": 4933,
+      "changes": [
+        {
+          "name": "m4",
+          "version": "1.4.19-8",
+          "previousVersion": null,
+          "installedSizeKiB": 683,
+          "downloadBytes": 293956,
+          "installedDeltaKiB": 683
+        },
+        {
+          "name": "autoconf",
+          "version": "2.72-3.1",
+          "previousVersion": null,
+          "installedSizeKiB": 2197,
+          "downloadBytes": 494288,
+          "installedDeltaKiB": 2197
+        },
+        {
+          "name": "autotools-dev",
+          "version": "20240727.1",
+          "previousVersion": null,
+          "installedSizeKiB": 147,
+          "downloadBytes": 60168,
+          "installedDeltaKiB": 147
+        },
+        {
+          "name": "automake",
+          "version": "1:1.17-4",
+          "previousVersion": null,
+          "installedSizeKiB": 1906,
+          "downloadBytes": 861576,
+          "installedDeltaKiB": 1906
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  autoconf autotools-dev m4\nSuggested packages:\n  autoconf-archive gnu-standards autoconf-doc libtool gettext m4-doc\nThe following NEW packages will be installed:\n  autoconf automake autotools-dev m4\n0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.\nInst m4 (1.4.19-8 Debian:13.7/stable [amd64])\nInst autoconf (2.72-3.1 Debian:13.7/stable [all])\nInst autotools-dev (20240727.1 Debian:13.7/stable [all])\nInst automake (1:1.17-4 Debian:13.7/stable [all])\nConf m4 (1.4.19-8 Debian:13.7/stable [amd64])\nConf autoconf (2.72-3.1 Debian:13.7/stable [all])\nConf autotools-dev (20240727.1 Debian:13.7/stable [all])\nConf automake (1:1.17-4 Debian:13.7/stable [all])\n"
+    },
+    {
+      "label": "libtool",
+      "packages": [
+        "libtool"
+      ],
+      "downloadBytes": 58277044,
+      "installedDeltaKiB": 223602,
+      "changes": [
+        {
+          "name": "libmagic-mgc",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 10154,
+          "downloadBytes": 337800,
+          "installedDeltaKiB": 10154
+        },
+        {
+          "name": "libmagic1t64",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 244,
+          "downloadBytes": 109312,
+          "installedDeltaKiB": 244
+        },
+        {
+          "name": "file",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 79,
+          "downloadBytes": 43560,
+          "installedDeltaKiB": 79
+        },
+        {
+          "name": "autotools-dev",
+          "version": "20240727.1",
+          "previousVersion": null,
+          "installedSizeKiB": 147,
+          "downloadBytes": 60168,
+          "installedDeltaKiB": 147
+        },
+        {
+          "name": "libsframe1",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 110,
+          "downloadBytes": 78360,
+          "installedDeltaKiB": 110
+        },
+        {
+          "name": "binutils-common",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 16098,
+          "downloadBytes": 2508768,
+          "installedDeltaKiB": 16098
+        },
+        {
+          "name": "libbinutils",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 2390,
+          "downloadBytes": 534440,
+          "installedDeltaKiB": 2390
+        },
+        {
+          "name": "libgprofng0",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 4034,
+          "downloadBytes": 807764,
+          "installedDeltaKiB": 4034
+        },
+        {
+          "name": "libctf-nobfd0",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 293,
+          "downloadBytes": 155672,
+          "installedDeltaKiB": 293
+        },
+        {
+          "name": "libctf0",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 232,
+          "downloadBytes": 88616,
+          "installedDeltaKiB": 232
+        },
+        {
+          "name": "libjansson4",
+          "version": "2.14-2+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 100,
+          "downloadBytes": 39792,
+          "installedDeltaKiB": 100
+        },
+        {
+          "name": "binutils-x86-64-linux-gnu",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 5990,
+          "downloadBytes": 1013844,
+          "installedDeltaKiB": 5990
+        },
+        {
+          "name": "binutils",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 1073,
+          "downloadBytes": 265400,
+          "installedDeltaKiB": 1073
+        },
+        {
+          "name": "libisl23",
+          "version": "0.27-1",
+          "previousVersion": null,
+          "installedSizeKiB": 2253,
+          "downloadBytes": 659152,
+          "installedDeltaKiB": 2253
+        },
+        {
+          "name": "libmpfr6",
+          "version": "4.2.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1225,
+          "downloadBytes": 729320,
+          "installedDeltaKiB": 1225
+        },
+        {
+          "name": "libmpc3",
+          "version": "1.3.1-1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 154,
+          "downloadBytes": 52244,
+          "installedDeltaKiB": 154
+        },
+        {
+          "name": "cpp-14-x86-64-linux-gnu",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 34503,
+          "downloadBytes": 11047460,
+          "installedDeltaKiB": 34503
+        },
+        {
+          "name": "cpp-14",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 11,
+          "downloadBytes": 1280,
+          "installedDeltaKiB": 11
+        },
+        {
+          "name": "cpp-x86-64-linux-gnu",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 17,
+          "downloadBytes": 4840,
+          "installedDeltaKiB": 17
+        },
+        {
+          "name": "cpp",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 18,
+          "downloadBytes": 1568,
+          "installedDeltaKiB": 18
+        },
+        {
+          "name": "libcc1-0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 140,
+          "downloadBytes": 42796,
+          "installedDeltaKiB": 140
+        },
+        {
+          "name": "libgomp1",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 368,
+          "downloadBytes": 137148,
+          "installedDeltaKiB": 368
+        },
+        {
+          "name": "libitm1",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 115,
+          "downloadBytes": 25956,
+          "installedDeltaKiB": 115
+        },
+        {
+          "name": "libasan8",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 10695,
+          "downloadBytes": 2725272,
+          "installedDeltaKiB": 10695
+        },
+        {
+          "name": "liblsan0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 3782,
+          "downloadBytes": 1204164,
+          "installedDeltaKiB": 3782
+        },
+        {
+          "name": "libtsan2",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 8807,
+          "downloadBytes": 2460216,
+          "installedDeltaKiB": 8807
+        },
+        {
+          "name": "libubsan1",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 3319,
+          "downloadBytes": 1074340,
+          "installedDeltaKiB": 3319
+        },
+        {
+          "name": "libhwasan0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 4850,
+          "downloadBytes": 1487768,
+          "installedDeltaKiB": 4850
+        },
+        {
+          "name": "libquadmath0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 296,
+          "downloadBytes": 145068,
+          "installedDeltaKiB": 296
+        },
+        {
+          "name": "libgcc-14-dev",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 17357,
+          "downloadBytes": 2672328,
+          "installedDeltaKiB": 17357
+        },
+        {
+          "name": "gcc-14-x86-64-linux-gnu",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 68460,
+          "downloadBytes": 21389968,
+          "installedDeltaKiB": 68460
+        },
+        {
+          "name": "gcc-14",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 622,
+          "downloadBytes": 540064,
+          "installedDeltaKiB": 622
+        },
+        {
+          "name": "gcc-x86-64-linux-gnu",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 23,
+          "downloadBytes": 1436,
+          "installedDeltaKiB": 23
+        },
+        {
+          "name": "gcc",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 36,
+          "downloadBytes": 5136,
+          "installedDeltaKiB": 36
+        },
+        {
+          "name": "libc-dev-bin",
+          "version": "2.41-12+deb13u4",
+          "previousVersion": null,
+          "installedSizeKiB": 126,
+          "downloadBytes": 59960,
+          "installedDeltaKiB": 126
+        },
+        {
+          "name": "linux-libc-dev",
+          "version": "6.12.115-2",
+          "previousVersion": null,
+          "installedSizeKiB": 11103,
+          "downloadBytes": 3049692,
+          "installedDeltaKiB": 11103
+        },
+        {
+          "name": "libcrypt-dev",
+          "version": "1:4.4.38-1",
+          "previousVersion": null,
+          "installedSizeKiB": 345,
+          "downloadBytes": 119040,
+          "installedDeltaKiB": 345
+        },
+        {
+          "name": "rpcsvc-proto",
+          "version": "1.4.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 246,
+          "downloadBytes": 63268,
+          "installedDeltaKiB": 246
+        },
+        {
+          "name": "libc6-dev",
+          "version": "2.41-12+deb13u4",
+          "previousVersion": null,
+          "installedSizeKiB": 12542,
+          "downloadBytes": 1994660,
+          "installedDeltaKiB": 12542
+        },
+        {
+          "name": "libtool",
+          "version": "2.5.4-4",
+          "previousVersion": null,
+          "installedSizeKiB": 1245,
+          "downloadBytes": 539404,
+          "installedDeltaKiB": 1245
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  autotools-dev binutils binutils-common binutils-x86-64-linux-gnu cpp cpp-14\n  cpp-14-x86-64-linux-gnu cpp-x86-64-linux-gnu file gcc gcc-14\n  gcc-14-x86-64-linux-gnu gcc-x86-64-linux-gnu libasan8 libbinutils\n  libc-dev-bin libc6-dev libcc1-0 libcrypt-dev libctf-nobfd0 libctf0\n  libgcc-14-dev libgomp1 libgprofng0 libhwasan0 libisl23 libitm1 libjansson4\n  liblsan0 libmagic-mgc libmagic1t64 libmpc3 libmpfr6 libquadmath0 libsframe1\n  libtsan2 libubsan1 linux-libc-dev rpcsvc-proto\nSuggested packages:\n  binutils-doc gprofng-gui binutils-gold cpp-doc gcc-14-locales cpp-14-doc\n  gcc-multilib manpages-dev autoconf automake flex bison gdb gcc-doc\n  gcc-14-multilib gcc-14-doc gdb-x86-64-linux-gnu libc-devtools glibc-doc\n  libtool-doc automaken gfortran | fortran95-compiler gcj-jdk\nRecommended packages:\n  manpages manpages-dev libltdl-dev\nThe following NEW packages will be installed:\n  autotools-dev binutils binutils-common binutils-x86-64-linux-gnu cpp cpp-14\n  cpp-14-x86-64-linux-gnu cpp-x86-64-linux-gnu file gcc gcc-14\n  gcc-14-x86-64-linux-gnu gcc-x86-64-linux-gnu libasan8 libbinutils\n  libc-dev-bin libc6-dev libcc1-0 libcrypt-dev libctf-nobfd0 libctf0\n  libgcc-14-dev libgomp1 libgprofng0 libhwasan0 libisl23 libitm1 libjansson4\n  liblsan0 libmagic-mgc libmagic1t64 libmpc3 libmpfr6 libquadmath0 libsframe1\n  libtool libtsan2 libubsan1 linux-libc-dev rpcsvc-proto\n0 upgraded, 40 newly installed, 0 to remove and 0 not upgraded.\nInst libmagic-mgc (1:5.46-5 Debian:13.7/stable [amd64])\nInst libmagic1t64 (1:5.46-5 Debian:13.7/stable [amd64])\nInst file (1:5.46-5 Debian:13.7/stable [amd64])\nInst autotools-dev (20240727.1 Debian:13.7/stable [all])\nInst libsframe1 (2.44-3 Debian:13.7/stable [amd64])\nInst binutils-common (2.44-3 Debian:13.7/stable [amd64])\nInst libbinutils (2.44-3 Debian:13.7/stable [amd64])\nInst libgprofng0 (2.44-3 Debian:13.7/stable [amd64])\nInst libctf-nobfd0 (2.44-3 Debian:13.7/stable [amd64])\nInst libctf0 (2.44-3 Debian:13.7/stable [amd64])\nInst libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nInst binutils-x86-64-linux-gnu (2.44-3 Debian:13.7/stable [amd64])\nInst binutils (2.44-3 Debian:13.7/stable [amd64])\nInst libisl23 (0.27-1 Debian:13.7/stable [amd64])\nInst libmpfr6 (4.2.2-1 Debian:13.7/stable [amd64])\nInst libmpc3 (1.3.1-1+b3 Debian:13.7/stable [amd64])\nInst cpp-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nInst cpp-14 (14.2.0-19 Debian:13.7/stable [amd64])\nInst cpp-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst cpp (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst libcc1-0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libgomp1 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libitm1 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libasan8 (14.2.0-19 Debian:13.7/stable [amd64])\nInst liblsan0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libtsan2 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libubsan1 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libhwasan0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libquadmath0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libgcc-14-dev (14.2.0-19 Debian:13.7/stable [amd64])\nInst gcc-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nInst gcc-14 (14.2.0-19 Debian:13.7/stable [amd64])\nInst gcc-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst gcc (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst libc-dev-bin (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nInst linux-libc-dev (6.12.115-2 Debian-Security:13/stable-security [all])\nInst libcrypt-dev (1:4.4.38-1 Debian:13.7/stable [amd64])\nInst rpcsvc-proto (1.4.3-1 Debian:13.7/stable [amd64])\nInst libc6-dev (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nInst libtool (2.5.4-4 Debian:13.7/stable [all])\nConf libmagic-mgc (1:5.46-5 Debian:13.7/stable [amd64])\nConf libmagic1t64 (1:5.46-5 Debian:13.7/stable [amd64])\nConf file (1:5.46-5 Debian:13.7/stable [amd64])\nConf autotools-dev (20240727.1 Debian:13.7/stable [all])\nConf libsframe1 (2.44-3 Debian:13.7/stable [amd64])\nConf binutils-common (2.44-3 Debian:13.7/stable [amd64])\nConf libbinutils (2.44-3 Debian:13.7/stable [amd64])\nConf libgprofng0 (2.44-3 Debian:13.7/stable [amd64])\nConf libctf-nobfd0 (2.44-3 Debian:13.7/stable [amd64])\nConf libctf0 (2.44-3 Debian:13.7/stable [amd64])\nConf libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nConf binutils-x86-64-linux-gnu (2.44-3 Debian:13.7/stable [amd64])\nConf binutils (2.44-3 Debian:13.7/stable [amd64])\nConf libisl23 (0.27-1 Debian:13.7/stable [amd64])\nConf libmpfr6 (4.2.2-1 Debian:13.7/stable [amd64])\nConf libmpc3 (1.3.1-1+b3 Debian:13.7/stable [amd64])\nConf cpp-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nConf cpp-14 (14.2.0-19 Debian:13.7/stable [amd64])\nConf cpp-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf cpp (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf libcc1-0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libgomp1 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libitm1 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libasan8 (14.2.0-19 Debian:13.7/stable [amd64])\nConf liblsan0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libtsan2 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libubsan1 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libhwasan0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libquadmath0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libgcc-14-dev (14.2.0-19 Debian:13.7/stable [amd64])\nConf gcc-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nConf gcc-14 (14.2.0-19 Debian:13.7/stable [amd64])\nConf gcc-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf gcc (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf libc-dev-bin (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nConf linux-libc-dev (6.12.115-2 Debian-Security:13/stable-security [all])\nConf libcrypt-dev (1:4.4.38-1 Debian:13.7/stable [amd64])\nConf rpcsvc-proto (1.4.3-1 Debian:13.7/stable [amd64])\nConf libc6-dev (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nConf libtool (2.5.4-4 Debian:13.7/stable [all])\n"
+    },
+    {
+      "label": "yq",
+      "packages": [
+        "yq"
+      ],
+      "downloadBytes": 319196,
+      "installedDeltaKiB": 1210,
+      "changes": [
+        {
+          "name": "libyaml-0-2",
+          "version": "0.2.5-2",
+          "previousVersion": null,
+          "installedSizeKiB": 147,
+          "downloadBytes": 52524,
+          "installedDeltaKiB": 147
+        },
+        {
+          "name": "python3-argcomplete",
+          "version": "3.6.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 168,
+          "downloadBytes": 40864,
+          "installedDeltaKiB": 168
+        },
+        {
+          "name": "python3-tomlkit",
+          "version": "0.13.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 193,
+          "downloadBytes": 42660,
+          "installedDeltaKiB": 193
+        },
+        {
+          "name": "python3-xmltodict",
+          "version": "0.13.0-1.1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 52,
+          "downloadBytes": 16816,
+          "installedDeltaKiB": 52
+        },
+        {
+          "name": "python3-yaml",
+          "version": "6.0.2-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 552,
+          "downloadBytes": 136500,
+          "installedDeltaKiB": 552
+        },
+        {
+          "name": "yq",
+          "version": "3.4.3-2",
+          "previousVersion": null,
+          "installedSizeKiB": 98,
+          "downloadBytes": 29832,
+          "installedDeltaKiB": 98
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libyaml-0-2 python3-argcomplete python3-tomlkit python3-xmltodict\n  python3-yaml\nThe following NEW packages will be installed:\n  libyaml-0-2 python3-argcomplete python3-tomlkit python3-xmltodict\n  python3-yaml yq\n0 upgraded, 6 newly installed, 0 to remove and 0 not upgraded.\nInst libyaml-0-2 (0.2.5-2 Debian:13.7/stable [amd64])\nInst python3-argcomplete (3.6.2-1 Debian:13.7/stable [all])\nInst python3-tomlkit (0.13.2-1 Debian:13.7/stable [all])\nInst python3-xmltodict (0.13.0-1.1~deb13u1 Debian:13.7/stable [all])\nInst python3-yaml (6.0.2-1+b2 Debian:13.7/stable [amd64])\nInst yq (3.4.3-2 Debian:13.7/stable [all])\nConf libyaml-0-2 (0.2.5-2 Debian:13.7/stable [amd64])\nConf python3-argcomplete (3.6.2-1 Debian:13.7/stable [all])\nConf python3-tomlkit (0.13.2-1 Debian:13.7/stable [all])\nConf python3-xmltodict (0.13.0-1.1~deb13u1 Debian:13.7/stable [all])\nConf python3-yaml (6.0.2-1+b2 Debian:13.7/stable [amd64])\nConf yq (3.4.3-2 Debian:13.7/stable [all])\n"
+    },
+    {
+      "label": "small-baseline",
+      "packages": [
+        "patch",
+        "file",
+        "bzip2",
+        "xz-utils",
+        "zip",
+        "zstd",
+        "wget",
+        "rsync",
+        "tree",
+        "time",
+        "python-is-python3"
+      ],
+      "downloadBytes": 3960168,
+      "installedDeltaKiB": 20461,
+      "changes": [
+        {
+          "name": "libpopt0",
+          "version": "1.19+dfsg-2",
+          "previousVersion": null,
+          "installedSizeKiB": 245,
+          "downloadBytes": 43844,
+          "installedDeltaKiB": 245
+        },
+        {
+          "name": "rsync",
+          "version": "3.5.0+ds1-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 955,
+          "downloadBytes": 501964,
+          "installedDeltaKiB": 955
+        },
+        {
+          "name": "bzip2",
+          "version": "1.0.8-6",
+          "previousVersion": null,
+          "installedSizeKiB": 113,
+          "downloadBytes": 40520,
+          "installedDeltaKiB": 113
+        },
+        {
+          "name": "libmagic-mgc",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 10154,
+          "downloadBytes": 337800,
+          "installedDeltaKiB": 10154
+        },
+        {
+          "name": "libmagic1t64",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 244,
+          "downloadBytes": 109312,
+          "installedDeltaKiB": 244
+        },
+        {
+          "name": "file",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 79,
+          "downloadBytes": 43560,
+          "installedDeltaKiB": 79
+        },
+        {
+          "name": "wget",
+          "version": "1.25.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 3784,
+          "downloadBytes": 984500,
+          "installedDeltaKiB": 3784
+        },
+        {
+          "name": "xz-utils",
+          "version": "5.8.1-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1424,
+          "downloadBytes": 659760,
+          "installedDeltaKiB": 1424
+        },
+        {
+          "name": "patch",
+          "version": "2.8-2",
+          "previousVersion": null,
+          "installedSizeKiB": 242,
+          "downloadBytes": 134328,
+          "installedDeltaKiB": 242
+        },
+        {
+          "name": "python-is-python3",
+          "version": "3.13.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 16,
+          "downloadBytes": 3204,
+          "installedDeltaKiB": 16
+        },
+        {
+          "name": "time",
+          "version": "1.9-0.2",
+          "previousVersion": null,
+          "installedSizeKiB": 129,
+          "downloadBytes": 50776,
+          "installedDeltaKiB": 129
+        },
+        {
+          "name": "tree",
+          "version": "2.2.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 129,
+          "downloadBytes": 59392,
+          "installedDeltaKiB": 129
+        },
+        {
+          "name": "zip",
+          "version": "3.0-15+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 627,
+          "downloadBytes": 234964,
+          "installedDeltaKiB": 627
+        },
+        {
+          "name": "zstd",
+          "version": "1.5.7+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 2320,
+          "downloadBytes": 756244,
+          "installedDeltaKiB": 2320
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  libmagic-mgc libmagic1t64 libpopt0\nSuggested packages:\n  bzip2-doc ed diffutils-doc openssh-server python3-braceexpand\nThe following NEW packages will be installed:\n  bzip2 file libmagic-mgc libmagic1t64 libpopt0 patch python-is-python3 rsync\n  time tree wget xz-utils zip zstd\n0 upgraded, 14 newly installed, 0 to remove and 0 not upgraded.\nInst libpopt0 (1.19+dfsg-2 Debian:13.7/stable [amd64])\nInst rsync (3.5.0+ds1-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nInst libmagic-mgc (1:5.46-5 Debian:13.7/stable [amd64])\nInst libmagic1t64 (1:5.46-5 Debian:13.7/stable [amd64])\nInst file (1:5.46-5 Debian:13.7/stable [amd64])\nInst wget (1.25.0-2 Debian:13.7/stable [amd64])\nInst xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nInst patch (2.8-2 Debian:13.7/stable [amd64])\nInst python-is-python3 (3.13.3-1 Debian:13.7/stable [all])\nInst time (1.9-0.2 Debian:13.7/stable [amd64])\nInst tree (2.2.1-1 Debian:13.7/stable [amd64])\nInst zip (3.0-15+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst zstd (1.5.7+dfsg-1 Debian:13.7/stable [amd64])\nConf libpopt0 (1.19+dfsg-2 Debian:13.7/stable [amd64])\nConf rsync (3.5.0+ds1-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nConf libmagic-mgc (1:5.46-5 Debian:13.7/stable [amd64])\nConf libmagic1t64 (1:5.46-5 Debian:13.7/stable [amd64])\nConf file (1:5.46-5 Debian:13.7/stable [amd64])\nConf wget (1.25.0-2 Debian:13.7/stable [amd64])\nConf xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nConf patch (2.8-2 Debian:13.7/stable [amd64])\nConf python-is-python3 (3.13.3-1 Debian:13.7/stable [all])\nConf time (1.9-0.2 Debian:13.7/stable [amd64])\nConf tree (2.2.1-1 Debian:13.7/stable [amd64])\nConf zip (3.0-15+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf zstd (1.5.7+dfsg-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "network-tools",
+      "packages": [
+        "iproute2",
+        "iputils-ping",
+        "bind9-dnsutils",
+        "netcat-openbsd",
+        "socat"
+      ],
+      "downloadBytes": 3974276,
+      "installedDeltaKiB": 12809,
+      "changes": [
+        {
+          "name": "libmnl0",
+          "version": "1.0.5-3",
+          "previousVersion": null,
+          "installedSizeKiB": 45,
+          "downloadBytes": 11928,
+          "installedDeltaKiB": 45
+        },
+        {
+          "name": "libtirpc-common",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 32,
+          "downloadBytes": 11004,
+          "installedDeltaKiB": 32
+        },
+        {
+          "name": "libtirpc3t64",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 236,
+          "downloadBytes": 83300,
+          "installedDeltaKiB": 236
+        },
+        {
+          "name": "libxtables12",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 101,
+          "downloadBytes": 31896,
+          "installedDeltaKiB": 101
+        },
+        {
+          "name": "libcap2-bin",
+          "version": "1:2.75-10+deb13u1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 132,
+          "downloadBytes": 36456,
+          "installedDeltaKiB": 132
+        },
+        {
+          "name": "iproute2",
+          "version": "6.15.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 3774,
+          "downloadBytes": 1089184,
+          "installedDeltaKiB": 3774
+        },
+        {
+          "name": "iputils-ping",
+          "version": "3:20240905-3",
+          "previousVersion": null,
+          "installedSizeKiB": 187,
+          "downloadBytes": 51248,
+          "installedDeltaKiB": 187
+        },
+        {
+          "name": "libfstrm0",
+          "version": "0.6.1-1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 71,
+          "downloadBytes": 21924,
+          "installedDeltaKiB": 71
+        },
+        {
+          "name": "libjemalloc2",
+          "version": "5.3.0-3",
+          "previousVersion": null,
+          "installedSizeKiB": 876,
+          "downloadBytes": 274324,
+          "installedDeltaKiB": 876
+        },
+        {
+          "name": "libjson-c5",
+          "version": "0.18+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 112,
+          "downloadBytes": 45956,
+          "installedDeltaKiB": 112
+        },
+        {
+          "name": "liblmdb0",
+          "version": "0.9.31-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 104,
+          "downloadBytes": 45240,
+          "installedDeltaKiB": 104
+        },
+        {
+          "name": "libmaxminddb0",
+          "version": "1.12.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 57,
+          "downloadBytes": 25800,
+          "installedDeltaKiB": 57
+        },
+        {
+          "name": "libprotobuf-c1",
+          "version": "1.5.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 62,
+          "downloadBytes": 20536,
+          "installedDeltaKiB": 62
+        },
+        {
+          "name": "liburcu8t64",
+          "version": "0.15.2-2",
+          "previousVersion": null,
+          "installedSizeKiB": 363,
+          "downloadBytes": 76304,
+          "installedDeltaKiB": 363
+        },
+        {
+          "name": "libuv1t64",
+          "version": "1.50.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 321,
+          "downloadBytes": 153752,
+          "installedDeltaKiB": 321
+        },
+        {
+          "name": "bind9-libs",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 3649,
+          "downloadBytes": 1250200,
+          "installedDeltaKiB": 3649
+        },
+        {
+          "name": "bind9-host",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 141,
+          "downloadBytes": 56596,
+          "installedDeltaKiB": 141
+        },
+        {
+          "name": "bind9-dnsutils",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 525,
+          "downloadBytes": 167084,
+          "installedDeltaKiB": 525
+        },
+        {
+          "name": "libwrap0",
+          "version": "7.6.q-36",
+          "previousVersion": null,
+          "installedSizeKiB": 110,
+          "downloadBytes": 55256,
+          "installedDeltaKiB": 110
+        },
+        {
+          "name": "netcat-openbsd",
+          "version": "1.229-1",
+          "previousVersion": null,
+          "installedSizeKiB": 109,
+          "downloadBytes": 42520,
+          "installedDeltaKiB": 109
+        },
+        {
+          "name": "socat",
+          "version": "1.8.0.3-1+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1802,
+          "downloadBytes": 423768,
+          "installedDeltaKiB": 1802
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  bind9-host bind9-libs libcap2-bin libfstrm0 libjemalloc2 libjson-c5 liblmdb0\n  libmaxminddb0 libmnl0 libprotobuf-c1 libtirpc-common libtirpc3t64\n  liburcu8t64 libuv1t64 libwrap0 libxtables12\nSuggested packages:\n  mmdb-bin\nRecommended packages:\n  linux-sysctl-defaults libpam-cap\nThe following NEW packages will be installed:\n  bind9-dnsutils bind9-host bind9-libs iproute2 iputils-ping libcap2-bin\n  libfstrm0 libjemalloc2 libjson-c5 liblmdb0 libmaxminddb0 libmnl0\n  libprotobuf-c1 libtirpc-common libtirpc3t64 liburcu8t64 libuv1t64 libwrap0\n  libxtables12 netcat-openbsd socat\n0 upgraded, 21 newly installed, 0 to remove and 0 not upgraded.\nInst libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nInst libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nInst libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nInst libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nInst iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nInst iputils-ping (3:20240905-3 Debian:13.7/stable [amd64])\nInst libfstrm0 (0.6.1-1+b3 Debian:13.7/stable [amd64])\nInst libjemalloc2 (5.3.0-3 Debian:13.7/stable [amd64])\nInst libjson-c5 (0.18+ds-1 Debian:13.7/stable [amd64])\nInst liblmdb0 (0.9.31-1+b2 Debian:13.7/stable [amd64])\nInst libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nInst libprotobuf-c1 (1.5.1-1 Debian:13.7/stable [amd64])\nInst liburcu8t64 (0.15.2-2 Debian:13.7/stable [amd64])\nInst libuv1t64 (1.50.0-2 Debian:13.7/stable [amd64])\nInst bind9-libs (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst bind9-host (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst bind9-dnsutils (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nInst netcat-openbsd (1.229-1 Debian:13.7/stable [amd64])\nInst socat (1.8.0.3-1+deb13u1 Debian:13.7/stable [amd64])\nConf libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nConf libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nConf libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nConf libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nConf iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nConf iputils-ping (3:20240905-3 Debian:13.7/stable [amd64])\nConf libfstrm0 (0.6.1-1+b3 Debian:13.7/stable [amd64])\nConf libjemalloc2 (5.3.0-3 Debian:13.7/stable [amd64])\nConf libjson-c5 (0.18+ds-1 Debian:13.7/stable [amd64])\nConf liblmdb0 (0.9.31-1+b2 Debian:13.7/stable [amd64])\nConf libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nConf libprotobuf-c1 (1.5.1-1 Debian:13.7/stable [amd64])\nConf liburcu8t64 (0.15.2-2 Debian:13.7/stable [amd64])\nConf libuv1t64 (1.50.0-2 Debian:13.7/stable [amd64])\nConf bind9-libs (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf bind9-host (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf bind9-dnsutils (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nConf netcat-openbsd (1.229-1 Debian:13.7/stable [amd64])\nConf socat (1.8.0.3-1+deb13u1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "inspection-lint",
+      "packages": [
+        "sqlite3",
+        "xxd",
+        "bsdextrautils",
+        "shellcheck",
+        "shfmt"
+      ],
+      "downloadBytes": 6515132,
+      "installedDeltaKiB": 38721,
+      "changes": [
+        {
+          "name": "bsdextrautils",
+          "version": "2.41.5-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 339,
+          "downloadBytes": 94796,
+          "installedDeltaKiB": 339
+        },
+        {
+          "name": "shellcheck",
+          "version": "0.10.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 34787,
+          "downloadBytes": 4907584,
+          "installedDeltaKiB": 34787
+        },
+        {
+          "name": "shfmt",
+          "version": "3.8.0-1+b8",
+          "previousVersion": null,
+          "installedSizeKiB": 2854,
+          "downloadBytes": 1029552,
+          "installedDeltaKiB": 2854
+        },
+        {
+          "name": "sqlite3",
+          "version": "3.46.1-7+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 587,
+          "downloadBytes": 384144,
+          "installedDeltaKiB": 587
+        },
+        {
+          "name": "xxd",
+          "version": "2:9.1.1230-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 154,
+          "downloadBytes": 99056,
+          "installedDeltaKiB": 154
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nSuggested packages:\n  sqlite3-doc\nThe following NEW packages will be installed:\n  bsdextrautils shellcheck shfmt sqlite3 xxd\n0 upgraded, 5 newly installed, 0 to remove and 0 not upgraded.\nInst bsdextrautils (2.41.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst shellcheck (0.10.0-1 Debian:13.7/stable [amd64])\nInst shfmt (3.8.0-1+b8 Debian:13.7/stable [amd64])\nInst sqlite3 (3.46.1-7+deb13u2 Debian:13.7/stable [amd64])\nInst xxd (2:9.1.1230-2+deb13u1 Debian-Security:13/stable-security [amd64])\nConf bsdextrautils (2.41.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf shellcheck (0.10.0-1 Debian:13.7/stable [amd64])\nConf shfmt (3.8.0-1+b8 Debian:13.7/stable [amd64])\nConf sqlite3 (3.46.1-7+deb13u2 Debian:13.7/stable [amd64])\nConf xxd (2:9.1.1230-2+deb13u1 Debian-Security:13/stable-security [amd64])\n"
+    },
+    {
+      "label": "native-build",
+      "packages": [
+        "build-essential",
+        "pkg-config"
+      ],
+      "downloadBytes": 74636564,
+      "installedDeltaKiB": 276678,
+      "changes": [
+        {
+          "name": "bzip2",
+          "version": "1.0.8-6",
+          "previousVersion": null,
+          "installedSizeKiB": 113,
+          "downloadBytes": 40520,
+          "installedDeltaKiB": 113
+        },
+        {
+          "name": "xz-utils",
+          "version": "5.8.1-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1424,
+          "downloadBytes": 659760,
+          "installedDeltaKiB": 1424
+        },
+        {
+          "name": "libsframe1",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 110,
+          "downloadBytes": 78360,
+          "installedDeltaKiB": 110
+        },
+        {
+          "name": "binutils-common",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 16098,
+          "downloadBytes": 2508768,
+          "installedDeltaKiB": 16098
+        },
+        {
+          "name": "libbinutils",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 2390,
+          "downloadBytes": 534440,
+          "installedDeltaKiB": 2390
+        },
+        {
+          "name": "libgprofng0",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 4034,
+          "downloadBytes": 807764,
+          "installedDeltaKiB": 4034
+        },
+        {
+          "name": "libctf-nobfd0",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 293,
+          "downloadBytes": 155672,
+          "installedDeltaKiB": 293
+        },
+        {
+          "name": "libctf0",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 232,
+          "downloadBytes": 88616,
+          "installedDeltaKiB": 232
+        },
+        {
+          "name": "libjansson4",
+          "version": "2.14-2+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 100,
+          "downloadBytes": 39792,
+          "installedDeltaKiB": 100
+        },
+        {
+          "name": "binutils-x86-64-linux-gnu",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 5990,
+          "downloadBytes": 1013844,
+          "installedDeltaKiB": 5990
+        },
+        {
+          "name": "binutils",
+          "version": "2.44-3",
+          "previousVersion": null,
+          "installedSizeKiB": 1073,
+          "downloadBytes": 265400,
+          "installedDeltaKiB": 1073
+        },
+        {
+          "name": "libc-dev-bin",
+          "version": "2.41-12+deb13u4",
+          "previousVersion": null,
+          "installedSizeKiB": 126,
+          "downloadBytes": 59960,
+          "installedDeltaKiB": 126
+        },
+        {
+          "name": "linux-libc-dev",
+          "version": "6.12.115-2",
+          "previousVersion": null,
+          "installedSizeKiB": 11103,
+          "downloadBytes": 3049692,
+          "installedDeltaKiB": 11103
+        },
+        {
+          "name": "libcrypt-dev",
+          "version": "1:4.4.38-1",
+          "previousVersion": null,
+          "installedSizeKiB": 345,
+          "downloadBytes": 119040,
+          "installedDeltaKiB": 345
+        },
+        {
+          "name": "rpcsvc-proto",
+          "version": "1.4.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 246,
+          "downloadBytes": 63268,
+          "installedDeltaKiB": 246
+        },
+        {
+          "name": "libc6-dev",
+          "version": "2.41-12+deb13u4",
+          "previousVersion": null,
+          "installedSizeKiB": 12542,
+          "downloadBytes": 1994660,
+          "installedDeltaKiB": 12542
+        },
+        {
+          "name": "libisl23",
+          "version": "0.27-1",
+          "previousVersion": null,
+          "installedSizeKiB": 2253,
+          "downloadBytes": 659152,
+          "installedDeltaKiB": 2253
+        },
+        {
+          "name": "libmpfr6",
+          "version": "4.2.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1225,
+          "downloadBytes": 729320,
+          "installedDeltaKiB": 1225
+        },
+        {
+          "name": "libmpc3",
+          "version": "1.3.1-1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 154,
+          "downloadBytes": 52244,
+          "installedDeltaKiB": 154
+        },
+        {
+          "name": "cpp-14-x86-64-linux-gnu",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 34503,
+          "downloadBytes": 11047460,
+          "installedDeltaKiB": 34503
+        },
+        {
+          "name": "cpp-14",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 11,
+          "downloadBytes": 1280,
+          "installedDeltaKiB": 11
+        },
+        {
+          "name": "cpp-x86-64-linux-gnu",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 17,
+          "downloadBytes": 4840,
+          "installedDeltaKiB": 17
+        },
+        {
+          "name": "cpp",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 18,
+          "downloadBytes": 1568,
+          "installedDeltaKiB": 18
+        },
+        {
+          "name": "libcc1-0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 140,
+          "downloadBytes": 42796,
+          "installedDeltaKiB": 140
+        },
+        {
+          "name": "libgomp1",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 368,
+          "downloadBytes": 137148,
+          "installedDeltaKiB": 368
+        },
+        {
+          "name": "libitm1",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 115,
+          "downloadBytes": 25956,
+          "installedDeltaKiB": 115
+        },
+        {
+          "name": "libasan8",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 10695,
+          "downloadBytes": 2725272,
+          "installedDeltaKiB": 10695
+        },
+        {
+          "name": "liblsan0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 3782,
+          "downloadBytes": 1204164,
+          "installedDeltaKiB": 3782
+        },
+        {
+          "name": "libtsan2",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 8807,
+          "downloadBytes": 2460216,
+          "installedDeltaKiB": 8807
+        },
+        {
+          "name": "libubsan1",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 3319,
+          "downloadBytes": 1074340,
+          "installedDeltaKiB": 3319
+        },
+        {
+          "name": "libhwasan0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 4850,
+          "downloadBytes": 1487768,
+          "installedDeltaKiB": 4850
+        },
+        {
+          "name": "libquadmath0",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 296,
+          "downloadBytes": 145068,
+          "installedDeltaKiB": 296
+        },
+        {
+          "name": "libgcc-14-dev",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 17357,
+          "downloadBytes": 2672328,
+          "installedDeltaKiB": 17357
+        },
+        {
+          "name": "gcc-14-x86-64-linux-gnu",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 68460,
+          "downloadBytes": 21389968,
+          "installedDeltaKiB": 68460
+        },
+        {
+          "name": "gcc-14",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 622,
+          "downloadBytes": 540064,
+          "installedDeltaKiB": 622
+        },
+        {
+          "name": "gcc-x86-64-linux-gnu",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 23,
+          "downloadBytes": 1436,
+          "installedDeltaKiB": 23
+        },
+        {
+          "name": "gcc",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 36,
+          "downloadBytes": 5136,
+          "installedDeltaKiB": 36
+        },
+        {
+          "name": "libstdc++-14-dev",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 22065,
+          "downloadBytes": 2375760,
+          "installedDeltaKiB": 22065
+        },
+        {
+          "name": "g++-14-x86-64-linux-gnu",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 36931,
+          "downloadBytes": 12114812,
+          "installedDeltaKiB": 36931
+        },
+        {
+          "name": "g++-14",
+          "version": "14.2.0-19",
+          "previousVersion": null,
+          "installedSizeKiB": 35,
+          "downloadBytes": 22544,
+          "installedDeltaKiB": 35
+        },
+        {
+          "name": "g++-x86-64-linux-gnu",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 11,
+          "downloadBytes": 1200,
+          "installedDeltaKiB": 11
+        },
+        {
+          "name": "g++",
+          "version": "4:14.2.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 13,
+          "downloadBytes": 1344,
+          "installedDeltaKiB": 13
+        },
+        {
+          "name": "libdpkg-perl",
+          "version": "1.22.22",
+          "previousVersion": null,
+          "installedSizeKiB": 2091,
+          "downloadBytes": 650808,
+          "installedDeltaKiB": 2091
+        },
+        {
+          "name": "patch",
+          "version": "2.8-2",
+          "previousVersion": null,
+          "installedSizeKiB": 242,
+          "downloadBytes": 134328,
+          "installedDeltaKiB": 242
+        },
+        {
+          "name": "dpkg-dev",
+          "version": "1.22.22",
+          "previousVersion": null,
+          "installedSizeKiB": 1725,
+          "downloadBytes": 1337268,
+          "installedDeltaKiB": 1725
+        },
+        {
+          "name": "build-essential",
+          "version": "12.12",
+          "previousVersion": null,
+          "installedSizeKiB": 17,
+          "downloadBytes": 4624,
+          "installedDeltaKiB": 17
+        },
+        {
+          "name": "libpkgconf3",
+          "version": "1.8.1-4",
+          "previousVersion": null,
+          "installedSizeKiB": 101,
+          "downloadBytes": 36436,
+          "installedDeltaKiB": 101
+        },
+        {
+          "name": "pkgconf-bin",
+          "version": "1.8.1-4",
+          "previousVersion": null,
+          "installedSizeKiB": 83,
+          "downloadBytes": 30220,
+          "installedDeltaKiB": 83
+        },
+        {
+          "name": "pkgconf",
+          "version": "1.8.1-4",
+          "previousVersion": null,
+          "installedSizeKiB": 65,
+          "downloadBytes": 26172,
+          "installedDeltaKiB": 65
+        },
+        {
+          "name": "pkg-config",
+          "version": "1.8.1-4",
+          "previousVersion": null,
+          "installedSizeKiB": 29,
+          "downloadBytes": 13968,
+          "installedDeltaKiB": 29
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  binutils binutils-common binutils-x86-64-linux-gnu bzip2 cpp cpp-14\n  cpp-14-x86-64-linux-gnu cpp-x86-64-linux-gnu dpkg-dev g++ g++-14\n  g++-14-x86-64-linux-gnu g++-x86-64-linux-gnu gcc gcc-14\n  gcc-14-x86-64-linux-gnu gcc-x86-64-linux-gnu libasan8 libbinutils\n  libc-dev-bin libc6-dev libcc1-0 libcrypt-dev libctf-nobfd0 libctf0\n  libdpkg-perl libgcc-14-dev libgomp1 libgprofng0 libhwasan0 libisl23 libitm1\n  libjansson4 liblsan0 libmpc3 libmpfr6 libpkgconf3 libquadmath0 libsframe1\n  libstdc++-14-dev libtsan2 libubsan1 linux-libc-dev patch pkgconf pkgconf-bin\n  rpcsvc-proto xz-utils\nSuggested packages:\n  binutils-doc gprofng-gui binutils-gold bzip2-doc cpp-doc gcc-14-locales\n  cpp-14-doc debian-keyring debian-tag2upload-keyring g++-multilib\n  g++-14-multilib gcc-14-doc gcc-multilib manpages-dev autoconf automake\n  libtool flex bison gdb gcc-doc gcc-14-multilib gdb-x86-64-linux-gnu\n  libc-devtools glibc-doc sq | sqop | rsop | gosop | pgpainless-cli | gpg-sq\n  | gnupg sensible-utils bzr libstdc++-14-doc ed diffutils-doc\nRecommended packages:\n  fakeroot sq | sqop | rsop | gosop | pgpainless-cli | gpg-sq | gnupg\n  libalgorithm-merge-perl manpages manpages-dev libfile-fcntllock-perl\n  liblocale-gettext-perl\nThe following NEW packages will be installed:\n  binutils binutils-common binutils-x86-64-linux-gnu build-essential bzip2 cpp\n  cpp-14 cpp-14-x86-64-linux-gnu cpp-x86-64-linux-gnu dpkg-dev g++ g++-14\n  g++-14-x86-64-linux-gnu g++-x86-64-linux-gnu gcc gcc-14\n  gcc-14-x86-64-linux-gnu gcc-x86-64-linux-gnu libasan8 libbinutils\n  libc-dev-bin libc6-dev libcc1-0 libcrypt-dev libctf-nobfd0 libctf0\n  libdpkg-perl libgcc-14-dev libgomp1 libgprofng0 libhwasan0 libisl23 libitm1\n  libjansson4 liblsan0 libmpc3 libmpfr6 libpkgconf3 libquadmath0 libsframe1\n  libstdc++-14-dev libtsan2 libubsan1 linux-libc-dev patch pkg-config pkgconf\n  pkgconf-bin rpcsvc-proto xz-utils\n0 upgraded, 50 newly installed, 0 to remove and 0 not upgraded.\nInst bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nInst xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nInst libsframe1 (2.44-3 Debian:13.7/stable [amd64])\nInst binutils-common (2.44-3 Debian:13.7/stable [amd64])\nInst libbinutils (2.44-3 Debian:13.7/stable [amd64])\nInst libgprofng0 (2.44-3 Debian:13.7/stable [amd64])\nInst libctf-nobfd0 (2.44-3 Debian:13.7/stable [amd64])\nInst libctf0 (2.44-3 Debian:13.7/stable [amd64])\nInst libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nInst binutils-x86-64-linux-gnu (2.44-3 Debian:13.7/stable [amd64])\nInst binutils (2.44-3 Debian:13.7/stable [amd64])\nInst libc-dev-bin (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nInst linux-libc-dev (6.12.115-2 Debian-Security:13/stable-security [all])\nInst libcrypt-dev (1:4.4.38-1 Debian:13.7/stable [amd64])\nInst rpcsvc-proto (1.4.3-1 Debian:13.7/stable [amd64])\nInst libc6-dev (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nInst libisl23 (0.27-1 Debian:13.7/stable [amd64])\nInst libmpfr6 (4.2.2-1 Debian:13.7/stable [amd64])\nInst libmpc3 (1.3.1-1+b3 Debian:13.7/stable [amd64])\nInst cpp-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nInst cpp-14 (14.2.0-19 Debian:13.7/stable [amd64])\nInst cpp-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst cpp (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst libcc1-0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libgomp1 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libitm1 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libasan8 (14.2.0-19 Debian:13.7/stable [amd64])\nInst liblsan0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libtsan2 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libubsan1 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libhwasan0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libquadmath0 (14.2.0-19 Debian:13.7/stable [amd64])\nInst libgcc-14-dev (14.2.0-19 Debian:13.7/stable [amd64])\nInst gcc-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nInst gcc-14 (14.2.0-19 Debian:13.7/stable [amd64])\nInst gcc-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst gcc (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst libstdc++-14-dev (14.2.0-19 Debian:13.7/stable [amd64])\nInst g++-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nInst g++-14 (14.2.0-19 Debian:13.7/stable [amd64])\nInst g++-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst g++ (4:14.2.0-1 Debian:13.7/stable [amd64])\nInst libdpkg-perl (1.22.22 Debian:13.7/stable [all])\nInst patch (2.8-2 Debian:13.7/stable [amd64])\nInst dpkg-dev (1.22.22 Debian:13.7/stable [all])\nInst build-essential (12.12 Debian:13.7/stable [amd64])\nInst libpkgconf3 (1.8.1-4 Debian:13.7/stable [amd64])\nInst pkgconf-bin (1.8.1-4 Debian:13.7/stable [amd64])\nInst pkgconf (1.8.1-4 Debian:13.7/stable [amd64])\nInst pkg-config (1.8.1-4 Debian:13.7/stable [amd64])\nConf bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nConf xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nConf libsframe1 (2.44-3 Debian:13.7/stable [amd64])\nConf binutils-common (2.44-3 Debian:13.7/stable [amd64])\nConf libbinutils (2.44-3 Debian:13.7/stable [amd64])\nConf libgprofng0 (2.44-3 Debian:13.7/stable [amd64])\nConf libctf-nobfd0 (2.44-3 Debian:13.7/stable [amd64])\nConf libctf0 (2.44-3 Debian:13.7/stable [amd64])\nConf libjansson4 (2.14-2+b3 Debian:13.7/stable [amd64])\nConf binutils-x86-64-linux-gnu (2.44-3 Debian:13.7/stable [amd64])\nConf binutils (2.44-3 Debian:13.7/stable [amd64])\nConf libc-dev-bin (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nConf linux-libc-dev (6.12.115-2 Debian-Security:13/stable-security [all])\nConf libcrypt-dev (1:4.4.38-1 Debian:13.7/stable [amd64])\nConf rpcsvc-proto (1.4.3-1 Debian:13.7/stable [amd64])\nConf libc6-dev (2.41-12+deb13u4 Debian:13.7/stable [amd64])\nConf libisl23 (0.27-1 Debian:13.7/stable [amd64])\nConf libmpfr6 (4.2.2-1 Debian:13.7/stable [amd64])\nConf libmpc3 (1.3.1-1+b3 Debian:13.7/stable [amd64])\nConf cpp-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nConf cpp-14 (14.2.0-19 Debian:13.7/stable [amd64])\nConf cpp-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf cpp (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf libcc1-0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libgomp1 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libitm1 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libasan8 (14.2.0-19 Debian:13.7/stable [amd64])\nConf liblsan0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libtsan2 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libubsan1 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libhwasan0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libquadmath0 (14.2.0-19 Debian:13.7/stable [amd64])\nConf libgcc-14-dev (14.2.0-19 Debian:13.7/stable [amd64])\nConf gcc-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nConf gcc-14 (14.2.0-19 Debian:13.7/stable [amd64])\nConf gcc-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf gcc (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf libstdc++-14-dev (14.2.0-19 Debian:13.7/stable [amd64])\nConf g++-14-x86-64-linux-gnu (14.2.0-19 Debian:13.7/stable [amd64])\nConf g++-14 (14.2.0-19 Debian:13.7/stable [amd64])\nConf g++-x86-64-linux-gnu (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf g++ (4:14.2.0-1 Debian:13.7/stable [amd64])\nConf libdpkg-perl (1.22.22 Debian:13.7/stable [all])\nConf patch (2.8-2 Debian:13.7/stable [amd64])\nConf dpkg-dev (1.22.22 Debian:13.7/stable [all])\nConf build-essential (12.12 Debian:13.7/stable [amd64])\nConf libpkgconf3 (1.8.1-4 Debian:13.7/stable [amd64])\nConf pkgconf-bin (1.8.1-4 Debian:13.7/stable [amd64])\nConf pkgconf (1.8.1-4 Debian:13.7/stable [amd64])\nConf pkg-config (1.8.1-4 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "python-environments",
+      "packages": [
+        "python3-venv"
+      ],
+      "downloadBytes": 2782092,
+      "installedDeltaKiB": 2888,
+      "changes": [
+        {
+          "name": "python3-pip-whl",
+          "version": "25.1.1+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1531,
+          "downloadBytes": 1507328,
+          "installedDeltaKiB": 1531
+        },
+        {
+          "name": "python3-setuptools-whl",
+          "version": "78.1.1-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 1324,
+          "downloadBytes": 1268108,
+          "installedDeltaKiB": 1324
+        },
+        {
+          "name": "python3.13-venv",
+          "version": "3.13.5-2+deb13u5",
+          "previousVersion": null,
+          "installedSizeKiB": 27,
+          "downloadBytes": 5476,
+          "installedDeltaKiB": 27
+        },
+        {
+          "name": "python3-venv",
+          "version": "3.13.5-1",
+          "previousVersion": null,
+          "installedSizeKiB": 6,
+          "downloadBytes": 1180,
+          "installedDeltaKiB": 6
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  python3-pip-whl python3-setuptools-whl python3.13-venv\nThe following NEW packages will be installed:\n  python3-pip-whl python3-setuptools-whl python3-venv python3.13-venv\n0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.\nInst python3-pip-whl (25.1.1+dfsg-1 Debian:13.7/stable [all])\nInst python3-setuptools-whl (78.1.1-0.1 Debian:13.7/stable [all])\nInst python3.13-venv (3.13.5-2+deb13u5 Debian:13.7/stable [amd64])\nInst python3-venv (3.13.5-1 Debian:13.7/stable [amd64])\nConf python3-pip-whl (25.1.1+dfsg-1 Debian:13.7/stable [all])\nConf python3-setuptools-whl (78.1.1-0.1 Debian:13.7/stable [all])\nConf python3.13-venv (3.13.5-2+deb13u5 Debian:13.7/stable [amd64])\nConf python3-venv (3.13.5-1 Debian:13.7/stable [amd64])\n"
+    },
+    {
+      "label": "recommended-baseline",
+      "packages": [
+        "patch",
+        "file",
+        "bzip2",
+        "xz-utils",
+        "zip",
+        "zstd",
+        "wget",
+        "rsync",
+        "tree",
+        "time",
+        "python-is-python3",
+        "iproute2",
+        "iputils-ping",
+        "bind9-dnsutils",
+        "netcat-openbsd",
+        "socat",
+        "python3-venv",
+        "sqlite3",
+        "xxd",
+        "bsdextrautils"
+      ],
+      "downloadBytes": 11294532,
+      "installedDeltaKiB": 37238,
+      "changes": [
+        {
+          "name": "libpopt0",
+          "version": "1.19+dfsg-2",
+          "previousVersion": null,
+          "installedSizeKiB": 245,
+          "downloadBytes": 43844,
+          "installedDeltaKiB": 245
+        },
+        {
+          "name": "rsync",
+          "version": "3.5.0+ds1-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 955,
+          "downloadBytes": 501964,
+          "installedDeltaKiB": 955
+        },
+        {
+          "name": "libmnl0",
+          "version": "1.0.5-3",
+          "previousVersion": null,
+          "installedSizeKiB": 45,
+          "downloadBytes": 11928,
+          "installedDeltaKiB": 45
+        },
+        {
+          "name": "libtirpc-common",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 32,
+          "downloadBytes": 11004,
+          "installedDeltaKiB": 32
+        },
+        {
+          "name": "libtirpc3t64",
+          "version": "1.3.6+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 236,
+          "downloadBytes": 83300,
+          "installedDeltaKiB": 236
+        },
+        {
+          "name": "libxtables12",
+          "version": "1.8.11-2",
+          "previousVersion": null,
+          "installedSizeKiB": 101,
+          "downloadBytes": 31896,
+          "installedDeltaKiB": 101
+        },
+        {
+          "name": "libcap2-bin",
+          "version": "1:2.75-10+deb13u1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 132,
+          "downloadBytes": 36456,
+          "installedDeltaKiB": 132
+        },
+        {
+          "name": "iproute2",
+          "version": "6.15.0-1",
+          "previousVersion": null,
+          "installedSizeKiB": 3774,
+          "downloadBytes": 1089184,
+          "installedDeltaKiB": 3774
+        },
+        {
+          "name": "iputils-ping",
+          "version": "3:20240905-3",
+          "previousVersion": null,
+          "installedSizeKiB": 187,
+          "downloadBytes": 51248,
+          "installedDeltaKiB": 187
+        },
+        {
+          "name": "libfstrm0",
+          "version": "0.6.1-1+b3",
+          "previousVersion": null,
+          "installedSizeKiB": 71,
+          "downloadBytes": 21924,
+          "installedDeltaKiB": 71
+        },
+        {
+          "name": "libjemalloc2",
+          "version": "5.3.0-3",
+          "previousVersion": null,
+          "installedSizeKiB": 876,
+          "downloadBytes": 274324,
+          "installedDeltaKiB": 876
+        },
+        {
+          "name": "libjson-c5",
+          "version": "0.18+ds-1",
+          "previousVersion": null,
+          "installedSizeKiB": 112,
+          "downloadBytes": 45956,
+          "installedDeltaKiB": 112
+        },
+        {
+          "name": "liblmdb0",
+          "version": "0.9.31-1+b2",
+          "previousVersion": null,
+          "installedSizeKiB": 104,
+          "downloadBytes": 45240,
+          "installedDeltaKiB": 104
+        },
+        {
+          "name": "libmaxminddb0",
+          "version": "1.12.2-1",
+          "previousVersion": null,
+          "installedSizeKiB": 57,
+          "downloadBytes": 25800,
+          "installedDeltaKiB": 57
+        },
+        {
+          "name": "libprotobuf-c1",
+          "version": "1.5.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 62,
+          "downloadBytes": 20536,
+          "installedDeltaKiB": 62
+        },
+        {
+          "name": "liburcu8t64",
+          "version": "0.15.2-2",
+          "previousVersion": null,
+          "installedSizeKiB": 363,
+          "downloadBytes": 76304,
+          "installedDeltaKiB": 363
+        },
+        {
+          "name": "libuv1t64",
+          "version": "1.50.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 321,
+          "downloadBytes": 153752,
+          "installedDeltaKiB": 321
+        },
+        {
+          "name": "bind9-libs",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 3649,
+          "downloadBytes": 1250200,
+          "installedDeltaKiB": 3649
+        },
+        {
+          "name": "bind9-host",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 141,
+          "downloadBytes": 56596,
+          "installedDeltaKiB": 141
+        },
+        {
+          "name": "bind9-dnsutils",
+          "version": "1:9.20.30-1~deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 525,
+          "downloadBytes": 167084,
+          "installedDeltaKiB": 525
+        },
+        {
+          "name": "bzip2",
+          "version": "1.0.8-6",
+          "previousVersion": null,
+          "installedSizeKiB": 113,
+          "downloadBytes": 40520,
+          "installedDeltaKiB": 113
+        },
+        {
+          "name": "libmagic-mgc",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 10154,
+          "downloadBytes": 337800,
+          "installedDeltaKiB": 10154
+        },
+        {
+          "name": "libmagic1t64",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 244,
+          "downloadBytes": 109312,
+          "installedDeltaKiB": 244
+        },
+        {
+          "name": "file",
+          "version": "1:5.46-5",
+          "previousVersion": null,
+          "installedSizeKiB": 79,
+          "downloadBytes": 43560,
+          "installedDeltaKiB": 79
+        },
+        {
+          "name": "wget",
+          "version": "1.25.0-2",
+          "previousVersion": null,
+          "installedSizeKiB": 3784,
+          "downloadBytes": 984500,
+          "installedDeltaKiB": 3784
+        },
+        {
+          "name": "xz-utils",
+          "version": "5.8.1-1+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 1424,
+          "downloadBytes": 659760,
+          "installedDeltaKiB": 1424
+        },
+        {
+          "name": "bsdextrautils",
+          "version": "2.41.5-0+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 339,
+          "downloadBytes": 94796,
+          "installedDeltaKiB": 339
+        },
+        {
+          "name": "libwrap0",
+          "version": "7.6.q-36",
+          "previousVersion": null,
+          "installedSizeKiB": 110,
+          "downloadBytes": 55256,
+          "installedDeltaKiB": 110
+        },
+        {
+          "name": "netcat-openbsd",
+          "version": "1.229-1",
+          "previousVersion": null,
+          "installedSizeKiB": 109,
+          "downloadBytes": 42520,
+          "installedDeltaKiB": 109
+        },
+        {
+          "name": "patch",
+          "version": "2.8-2",
+          "previousVersion": null,
+          "installedSizeKiB": 242,
+          "downloadBytes": 134328,
+          "installedDeltaKiB": 242
+        },
+        {
+          "name": "python-is-python3",
+          "version": "3.13.3-1",
+          "previousVersion": null,
+          "installedSizeKiB": 16,
+          "downloadBytes": 3204,
+          "installedDeltaKiB": 16
+        },
+        {
+          "name": "python3-pip-whl",
+          "version": "25.1.1+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 1531,
+          "downloadBytes": 1507328,
+          "installedDeltaKiB": 1531
+        },
+        {
+          "name": "python3-setuptools-whl",
+          "version": "78.1.1-0.1",
+          "previousVersion": null,
+          "installedSizeKiB": 1324,
+          "downloadBytes": 1268108,
+          "installedDeltaKiB": 1324
+        },
+        {
+          "name": "python3.13-venv",
+          "version": "3.13.5-2+deb13u5",
+          "previousVersion": null,
+          "installedSizeKiB": 27,
+          "downloadBytes": 5476,
+          "installedDeltaKiB": 27
+        },
+        {
+          "name": "python3-venv",
+          "version": "3.13.5-1",
+          "previousVersion": null,
+          "installedSizeKiB": 6,
+          "downloadBytes": 1180,
+          "installedDeltaKiB": 6
+        },
+        {
+          "name": "socat",
+          "version": "1.8.0.3-1+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 1802,
+          "downloadBytes": 423768,
+          "installedDeltaKiB": 1802
+        },
+        {
+          "name": "sqlite3",
+          "version": "3.46.1-7+deb13u2",
+          "previousVersion": null,
+          "installedSizeKiB": 587,
+          "downloadBytes": 384144,
+          "installedDeltaKiB": 587
+        },
+        {
+          "name": "time",
+          "version": "1.9-0.2",
+          "previousVersion": null,
+          "installedSizeKiB": 129,
+          "downloadBytes": 50776,
+          "installedDeltaKiB": 129
+        },
+        {
+          "name": "tree",
+          "version": "2.2.1-1",
+          "previousVersion": null,
+          "installedSizeKiB": 129,
+          "downloadBytes": 59392,
+          "installedDeltaKiB": 129
+        },
+        {
+          "name": "xxd",
+          "version": "2:9.1.1230-2+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 154,
+          "downloadBytes": 99056,
+          "installedDeltaKiB": 154
+        },
+        {
+          "name": "zip",
+          "version": "3.0-15+deb13u1",
+          "previousVersion": null,
+          "installedSizeKiB": 627,
+          "downloadBytes": 234964,
+          "installedDeltaKiB": 627
+        },
+        {
+          "name": "zstd",
+          "version": "1.5.7+dfsg-1",
+          "previousVersion": null,
+          "installedSizeKiB": 2320,
+          "downloadBytes": 756244,
+          "installedDeltaKiB": 2320
+        }
+      ],
+      "simulation": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following additional packages will be installed:\n  bind9-host bind9-libs libcap2-bin libfstrm0 libjemalloc2 libjson-c5 liblmdb0\n  libmagic-mgc libmagic1t64 libmaxminddb0 libmnl0 libpopt0 libprotobuf-c1\n  libtirpc-common libtirpc3t64 liburcu8t64 libuv1t64 libwrap0 libxtables12\n  python3-pip-whl python3-setuptools-whl python3.13-venv\nSuggested packages:\n  bzip2-doc mmdb-bin ed diffutils-doc openssh-server python3-braceexpand\n  sqlite3-doc\nRecommended packages:\n  linux-sysctl-defaults libpam-cap\nThe following NEW packages will be installed:\n  bind9-dnsutils bind9-host bind9-libs bsdextrautils bzip2 file iproute2\n  iputils-ping libcap2-bin libfstrm0 libjemalloc2 libjson-c5 liblmdb0\n  libmagic-mgc libmagic1t64 libmaxminddb0 libmnl0 libpopt0 libprotobuf-c1\n  libtirpc-common libtirpc3t64 liburcu8t64 libuv1t64 libwrap0 libxtables12\n  netcat-openbsd patch python-is-python3 python3-pip-whl\n  python3-setuptools-whl python3-venv python3.13-venv rsync socat sqlite3 time\n  tree wget xxd xz-utils zip zstd\n0 upgraded, 42 newly installed, 0 to remove and 0 not upgraded.\nInst libpopt0 (1.19+dfsg-2 Debian:13.7/stable [amd64])\nInst rsync (3.5.0+ds1-0+deb13u1 Debian-Security:13/stable-security [amd64])\nInst libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nInst libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nInst libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nInst libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nInst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nInst iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nInst iputils-ping (3:20240905-3 Debian:13.7/stable [amd64])\nInst libfstrm0 (0.6.1-1+b3 Debian:13.7/stable [amd64])\nInst libjemalloc2 (5.3.0-3 Debian:13.7/stable [amd64])\nInst libjson-c5 (0.18+ds-1 Debian:13.7/stable [amd64])\nInst liblmdb0 (0.9.31-1+b2 Debian:13.7/stable [amd64])\nInst libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nInst libprotobuf-c1 (1.5.1-1 Debian:13.7/stable [amd64])\nInst liburcu8t64 (0.15.2-2 Debian:13.7/stable [amd64])\nInst libuv1t64 (1.50.0-2 Debian:13.7/stable [amd64])\nInst bind9-libs (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst bind9-host (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst bind9-dnsutils (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nInst bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nInst libmagic-mgc (1:5.46-5 Debian:13.7/stable [amd64])\nInst libmagic1t64 (1:5.46-5 Debian:13.7/stable [amd64])\nInst file (1:5.46-5 Debian:13.7/stable [amd64])\nInst wget (1.25.0-2 Debian:13.7/stable [amd64])\nInst xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nInst bsdextrautils (2.41.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nInst netcat-openbsd (1.229-1 Debian:13.7/stable [amd64])\nInst patch (2.8-2 Debian:13.7/stable [amd64])\nInst python-is-python3 (3.13.3-1 Debian:13.7/stable [all])\nInst python3-pip-whl (25.1.1+dfsg-1 Debian:13.7/stable [all])\nInst python3-setuptools-whl (78.1.1-0.1 Debian:13.7/stable [all])\nInst python3.13-venv (3.13.5-2+deb13u5 Debian:13.7/stable [amd64])\nInst python3-venv (3.13.5-1 Debian:13.7/stable [amd64])\nInst socat (1.8.0.3-1+deb13u1 Debian:13.7/stable [amd64])\nInst sqlite3 (3.46.1-7+deb13u2 Debian:13.7/stable [amd64])\nInst time (1.9-0.2 Debian:13.7/stable [amd64])\nInst tree (2.2.1-1 Debian:13.7/stable [amd64])\nInst xxd (2:9.1.1230-2+deb13u1 Debian-Security:13/stable-security [amd64])\nInst zip (3.0-15+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nInst zstd (1.5.7+dfsg-1 Debian:13.7/stable [amd64])\nConf libpopt0 (1.19+dfsg-2 Debian:13.7/stable [amd64])\nConf rsync (3.5.0+ds1-0+deb13u1 Debian-Security:13/stable-security [amd64])\nConf libmnl0 (1.0.5-3 Debian:13.7/stable [amd64])\nConf libtirpc-common (1.3.6+ds-1 Debian:13.7/stable [all])\nConf libtirpc3t64 (1.3.6+ds-1 Debian:13.7/stable [amd64])\nConf libxtables12 (1.8.11-2 Debian:13.7/stable [amd64])\nConf libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])\nConf iproute2 (6.15.0-1 Debian:13.7/stable [amd64])\nConf iputils-ping (3:20240905-3 Debian:13.7/stable [amd64])\nConf libfstrm0 (0.6.1-1+b3 Debian:13.7/stable [amd64])\nConf libjemalloc2 (5.3.0-3 Debian:13.7/stable [amd64])\nConf libjson-c5 (0.18+ds-1 Debian:13.7/stable [amd64])\nConf liblmdb0 (0.9.31-1+b2 Debian:13.7/stable [amd64])\nConf libmaxminddb0 (1.12.2-1 Debian:13.7/stable [amd64])\nConf libprotobuf-c1 (1.5.1-1 Debian:13.7/stable [amd64])\nConf liburcu8t64 (0.15.2-2 Debian:13.7/stable [amd64])\nConf libuv1t64 (1.50.0-2 Debian:13.7/stable [amd64])\nConf bind9-libs (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf bind9-host (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf bind9-dnsutils (1:9.20.30-1~deb13u1 Debian-Security:13/stable-security [amd64])\nConf bzip2 (1.0.8-6 Debian:13.7/stable [amd64])\nConf libmagic-mgc (1:5.46-5 Debian:13.7/stable [amd64])\nConf libmagic1t64 (1:5.46-5 Debian:13.7/stable [amd64])\nConf file (1:5.46-5 Debian:13.7/stable [amd64])\nConf wget (1.25.0-2 Debian:13.7/stable [amd64])\nConf xz-utils (5.8.1-1+deb13u2 Debian-Security:13/stable-security [amd64])\nConf bsdextrautils (2.41.5-0+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf libwrap0 (7.6.q-36 Debian:13.7/stable [amd64])\nConf netcat-openbsd (1.229-1 Debian:13.7/stable [amd64])\nConf patch (2.8-2 Debian:13.7/stable [amd64])\nConf python-is-python3 (3.13.3-1 Debian:13.7/stable [all])\nConf python3-pip-whl (25.1.1+dfsg-1 Debian:13.7/stable [all])\nConf python3-setuptools-whl (78.1.1-0.1 Debian:13.7/stable [all])\nConf python3.13-venv (3.13.5-2+deb13u5 Debian:13.7/stable [amd64])\nConf python3-venv (3.13.5-1 Debian:13.7/stable [amd64])\nConf socat (1.8.0.3-1+deb13u1 Debian:13.7/stable [amd64])\nConf sqlite3 (3.46.1-7+deb13u2 Debian:13.7/stable [amd64])\nConf time (1.9-0.2 Debian:13.7/stable [amd64])\nConf tree (2.2.1-1 Debian:13.7/stable [amd64])\nConf xxd (2:9.1.1230-2+deb13u1 Debian-Security:13/stable-security [amd64])\nConf zip (3.0-15+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])\nConf zstd (1.5.7+dfsg-1 Debian:13.7/stable [amd64])\n"
+    }
+  ],
+  "combinedScenarioProvenance": {
+    "generatedAt": "2026-11-06T00:33:14.499Z",
+    "aptSources": "Types: deb\n# http://snapshot.debian.org/archive/debian/20261104T212339Z\nURIs: http://deb.debian.org/debian\nSuites: trixie trixie-updates\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.pgp\n\nTypes: deb\n# http://snapshot.debian.org/archive/debian-security/20261104T212339Z\nURIs: http://deb.debian.org/debian-security\nSuites: trixie-security\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.pgp\n",
+    "aptUpdate": "Get:1 http://deb.debian.org/debian trixie InRelease [140 kB]\nGet:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]\nGet:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]\nGet:4 http://deb.debian.org/debian trixie/main amd64 Packages [9678 kB]\nGet:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [1108 B]\nGet:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [298 kB]\nFetched 10.2 MB in 1s (8540 kB/s)\nReading package lists...\n"
+  }
+}
