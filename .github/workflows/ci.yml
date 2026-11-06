@@ -64,7 +64,8 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"
-      # Starts T3 with T3CODE_TOOL_GROUPS=all, then with an unknown group.
+      # Starts T3 with T3CODE_TOOL_GROUPS=all (waits for the dev payload to
+      # install), then with an unknown group, then offline with dev reselected.
       - name: Test container replacement
         run: bun test test/container-replacement.test.ts
         env:

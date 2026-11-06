@@ -18,7 +18,7 @@
 		"lint:biome": "biome check .",
 		"lint:typecheck": "tsc --noEmit",
 		"lint:fix": "biome check --write .",
-		"test": "bun test test/app-yaml.test.ts",
+		"test": "bun test test/app-yaml.test.ts test/tool-payloads.test.ts",
 		"test:all": "bun test",
 		"test:integration": "APP_T3CODE_INTEGRATION=1 bun test test/integration/"
 	},

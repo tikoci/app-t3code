@@ -161,12 +161,15 @@ RUN apt-get update && \
 ENV HOME=/data
 ENV T3CODE_HOME=/data/.t3
 ENV NPM_CONFIG_PREFIX=/data/.local
-ENV PATH="/data/.local/bin:/data/.bun/bin:/opt/bun/bin:${PATH}"
+# Tool-group payload shims (issue #5) follow the user's own installs, so a
+# tool the user installed wins; a project's node_modules/.bin wins via npx.
+ENV PATH="/data/.local/bin:/data/.bun/bin:/data/.local/share/t3code-tools/bin:/opt/bun/bin:${PATH}"
 
 COPY docker-entrypoint.sh /
 COPY bin /usr/local/bin
 COPY profile.sh /etc/profile.d/t3code.sh
-COPY scripts/image-inventory.ts scripts/tool-groups.ts /usr/local/lib/t3code/
+COPY scripts/image-inventory.ts scripts/tool-groups.ts scripts/tool-payloads.ts /usr/local/lib/t3code/
+COPY scripts/groups /usr/local/lib/t3code/groups
 
 RUN install -d -o node -g node /usr/share/t3code/inventory
 

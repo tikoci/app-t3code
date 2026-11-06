@@ -267,9 +267,10 @@ use spaces on a router. Names are case-insensitive. Unset, empty, or `none`
 means core only; `all` selects every group. An unknown name is logged as a
 warning and ignored. T3 always starts, whatever the selection says.
 
-**This release reports groups; it does not install them yet.** The selection
-is parsed, logged, and reported to agents. A selected group whose tools are
-not in the image reports `not-implemented`. `labs`, `browser` and
+The selection is parsed, logged, and reported to agents. `dev` is the first
+group delivered as a persistent payload in the home (see
+[Persistent payloads](#persistent-payloads-dev)). Other selected groups whose
+tools are not in the image report `not-implemented`. `labs`, `browser` and
 `agents-extra` are still baked into the image, so their tools are present
 whether or not you select them.
 
@@ -279,7 +280,7 @@ whether or not you select them.
 | `labs` | quickchr, QEMU x86/ARM64 emulators, qemu-img, firmware | baked in |
 | `vpn` | WireGuard tools, strongSwan (`swanctl`, `pki`, charon), OpenVPN, sstp-client, ppp, xl2tpd, pppoe, ike-scan; no tunnel or service starts by default | not yet |
 | `routing` | BIRD 2, lldpd, ndisc6, arping, arp-scan, nftables, conntrack, nmap | not yet |
-| `dev` | TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks; project lockfiles win | not yet |
+| `dev` | TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks; project lockfiles win | installs into `/data` when selected |
 | `browser` | Native libraries for T3's built-in browser (the browser downloads itself on first use) | baked in |
 | `agents-extra` | Provider CLIs beyond the core provider (Codex, opencode, Muse today; core provider not chosen yet) | baked in |
 
@@ -303,18 +304,70 @@ files (`present`, `missing`). The states are:
 | State | Meaning |
 |---|---|
 | `not-selected` | Not in `T3CODE_TOOL_GROUPS` |
+| `pending` | Selected; waiting for the background installer |
+| `installing` | The background installer is working on it, including retry back-off |
 | `ready` | Selected, and every check passed |
-| `failed` | Selected, and checks failed for tools the image should provide |
+| `failed` | Selected, and checks failed for tools the image should provide, or the last install failed and nothing usable is active |
 | `not-implemented` | Selected, but this image has no way to provide the group yet |
-| `pending` | Reserved for the background installer; not reported by this image |
 
 Checks are presence probes (PATH, files, `ldconfig`), not functional tests.
+Payload groups are checked at their own shims and manifest instead, so the
+result does not depend on the caller's PATH.
 `labs` never boots a CHR to check readiness. Core checks (`t3`, Node, Bun,
 Python, Git/SSH, centrs and the core network tools) are reported separately
 as `core.state`. At each start the entrypoint logs warnings and a summary to
 the container log and writes the same JSON to `/tmp/t3code-tools/status.json`.
 The output also points at the immutable build inventory in
 `/usr/share/t3code/inventory`.
+
+#### Persistent payloads (`dev`)
+
+A payload group installs into the home volume, not the image, so it costs
+nothing until selected and survives image replacement and `auto-update`:
+
+- **Start never waits.** At each start the entrypoint relinks payloads that
+  are already in the home (offline, no download) and then runs
+  `t3code-tools install` in the background. T3 is serving while a first
+  install is `pending` or `installing`.
+- **Pinned and verified.** The image ships the group's `package.json` and
+  `package-lock.json` (with npm integrity hashes); the installer runs
+  `npm ci --ignore-scripts` from them. Each command must answer `--version`
+  before the payload gets a `manifest.json` and is activated. A payload without
+  a manifest is never trusted.
+- **Versioned and atomic.** The payload id is derived from the lockfile, the
+  CPU architecture and Node's module ABI. Payloads live in
+  `/data/.local/share/t3code-tools/groups/<group>/<id>/`; a `current` link is
+  swapped atomically, and shims in `/data/.local/share/t3code-tools/bin` are
+  on PATH after `/data/.local/bin` and `/data/.bun/bin`. A tool you install
+  yourself wins, and a project's own `node_modules/.bin` (`bun run`, `npx`)
+  still wins.
+- **Refresh without downtime.** A new image with a changed lockfile (a
+  security refresh) or a different Node ABI wants a new payload. The previous
+  one stays active and the group stays `ready` (`payload.stale: true`) until
+  the new one is verified. If the refresh fails, the previous payload keeps
+  working. The installer keeps the active payload and the one before it and
+  deletes older ones.
+- **Bounded.** Groups install one at a time under a lock
+  (`install.lock`, recovered if its holder died). Each group gets three
+  attempts with back-off (30 minute cap per attempt); with no network at all
+  npm needs about five minutes to give up. The installer needs the payload's
+  size twice (payload plus download cache) plus 256 MiB of free space, and
+  otherwise fails with a `low disk` error rather than filling the volume. It
+  never deletes projects, VMs or other home data. Interrupted installs
+  (`.staging-*`) are removed on the next run.
+- **Deselecting** a group removes its shims at the next start but keeps its
+  payload, so selecting it again needs no download. `t3code-tools prune`
+  deletes payloads that no selected group uses.
+
+`t3code-tools status --json` reports `payload.desired`, `payload.active`,
+`stale`, `installed`, the verified `activeVersions` and the last installer
+result with its error. The installer log is
+`/data/.local/share/t3code-tools/install.log`. Run `t3code-tools install` in
+a terminal to retry a failed group now; otherwise the next start retries it.
+
+The `dev` payload is about 154 MiB on amd64 (TypeScript 7.0.2, CSpell 10.4.0,
+markdownlint-cli2 0.24.0, Biome 2.6.5). Maintainers refresh the pins with
+`make dev-lock` after editing `scripts/groups/dev/package.json`.
 
 #### Changing groups on RouterOS
 

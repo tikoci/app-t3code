@@ -107,14 +107,13 @@ test.skipIf(!image)(
 		const run = (...args: string[]) => docker("exec", name, ...args);
 		// No other --env: like a RouterOS env-list replacement that drops the
 		// YAML defaults, so the image ENV defaults must carry correct operation.
-		const start = (groups: string) =>
+		const start = (groups: string, offline = false) =>
 			docker(
 				"run",
 				"--detach",
 				"--name",
 				name,
-				"--publish",
-				"127.0.0.1::3773",
+				...(offline ? ["--network", "none"] : ["--publish", "127.0.0.1::3773"]),
 				"--volume",
 				`${volume}:/data`,
 				"--env",
@@ -126,7 +125,17 @@ test.skipIf(!image)(
 			type Status = {
 				selector: { selected: string[]; unknown: string[]; warnings: string[] };
 				core: { state: string; missing: string[] };
-				groups: { name: string; selected: boolean; state: string }[];
+				groups: {
+					name: string;
+					selected: boolean;
+					state: string;
+					payload?: {
+						active: string | null;
+						installed: string[];
+						activeVersions: Record<string, string> | null;
+						last: { state: string; updatedAt: string; error?: string } | null;
+					};
+				}[];
 				buildInventory: { present: boolean };
 			};
 			const live = JSON.parse(await run("t3code-tools", "status", "--json")) as Status;
@@ -134,13 +143,28 @@ test.skipIf(!image)(
 			expect(written.selector).toEqual(live.selector);
 			return live;
 		};
+		/** Wait for the background installer to settle a payload group. */
+		const settled = async (group: string, timeoutMs: number) => {
+			const deadline = Date.now() + timeoutMs;
+			for (;;) {
+				const status = await toolStatus();
+				const found = status.groups.find((g) => g.name === group);
+				if (found && !["pending", "installing"].includes(found.state)) return { status, group: found };
+				if (Date.now() > deadline) throw new Error(`${group} still ${found?.state}:\n${await run("cat", "/data/.local/share/t3code-tools/install.log").catch(() => "")}`);
+				await Bun.sleep(2000);
+			}
+		};
+		const devTools = "cd /tmp; tsc --version; biome --version; cspell --version; markdownlint-cli2 --version";
 		await docker("volume", "create", volume);
 		try {
 			// CI exercises every group so the reported states cover the full set.
 			await start("all");
 			await waitForServer(name);
 			expect(await run("printenv", "T3CODE_TELEMETRY_ENABLED")).toBe("false");
-			const all = await toolStatus();
+			// T3 is already serving; the dev payload installs in the background.
+			const { status: all, group: devFirst } = await settled("dev", 180_000);
+			expect(devFirst.payload?.last?.error).toBeUndefined();
+			expect(devFirst.payload?.activeVersions?.["tsc"]).toStartWith("Version ");
 			expect(all.core).toMatchObject({ state: "ready", missing: [] });
 			expect(all.buildInventory.present).toBe(true);
 			expect(all.selector.warnings).toEqual([]);
@@ -150,7 +174,7 @@ test.skipIf(!image)(
 				labs: "ready",
 				vpn: "not-implemented",
 				routing: "not-implemented",
-				dev: "not-implemented",
+				dev: "ready",
 				browser: "ready",
 				"agents-extra": "ready",
 			});
@@ -158,7 +182,7 @@ test.skipIf(!image)(
 				await run(
 					"bash",
 					shell,
-					"set -e; bun --version; bunx --version; quickchr --help; centrs explain '/ip/address print' --json; muse --version; qemu-system-x86_64 --version; qemu-system-aarch64 --version; qemu-img --version",
+					`set -e; bun --version; bunx --version; quickchr --help; centrs explain '/ip/address print' --json; muse --version; qemu-system-x86_64 --version; qemu-system-aarch64 --version; qemu-img --version; ${devTools}`,
 				);
 			}
 			await run(
@@ -217,6 +241,11 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			expect(partial.selector.selected).toEqual(["capture", "labs"]);
 			expect(partial.selector.unknown).toEqual(["bogus"]);
 			expect(partial.groups.find((group) => group.name === "vpn")?.state).toBe("not-selected");
+			// Deselected: shims gone, payload kept for a later reselection.
+			const devOff = partial.groups.find((group) => group.name === "dev");
+			expect(devOff?.state).toBe("not-selected");
+			expect(devOff?.payload?.installed).toEqual([devFirst.payload?.active as string]);
+			expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", "command -v tsc"]).exitCode).not.toBe(0);
 			const logs = Bun.spawnSync(["docker", "logs", name]);
 			expect(`${logs.stdout}${logs.stderr}`).toContain('unknown group "bogus" ignored');
 			await run("test", "!", "-e", "/tmp/replacement-fixture");
@@ -264,6 +293,16 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			expect(await run("bash", "-lc", "persistence-tool-fixture")).toBe(
 				"persistent-bun-tool",
 			);
+
+			// Reselect dev in a third container with no network at all: the
+			// payload in the home is relinked at start, with no download.
+			await docker("rm", "--force", name);
+			await start("dev", true);
+			const { group: devOffline } = await settled("dev", 60_000);
+			expect(devOffline.state).toBe("ready");
+			expect(devOffline.payload?.active).toBe(devFirst.payload?.active as string);
+			expect(devOffline.payload?.last?.updatedAt).toBe(devFirst.payload?.last?.updatedAt as string);
+			for (const shell of ["-c", "-lc"]) await run("bash", shell, `set -e; ${devTools}`);
 		} finally {
 			await docker("rm", "--force", name).catch(() => {});
 			await docker("volume", "rm", volume);

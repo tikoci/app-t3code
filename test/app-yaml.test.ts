@@ -244,14 +244,15 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 	test("status reports every group with a truthful state", () => {
 		const nothing: Probe = { which: () => null, exists: () => false, library: () => null };
 		const everything: Probe = { which: (c) => `/usr/bin/${c}`, exists: () => true, library: (l) => `/lib/${l}` };
-		const missing = buildStatus("all", nothing, "/nonexistent");
+		const missing = buildStatus("all", nothing, "/nonexistent", null);
 		expect(missing.core.state).toBe("degraded");
 		expect(missing.buildInventory.present).toBe(false);
 		for (const group of missing.groups) {
 			expect(group.selected).toBe(true);
-			expect(group.state).toBe(group.delivery === "image" ? "failed" : "not-implemented");
+			const expected: Record<string, string> = { image: "failed", npm: "pending", none: "not-implemented" };
+			expect(group.state as string).toBe(expected[group.delivery] as string);
 		}
-		const present = buildStatus("labs", everything, "/nonexistent");
+		const present = buildStatus("labs", everything, "/nonexistent", null);
 		expect(present.core.state).toBe("ready");
 		expect(Object.fromEntries(present.groups.map((g) => [g.name, g.state]))).toEqual({
 			capture: "not-selected",
@@ -263,7 +264,7 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 			"agents-extra": "not-selected",
 		});
 		// Groups without an installer never claim ready, even if tools happen to exist.
-		expect(buildStatus("dev", everything, "/nonexistent").groups.find((g) => g.name === "dev")?.state).toBe("not-implemented");
+		expect(buildStatus("capture", everything, "/nonexistent", null).groups.find((g) => g.name === "capture")?.state).toBe("not-implemented");
 	});
 });
 
