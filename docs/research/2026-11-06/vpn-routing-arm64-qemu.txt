@@ -1,5 +1,8 @@
 # arm64 under QEMU user-mode emulation (binfmt) on orca, habitat C. Base node:24-trixie-slim + Bun 1.4.4,
 # this branch's scripts. Runner: lock as root, install and test/*-tools.sh as node.
+# Recorded before the review rounds: routing still held lldpd (its summary below
+# says "LLDP/CDP"), and the closure counts include it. Since then lldpd moved to
+# the labs guest; see vpn-routing-payloads.md.
 
 == environment
 date: 2026-11-06T19:01:04Z  arch: arm64  uname -m: aarch64  Debian GNU/Linux 13 (trixie)
