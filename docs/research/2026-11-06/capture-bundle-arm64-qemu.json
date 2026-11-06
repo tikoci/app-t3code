@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-11-06T14:01:59.285Z",
+  "habitat": "C (orca)",
+  "image": "node:24-trixie-slim",
+  "imageId": "sha256:0820eaa85e07d0490446dd01d14707e17e6108a36988cf374899cd057eb3812d",
+  "platform": "linux/arm64",
+  "exitCode": 0,
+  "wallSeconds": 496.728,
+  "measurements": {
+    "arch": "arm64",
+    "triplet": "aarch64-linux-gnu",
+    "apt_update_s": "9.684",
+    "packages": "67",
+    "download_bytes": "37099120",
+    "a_download_s": "49.381",
+    "a_verify_s": "21.082",
+    "a_extract_s": "13.494",
+    "a_installed_bytes": "184023513",
+    "a_debs_bytes": "37099120",
+    "a_tar_gz_bytes": "51896892",
+    "a_libdirs": "/data/.local/share/t3code-tools/groups/capture/spike/root/usr/lib/aarch64-linux-gnu",
+    "a_overlap": "0",
+    "a_tshark_first_s": "1.972",
+    "a_tshark_warm_avg_s": "2.019",
+    "a_wrapper_overhead_ms": "72.0",
+    "b_install_s": "99.601",
+    "b_new_packages": "67",
+    "b_files_bytes": "178919014",
+    "b_layer_gz_bytes": "47431144",
+    "b_tshark_first_s": "2.418"
+  }
+}

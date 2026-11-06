@@ -9,6 +9,7 @@ import { activate, activateIfIdle, type Compat, installGroups, type PayloadEnv, 
 const SPEC = join(import.meta.dir, "..", "scripts", "groups");
 const dev = GROUPS.find((g) => g.name === "dev");
 if (!dev) throw new Error("dev group missing");
+// The npm group alone: these tests cover the shared lifecycle with npm.
 const npmGroups = GROUPS.filter((g) => g.delivery === "npm");
 const nothing: Probe = { which: () => null, exists: () => false, library: () => null };
 
@@ -53,7 +54,12 @@ beforeEach(() => {
 		root: join(tmp, "home", ".local/share/t3code-tools"),
 		specDir: join(tmp, "spec"),
 		compat: () => compat,
+		debCompat: () => null,
 		npm: [fakeNpm(tmp)],
+		dpkgDeb: ["false"],
+		fetch: async () => new Response("offline", { status: 503 }),
+		snapshotBase: "http://snapshot.invalid",
+		imageRoot: join(tmp, "image"),
 		sleep: async () => {},
 		log: () => {},
 		freeBytes: () => 10 * 1024 ** 3,
@@ -243,7 +249,18 @@ process.exit(r.locked ? 0 : 3);
 		const second = await installGroups(npmGroups, ["dev"], env);
 		expect(second.locked).toBe(false);
 		await expect(prunePayloads(npmGroups, [], env)).rejects.toThrow("installer is running");
-		expect(JSON.parse(readFileSync(lock, "utf8"))).toMatchObject({ pid: child.pid, child: { pid: expect.any(Number) } });
+		// The installer records npm's pid just after spawning it, while npm itself
+		// writes npm-calls at once: two processes, so wait for the record.
+		let record: { pid?: number; child?: { pid: number } } = {};
+		for (let i = 0; i < 200 && !record.child; i++) {
+			try {
+				record = JSON.parse(readFileSync(lock, "utf8"));
+			} catch {
+				// Caught mid-rewrite (truncate, then write): read again.
+			}
+			if (!record.child) await Bun.sleep(25);
+		}
+		expect(record).toMatchObject({ pid: child.pid, child: { pid: expect.any(Number) } });
 
 		rmSync(join(tmp, "hold"));
 		expect(await child.exited).toBe(0);
@@ -322,7 +339,7 @@ await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 		const result = await installGroups(npmGroups, ["dev"], env);
 		clearTimeout(removeHold);
 		expect(result.locked).toBe(true);
-		expect(logs.some((line) => line.includes(`stopping npm (pid ${npm?.pid})`))).toBe(true);
+		expect(logs.some((line) => line.includes(`stopping payload child (pid ${npm?.pid})`))).toBe(true);
 		expect(processStartTicks(npm?.pid as number)).toBeNull();
 		expect(readdirSync(join(env.root, "groups", "dev")).filter((n) => n.startsWith(".staging-"))).toEqual([]);
 		expect(result.results["dev"]?.state).toBe("ready");

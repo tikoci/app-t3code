@@ -1,0 +1,6 @@
+# habitat C (orca). `bun scripts/research-capture-bundle.ts --snapshot capture-debs.lock.json tcpdump <dir>` (amd64 lock):
+# with its mirror URL forced to a 404, so only snapshot.debian.org can supply it. One line per run.
+# Earlier the same morning (not timestamped): one run OK in 17.8 s; one run FAIL with HTTP 504 on the API lookup
+# even after the client's 5 s and 20 s retries. The installer's three attempts (15 s, 60 s back-off) add further chances.
+2026-11-06T13:43:31Z OK {"source":"https://snapshot.debian.org/file/6dcce1d1f65b99c8b4da90686cc51c1185d4b4fe","ms":15819,"pinnedSha256":"c35a180eb0ee118976c4648473de0beb36788dc2ec6986ab880722f5a9868ba6"} file-sha256=c35a180eb0ee118976c4648473de0beb36788dc2ec6986ab880722f5a9868ba6
+2026-11-06T13:44:15Z OK (committed helper) {"source":"https://snapshot.debian.org/file/6dcce1d1f65b99c8b4da90686cc51c1185d4b4fe","ms":111,"pinnedSha256":"c35a180eb0ee118976c4648473de0beb36788dc2ec6986ab880722f5a9868ba6"} file-sha256=c35a180eb0ee118976c4648473de0beb36788dc2ec6986ab880722f5a9868ba6

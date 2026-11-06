@@ -1,0 +1,560 @@
+{
+  "schemaVersion": 1,
+  "group": "capture",
+  "roots": [
+    "tcpdump",
+    "tshark",
+    "wireshark-common",
+    "nfdump"
+  ],
+  "arch": "amd64",
+  "distro": "debian-trixie",
+  "packages": [
+    {
+      "name": "libbcg729-0",
+      "version": "1.1.1-3+deb13u1",
+      "architecture": "amd64",
+      "size": 35608,
+      "installedSize": 87040,
+      "sha256": "5b0175dd97a54acae860a6b228683bad092ae5dd02eaf64fb4664b7b9b7e3f01",
+      "filename": "pool/main/b/bcg729/libbcg729-0_1.1.1-3+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/b/bcg729/libbcg729-0_1.1.1-3%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/b/bcg729/libbcg729-0_1.1.1-3%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libcairo2",
+      "version": "1.18.4-1+b1",
+      "architecture": "amd64",
+      "size": 537556,
+      "installedSize": 1424384,
+      "sha256": "01390b049661e4cc8bd39cef78b41c2587d4035619d3b00d6c7846f43d80bbba",
+      "filename": "pool/main/c/cairo/libcairo2_1.18.4-1+b1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/c/cairo/libcairo2_1.18.4-1%2bb1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/c/cairo/libcairo2_1.18.4-1%2bb1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libcares2",
+      "version": "1.34.5-1+deb13u1",
+      "architecture": "amd64",
+      "size": 98272,
+      "installedSize": 288768,
+      "sha256": "5034a2c34ea4730797df1a5f6a0ec142d7d09ce6923c06e167f08ad2e69a4218",
+      "filename": "pool/main/c/c-ares/libcares2_1.34.5-1+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/c/c-ares/libcares2_1.34.5-1%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/c/c-ares/libcares2_1.34.5-1%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libdatrie1",
+      "version": "0.2.13-3+b1",
+      "architecture": "amd64",
+      "size": 38132,
+      "installedSize": 78848,
+      "sha256": "339eb88f23d72b8f0b7b1aebcefbab6de600d97b88bc6222dd8aad11d2ca9051",
+      "filename": "pool/main/libd/libdatrie/libdatrie1_0.2.13-3+b1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libd/libdatrie/libdatrie1_0.2.13-3%2bb1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libd/libdatrie/libdatrie1_0.2.13-3%2bb1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libdbi1t64",
+      "version": "0.9.0-6.1+b1",
+      "architecture": "amd64",
+      "size": 26588,
+      "installedSize": 96256,
+      "sha256": "95fb48d37afb9b89e8eab6b3ea80d24f2cfc4979bf059d51aa999974a28bc9da",
+      "filename": "pool/main/libd/libdbi/libdbi1t64_0.9.0-6.1+b1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libd/libdbi/libdbi1t64_0.9.0-6.1%2bb1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libd/libdbi/libdbi1t64_0.9.0-6.1%2bb1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libdeflate0",
+      "version": "1.23-2",
+      "architecture": "amd64",
+      "size": 47344,
+      "installedSize": 104448,
+      "sha256": "5fe37fb79d53f5c91da6ba3ac4c1a8453e1f2b1ff0e0ea45189c5338bbfdbf82",
+      "filename": "pool/main/libd/libdeflate/libdeflate0_1.23-2_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libd/libdeflate/libdeflate0_1.23-2_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libd/libdeflate/libdeflate0_1.23-2_amd64.deb"
+      ]
+    },
+    {
+      "name": "libfribidi0",
+      "version": "1.0.16-1",
+      "architecture": "amd64",
+      "size": 26484,
+      "installedSize": 149504,
+      "sha256": "f8c35ec8606d0843bd3cf020c6cfa39ddfe717ec58ed826b5855ba9927eb0d55",
+      "filename": "pool/main/f/fribidi/libfribidi0_1.0.16-1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/f/fribidi/libfribidi0_1.0.16-1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/f/fribidi/libfribidi0_1.0.16-1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libgcrypt20",
+      "version": "1.11.0-7+deb13u1",
+      "architecture": "amd64",
+      "size": 843104,
+      "installedSize": 2046976,
+      "sha256": "f0eb41f8cb40896e0822e9ab65611e8383c12b721c76c54764f744abb4a8c247",
+      "filename": "pool/main/libg/libgcrypt20/libgcrypt20_1.11.0-7+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libg/libgcrypt20/libgcrypt20_1.11.0-7%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libg/libgcrypt20/libgcrypt20_1.11.0-7%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libgpg-error0",
+      "version": "1.51-4",
+      "architecture": "amd64",
+      "size": 82108,
+      "installedSize": 212992,
+      "sha256": "22b95570fd41c113ef6f5651563b4d748292844baab1278a46eb940c1dec2322",
+      "filename": "pool/main/libg/libgpg-error/libgpg-error0_1.51-4_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libg/libgpg-error/libgpg-error0_1.51-4_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libg/libgpg-error/libgpg-error0_1.51-4_amd64.deb"
+      ]
+    },
+    {
+      "name": "libgraphite2-3",
+      "version": "1.3.14-2+deb13u1",
+      "architecture": "amd64",
+      "size": 75172,
+      "installedSize": 195584,
+      "sha256": "1769ba3ed3c1fc75b7fbe02678e32aa24391205813eceef4e1e3500015d12ee3",
+      "filename": "pool/main/g/graphite2/libgraphite2-3_1.3.14-2+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/g/graphite2/libgraphite2-3_1.3.14-2%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/g/graphite2/libgraphite2-3_1.3.14-2%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libharfbuzz0b",
+      "version": "10.2.0-1+deb13u1",
+      "architecture": "amd64",
+      "size": 478952,
+      "installedSize": 1378304,
+      "sha256": "932165b933e5eb633293afe984a983ebe89cb27c923ce7208626f1da6c0c7941",
+      "filename": "pool/main/h/harfbuzz/libharfbuzz0b_10.2.0-1+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/h/harfbuzz/libharfbuzz0b_10.2.0-1%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/h/harfbuzz/libharfbuzz0b_10.2.0-1%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libjbig0",
+      "version": "2.1-6.1+b2",
+      "architecture": "amd64",
+      "size": 32116,
+      "installedSize": 87040,
+      "sha256": "95cbc44561651e1b3385454df08e8f2efe84498f6963a85259be2cc2fe798709",
+      "filename": "pool/main/j/jbigkit/libjbig0_2.1-6.1+b2_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/j/jbigkit/libjbig0_2.1-6.1%2bb2_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/j/jbigkit/libjbig0_2.1-6.1%2bb2_amd64.deb"
+      ]
+    },
+    {
+      "name": "liblerc4",
+      "version": "4.0.0+ds-5",
+      "architecture": "amd64",
+      "size": 182976,
+      "installedSize": 617472,
+      "sha256": "2e0c13c0ddbde12968c2c713c2e0474a5b78e90d5216031256a725e8c76aa31c",
+      "filename": "pool/main/l/lerc/liblerc4_4.0.0+ds-5_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/l/lerc/liblerc4_4.0.0%2bds-5_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/l/lerc/liblerc4_4.0.0%2bds-5_amd64.deb"
+      ]
+    },
+    {
+      "name": "liblua5.4-0",
+      "version": "5.4.7-1+b2",
+      "architecture": "amd64",
+      "size": 146640,
+      "installedSize": 593920,
+      "sha256": "3456e23667f21a5bea4f2182ec878621bf4c47fbc9819fdaad8835d6d1ee6247",
+      "filename": "pool/main/l/lua5.4/liblua5.4-0_5.4.7-1+b2_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/l/lua5.4/liblua5.4-0_5.4.7-1%2bb2_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/l/lua5.4/liblua5.4-0_5.4.7-1%2bb2_amd64.deb"
+      ]
+    },
+    {
+      "name": "libnl-genl-3-200",
+      "version": "3.7.0-2",
+      "architecture": "amd64",
+      "size": 18136,
+      "installedSize": 54272,
+      "sha256": "8f2f81ef4c6f8636f0b0cb2ff40b3c54a497d121f49c485620ae43c94782cd94",
+      "filename": "pool/main/libn/libnl3/libnl-genl-3-200_3.7.0-2_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libn/libnl3/libnl-genl-3-200_3.7.0-2_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libn/libnl3/libnl-genl-3-200_3.7.0-2_amd64.deb"
+      ]
+    },
+    {
+      "name": "libopencore-amrnb0",
+      "version": "0.1.6-1+b2",
+      "architecture": "amd64",
+      "size": 97456,
+      "installedSize": 200704,
+      "sha256": "25ec8a9f76a9b4377e676c3223d59eed5a0a3a943438c8cab066238328b24315",
+      "filename": "pool/main/o/opencore-amr/libopencore-amrnb0_0.1.6-1+b2_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/o/opencore-amr/libopencore-amrnb0_0.1.6-1%2bb2_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/o/opencore-amr/libopencore-amrnb0_0.1.6-1%2bb2_amd64.deb"
+      ]
+    },
+    {
+      "name": "libopus0",
+      "version": "1.5.2-2",
+      "architecture": "amd64",
+      "size": 2851932,
+      "installedSize": 3577856,
+      "sha256": "794056db33d71b2ac4bd8b5a4eb23b627bcb8a49d123c33b6e841a996253a067",
+      "filename": "pool/main/o/opus/libopus0_1.5.2-2_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/o/opus/libopus0_1.5.2-2_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/o/opus/libopus0_1.5.2-2_amd64.deb"
+      ]
+    },
+    {
+      "name": "libpango-1.0-0",
+      "version": "1.56.3-1",
+      "architecture": "amd64",
+      "size": 226324,
+      "installedSize": 567296,
+      "sha256": "4fa38472696d2ddb10bfc9a4692a9446e8478fdb1f48c769a609fc9fec3adfc5",
+      "filename": "pool/main/p/pango1.0/libpango-1.0-0_1.56.3-1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/p/pango1.0/libpango-1.0-0_1.56.3-1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/p/pango1.0/libpango-1.0-0_1.56.3-1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libpangocairo-1.0-0",
+      "version": "1.56.3-1",
+      "architecture": "amd64",
+      "size": 35748,
+      "installedSize": 105472,
+      "sha256": "6994729c5b7a9649661ec078cf039991f22eff44600543aa917894f83c89cd05",
+      "filename": "pool/main/p/pango1.0/libpangocairo-1.0-0_1.56.3-1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/p/pango1.0/libpangocairo-1.0-0_1.56.3-1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/p/pango1.0/libpangocairo-1.0-0_1.56.3-1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libpangoft2-1.0-0",
+      "version": "1.56.3-1",
+      "architecture": "amd64",
+      "size": 55568,
+      "installedSize": 161792,
+      "sha256": "b506cf66f78ddf542ddb4bb4a68b3d748d41caa6e190e4480430a6630c1e5105",
+      "filename": "pool/main/p/pango1.0/libpangoft2-1.0-0_1.56.3-1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/p/pango1.0/libpangoft2-1.0-0_1.56.3-1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/p/pango1.0/libpangoft2-1.0-0_1.56.3-1_amd64.deb"
+      ]
+    },
+    {
+      "name": "librrd8t64",
+      "version": "1.7.2-4.2+b5",
+      "architecture": "amd64",
+      "size": 244908,
+      "installedSize": 508928,
+      "sha256": "08ed7748eafa7502c320ad01fc46356e319348368988e0c0cbfe67e8ee0f95b6",
+      "filename": "pool/main/r/rrdtool/librrd8t64_1.7.2-4.2+b5_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/r/rrdtool/librrd8t64_1.7.2-4.2%2bb5_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/r/rrdtool/librrd8t64_1.7.2-4.2%2bb5_amd64.deb"
+      ]
+    },
+    {
+      "name": "libsbc1",
+      "version": "2.1-1",
+      "architecture": "amd64",
+      "size": 32020,
+      "installedSize": 90112,
+      "sha256": "367a4355c925bbb4d197985a2dae5eff293baace58a16a3e8efaf50208f12a6b",
+      "filename": "pool/main/s/sbc/libsbc1_2.1-1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/s/sbc/libsbc1_2.1-1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/s/sbc/libsbc1_2.1-1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libsharpyuv0",
+      "version": "1.5.0-0.1",
+      "architecture": "amd64",
+      "size": 115612,
+      "installedSize": 146432,
+      "sha256": "51934833d909588f7761fd84362114e90d8d2d38af57edf5df5c4a705e037547",
+      "filename": "pool/main/libw/libwebp/libsharpyuv0_1.5.0-0.1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libw/libwebp/libsharpyuv0_1.5.0-0.1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libw/libwebp/libsharpyuv0_1.5.0-0.1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libsmi2t64",
+      "version": "0.4.8+dfsg2-17+b1",
+      "architecture": "amd64",
+      "size": 120768,
+      "installedSize": 453632,
+      "sha256": "c5bef97b6d4c74879993f217a46395500004f186f92e007135496bf4ca2c1085",
+      "filename": "pool/main/libs/libsmi/libsmi2t64_0.4.8+dfsg2-17+b1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libs/libsmi/libsmi2t64_0.4.8%2bdfsg2-17%2bb1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libs/libsmi/libsmi2t64_0.4.8%2bdfsg2-17%2bb1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libsnappy1v5",
+      "version": "1.2.2-1",
+      "architecture": "amd64",
+      "size": 29252,
+      "installedSize": 95232,
+      "sha256": "53ec5f1050d64375a63cd1c30ee4a6d21ef0cfd485f9999aa0b70dd424ca3465",
+      "filename": "pool/main/s/snappy/libsnappy1v5_1.2.2-1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/s/snappy/libsnappy1v5_1.2.2-1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/s/snappy/libsnappy1v5_1.2.2-1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libspandsp2t64",
+      "version": "0.0.6+dfsg-2.2",
+      "architecture": "amd64",
+      "size": 282180,
+      "installedSize": 896000,
+      "sha256": "f36c92d0ecf2035502def728e64d6a2817544748091eccbc1714dc8604525b84",
+      "filename": "pool/main/s/spandsp/libspandsp2t64_0.0.6+dfsg-2.2_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/s/spandsp/libspandsp2t64_0.0.6%2bdfsg-2.2_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/s/spandsp/libspandsp2t64_0.0.6%2bdfsg-2.2_amd64.deb"
+      ]
+    },
+    {
+      "name": "libspeexdsp1",
+      "version": "1.2.1-3",
+      "architecture": "amd64",
+      "size": 42864,
+      "installedSize": 104448,
+      "sha256": "4f0f6fc83b2f9fbb85b5a1c1470033979bbcd4c72d2177fea98a55f014c4391e",
+      "filename": "pool/main/s/speexdsp/libspeexdsp1_1.2.1-3_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/s/speexdsp/libspeexdsp1_1.2.1-3_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/s/speexdsp/libspeexdsp1_1.2.1-3_amd64.deb"
+      ]
+    },
+    {
+      "name": "libssh-4",
+      "version": "0.11.5-0+deb13u1",
+      "architecture": "amd64",
+      "size": 211924,
+      "installedSize": 596992,
+      "sha256": "bc8cbc13617d1b21fa6f686f9f269a4f849f00624d5bb179785a058981701233",
+      "filename": "pool/main/libs/libssh/libssh-4_0.11.5-0+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libs/libssh/libssh-4_0.11.5-0%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libs/libssh/libssh-4_0.11.5-0%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libthai-data",
+      "version": "0.1.29-2",
+      "architecture": "all",
+      "size": 167504,
+      "installedSize": 632832,
+      "sha256": "fd38d40602834d510a29140bd27fd48485105e834f03dccab1c02e2edaa794dd",
+      "filename": "pool/main/libt/libthai/libthai-data_0.1.29-2_all.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libt/libthai/libthai-data_0.1.29-2_all.deb",
+        "http://deb.debian.org/debian/pool/main/libt/libthai/libthai-data_0.1.29-2_all.deb"
+      ]
+    },
+    {
+      "name": "libthai0",
+      "version": "0.1.29-2+b1",
+      "architecture": "amd64",
+      "size": 49420,
+      "installedSize": 94208,
+      "sha256": "e6364c07aeeffe9a95f267061d9df168e48e9dc9126c3b40e19dc829f67702a7",
+      "filename": "pool/main/libt/libthai/libthai0_0.1.29-2+b1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libt/libthai/libthai0_0.1.29-2%2bb1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libt/libthai/libthai0_0.1.29-2%2bb1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libtiff6",
+      "version": "4.7.0-3+deb13u3",
+      "architecture": "amd64",
+      "size": 345492,
+      "installedSize": 784384,
+      "sha256": "6bb2038f36817ae1ee6d33df03917b21835dcc2e0f3e3e80a71390e83c171173",
+      "filename": "pool/main/t/tiff/libtiff6_4.7.0-3+deb13u3_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/t/tiff/libtiff6_4.7.0-3%2bdeb13u3_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/t/tiff/libtiff6_4.7.0-3%2bdeb13u3_amd64.deb"
+      ]
+    },
+    {
+      "name": "libwebp7",
+      "version": "1.5.0-0.1",
+      "architecture": "amd64",
+      "size": 317856,
+      "installedSize": 646144,
+      "sha256": "c749744b04abdd1426b0c7718e516362c03a557c5151662092d6d4f2cef6e7c1",
+      "filename": "pool/main/libw/libwebp/libwebp7_1.5.0-0.1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libw/libwebp/libwebp7_1.5.0-0.1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libw/libwebp/libwebp7_1.5.0-0.1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libwireshark-data",
+      "version": "4.4.19-0+deb13u1",
+      "architecture": "all",
+      "size": 464736,
+      "installedSize": 3699712,
+      "sha256": "217534b05ac05933fb1f41b2e2683e77f1f1c1759bfbb4086c9a7d0bf9ec01f5",
+      "filename": "pool/updates/main/w/wireshark/libwireshark-data_4.4.19-0+deb13u1_all.deb",
+      "uris": [
+        "https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwireshark-data_4.4.19-0%2bdeb13u1_all.deb",
+        "http://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwireshark-data_4.4.19-0%2bdeb13u1_all.deb"
+      ]
+    },
+    {
+      "name": "libwireshark18",
+      "version": "4.4.19-0+deb13u1",
+      "architecture": "amd64",
+      "size": 21248072,
+      "installedSize": 132940800,
+      "sha256": "ea488b7026394a9a08a37d60da84933cc93f7040f5c5e0cba3e303434e539d0d",
+      "filename": "pool/updates/main/w/wireshark/libwireshark18_4.4.19-0+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwireshark18_4.4.19-0%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwireshark18_4.4.19-0%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libwiretap15",
+      "version": "4.4.19-0+deb13u1",
+      "architecture": "amd64",
+      "size": 276964,
+      "installedSize": 798720,
+      "sha256": "680ef5d8d9ebe41a0abdf26e0b8fb580d902b23aecc7df31508280e4ab1f776d",
+      "filename": "pool/updates/main/w/wireshark/libwiretap15_4.4.19-0+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwiretap15_4.4.19-0%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwiretap15_4.4.19-0%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libwsutil16",
+      "version": "4.4.19-0+deb13u1",
+      "architecture": "amd64",
+      "size": 135392,
+      "installedSize": 346112,
+      "sha256": "2d55b65228158d30bdbb5ab81dbdeb2c77a1abb36d17943e6fe32e2ef7a6f111",
+      "filename": "pool/updates/main/w/wireshark/libwsutil16_4.4.19-0+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwsutil16_4.4.19-0%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwsutil16_4.4.19-0%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libxcb-render0",
+      "version": "1.17.0-2+b1",
+      "architecture": "amd64",
+      "size": 115100,
+      "installedSize": 185344,
+      "sha256": "7f6e36978e0f70a590fbad4042a692c70b50ca7cbcdc53fa7e9d9ab87933acc6",
+      "filename": "pool/main/libx/libxcb/libxcb-render0_1.17.0-2+b1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-render0_1.17.0-2%2bb1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-render0_1.17.0-2%2bb1_amd64.deb"
+      ]
+    },
+    {
+      "name": "libxcb-shm0",
+      "version": "1.17.0-2+b1",
+      "architecture": "amd64",
+      "size": 105284,
+      "installedSize": 130048,
+      "sha256": "d1777a813f484e89f3dcaadd1d5f2b1a13e9313b6bf70eded16d8ce743208fef",
+      "filename": "pool/main/libx/libxcb/libxcb-shm0_1.17.0-2+b1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-shm0_1.17.0-2%2bb1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-shm0_1.17.0-2%2bb1_amd64.deb"
+      ]
+    },
+    {
+      "name": "nfdump",
+      "version": "1.7.5-2+deb13u1",
+      "architecture": "amd64",
+      "size": 450348,
+      "installedSize": 2138112,
+      "sha256": "85d10521497e080cef92fae52eb6a607bb34a236f674f8abe5303ad3d98edf8b",
+      "filename": "pool/main/n/nfdump/nfdump_1.7.5-2+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/n/nfdump/nfdump_1.7.5-2%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/n/nfdump/nfdump_1.7.5-2%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "tcpdump",
+      "version": "4.99.5-2",
+      "architecture": "amd64",
+      "size": 471048,
+      "installedSize": 1375232,
+      "sha256": "c35a180eb0ee118976c4648473de0beb36788dc2ec6986ab880722f5a9868ba6",
+      "filename": "pool/main/t/tcpdump/tcpdump_4.99.5-2_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian/pool/main/t/tcpdump/tcpdump_4.99.5-2_amd64.deb",
+        "http://deb.debian.org/debian/pool/main/t/tcpdump/tcpdump_4.99.5-2_amd64.deb"
+      ]
+    },
+    {
+      "name": "tshark",
+      "version": "4.4.19-0+deb13u1",
+      "architecture": "amd64",
+      "size": 183724,
+      "installedSize": 445440,
+      "sha256": "3060f377217d7f1ec3bd45e29a8df5705da4a1a4f6c0016b21edd242f5bbcfcd",
+      "filename": "pool/updates/main/w/wireshark/tshark_4.4.19-0+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/tshark_4.4.19-0%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian-security/pool/updates/main/w/wireshark/tshark_4.4.19-0%2bdeb13u1_amd64.deb"
+      ]
+    },
+    {
+      "name": "wireshark-common",
+      "version": "4.4.19-0+deb13u1",
+      "architecture": "amd64",
+      "size": 608300,
+      "installedSize": 1719296,
+      "sha256": "c684007f371b363404d1833adba7e45afccc534491c93b780ba12c7115c5806b",
+      "filename": "pool/updates/main/w/wireshark/wireshark-common_4.4.19-0+deb13u1_amd64.deb",
+      "uris": [
+        "https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/wireshark-common_4.4.19-0%2bdeb13u1_amd64.deb",
+        "http://deb.debian.org/debian-security/pool/updates/main/w/wireshark/wireshark-common_4.4.19-0%2bdeb13u1_amd64.deb"
+      ]
+    }
+  ]
+}

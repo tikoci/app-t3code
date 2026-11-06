@@ -169,22 +169,32 @@ test.skipIf(!image)(
 			}
 		};
 		const devTools = "cd /tmp; tsc --version; biome --version; cspell --version; markdownlint-cli2 --version";
+		// The capture payload, as node with no capabilities (test/capture-tools.sh).
+		const captureTools = async (shell: string) => {
+			await docker("cp", new URL("./capture-tools.sh", import.meta.url).pathname, `${name}:/tmp/capture-tools.sh`);
+			return run("bash", shell, "bash /tmp/capture-tools.sh");
+		};
 		await docker("volume", "create", volume);
 		try {
 			// CI exercises every group so the reported states cover the full set.
 			await start("all");
 			await waitForServer(name);
 			expect(await run("printenv", "T3CODE_TELEMETRY_ENABLED")).toBe("false");
-			// T3 is already serving; the dev payload installs in the background.
-			const { status: all, group: devFirst } = await settled("dev", 180_000);
+			// T3 is already serving; the dev and capture payloads install in the
+			// background, one after the other.
+			const { group: devFirst } = await settled("dev", 180_000);
 			expect(devFirst.payload?.last?.error).toBeUndefined();
 			expect(devFirst.payload?.activeVersions?.["tsc"]).toStartWith("Version ");
+			const { status: all, group: captureFirst } = await settled("capture", 300_000);
+			expect(captureFirst.payload?.last?.error).toBeUndefined();
+			expect(captureFirst.payload?.activeVersions?.["tshark"]).toStartWith("TShark (Wireshark) ");
+			expect(captureFirst.payload?.active).toMatch(/^(amd64|arm64)-trixie-[0-9a-f]{16}$/);
 			expect(all.core).toMatchObject({ state: "ready", missing: [] });
 			expect(all.buildInventory.present).toBe(true);
 			expect(all.selector.warnings).toEqual([]);
 			expect(all.groups.every((group) => group.selected)).toBe(true);
 			expect(Object.fromEntries(all.groups.map((group) => [group.name, group.state]))).toEqual({
-				capture: "not-implemented",
+				capture: "ready",
 				labs: "ready",
 				vpn: "not-implemented",
 				routing: "not-implemented",
@@ -198,6 +208,7 @@ test.skipIf(!image)(
 					shell,
 					`set -e; bun --version; bunx --version; quickchr --help; centrs explain '/ip/address print' --json; muse --version; qemu-system-x86_64 --version; qemu-system-aarch64 --version; qemu-img --version; ${devTools}`,
 				);
+				expect(await captureTools(shell)).toContain("capture ok: TShark (Wireshark) ");
 			}
 			await run(
 				"bash",
@@ -260,6 +271,12 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			expect(devOff?.state).toBe("not-selected");
 			expect(devOff?.payload?.installed).toEqual([devFirst.payload?.active as string]);
 			expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", "command -v tsc"]).exitCode).not.toBe(0);
+			// Reselected in a new container: relinked at start, nothing downloaded again.
+			const captureAgain = partial.groups.find((group) => group.name === "capture");
+			expect(captureAgain?.state).toBe("ready");
+			expect(captureAgain?.payload?.active).toBe(captureFirst.payload?.active as string);
+			expect(captureAgain?.payload?.last?.updatedAt).toBe(captureFirst.payload?.last?.updatedAt as string);
+			await captureTools("-lc");
 			const logs = Bun.spawnSync(["docker", "logs", name]);
 			expect(`${logs.stdout}${logs.stderr}`).toContain('unknown group "bogus" ignored');
 			await run("test", "!", "-e", "/tmp/replacement-fixture");
@@ -312,15 +329,29 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			// payload in the home is relinked at start, with no download.
 			await docker("rm", "--force", name);
 			await start("dev", true);
-			const { group: devOffline } = await settled("dev", 60_000);
+			const { status: devOnly, group: devOffline } = await settled("dev", 60_000);
 			expect(devOffline.state).toBe("ready");
 			expect(devOffline.payload?.active).toBe(devFirst.payload?.active as string);
 			expect(devOffline.payload?.last?.updatedAt).toBe(devFirst.payload?.last?.updatedAt as string);
 			for (const shell of ["-c", "-lc"]) await run("bash", shell, `set -e; ${devTools}`);
+			// capture deselected: its shims are gone, its payload stays on disk.
+			const captureOff = devOnly.groups.find((group) => group.name === "capture");
+			expect(captureOff?.state).toBe("not-selected");
+			expect(captureOff?.payload?.installed).toEqual([captureFirst.payload?.active as string]);
+			expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", "command -v tshark"]).exitCode).not.toBe(0);
+
+			// And capture comes back offline in a fourth container, still verified.
+			await docker("rm", "--force", name);
+			await start("capture", true);
+			const { group: captureOffline } = await settled("capture", 60_000);
+			expect(captureOffline.state).toBe("ready");
+			expect(captureOffline.payload?.active).toBe(captureFirst.payload?.active as string);
+			expect(captureOffline.payload?.last?.updatedAt).toBe(captureFirst.payload?.last?.updatedAt as string);
+			await captureTools("-c");
 		} finally {
 			await docker("rm", "--force", name).catch(() => {});
 			await docker("volume", "rm", volume);
 		}
 	},
-	5 * 60_000,
+	12 * 60_000,
 );

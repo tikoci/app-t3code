@@ -6,7 +6,8 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 ## Commands
 
 - `bun run check` — biome + `tsc --noEmit`. Keep both green.
-- `bun run test` — offline `/app` YAML contract and tool-payload lifecycle (always runs).
+- `bun run test` — offline `/app` YAML contract and the npm and deb tool-payload
+  lifecycles (always runs; fake npm, fake dpkg-deb and mirror).
 - `APP_T3CODE_INTEGRATION=1 bun test test/integration/` — full CHR
   boot + container install + web UI probe. Needs QEMU and network; slow
   (the GHCR image pull alone is ~1GB on a free-license CHR).
@@ -57,6 +58,16 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   lockfile is a new payload id on every home. `bun run test` covers the
   lifecycle with a fake npm; the docker replacement test covers real npm and
   offline reuse.
+- `capture` (issue #5 slice 3) is a deb payload: `scripts/deb-payloads.ts`.
+  The Dockerfile pins its Debian closure from apt metadata with
+  `t3code-tools deb-lock` after the last apt layer (run with `HOME=/root`, or
+  Bun seeds a root-owned `/data/.bun`). The closure is "what the image lacks",
+  so any apt-layer change can change the lock and every home's payload id
+  (a re-download on next start). Wrappers set `LD_LIBRARY_PATH` per process
+  only; `ld.so --library-path` was rejected because it breaks Wireshark's
+  program-relative data/plugin lookup. snapshot.debian.org (the fallback for
+  superseded versions) answers 504 to cold queries; the client retries.
+  Never claim capture privileges from installing it (#7).
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
   (including comments), regenerate the link's `yaml` query parameter from

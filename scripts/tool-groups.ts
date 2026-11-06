@@ -1,19 +1,21 @@
 // T3CODE_TOOL_GROUPS selector, group definitions, and the agent-facing status
 // report (`t3code-tools status`). Issue #5: slice 1 parses and reports; slice 2
 // adds persistent npm payloads under the home (tool-payloads.ts), starting
-// with `dev`. The image copies these files to /usr/local/lib/t3code/ and runs
-// them with Bun.
+// with `dev`; slice 3 adds Debian-package payloads (deb-payloads.ts), starting
+// with `capture`. The image copies these files to /usr/local/lib/t3code/ and
+// runs them with Bun.
 //
 // Never throw on operator input: an unknown or malformed selection is a
 // warning, and T3 must always start.
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { activateIfIdle, defaultPayloadEnv, installGroups, type PayloadEnv, type PayloadInfo, payloadInfo, prunePayloads } from "./tool-payloads.ts";
+import { DEB_LOCK_FILE, resolveDebLock } from "./deb-payloads.ts";
+import { activateIfIdle, defaultPayloadEnv, installGroups, isPayloadGroup, type PayloadEnv, type PayloadInfo, payloadInfo, prunePayloads } from "./tool-payloads.ts";
 
 export const SELECTOR_ENV = "T3CODE_TOOL_GROUPS";
 export const BUILD_INVENTORY_DIR = "/usr/share/t3code/inventory";
 export const RUNTIME_STATUS_PATH = "/tmp/t3code-tools/status.json";
-/** Lockfiles for npm payload groups: <dir>/<group>/package{,-lock}.json. */
+/** Payload specs: <dir>/<group>/package{,-lock}.json (npm) or debs.lock.json (deb, generated at build time). */
 export const PAYLOAD_SPEC_DIR = join(import.meta.dir, "groups");
 
 /**
@@ -22,9 +24,11 @@ export const PAYLOAD_SPEC_DIR = join(import.meta.dir, "groups");
  *   so status probes the real files.
  * - `npm`: a persistent payload under the home, installed in the background
  *   from a lockfile shipped in the image (tool-payloads.ts).
+ * - `deb`: a persistent payload of Debian packages under the home, pinned
+ *   from the image's apt metadata at build time (deb-payloads.ts).
  * - `none`: no installer exists in this image yet (later slices).
  */
-export type Delivery = "image" | "npm" | "none";
+export type Delivery = "image" | "npm" | "deb" | "none";
 
 /**
  * `pending`: selected, waiting for the background installer. `installing`:
@@ -50,8 +54,20 @@ export interface GroupDef {
 	privileges: string;
 	/** Installed payload size, for the installer's disk budget (npm delivery). */
 	approxBytes?: number;
+	/** Payload groups: arguments that print a version and exit 0 (default `--version`). */
+	versionArgs?: Readonly<Record<string, readonly string[]>>;
+	/** Payload groups: a functional check run before the payload is trusted. `{input}` is a file holding inputBase64. */
+	smoke?: { command: string; args: readonly string[]; inputBase64?: string; expect: string };
 	note?: string;
 }
+
+/**
+ * A pcapng with one Ethernet/IPv4/UDP TZSP frame (RouterOS sniffer stream)
+ * carrying an Ethernet/IPv4/UDP DNS query for routeros.example. Synthetic,
+ * from docs/research/2026-11-05/packet-tools-probe.json.
+ */
+export const TZSP_DNS_PCAPNG =
+	"Cg0NChwAAABNPCsaAQAAAP//////////HAAAAAEAAAAUAAAAAQAAAP//AAAUAAAABgAAAJwAAAAAAAAAAAAAAEBCDwB7AAAAewAAAAIAAAAAAgIAAAAAAQgARQAAbQAAAABAEfZ8wAACAcAAAgKn+JCQAFkAAAEAAAEBAgAAAAACAgAAAAABCABFAAA+AAAAAEAR9qvAAAIBwAACAjA5ADUAKgAAEjQBAAABAAAAAAAACHJvdXRlcm9zB2V4YW1wbGUAAAEAAQCcAAAA";
 
 const cmd = (...names: string[]): Check[] => names.map((name) => ({ kind: "command", name }));
 
@@ -59,10 +75,15 @@ export const GROUPS: readonly GroupDef[] = [
 	{
 		name: "capture",
 		summary: "Packet capture, decoding and flow collection",
-		delivery: "none",
+		delivery: "deb",
 		packages: ["tcpdump", "tshark", "wireshark-common", "nfdump"],
 		checks: cmd("tcpdump", "tshark", "dumpcap", "capinfos", "editcap", "mergecap", "text2pcap", "nfcapd", "nfdump"),
 		privileges: "Offline decoding needs none; live capture needs CAP_NET_RAW (tcpdump/dumpcap). TZSP/NetFlow receivers on ports >=1024 need none.",
+		// Measured on amd64 (2026-11-06): 152 MiB unpacked from 30.5 MiB of .debs.
+		approxBytes: 160 * 1024 * 1024,
+		versionArgs: { nfcapd: ["-V"], nfdump: ["-V"] },
+		smoke: { command: "tshark", args: ["-r", "{input}", "-T", "fields", "-e", "tzsp.encap", "-e", "dns.qry.name"], inputBase64: TZSP_DNS_PCAPNG, expect: "routeros.example" },
+		note: "Persistent payload of Debian packages under the home, pinned by version and SHA256 from the image's apt metadata, installed in the background as the app user and reused across container replacement. Installing it grants no capture privileges.",
 	},
 	{
 		name: "labs",
@@ -352,14 +373,14 @@ function payloadState(info: PayloadInfo): GroupState {
 }
 
 export function groupStatus(group: GroupDef, selected: boolean, probe: Probe, payload?: PayloadInfo): GroupStatus {
-	// Payload groups are checked at their shims, so the result does not depend
-	// on the caller's PATH; other groups are probed where the image put them.
+	// Payload groups are checked at their shims (or, for deb, the image's own
+	// command of that name), so the result does not depend on the caller's
+	// PATH; other groups are probed where the image put them.
 	const checks =
-		group.delivery === "npm" && payload
+		isPayloadGroup(group) && payload
 			? group.checks.map((check) => {
-					const path = join(payload.root, "bin", check.name);
-					const ok = check.kind === "command" && existsSync(path);
-					return { kind: check.kind, name: check.name, ok, path: ok ? path : null };
+					const path = check.kind === "command" ? (payload.commandPaths?.[check.name] ?? null) : null;
+					return { kind: check.kind, name: check.name, ok: path !== null && existsSync(path), path };
 				})
 			: group.checks.map((check) => runCheck(check, probe));
 	const missing = checks.filter((check) => !check.ok).map((check) => check.name);
@@ -367,7 +388,7 @@ export function groupStatus(group: GroupDef, selected: boolean, probe: Probe, pa
 	let state: GroupState = "not-selected";
 	if (selected) {
 		if (group.delivery === "none") state = "not-implemented";
-		else if (group.delivery === "npm") state = payload ? payloadState(payload) : "pending";
+		else if (isPayloadGroup(group)) state = payload ? payloadState(payload) : "pending";
 		else state = present ? "ready" : "failed";
 	}
 	return {
@@ -419,12 +440,12 @@ export function buildStatus(
 		selector: selection,
 		core: { state: coreMissing.length === 0 ? "ready" : "degraded", missing: coreMissing, checks: core },
 		groups: GROUPS.map((group) =>
-			groupStatus(group, selection.selected.includes(group.name), probe, group.delivery === "npm" && payloads ? payloadInfo(group, payloads) : undefined),
+			groupStatus(group, selection.selected.includes(group.name), probe, isPayloadGroup(group) && payloads ? payloadInfo(group, payloads) : undefined),
 		),
 		buildInventory: readBuildInventory(inventoryDir),
 		runtimeStatusPath: RUNTIME_STATUS_PATH,
 		notes: [
-			"npm groups install in the background into the home and are reused across container replacement; image groups are baked in; not-implemented groups have no installer yet.",
+			"npm and deb groups install in the background into the home and are reused across container replacement; image groups are baked in; not-implemented groups have no installer yet.",
 			"Checks are presence probes (PATH, files, ldconfig), not functional tests or capability grants.",
 			"Change the selection with /app/set environment= (see README), never by reapplying the /app YAML.",
 		],
@@ -461,6 +482,7 @@ const USAGE = `usage: t3code-tools status [--json] [--groups <selection>]
        t3code-tools install
        t3code-tools prune
        t3code-tools groups
+       t3code-tools deb-lock [--spec-dir <dir>]
 
 status   report the T3CODE_TOOL_GROUPS selection and per-group state
          (--groups evaluates another selection without changing anything)
@@ -471,6 +493,8 @@ install  install missing payloads for the selection (the entrypoint runs this
          in the background; run it again to retry a failed group)
 prune    delete payloads that no selected group uses, and interrupted installs
 groups   print group definitions and the network package assignment as JSON
+deb-lock image build only (root, after apt-get update): pin each deb group's
+         package closure from apt metadata into <spec-dir>/<group>/${DEB_LOCK_FILE}
 `;
 
 function writeRuntimeStatus(raw: string | undefined) {
@@ -501,7 +525,7 @@ export async function main(argv: string[]): Promise<number> {
 		const selection = parseToolGroups(raw);
 		try {
 			// Serialized with install/prune; if one is running it activates instead.
-			const pending = await activateIfIdle(GROUPS.filter((g) => g.delivery === "npm"), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
+			const pending = await activateIfIdle(GROUPS.filter(isPayloadGroup), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
 			if (pending === null) console.error("t3code-tools: an install or prune is running; it will relink payloads when done");
 		} catch (error) {
 			console.error(`t3code-tools: warning: payload activation failed: ${String(error)}`);
@@ -517,20 +541,47 @@ export async function main(argv: string[]): Promise<number> {
 	if (command === "install") {
 		const selection = parseToolGroups(raw);
 		const env = defaultPayloadEnv(PAYLOAD_SPEC_DIR);
-		const result = await installGroups(GROUPS.filter((g) => g.delivery === "npm"), selection.selected, env, () => writeRuntimeStatus(raw));
+		const result = await installGroups(GROUPS.filter(isPayloadGroup), selection.selected, env, () => writeRuntimeStatus(raw));
 		writeRuntimeStatus(raw);
 		return Object.values(result.results).some((r) => r.state === "failed") ? 1 : 0;
 	}
 	if (command === "prune") {
 		const selection = parseToolGroups(raw);
 		try {
-			const removed = await prunePayloads(GROUPS.filter((g) => g.delivery === "npm"), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
+			const removed = await prunePayloads(GROUPS.filter(isPayloadGroup), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
 			process.stdout.write(removed.length ? `removed ${removed.join(" ")}\n` : "nothing to remove\n");
 		} catch (error) {
 			process.stderr.write(`t3code-tools: ${error instanceof Error ? error.message : String(error)}\n`);
 			return 1;
 		}
 		writeRuntimeStatus(raw);
+		return 0;
+	}
+	if (command === "deb-lock") {
+		let specDir = PAYLOAD_SPEC_DIR;
+		if (rest[0] === "--spec-dir" && rest[1]) specDir = rest[1];
+		else if (rest.length) {
+			process.stderr.write(USAGE);
+			return 2;
+		}
+		const exec = (cmd: string[]) => {
+			const proc = Bun.spawnSync(cmd, { env: { ...process.env, LC_ALL: "C" } });
+			if (proc.exitCode !== 0) throw new Error(`${cmd.join(" ")} exited ${proc.exitCode}: ${proc.stderr.toString().trim()}`);
+			return proc.stdout.toString();
+		};
+		for (const group of GROUPS.filter((g) => g.delivery === "deb")) {
+			const lock = resolveDebLock(group.name, group.packages, exec, readFileSync("/etc/os-release", "utf8"));
+			const path = join(specDir, group.name, DEB_LOCK_FILE);
+			mkdirSync(dirname(path), { recursive: true });
+			writeFileSync(path, `${JSON.stringify(lock, null, 2)}\n`);
+			const mib = (n: number) => (n / 1024 / 1024).toFixed(1);
+			const download = lock.packages.reduce((s, p) => s + p.size, 0);
+			const installed = lock.packages.reduce((s, p) => s + p.installedSize, 0);
+			process.stdout.write(`${group.name}: ${lock.packages.length} packages for ${lock.arch} ${lock.distro}, ${mib(download)} MiB download, ${mib(installed)} MiB unpacked -> ${path}\n`);
+			for (const up of lock.imageUpgrades ?? []) {
+				process.stdout.write(`${group.name}: warning: apt wants ${up.name} ${up.installed} -> ${up.candidate}; not extracted (the image copy wins). Rebuild the image if the tools need it.\n`);
+			}
+		}
 		return 0;
 	}
 	if (command !== "status") {

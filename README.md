@@ -267,16 +267,16 @@ use spaces on a router. Names are case-insensitive. Unset, empty, or `none`
 means core only; `all` selects every group. An unknown name is logged as a
 warning and ignored. T3 always starts, whatever the selection says.
 
-The selection is parsed, logged, and reported to agents. `dev` is the first
-group delivered as a persistent payload in the home (see
-[Persistent payloads](#persistent-payloads-dev)). Other selected groups whose
-tools are not in the image report `not-implemented`. `labs`, `browser` and
-`agents-extra` are still baked into the image, so their tools are present
-whether or not you select them.
+The selection is parsed, logged, and reported to agents. `dev` (npm packages)
+and `capture` (Debian packages) are delivered as persistent payloads in the
+home (see [Persistent payloads](#persistent-payloads-dev-capture)). Other
+selected groups whose tools are not in the image report `not-implemented`.
+`labs`, `browser` and `agents-extra` are still baked into the image, so their
+tools are present whether or not you select them.
 
 | Group | Contents | In this image |
 |---|---|---|
-| `capture` | tcpdump, TShark (`dumpcap`, `capinfos`, `editcap`, `mergecap`, `text2pcap`), nfdump | not yet |
+| `capture` | tcpdump, TShark (`dumpcap`, `capinfos`, `editcap`, `mergecap`, `text2pcap`), nfdump (`nfcapd`) | installs into `/data` when selected |
 | `labs` | quickchr, QEMU x86/ARM64 emulators, qemu-img, firmware | baked in |
 | `vpn` | WireGuard tools, strongSwan (`swanctl`, `pki`, charon), OpenVPN, sstp-client, ppp, xl2tpd, pppoe, ike-scan; no tunnel or service starts by default | not yet |
 | `routing` | BIRD 2, lldpd, ndisc6, arping, arp-scan, nftables, conntrack, nmap | not yet |
@@ -320,28 +320,33 @@ the container log and writes the same JSON to `/tmp/t3code-tools/status.json`.
 The output also points at the immutable build inventory in
 `/usr/share/t3code/inventory`.
 
-#### Persistent payloads (`dev`)
+#### Persistent payloads (`dev`, `capture`)
 
 A payload group installs into the home volume, not the image, so it costs
-nothing until selected and survives image replacement and `auto-update`:
+nothing until selected and survives image replacement and `auto-update`.
+`dev` is built from an npm lockfile; `capture` from pinned Debian packages
+(see [Debian-package payloads](#debian-package-payloads-capture)). Both share
+the same lifecycle:
 
 - **Start never waits.** At each start the entrypoint relinks payloads that
   are already in the home (offline, no download) and then runs
   `t3code-tools install` in the background. T3 is serving while a first
   install is `pending` or `installing`.
-- **Pinned and verified.** The image ships the group's `package.json` and
-  `package-lock.json` (with npm integrity hashes); the installer runs
-  `npm ci --ignore-scripts` from them. Each command must answer `--version`
-  before the payload gets a `manifest.json` and is activated. A payload without
-  a manifest is never trusted.
-- **Versioned and atomic.** The payload id is derived from the lockfile, the
-  CPU architecture and Node's module ABI. Payloads live in
+- **Pinned and verified.** For `dev`, the image ships the group's
+  `package.json` and `package-lock.json` (with npm integrity hashes); the
+  installer runs `npm ci --ignore-scripts` from them. Each command must answer
+  `--version` before the payload gets a `manifest.json` and is activated
+  (`capture` also has to decode a test capture). A payload without a
+  manifest is never trusted.
+- **Versioned and atomic.** The payload id is derived from the lock and the
+  runtime: CPU architecture and Node's module ABI for `dev`, dpkg
+  architecture and Debian release for `capture`. Payloads live in
   `/data/.local/share/t3code-tools/groups/<group>/<id>/`; a `current` link is
   swapped atomically, and shims in `/data/.local/share/t3code-tools/bin` are
   on PATH after `/data/.local/bin` and `/data/.bun/bin`. A tool you install
   yourself wins, and a project's own `node_modules/.bin` (`bun run`, `npx`)
   still wins.
-- **Refresh without downtime.** A new image with a changed lockfile (a
+- **Refresh without downtime.** A new image with a changed lock (a
   security refresh) or a different Node ABI wants a new payload. The previous
   one stays active and the group stays `ready` (`payload.stale: true`) until
   the new one is verified. If the refresh fails, the previous payload keeps
@@ -349,17 +354,20 @@ nothing until selected and survives image replacement and `auto-update`:
   deletes older ones.
 - **Bounded.** Groups install one at a time under a lock
   (a kernel `flock` on `install.lock`, released automatically if the holder
-  dies; the next run also stops an npm left behind by a killed installer
-  before reclaiming its files). Each group gets three
+  dies; the next run also stops an npm or dpkg-deb left behind by a killed
+  installer before reclaiming its files). Each group gets three
   attempts with back-off (30 minute cap per attempt); with no network at all
-  npm needs about five minutes to give up. The installer needs the payload's
-  size twice (payload plus download cache) plus 256 MiB of free space, and
-  otherwise fails with a `low disk` error rather than filling the volume. It
-  never deletes projects, VMs or other home data. Interrupted installs
-  (`.staging-*`) are removed on the next run.
+  npm needs about five minutes to give up. The installer needs room for the
+  payload and its downloads (for `dev`, twice the payload size; for
+  `capture`, the pinned `.deb` sizes not already verified in the cache, plus
+  their unpacked sizes) plus 256 MiB,
+  and otherwise fails with a `low disk` error rather than filling the
+  volume. It never deletes projects, VMs or other home data. Interrupted
+  installs (`.staging-*`) are removed on the next run.
 - **Deselecting** a group removes its shims at the next start but keeps its
   payload, so selecting it again needs no download. `t3code-tools prune`
-  deletes payloads that no selected group uses.
+  deletes payloads that no selected group uses, and any kept `.deb`
+  downloads.
 
 `t3code-tools status --json` reports `payload.desired`, `payload.active`,
 `stale`, `installed`, the verified `activeVersions` and the last installer
@@ -370,6 +378,75 @@ a terminal to retry a failed group now; otherwise the next start retries it.
 The `dev` payload is about 154 MiB on amd64 (TypeScript 7.0.2, CSpell 10.4.0,
 markdownlint-cli2 0.24.0, Biome 2.6.5). Maintainers refresh the pins with
 `make dev-lock` after editing `scripts/groups/dev/package.json`.
+
+#### Debian-package payloads (`capture`)
+
+`capture` is too big to bake into every image (about 157 MB more on disk and
+42 MB more to pull on every image update, measured on amd64), so it is a
+payload too. It installs as the app user with no root at runtime:
+
+- **Pinned at image build.** The Dockerfile runs `t3code-tools deb-lock` after
+  the last apt layer. It asks apt for the group's dependency closure that the
+  image does not already have, and records each package's version,
+  architecture, size and SHA256 from the apt indexes. apt has already checked
+  those indexes against Debian's signing keys. The lock is
+  `/usr/local/lib/t3code/groups/capture/debs.lock.json` (also in the build
+  inventory as `capture-debs.lock.json`). Every image rebuild picks up Debian
+  security updates, and a changed lock is a new payload id, which refreshes
+  as described above. An unchanged lock keeps the same id, so nothing is
+  downloaded again.
+- **Verified before extraction.** Each `.deb` is downloaded from
+  `deb.debian.org` (https first) and must match its pinned size and SHA256.
+  A download is cut off as soon as it exceeds the pinned size.
+  Its control fields must also name the pinned package, version and
+  architecture. Only then is it unpacked with `dpkg-deb -x`. Maintainer
+  scripts never run. If a superseded version has left the mirror, it is
+  fetched from `snapshot.debian.org` and checked the same way. Verified
+  downloads survive an interrupted install in `groups/capture/.cache-debs`,
+  so a slow link resumes rather than starting over. They are removed once
+  the payload is ready.
+- **No global library path, no `/usr` overlay.** Each command gets a small
+  wrapper in the payload's `bin/` that sets `LD_LIBRARY_PATH` to the
+  payload's own library directory for that process and its children only,
+  then runs the real binary from the payload. The payload holds only
+  packages the image lacks, so it does not replace the image's copies. If
+  apt would upgrade a root package (`tcpdump`, `tshark`, `wireshark-common`
+  or `nfdump`) already in the image, lock generation fails: update that image
+  package before rebuilding. An older tool answering `--version` is not proof
+  that its security update was applied. For other image dependencies, the
+  lock records proposed upgrades under `imageUpgrades` and the build log
+  warns, but the package is not extracted. If a tool really needs the newer
+  version, its version check
+  fails and the payload is never activated; an image rebuild fixes that.
+  Wireshark finds its data files and plugins relative to the binary, so
+  `tshark` decodes with its full dissector set, RADIUS dictionaries and
+  plugins from the payload. A payload command never shadows a command of the
+  same name in the image, including one the image gains later. A required
+  command that the image already provides is checked and used from the image.
+- **Stale native payloads are checked.** While a refresh is pending after an
+  image update, the previous payload stays linked only if every required
+  command it still provides passes its version probe against the new image.
+  Commands now provided by the image use the image copy instead.
+
+Measured on amd64 (habitat C, Debian trixie, Wireshark 4.4.19, tcpdump
+4.99.5, nfdump 1.7.5): 42 packages, 30.5 MiB to download, 152 MiB unpacked,
+about 5 s to install on a fast link (computed: about 4.3 minutes at 1 Mbit/s). Wrapper
+overhead is about 1 ms per command. On arm64 the same code installed and
+passed the decoding, capture-file and NetFlow checks under QEMU user-mode
+emulation on an amd64 host. That is not native hardware, and interface
+listing and the live-capture refusal could not be tested there. See the
+[spike write-up](docs/research/2026-11-06/capture-native-bundle.md).
+
+Installing `capture` grants no capture privileges. Offline decoding
+(`tshark -r`, `tcpdump -r`, `capinfos`, `editcap`, `mergecap`, `text2pcap`),
+`dumpcap -D` (listing interfaces) and an `nfcapd` NetFlow collector on a port
+of 1024 or above (tested with NetFlow v5) all work as the unprivileged app
+user. Live capture with `tcpdump -i`/`dumpcap -i` needs `CAP_NET_RAW` and is
+refused without it. Without privileges, save a capture on the router
+(`/tool/sniffer` with `file-name=`) and copy the file over, or point
+`/ip/traffic-flow` at `nfcapd`. Receiving a live TZSP stream without
+privileges needs a UDP listener in front of the decoder and is not tested
+here.
 
 #### Changing groups on RouterOS
 
@@ -435,10 +512,13 @@ same reason: they are Linux router tools that need `CAP_NET_ADMIN`.
 
 #### Roadmap
 
-Later releases install groups as persistent payloads under `/data` in the
-background, after T3 starts, and reuse compatible payloads across image
-replacements. Groups that are baked in today move out only after their
-persistent replacement is proven. See the
+`dev` and `capture` already install as persistent payloads under `/data` in
+the background, after T3 starts, and reuse compatible payloads across image
+replacements. `vpn` and `routing` are small enough (about 4 MB and 9 MB
+compressed) that baking them into the image and gating them by PATH is the
+measured alternative; see the
+[spike write-up](docs/research/2026-11-06/capture-native-bundle.md). Groups that are baked in today
+move out only after their persistent replacement is proven. See the
 [review brief](docs/research/2026-11-05/REVIEW.md) and
 [issue #5](https://github.com/tikoci/app-t3code/issues/5). Automatic
 upstream-release and security delivery is tracked in
@@ -505,7 +585,7 @@ tag together.
 ```sh
 bun install
 bun run check          # biome + tsc --noEmit
-bun run test           # offline /app YAML contract (always runs)
+bun run test           # offline: /app YAML contract and the npm/deb payload lifecycles
 APP_T3CODE_INTEGRATION=1 bun test test/integration/
 # Build the image, then prove the tools and container-replacement persistence:
 docker build -t app-t3code:test .
@@ -522,8 +602,11 @@ APP_T3CODE_ROS=stable APP_T3CODE_ARCH=arm64 APP_T3CODE_INTEGRATION=1 \
 ```
 
 The Docker replacement test removes the original container and starts a new
-one with only the same home volume. It checks tool discovery in ordinary and
-login shells, a real T3 project record and environment identity, settings
+one with only the same home volume. It installs the `dev` and `capture`
+payloads under `all`, runs the capture tools as the unprivileged user
+([test/capture-tools.sh](test/capture-tools.sh)), and relinks both payloads in
+later containers, including with no network. It checks tool discovery in
+ordinary and login shells, a real T3 project record and environment identity, settings
 (including the restarted server's effective preference through read-only MCP),
 uncommitted worktree/project files, and a user-installed Bun CLI. CI runs
 this against the built x86 image before publishing, and builds both image
