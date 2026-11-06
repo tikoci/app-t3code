@@ -229,7 +229,7 @@ That choice is left to the next slice.
 
 ## Evidence for the implementation (habitat C)
 
-- `bun run check` is green. `bun run test` passes 54 tests across 3 files
+- `bun run check` is green. `bun run test` passes 60 tests across 3 files
   (YAML contract, npm payload lifecycle, deb payload lifecycle with a fake
   `dpkg-deb`, fake mirror and fake snapshot service).
 - `APP_T3CODE_DOCKER_IMAGE=app-t3code:slice3 bun test

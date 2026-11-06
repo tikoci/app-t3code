@@ -103,7 +103,18 @@ function fakeDpkgDeb(): string {
 		`#!/bin/sh
 set -eu
 case "$1" in
--f) tar -xOf "$2" control ;;
+# Like dpkg-deb 1.22: no field -> the whole control file; one field -> its
+# bare value; several -> "Field: value" lines in control-file order.
+-f)
+	f="$2"; shift 2
+	if [ $# -eq 0 ]; then tar -xOf "$f" control; exit 0; fi
+	tar -xOf "$f" control | while IFS= read -r line; do
+		name="\${line%%:*}"
+		for want in "$@"; do
+			[ "$name" = "$want" ] || continue
+			if [ $# -eq 1 ]; then echo "\${line#*: }"; else echo "$line"; fi
+		done
+	done ;;
 -x) mkdir -p "$3" && tar -xf "$2" -C "$3" --strip-components=1 data ;;
 *) exit 2 ;;
 esac
@@ -332,6 +343,28 @@ describe("deb payload groups (capture)", () => {
 		expect(readState(env)["capture"]).toMatchObject({ state: "failed", permanent: true });
 	});
 
+	test("the stale-payload check covers every required command, not only tshark", async () => {
+		const broken = join(tmp, "tcpdump-broke");
+		const tcpdump = `#!/bin/sh\n[ -e "${broken}" ] && { echo "error while loading shared libraries: libpcap.so.0.8" >&2; exit 127; }\necho "tcpdump fake 1.0"\n`;
+		publish(basePackages().map((p) => (p.name === "tcpdump" ? { ...p, files: { ...p.files, "usr/bin/tcpdump": tcpdump } } : p)));
+		await installGroups(payloadGroups, ["capture"], env);
+		publish(basePackages().map((p) => (p.name === "nfdump" ? { ...p, version: "1.7.5-2+deb13u2" } : p)));
+		writeFileSync(broken, ""); // tshark still loads; tcpdump does not
+		expect(activate(payloadGroups, ["capture"], env)).toEqual(["capture"]);
+		expect(existsSync(shim("tshark"))).toBe(false);
+		expect(existsSync(shim("tcpdump"))).toBe(false);
+	});
+
+	test("the fake dpkg-deb answers -f like dpkg-deb 1.22: bare value for one field, Field: value for several", async () => {
+		publish(basePackages());
+		const deb = join(tmp, "probe.deb");
+		writeFileSync(deb, debs.get("tcpdump") as Uint8Array);
+		const one = Bun.spawnSync([...env.dpkgDeb, "-f", deb, "Version"]).stdout.toString();
+		const several = Bun.spawnSync([...env.dpkgDeb, "-f", deb, "Architecture", "Package"]).stdout.toString();
+		expect(one).toBe("4.99.5-2\n");
+		expect(several).toBe("Package: tcpdump\nArchitecture: amd64\n");
+	});
+
 	test("a stale payload that no longer loads against the new image is unlinked until its refresh lands", async () => {
 		publish(basePackages());
 		await installGroups(payloadGroups, ["capture"], env);
@@ -455,6 +488,7 @@ describe("deb payload groups (capture)", () => {
 describe("deb lock resolution (image build)", () => {
 	const simulation = `NOTE: This is only a simulation!
 Inst libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])
+Inst libzstd1 [1.5.7+dfsg-1] (1.5.7+dfsg-1+deb13u1 Debian:13.7/stable [amd64])
 Inst libcares2 [1.34.5-1] (1.34.5-1+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])
 Inst libwireshark-data (4.4.19-0+deb13u1 Debian-Security:13/stable-security [all])
 Inst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])
@@ -479,6 +513,7 @@ Conf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])
 	test("parses apt's simulation, URIs and index stanzas", () => {
 		expect(parseAptSimulation(simulation)).toEqual([
 			{ name: "libpcap0.8t64", version: "1.10.5-2", architecture: "amd64" },
+			{ name: "libzstd1", version: "1.5.7+dfsg-1+deb13u1", architecture: "amd64", installed: "1.5.7+dfsg-1" },
 			{ name: "libcares2", version: "1.34.5-1+deb13u1", architecture: "amd64", installed: "1.34.5-1" },
 			{ name: "libwireshark-data", version: "4.4.19-0+deb13u1", architecture: "all" },
 			{ name: "libcap2-bin", version: "1:2.75-10+deb13u1+b3", architecture: "amd64" },
@@ -501,7 +536,11 @@ Conf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])
 		expect(lock).toMatchObject({ schemaVersion: 1, group: "capture", roots: ["tcpdump"], arch: "amd64", distro: "debian-trixie" });
 		// libcares2 is an upgrade of an image package: recorded, never extracted.
 		expect(lock.packages.map((p) => p.name)).toEqual(["libcap2-bin", "libpcap0.8t64", "libwireshark-data"]);
-		expect(lock.imageUpgrades).toEqual([{ name: "libcares2", installed: "1.34.5-1", candidate: "1.34.5-1+deb13u1" }]);
+		// Sorted by name whatever order apt printed them in, so the lock bytes are stable.
+		expect(lock.imageUpgrades).toEqual([
+			{ name: "libcares2", installed: "1.34.5-1", candidate: "1.34.5-1+deb13u1" },
+			{ name: "libzstd1", installed: "1.5.7+dfsg-1", candidate: "1.5.7+dfsg-1+deb13u1" },
+		]);
 		expect(calls.find((c) => c[0] === "apt-cache")).not.toContain("libcares2=1.34.5-1+deb13u1");
 		expect(lock.packages[0]?.uris[0]).toBe("https://deb.debian.org/debian/pool/main/libc/libcap2/libcap2-bin_2.75-10%2bdeb13u1%2bb3_amd64.deb");
 		expect(lock.packages[2]).toEqual({

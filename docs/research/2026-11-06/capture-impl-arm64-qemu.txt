@@ -1,6 +1,9 @@
 # habitat C (orca, x86_64): the slice-3 implementation itself on linux/arm64 under QEMU user-mode emulation (binfmt), 2026-11-06.
 # Base: node:24-trixie-slim (arm64 variant), Bun 1.4.4 arm64 binary from oven/bun:1.4.4-slim, this branch's scripts/ and test/ mounted read-only.
-# CAPTURE_TOOLS_QEMU_USER=1 skips only 'dumpcap -D': QEMU user mode does not implement the ethtool ioctl it uses
+# In this recorded run CAPTURE_TOOLS_QEMU_USER=1 skipped only 'dumpcap -D' (QEMU user mode does not implement the
+# ethtool ioctl it uses); the live-capture checks then "passed" only because capture failed on the same ioctl. Since
+# the PR #10 review, the script skips the live-capture checks too under this flag, and outside it requires an explicit
+# permission error, so this run claims nothing about privileges on arm64.
 # (first run failed there with: dumpcap: Can't get list of interfaces: eth0: SIOCETHTOOL(ETHTOOL_GLINK) ioctl failed: Inappropriate ioctl for device).
 # docker run --rm --platform linux/arm64 --user root -v bun-arm64:/in/bun-arm64:ro -v $PWD:/src:ro -v run.sh:/run.sh:ro --entrypoint bash node:24-trixie-slim /run.sh
 # run.sh:

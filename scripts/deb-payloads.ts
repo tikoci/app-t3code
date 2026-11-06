@@ -166,7 +166,11 @@ export function resolveDebLock(group: string, roots: readonly string[], exec: Ex
 	const simulated = parseAptSimulation(exec(["apt-get", "install", "-s", ...args]));
 	// Only what the image lacks: an upgrade of an image package is recorded, not extracted.
 	const closure = simulated.filter((p) => p.installed === undefined);
-	const imageUpgrades = simulated.filter((p) => p.installed !== undefined).map((p) => ({ name: p.name, installed: p.installed as string, candidate: p.version }));
+	// Sorted like packages: the lock bytes (and so the payload id) must not depend on apt's order.
+	const imageUpgrades = simulated
+		.filter((p) => p.installed !== undefined)
+		.map((p) => ({ name: p.name, installed: p.installed as string, candidate: p.version }))
+		.sort((a, b) => a.name.localeCompare(b.name));
 	if (closure.length === 0) throw new Error(`${group}: apt resolves nothing to install for ${roots.join(" ")} (already in the image?)`);
 	const uris = parsePrintUris(exec(["apt-get", "install", "--print-uris", "-qq", ...args]));
 	const stanzas = parseStanzas(exec(["apt-cache", "show", "--no-all-versions", ...closure.map((p) => `${p.name}=${p.version}`)]));

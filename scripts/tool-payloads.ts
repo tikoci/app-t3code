@@ -321,14 +321,19 @@ export function verifyPayload(dir: string, group: GroupDef, expectedId?: string,
  */
 function stillRuns(dir: string, group: GroupDef): boolean {
 	if (group.delivery !== "deb") return true;
-	const bin = group.smoke?.command ?? groupBins(group)[0];
-	if (!bin || !existsSync(join(dir, binRel(group, bin)))) return true;
-	try {
-		const proc = Bun.spawnSync([join(dir, binRel(group, bin)), ...versionArgs(group, bin)], { cwd: dir, timeout: 10_000, stdout: "ignore", stderr: "ignore" });
-		return proc.exitCode === 0;
-	} catch {
-		return false;
+	// Every required command the payload provides: each binary has its own
+	// library set (tshark's is the largest, but tcpdump's and nfdump's differ).
+	for (const bin of groupBins(group)) {
+		const path = join(dir, binRel(group, bin));
+		if (!existsSync(path)) continue; // provided by the image instead
+		try {
+			const proc = Bun.spawnSync([path, ...versionArgs(group, bin)], { cwd: dir, timeout: 10_000, stdout: "ignore", stderr: "ignore" });
+			if (proc.exitCode !== 0) return false;
+		} catch {
+			return false;
+		}
 	}
+	return true;
 }
 
 /** Arguments that make a command print its version and exit 0. */
