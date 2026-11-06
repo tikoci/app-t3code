@@ -307,7 +307,10 @@ let ldcache: string | undefined;
 function findLibrary(soname: string): string | null {
 	if (ldcache === undefined) {
 		try {
-			const proc = Bun.spawnSync(["ldconfig", "-p"], { env: { ...process.env, LC_ALL: "C" } });
+			// Absolute path: library checks must not depend on the caller's PATH,
+			// which may omit /usr/sbin. Fall back to PATH outside Debian.
+			const ldconfig = ["/usr/sbin/ldconfig", "/sbin/ldconfig"].find((p) => existsSync(p)) ?? "ldconfig";
+			const proc = Bun.spawnSync([ldconfig, "-p"], { env: { ...process.env, LC_ALL: "C" } });
 			ldcache = proc.exitCode === 0 ? proc.stdout.toString() : "";
 		} catch {
 			ldcache = "";
