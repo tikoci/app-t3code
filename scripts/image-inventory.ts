@@ -10,6 +10,8 @@ ip ss ping dig nslookup nc socat rsync tree time which xxd hexdump
 bridge tc arping traceroute tracepath mtr iperf3 ethtool whois
 tcpdump tshark dumpcap capinfos editcap mergecap text2pcap
 swanctl pki wg conntrack nft snmpget snmpwalk snmptranslate radtest radclient nmap
+nfcapd nfdump openvpn sstpc pppd xl2tpd pppoe-discovery ike-scan bird birdc lldpd lldpcli
+rdisc6 ndisc6 arp-scan mosquitto_pub mosquitto_sub fc-list t3code-tools
 tsc tsserver cspell markdownlint-cli2 biome
 openssl gpg sudo locale python python3 pip pip3 pipx uv uvx node npm npx
 corepack yarn pnpm bun bunx gcc g++ cc c++ ld ar pkg-config cmake ninja

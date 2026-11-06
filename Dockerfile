@@ -18,7 +18,7 @@ ARG BUN_VER=1.4.4
 
 FROM oven/bun:${BUN_VER}-slim AS bun
 
-FROM node:${NODE_VER}-trixie-slim
+FROM node:${NODE_VER}-trixie-slim AS runtime
 
 ARG TARGETARCH
 ARG T3CODE_VER=0.1.6
@@ -30,6 +30,9 @@ ARG CENTRS_VER=next
 ENV T3CODE_VER="${T3CODE_VER}"
 ENV T3CODE_HOST=0.0.0.0
 ENV T3CODE_PORT=3773
+# RouterOS `/app/set environment=` replaces the whole env list, so anything
+# the /app YAML sets must also be an image default here (issue #5).
+ENV T3CODE_TELEMETRY_ENABLED=false
 
 ENV SHELL=/bin/bash
 
@@ -129,6 +132,28 @@ RUN npm install -g --no-fund --no-audit \
         "opencode-ai@${OPENCODE_VER}" && \
     npm cache clean --force
 
+# Core network tools (issue #5 assignment, see README "Network tool
+# assignment"). Small user-space clients only; capture, VPN and routing peers
+# belong to optional groups. A separate late layer keeps the heavy layers
+# above cacheable when this list changes.
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        bind9-dnsutils \
+        ethtool \
+        freeradius-utils \
+        iperf3 \
+        iproute2 \
+        iputils-ping \
+        mosquitto-clients \
+        mtr-tiny \
+        netcat-openbsd \
+        snmp \
+        socat \
+        traceroute \
+        whois && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
 # Everything that must survive a restart lives in the home directory on the
 # volume: T3 Code's database, agent logins, projects, and tools the user
 # installs. Tools installed there with npm or a native installer win over the
@@ -141,10 +166,17 @@ ENV PATH="/data/.local/bin:/data/.bun/bin:/opt/bun/bin:${PATH}"
 COPY docker-entrypoint.sh /
 COPY bin /usr/local/bin
 COPY profile.sh /etc/profile.d/t3code.sh
+COPY scripts/image-inventory.ts scripts/tool-groups.ts /usr/local/lib/t3code/
+
+RUN install -d -o node -g node /usr/share/t3code/inventory
 
 USER node
 
 WORKDIR /data
+
+# Capture the completed image before the entrypoint installs anything into HOME.
+RUN bun /usr/local/lib/t3code/image-inventory.ts --output /usr/share/t3code/inventory && \
+    t3code-tools status --json --groups all > /usr/share/t3code/inventory/tool-groups.json
 
 VOLUME /data
 
@@ -154,3 +186,10 @@ EXPOSE 3773
 ENTRYPOINT ["/usr/bin/tini", "--", "/docker-entrypoint.sh"]
 
 CMD ["t3", "serve"]
+
+# Export inventories for both architectures without loading/running the ARM
+# image on the CI host. Keep the default target as the runnable image below.
+FROM scratch AS inventory
+COPY --from=runtime /usr/share/t3code/inventory/ /
+
+FROM runtime AS final

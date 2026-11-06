@@ -205,7 +205,8 @@ pairing URL instead of a raw token.
 | Env | Default | Notes |
 |---|---|---|
 | `T3CODE_HOST` / `T3CODE_PORT` | `0.0.0.0` / `3773` | server bind |
-| `T3CODE_TELEMETRY_ENABLED` | `false` in our YAML | set `true`/unset to opt back in |
+| `T3CODE_TELEMETRY_ENABLED` | `false` (image default and YAML) | set `true` to opt back in |
+| `T3CODE_TOOL_GROUPS` | unset (core only) | optional tool groups; see [below](#optional-tool-groups) |
 | `PUBLIC_URL` | unset | base URL baked into pairing links |
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, … | inherited | agents see container env |
 | `T3CODE_*` | passthrough | e.g. `T3CODE_SERVER_BROWSER_SANDBOX=0` |
@@ -217,6 +218,177 @@ Muse uses the native binary downloaded and verified by Meta's official
 installer during the image build. Run `muse` to authenticate, or supply
 `META_API_KEY`; its default Linux configuration and history live under
 `/data`. Baked tools update when you replace the image.
+
+### Installed package inventory
+
+The image includes Debian command-line basics (`bash`, `awk`, `sed`, `grep`,
+`find`, `diff`, `tar`, `gzip`), Git/SSH, curl, jq, ripgrep, make, Python 3,
+and Node.js/npm in addition to the agent and RouterOS tools below. This is
+a selected toolset; `make` does not imply a C/C++ compiler, and Python does
+not currently include pip or working default virtual environments.
+
+Every image build records its installed Debian packages (including transitive
+dependencies), versions, architecture, installed sizes, selected executable
+availability, runtime versions, and top-level global npm/Bun packages in
+`/usr/share/t3code/inventory/`. Read `README.md`, `packages.tsv`,
+`commands.tsv`, or `inventory.json` there. `tool-groups.json` holds
+`t3code-tools status --json --groups all` as evaluated at build time. These describe the image before
+first boot; Claude, browser downloads, and tools installed in your home are
+outside this inventory. A command on PATH can also be a downloader shim.
+
+The [CI workflow](https://github.com/tikoci/app-t3code/actions/workflows/ci.yml)
+uploads `image-inventory-<source SHA>` with separate `linux_amd64/` and
+`linux_arm64/` directories, build metadata, the source commit, and the actual
+CI host's full Debian/Ubuntu package inventory under `runner/`. Artifacts
+are retained for 90 days. Published builds also record the image digest;
+PR builds have no published registry digest. Curated documentation should
+cite the build/architecture it describes rather than copying a timeless
+package list into this README.
+
+To inspect a local build without starting T3 or running the first-boot installer:
+
+```sh
+bun scripts/image-inventory.ts --image app-t3code:test --output image-inventory
+```
+
+See the [GitHub runner comparison and package recommendations](docs/research/2026-11-05/README.md)
+for a dated amd64 snapshot, pinned Ubuntu 24.04/26.04 runner data for both
+architectures, dependency-cost estimates, and the proposed additions. Package
+choices are tracked in [issue #5](https://github.com/tikoci/app-t3code/issues/5);
+the core network tools and group assignment are in [Optional tool groups](#optional-tool-groups).
+
+### Optional tool groups
+
+`T3CODE_TOOL_GROUPS` selects optional tool groups from the same image and
+the same `/app` YAML. There are no profile tags or separate apps. Separate
+names with spaces, for example `"capture labs"`. The parser also accepts `+`
+and commas, but RouterOS splits `/app/set environment=` values on commas, so
+use spaces on a router. Names are case-insensitive. Unset, empty, or `none`
+means core only; `all` selects every group. An unknown name is logged as a
+warning and ignored. T3 always starts, whatever the selection says.
+
+**This release reports groups; it does not install them yet.** The selection
+is parsed, logged, and reported to agents. A selected group whose tools are
+not in the image reports `not-implemented`. `labs`, `browser` and
+`agents-extra` are still baked into the image, so their tools are present
+whether or not you select them.
+
+| Group | Contents | In this image |
+|---|---|---|
+| `capture` | tcpdump, TShark (`dumpcap`, `capinfos`, `editcap`, `mergecap`, `text2pcap`), nfdump | not yet |
+| `labs` | quickchr, QEMU x86/ARM64 emulators, qemu-img, firmware | baked in |
+| `vpn` | WireGuard tools, strongSwan (`swanctl`, `pki`, charon), OpenVPN, sstp-client, ppp, xl2tpd, pppoe, ike-scan; no tunnel or service starts by default | not yet |
+| `routing` | BIRD 2, lldpd, ndisc6, arping, arp-scan, nftables, conntrack, nmap | not yet |
+| `dev` | TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks; project lockfiles win | not yet |
+| `browser` | Native libraries for T3's built-in browser (the browser downloads itself on first use) | baked in |
+| `agents-extra` | Provider CLIs beyond the core provider (Codex, opencode, Muse today; core provider not chosen yet) | baked in |
+
+Installing a tool does not grant the privileges to use it. Live capture,
+raw-socket peers, tunnels and firewall changes need capabilities or devices
+that a RouterOS container may not have. Each group's `privileges` field in
+the status output says what it needs.
+
+#### Group status for agents
+
+```sh
+t3code-tools status            # one line per group
+t3code-tools status --json     # runtime inventory for agents
+t3code-tools status --groups "vpn routing"   # evaluate another selection
+t3code-tools groups            # definitions and the network package assignment
+```
+
+Each group reports `selected`, a `state`, and whether its checks found the
+files (`present`, `missing`). The states are:
+
+| State | Meaning |
+|---|---|
+| `not-selected` | Not in `T3CODE_TOOL_GROUPS` |
+| `ready` | Selected, and every check passed |
+| `failed` | Selected, and checks failed for tools the image should provide |
+| `not-implemented` | Selected, but this image has no way to provide the group yet |
+| `pending` | Reserved for the background installer; not reported by this image |
+
+Checks are presence probes (PATH, files, `ldconfig`), not functional tests.
+`labs` never boots a CHR to check readiness. Core checks (`t3`, Node, Bun,
+Python, Git/SSH, centrs and the core network tools) are reported separately
+as `core.state`. At each start the entrypoint logs warnings and a summary to
+the container log and writes the same JSON to `/tmp/t3code-tools/status.json`.
+The output also points at the immutable build inventory in
+`/usr/share/t3code/inventory`.
+
+#### Changing groups on RouterOS
+
+Use `/app/set environment=`. Never reapply or edit the YAML to change
+groups. On 7.25.1 and 7.26beta5, assigning `yaml=` recreates the app's
+volumes, which wipes the home, and leaves the app disabled
+([lab results](docs/research/2026-11-05/app-set-environment.md)).
+`environment=` restarts the container and keeps its volumes. The setting
+survives `/app/update` and reboots.
+
+`environment=` replaces the **whole** environment list. The YAML's
+`environment:` block is only the initial value, and it does not come back as
+a default. A single-key set like `environment="t3code:T3CODE_TOOL_GROUPS=vpn"`
+silently drops every other key. Every setting the app needs is therefore also
+an image `ENV` default, so a dropped key falls back to the same value. Keys
+you added yourself, such as API keys or `PUBLIC_URL`, are not.
+
+To replace only the group key and keep the rest, run this script from the
+RouterOS terminal (or paste it into a `/system/script`). Change `val`:
+
+```routeros
+:local app "t3code"; :local key "t3code:T3CODE_TOOL_GROUPS="; :local val "capture labs"
+:local keep ({}); :foreach e in=[/app/get $app environment] do={ :if ([:find $e $key] != 0) do={ :set keep ($keep, $e) } }
+/app/set $app environment=($keep, ($key . $val))
+```
+
+Check the result with `:put [/app/get t3code environment]`, then run
+`t3code-tools status` in the container. Running the script again with
+another value replaces the key; it does not add a duplicate. Tested on a
+CHR 7.25.1 app named `t3code` with service `t3code`: the other key was kept,
+the container restarted, and the volume's contents survived.
+
+#### Network tool assignment
+
+Every network package from the
+[2026-11-05 research](docs/research/2026-11-05/routeros-protocol-map.md) is
+assigned here. `t3code-tools groups` prints the same table as JSON.
+
+| Where | Packages |
+|---|---|
+| core (in the image) | `iproute2`, `iputils-ping`, `bind9-dnsutils`, `netcat-openbsd`, `socat`, `traceroute`, `mtr-tiny`, `iperf3`, `ethtool`, `whois`, `snmp`, `freeradius-utils`, `mosquitto-clients` |
+| `capture` | `tcpdump`, `tshark`, `wireshark-common`, `nfdump` |
+| `vpn` | `wireguard-tools`, `strongswan-swanctl`, `strongswan-pki`, `strongswan-charon`, `openvpn`, `sstp-client`, `ppp`, `xl2tpd`, `pppoe`, `ike-scan` |
+| `routing` | `bird2`, `lldpd`, `ndisc6`, `arping`, `arp-scan`, `nftables`, `conntrack`, `nmap` |
+| QEMU Linux guest under `labs` | FRR, keepalived, a FreeRADIUS server |
+| not shipped | `pptp-linux` (legacy), `zerotier-one` (not in Debian main), `smbclient` (large Samba dependencies), `snmptrapd` (port 162 needs bind privilege; use a uvx `pysnmp` receiver), `eapoltest` and `ntpsec-ntpdate` (on request) |
+
+Core gets only small user-space clients. With dependencies, their image
+layer measured 29.3 MB uncompressed on amd64. The largest are `snmp` (9 MiB
+with libsnmp and `pci.ids`) and `bind9-dnsutils` (6 MiB), per the apt
+estimates in the [cost data](docs/research/2026-11-05/network-package-costs-amd64.json).
+Apart from ping, they work without extra privileges. centrs already covers MikroTik
+btest, MNDP, MAC-Telnet and RoMON.
+
+`routing` is its own group rather than part of `labs`. `labs` is about
+565 MiB of QEMU and firmware with one readiness contract: quickchr can boot
+a CHR. The routing peers are a few MiB, and they are most useful without
+QEMU, peering with the host router from a privileged container. Folding
+them into `labs` would make a small router download QEMU to get `bird`. It
+would also mix tools that need `CAP_NET_RAW`/`CAP_NET_ADMIN` into a group
+that works unprivileged. `nftables` and `conntrack` join `routing` for the
+same reason: they are Linux router tools that need `CAP_NET_ADMIN`.
+
+#### Roadmap
+
+Later releases install groups as persistent payloads under `/data` in the
+background, after T3 starts, and reuse compatible payloads across image
+replacements. Groups that are baked in today move out only after their
+persistent replacement is proven. See the
+[review brief](docs/research/2026-11-05/REVIEW.md) and
+[issue #5](https://github.com/tikoci/app-t3code/issues/5). Automatic
+upstream-release and security delivery is tracked in
+[issue #6](https://github.com/tikoci/app-t3code/issues/6). `uv`/`uvx` are
+approved Python bootstrap additions; neither is installed yet.
 
 ### Bun and RouterOS tools for agents
 
