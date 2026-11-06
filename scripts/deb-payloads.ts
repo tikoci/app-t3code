@@ -1,4 +1,5 @@
-// Debian-package payloads for native tool groups (issue #5, slice 3: capture).
+// Debian-package payloads for native tool groups (issue #5: slice 3 added
+// capture, slice 4 vpn and routing).
 //
 // A deb payload is the dependency closure of a group's Debian packages, minus
 // what the image already has, extracted as the unprivileged user into the
@@ -10,6 +11,12 @@
 //                                         process tree only, then exec root/usr/bin/<command>
 //   groups/<g>/.cache-debs/<sha256>.deb   verified downloads, kept across
 //                                         interrupted runs, removed on success and by prune
+//
+// Most tools find their data relative to the binary (Wireshark, nmap) or take
+// paths as arguments (BIRD, lldpcli). A tool that only knows compiled-in
+// paths gets a WrapperRule: variables for its wrapper alone (strongSwan's
+// STRONGSWAN_CONF) and, for a compiled-in plugin directory, the plugins
+// preloaded so the loader finds them by symbol.
 //
 // Pins come from the image's own apt metadata at build time (`t3code-tools
 // deb-lock`, run in the Dockerfile right after `apt-get update`): package,
@@ -223,7 +230,32 @@ export interface DebIo {
 	log: (line: string) => void;
 	/** Record the running dpkg-deb child for interrupted-installer recovery; clear after it exits. */
 	onChild?: (pid: number | null) => void;
+	/** Whether these library file names load together under LD_PRELOAD with this library path (default: run /bin/true). */
+	canPreload?: PreloadCheck;
 }
+
+/**
+ * `libraries` are file names without a directory: ld.so looks them up on
+ * `libraryPath`, exactly as the wrapper's LD_PRELOAD does. (ld.so splits
+ * LD_PRELOAD on spaces and colons with no escape, so absolute paths under a
+ * home containing a space would break.)
+ */
+export type PreloadCheck = (libraries: readonly string[], libraryPath: string) => boolean;
+
+/** Preload `libraries` into /bin/true: true only if ld.so loads them all silently. */
+export const preloadLoads: PreloadCheck = (libraries, libraryPath) => {
+	try {
+		const proc = Bun.spawnSync(["/bin/true"], {
+			env: { PATH: "/usr/bin:/bin", LD_LIBRARY_PATH: libraryPath, LD_PRELOAD: libraries.join(":") },
+			stdout: "ignore",
+			stderr: "pipe",
+			timeout: 10_000,
+		});
+		return proc.exitCode === 0 && proc.stderr.toString().trim() === "";
+	} catch {
+		return false;
+	}
+};
 
 /** SHA256 of a file, streamed. */
 export async function sha256File(path: string): Promise<string> {
@@ -392,6 +424,29 @@ export function imageCommand(imageRoot: string, name: string): string | null {
 	return null;
 }
 
+/**
+ * Extra wiring for some of a payload's commands, for tools that resolve files
+ * through paths compiled into them rather than relative to the binary.
+ */
+export interface WrapperRule {
+	/** Commands the rule applies to. Commands without a wrapper (absent, or provided by the image) are ignored; a rule with none is never resolved. */
+	commands: readonly string[];
+	/**
+	 * Defaults for these commands only: a variable the caller already set wins.
+	 * `{root}` is the payload's extracted root; everything else is literal.
+	 */
+	env?: Readonly<Record<string, string>>;
+	/** Arguments placed before the caller's (`{root}` expands); for most tools a later repeat of an option wins, so the caller can still override. */
+	args?: readonly string[];
+	/**
+	 * LD_PRELOAD for these commands: `libraries` (relative to root), then every
+	 * `.so` in `pluginDir` that loads against them alone, as checked at install
+	 * time. For plugin loaders that look a plugin's entry symbol up in the
+	 * process before searching their compiled-in directory (strongSwan).
+	 */
+	preload?: { libraries: readonly string[]; pluginDir: string };
+}
+
 export interface DebPayloadLayout {
 	/** Commands exposed through wrappers (and shims). */
 	commands: string[];
@@ -401,10 +456,28 @@ export interface DebPayloadLayout {
 	libDirs: string[];
 	/** Payload library files that the image also has (the payload's copy wins for payload processes only). */
 	shadows: string[];
+	/** Commands with extra wiring from a WrapperRule: variable defaults, leading arguments (`{root}` unexpanded), libraries preloaded (relative to root). */
+	wired?: Record<string, { env: string[]; args?: string[]; preload: string[] }>;
+}
+
+/** Extra wiring for one wrapper: variable defaults and leading arguments (with `{root}`), and libraries to preload (relative to root). */
+export interface WrapperExtras {
+	env?: Readonly<Record<string, string>>;
+	args?: readonly string[];
+	preload?: readonly string[];
+}
+
+const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const shellQuote = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`;
+
+/** A wrapper variable's value as shell words: literal text single-quoted, only `{root}` expanded. */
+export function shellValue(value: string): string {
+	const parts = value.split("{root}");
+	return parts.map((part, i) => (i === 0 ? "" : '"$p/root"') + (part ? shellQuote(part) : "")).join("") || "''";
 }
 
 /** The `sh` wrapper for one payload command: payload libraries for this process tree only, then exec. */
-export function wrapperScript(group: string, payloadRelTarget: string, libDirs: readonly string[]): string {
+export function wrapperScript(group: string, payloadRelTarget: string, libDirs: readonly string[], extras: WrapperExtras = {}): string {
 	const lines = [
 		"#!/bin/sh",
 		`# Generated by t3code-tools for the ${group} payload. Runs ${payloadRelTarget.replace(/^root\//, "/")}`,
@@ -418,12 +491,57 @@ export function wrapperScript(group: string, payloadRelTarget: string, libDirs: 
 	if (libDirs.length) {
 		lines.push(`LD_LIBRARY_PATH="${libDirs.map((d) => `$p/root/${d}`).join(":")}\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"`, "export LD_LIBRARY_PATH");
 	}
-	lines.push(`exec "$p/${payloadRelTarget}" "$@"`, "");
+	for (const [name, value] of Object.entries(extras.env ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
+		if (!ENV_NAME.test(name)) throw new Error(`wrapper variable name ${JSON.stringify(name)} is not a shell variable name`);
+		// A default: the caller's own setting (even an empty one) wins.
+		lines.push(`[ -n "\${${name}+x}" ] || ${name}=${shellValue(value)}`, `export ${name}`);
+	}
+	if (extras.preload?.length) {
+		// File names only, found on the LD_LIBRARY_PATH above: ld.so splits
+		// LD_PRELOAD on spaces, so absolute paths would break under a home
+		// path containing one.
+		lines.push(`LD_PRELOAD="${extras.preload.map((l) => basename(l)).join(":")}\${LD_PRELOAD:+:$LD_PRELOAD}"`, "export LD_PRELOAD");
+	}
+	const args = (extras.args ?? []).map((arg) => ` ${shellValue(arg)}`).join("");
+	lines.push(`exec "$p/${payloadRelTarget}"${args} "$@"`, "");
 	return lines.join("\n");
 }
 
+/**
+ * Resolve a preload rule against an extracted root: its libraries, then each
+ * plugin that loads against them alone, then a check that the whole set loads
+ * together. Paths are relative to root, sorted for a stable result.
+ */
+export function resolvePreload(root: string, rule: NonNullable<WrapperRule["preload"]>, libDirs: readonly string[], canPreload: PreloadCheck): string[] {
+	const abs = (rel: string) => join(root, rel);
+	const libraryPath = libDirs.map(abs).join(":");
+	// Preloads are named by file name, so each must be the first file of that
+	// name on the wrapper's library path.
+	const reachable = (rel: string) => libDirs.find((dir) => existsSync(join(root, dir, basename(rel)))) === dirname(rel);
+	for (const lib of rule.libraries) {
+		if (!existsSync(abs(lib))) throw new Error(`preload library ${lib} is not in the payload`);
+		if (!reachable(lib)) throw new Error(`preload library ${lib} is not first on the payload's library path`);
+	}
+	const dir = abs(rule.pluginDir);
+	const plugins = existsSync(dir) ? readdirSync(dir).filter((name) => name.endsWith(".so")).sort() : [];
+	const base = rule.libraries.map((lib) => basename(lib));
+	const chosen = plugins
+		.map((name) => join(rule.pluginDir, name))
+		.filter((rel) => reachable(rel) && canPreload([...base, basename(rel)], libraryPath));
+	if (chosen.length === 0) throw new Error(`no plugin in ${rule.pluginDir} loads against ${rule.libraries.join(", ")}`);
+	const all = [...rule.libraries, ...chosen];
+	if (!canPreload(all.map((lib) => basename(lib)), libraryPath)) throw new Error(`the ${all.length} preload libraries from ${rule.pluginDir} do not load together`);
+	return all;
+}
+
 /** Find the payload's commands and library dirs and write one wrapper per command into <staging>/bin. */
-export function layoutDebPayload(group: string, staging: string, imageRoot: string): DebPayloadLayout {
+export function layoutDebPayload(
+	group: string,
+	staging: string,
+	imageRoot: string,
+	rules: readonly WrapperRule[] = [],
+	canPreload: PreloadCheck = preloadLoads,
+): DebPayloadLayout {
 	const root = join(staging, "root");
 	const libDirs = new Set<string>();
 	const shadows: string[] = [];
@@ -436,34 +554,70 @@ export function layoutDebPayload(group: string, staging: string, imageRoot: stri
 		const imagePaths = [join(imageRoot, rel), join(imageRoot, rel.replace(/^usr\//, ""))];
 		if (imagePaths.some((p) => existsSync(p))) shadows.push(rel);
 	});
-	const commands: string[] = [];
+	const sortedLibDirs = [...libDirs].sort();
+	// LD_LIBRARY_PATH has no escape for its separators.
+	if (sortedLibDirs.length && /[:;]/.test(root)) throw new Error(`the payload path ${root} contains ':' or ';', which LD_LIBRARY_PATH cannot carry`);
+	// Pass 1: the commands that get wrappers (an image command of the same name wins).
 	const skippedCommands: string[] = [];
-	mkdirSync(join(staging, "bin"), { recursive: true });
-	const seen = new Set<string>();
+	const targets = new Map<string, string>();
 	for (const dir of BIN_DIRS) {
 		const abs = join(root, dir);
 		if (!existsSync(abs)) continue;
 		for (const name of readdirSync(abs).sort()) {
-			const path = join(abs, name);
 			let st: ReturnType<typeof statSync>;
 			try {
-				st = statSync(path); // follows symlinks inside the payload
+				st = statSync(join(abs, name)); // follows symlinks inside the payload
 			} catch {
 				continue;
 			}
-			if (!st.isFile() || !(st.mode & 0o111) || seen.has(name)) continue;
-			seen.add(name);
-			if (imageCommand(imageRoot, name)) {
-				skippedCommands.push(name);
-				continue;
-			}
-			const wrapper = join(staging, "bin", name);
-			writeFileSync(wrapper, wrapperScript(group, join("root", dir, name), [...libDirs].sort()));
-			chmodSync(wrapper, 0o755);
-			commands.push(name);
+			if (!st.isFile() || !(st.mode & 0o111) || targets.has(name) || skippedCommands.includes(name)) continue;
+			if (imageCommand(imageRoot, name)) skippedCommands.push(name);
+			else targets.set(name, join("root", dir, name));
 		}
 	}
-	return { commands: commands.sort(), skippedCommands: skippedCommands.sort(), libDirs: [...libDirs].sort(), shadows: shadows.sort() };
+	// Pass 2: rules for wrapped commands only. A rule none of whose commands
+	// is wrapped is never resolved, so an image that provides the tool (and
+	// its libraries) instead cannot fail the payload. A preload rule is
+	// resolved once; a command that several rules preload into is checked
+	// again with its merged, deduplicated set.
+	const extras = new Map<string, WrapperExtras>();
+	const preloadSources = new Map<string, number>();
+	for (const rule of rules) {
+		const commands = rule.commands.filter((command) => targets.has(command));
+		if (commands.length === 0) continue;
+		const preload = rule.preload ? resolvePreload(root, rule.preload, sortedLibDirs, canPreload) : undefined;
+		for (const command of commands) {
+			const prev = extras.get(command) ?? {};
+			const merged = [...new Set([...(prev.preload ?? []), ...(preload ?? [])])];
+			const args = [...(prev.args ?? []), ...(rule.args ?? [])];
+			extras.set(command, { env: { ...prev.env, ...rule.env }, ...(args.length ? { args } : {}), ...(merged.length ? { preload: merged } : {}) });
+			if (preload) preloadSources.set(command, (preloadSources.get(command) ?? 0) + 1);
+		}
+	}
+	for (const [command, count] of preloadSources) {
+		const set = extras.get(command)?.preload ?? [];
+		if (count > 1 && !canPreload(set.map((lib) => basename(lib)), sortedLibDirs.map((dir) => join(root, dir)).join(":"))) {
+			throw new Error(`${command}: its ${set.length} merged preload libraries do not load together`);
+		}
+	}
+	mkdirSync(join(staging, "bin"), { recursive: true });
+	const commands: string[] = [];
+	const wired: NonNullable<DebPayloadLayout["wired"]> = {};
+	for (const [name, target] of targets) {
+		const wrapper = join(staging, "bin", name);
+		const extra = extras.get(name);
+		writeFileSync(wrapper, wrapperScript(group, target, sortedLibDirs, extra));
+		chmodSync(wrapper, 0o755);
+		commands.push(name);
+		if (extra) wired[name] = { env: Object.keys(extra.env ?? {}).sort(), ...(extra.args?.length ? { args: [...extra.args] } : {}), preload: [...(extra.preload ?? [])] };
+	}
+	return {
+		commands: commands.sort(),
+		skippedCommands: skippedCommands.sort(),
+		libDirs: sortedLibDirs,
+		shadows: shadows.sort(),
+		...(Object.keys(wired).length ? { wired } : {}),
+	};
 }
 
 export interface DebInstallResult extends DebPayloadLayout {
@@ -472,7 +626,15 @@ export interface DebInstallResult extends DebPayloadLayout {
 }
 
 /** Fetch, verify and extract every pinned package into <staging>/root, then write wrappers. */
-export async function installDebPayload(group: string, lock: DebLock, staging: string, cache: string, io: DebIo, signal?: AbortSignal): Promise<DebInstallResult> {
+export async function installDebPayload(
+	group: string,
+	lock: DebLock,
+	staging: string,
+	cache: string,
+	io: DebIo,
+	signal?: AbortSignal,
+	rules: readonly WrapperRule[] = [],
+): Promise<DebInstallResult> {
 	const root = join(staging, "root");
 	mkdirSync(root, { recursive: true });
 	const debs: DebInstallResult["debs"] = {};
@@ -485,7 +647,7 @@ export async function installDebPayload(group: string, lock: DebLock, staging: s
 		if (res.code !== 0) throw new Error(`dpkg-deb -x ${pkg.name} exited ${res.code}: ${res.err.trim()}`);
 		debs[pkg.name] = { version: pkg.version, sha256: pkg.sha256, source: source === "cache" ? "cache" : new URL(source).host };
 	}
-	return { ...layoutDebPayload(group, staging, io.imageRoot), debs, downloadedBytes };
+	return { ...layoutDebPayload(group, staging, io.imageRoot, rules, io.canPreload ?? preloadLoads), debs, downloadedBytes };
 }
 
 /** Read and schema-check a lock file. */

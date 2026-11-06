@@ -68,6 +68,19 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   program-relative data/plugin lookup. snapshot.debian.org (the fallback for
   superseded versions) answers 504 to cold queries; the client retries.
   Never claim capture privileges from installing it (#7).
+- `vpn` and `routing` (slice 4) are deb payloads too. A tool that only knows
+  compiled-in paths gets a `wrappers` rule in its group (env with `{root}`,
+  plus an install-time-checked `LD_PRELOAD` plugin set): strongSwan has no
+  runtime plugin dir, so `pki`/`swanctl` preload the plugins that load
+  against libstrongswan alone. Probes that cannot exit 0 (birdc without a
+  daemon; nft/conntrack without netfilter netlink, e.g. under QEMU user mode)
+  declare `versionExit` so one kernel feature cannot fail the whole group.
+  PPP peers (pppd, xl2tpd, sstpc, pppoe) and lldpd cannot run from `/data`
+  even when privileged (root, `/etc/ppp`, `/usr/sbin/pppd`, a `_lldpd`
+  user); they belong to the `labs` Linux guest. Keep the README's
+  "Privileges by tool" table and each group's `privileges` (plus
+  `CORE_PRIVILEGES`) in step when tools move.
+  See `docs/research/2026-11-06/vpn-routing-payloads.md`.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
   (including comments), regenerate the link's `yaml` query parameter from

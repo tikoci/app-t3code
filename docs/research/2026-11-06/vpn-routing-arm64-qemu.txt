@@ -1,0 +1,52 @@
+# arm64 under QEMU user-mode emulation (binfmt) on orca, habitat C. Base node:24-trixie-slim + Bun 1.4.4,
+# this branch's scripts. Runner: lock as root, install and test/*-tools.sh as node.
+# Recorded before the review rounds: routing still held lldpd (its summary below
+# says "LLDP/CDP"), and the closure counts include it. Since then lldpd moved to
+# the labs guest; see vpn-routing-payloads.md.
+
+== environment
+date: 2026-11-06T19:01:04Z  arch: arm64  uname -m: aarch64  Debian GNU/Linux 13 (trixie)
+== deb-lock as root (closure against this bare base, larger than the app image's)
+capture: 83 packages for arm64 debian-trixie, 38.7 MiB download, 190.0 MiB unpacked -> /usr/local/lib/t3code/groups/capture/debs.lock.json
+vpn: 29 packages for arm64 debian-trixie, 5.5 MiB download, 24.0 MiB unpacked -> /usr/local/lib/t3code/groups/vpn/debs.lock.json
+routing: 54 packages for arm64 debian-trixie, 23.2 MiB download, 106.3 MiB unpacked -> /usr/local/lib/t3code/groups/routing/debs.lock.json
+real	1m59.506s
+user	1m54.367s
+sys	0m5.143s
+== install as node
+$ grep CapEff /proc/self/status; time t3code-tools install
+CapEff:	0000000000000000
+t3code-tools: vpn: installing payload arm64-trixie-c3c7d8af73ba2bb4 (attempt 1/3)
+t3code-tools: vpn: downloaded 5.5 MiB in 29 packages, all SHA256-verified
+t3code-tools: vpn: ready in 14s (wireguard-tools v1.0.20210914 - https://git.zx2c4.com/wireguard-tools/; strongSwan 6.0.1 swanctl; strongSwan 6.0.1 PKI tool; OpenVPN 2.6.14 aarch64-unknown-linux-gnu [SSL (OpenSSL)] [LZO] [LZ4] [EPOLL] [PKCS11] [MH/PKTINFO] [AEAD] [DCO]; ike-scan 1.9.6)
+t3code-tools: routing: installing payload arm64-trixie-a6472790de7d13c7 (attempt 1/3)
+t3code-tools: routing: downloaded 23.2 MiB in 54 packages, all SHA256-verified
+t3code-tools: routing: ready in 25s (BIRD version 2.17.5; Unable to connect to server control socket (/nonexistent/bird.ctl): No such file or directory; 1.0.18; 1.0.18; ndisc6: IPv6 Neighbor/Router Discovery userland tool 1.0.7 ($Rev$); ndisc6: IPv6 Neighbor/Router Discovery userland tool 1.0.7 ($Rev$); ARPing 2.25, by Thomas Habets <thomas@habets.se>; arp-scan 1.10.0; src/mnl.c:64: Unable to initialize Netlink socket: Protocol not supported; mnl_socket_open: Protocol not supported; Nmap version 7.95 ( https://nmap.org ))
+
+real	0m42.966s
+user	0m46.418s
+sys	0m9.118s
+[exit 0]
+$ t3code-tools status | grep -E "^(vpn|routing)"; du -sb /data/.local/share/t3code-tools/groups/*/current/
+vpn           ready           present  WireGuard, strongSwan and OpenVPN peer and key tools, ike-scan (no default tunnel or service)
+routing       ready           present  Linux router-peer tools: BIRD, LLDP/CDP, ND/ARP probes, nftables, conntrack, nmap
+108109003	/data/.local/share/t3code-tools/groups/routing/current/
+23936541	/data/.local/share/t3code-tools/groups/vpn/current/
+[exit 0]
+$ jq -c '.deb.wired.pki.preload|map(split("/")|last)' /data/.local/share/t3code-tools/groups/vpn/current/manifest.json 2>/dev/null || grep -o 'libstrongswan-[a-z0-9-]*\.so' /data/.local/share/t3code-tools/groups/vpn/current/bin/pki | sort -u | tr '\n' ' '
+libstrongswan-constraints.so libstrongswan-dnskey.so libstrongswan-drbg.so libstrongswan-nonce.so libstrongswan-openssl.so libstrongswan-pem.so libstrongswan-pkcs1.so libstrongswan-pkcs7.so libstrongswan-pkcs8.so libstrongswan-pubkey.so libstrongswan-random.so libstrongswan-revocation.so libstrongswan-tnc-tnccs.so libstrongswan-x509.so [exit 0]
+== functional scripts
+$ bash /tests/vpn-tools.sh 2>/dev/null
+vpn ok: wireguard-tools v1.0.20210914; strongSwan 6.0.1 PKI tool; OpenVPN 2.6.14
+[exit 0]
+$ ROUTING_TOOLS_QEMU_USER=1 bash /tests/routing-tools.sh
+bird: Cannot disable transparent huge pages: prctl(PR_SET_THP_DISABLE) failed: Invalid argument
+bird: Cannot disable transparent huge pages: prctl(PR_SET_THP_DISABLE) failed: Invalid argument
+bird: Cannot disable transparent huge pages: prctl(PR_SET_THP_DISABLE) failed: Invalid argument
+bird: Cannot disable transparent huge pages: prctl(PR_SET_THP_DISABLE) failed: Invalid argument
+routing ok: BIRD version 2.17.5; Nmap version 7.95 ( https://nmap.org )
+[exit 0]
+
+# Earlier runs, before nft and conntrack declared their netlink errors (versionExit):
+out2.txt:t3code-tools: routing: attempt 1 failed: conntrack --version exited 1: mnl_socket_open: Protocol not supported
+out.txt:t3code-tools: routing: attempt 1 failed: nft --version exited 3: src/mnl.c:64: Unable to initialize Netlink socket: Protocol not supported

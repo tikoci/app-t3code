@@ -1,0 +1,129 @@
+
+== environment
+date: 2026-11-06T20:03:30Z  arch: amd64  Debian GNU/Linux 13 (trixie)
+t3: 0.1.6  kernel: 7.2.8-9-omarchy
+$ id; grep CapEff /proc/self/status; echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-} LD_PRELOAD=${LD_PRELOAD:-}"
+uid=1000(node) gid=1000(node) groups=1000(node)
+CapEff:	0000000000000000
+LD_LIBRARY_PATH= LD_PRELOAD=
+[exit 0]
+vpn: 14 packages, 3700844 B download, 12749824 B unpacked (apt Installed-Size)
+  ike-scan=1.9.5-2 libcharon-extra-plugins=6.0.1-6+deb13u7 libip4tc2=1.8.11-2 liblzo2-2=2.10-3+b1 libnl-genl-3-200=3.7.0-2 libpkcs11-helper1t64=1.30.0-1+b1 libstrongswan=6.0.1-6+deb13u7 openvpn=2.6.14-1+deb13u3 strongswan-charon=6.0.1-6+deb13u7 strongswan-libcharon=6.0.1-6+deb13u7 strongswan-pki=6.0.1-6+deb13u7 strongswan-starter=6.0.1-6+deb13u7 strongswan-swanctl=6.0.1-6+deb13u7 wireguard-tools=1.0.20210914-3
+routing: 21 packages, 8687316 B download, 35067904 B unpacked (apt Installed-Size)
+  arp-scan=1.10.0-2+b1 arping=2.25-1 bird2=2.17.5-0+deb13u1 conntrack=1:1.4.8-2 libblas3=3.12.1-6 liblinear4=2.3.0+dfsg-5+b2 liblua5.4-0=5.4.7-1+b2 libnet1=1.3+dfsg-2 libnetfilter-conntrack3=1.1.0-1 libnfnetlink0=1.0.2-3 libnftables1=1.1.3-1 libnftnl11=1.2.9-1 libssh-4=0.11.5-0+deb13u1 libtext-charwidth-perl=0.04-11+b4 libtext-wrapi18n-perl=0.06-10 ndisc6=1.0.7-1 nftables=1.1.3-1 nmap=7.95+dfsg-3 nmap-common=7.95+dfsg-3 sensible-utils=0.0.25 ucf=3.0052
+
+== install as node (the entrypoint runs this in the background)
+$ time t3code-tools install
+t3code-tools: vpn: installing payload amd64-trixie-e99b19e0cb29800b (attempt 1/3)
+t3code-tools: vpn: downloaded 3.5 MiB in 14 packages, all SHA256-verified
+t3code-tools: vpn: ready in 1s (wireguard-tools v1.0.20210914 - https://git.zx2c4.com/wireguard-tools/; strongSwan 6.0.1 swanctl; strongSwan 6.0.1 PKI tool; OpenVPN 2.6.14 x86_64-pc-linux-gnu [SSL (OpenSSL)] [LZO] [LZ4] [EPOLL] [PKCS11] [MH/PKTINFO] [AEAD] [DCO]; ike-scan 1.9.6)
+t3code-tools: routing: installing payload amd64-trixie-7d4831ecb9d171fa (attempt 1/3)
+t3code-tools: routing: downloaded 8.3 MiB in 21 packages, all SHA256-verified
+t3code-tools: routing: ready in 1s (BIRD version 2.17.5; Unable to connect to server control socket (/nonexistent/bird.ctl): No such file or directory; ndisc6: IPv6 Neighbor/Router Discovery userland tool 1.0.7 ($Rev$); ndisc6: IPv6 Neighbor/Router Discovery userland tool 1.0.7 ($Rev$); ARPing 2.25, by Thomas Habets <thomas@habets.se>; arp-scan 1.10.0; nftables v1.1.3 (Commodore Bullmoose #4); conntrack v1.4.8 (conntrack-tools); Nmap version 7.95 ( https://nmap.org ))
+
+real	0m2.150s
+user	0m1.288s
+sys	0m0.637s
+[exit 0]
+$ t3code-tools status | grep -E "^(T3CODE|core|vpn|routing)"
+T3CODE_TOOL_GROUPS="vpn routing" -> vpn routing
+core: ready
+vpn           ready           present  WireGuard, strongSwan and OpenVPN peer and key tools, ike-scan (no default tunnel or service)
+routing       ready           present  Linux router-peer tools: BIRD, ND/ARP probes, nftables, conntrack, nmap
+[exit 0]
+$ du -sb /data/.local/share/t3code-tools/groups/vpn/current/ /data/.local/share/t3code-tools/groups/routing/current/
+11976042	/data/.local/share/t3code-tools/groups/vpn/current/
+34074039	/data/.local/share/t3code-tools/groups/routing/current/
+[exit 0]
+$ for g in vpn routing; do jq -c '{group, payloadId, durationMs, commands, libDirs: .deb.libDirs, skipped: .deb.skippedCommands, shadows: .deb.shadows, downloadedBytes: .deb.downloadedBytes}' /data/.local/share/t3code-tools/groups/$g/current/manifest.json; done
+{"group":"vpn","payloadId":"amd64-trixie-e99b19e0cb29800b","durationMs":742,"commands":["ike-scan","ipsec","openvpn","pki","psk-crack","pt-tls-client","swanctl","wg","wg-quick"],"libDirs":["usr/lib/ipsec","usr/lib/ipsec/plugins","usr/lib/x86_64-linux-gnu"],"skipped":[],"shadows":[],"downloadedBytes":3700844}
+{"group":"routing","payloadId":"amd64-trixie-7d4831ecb9d171fa","durationMs":1295,"commands":["addr2name","arp-fingerprint","arp-scan","arping","bird","birdc","birdcl","conntrack","dnssort","get-iab","get-oui","name2addr","ndisc6","nft","nmap","nping","rdisc6","rltraceroute6","select-editor","sensible-browser","sensible-editor","sensible-pager","sensible-terminal","tcpspray.ndisc6","tcpspray6","tcptraceroute6","tracert6","ucf","ucfq","ucfr"],"libDirs":["usr/lib/x86_64-linux-gnu","usr/lib/x86_64-linux-gnu/blas"],"skipped":[],"shadows":[],"downloadedBytes":8687316}
+[exit 0]
+$ jq -r '.versions|to_entries[]|"\(.key): \(.value)"' /data/.local/share/t3code-tools/groups/vpn/current/manifest.json /data/.local/share/t3code-tools/groups/routing/current/manifest.json
+wg: wireguard-tools v1.0.20210914 - https://git.zx2c4.com/wireguard-tools/
+swanctl: strongSwan 6.0.1 swanctl
+pki: strongSwan 6.0.1 PKI tool
+openvpn: OpenVPN 2.6.14 x86_64-pc-linux-gnu [SSL (OpenSSL)] [LZO] [LZ4] [EPOLL] [PKCS11] [MH/PKTINFO] [AEAD] [DCO]
+ike-scan: ike-scan 1.9.6
+bird: BIRD version 2.17.5
+birdc: Unable to connect to server control socket (/nonexistent/bird.ctl): No such file or directory
+rdisc6: ndisc6: IPv6 Neighbor/Router Discovery userland tool 1.0.7 ($Rev$)
+ndisc6: ndisc6: IPv6 Neighbor/Router Discovery userland tool 1.0.7 ($Rev$)
+arping: ARPing 2.25, by Thomas Habets <thomas@habets.se>
+arp-scan: arp-scan 1.10.0
+nft: nftables v1.1.3 (Commodore Bullmoose #4)
+conntrack: conntrack v1.4.8 (conntrack-tools)
+nmap: Nmap version 7.95 ( https://nmap.org )
+[exit 0]
+$ jq -c '.deb.wired|to_entries[]|{command: .key, env: .value.env, preload: [.value.preload[]|split("/")|last]}' /data/.local/share/t3code-tools/groups/vpn/current/manifest.json
+{"command":"pki","env":["STRONGSWAN_CONF","SWANCTL_DIR"],"preload":["libstrongswan.so.0","libstrongswan-constraints.so","libstrongswan-dnskey.so","libstrongswan-drbg.so","libstrongswan-nonce.so","libstrongswan-openssl.so","libstrongswan-pem.so","libstrongswan-pkcs1.so","libstrongswan-pkcs7.so","libstrongswan-pkcs8.so","libstrongswan-pubkey.so","libstrongswan-random.so","libstrongswan-revocation.so","libstrongswan-tnc-tnccs.so","libstrongswan-x509.so"]}
+{"command":"pt-tls-client","env":["STRONGSWAN_CONF","SWANCTL_DIR"],"preload":["libstrongswan.so.0","libstrongswan-constraints.so","libstrongswan-dnskey.so","libstrongswan-drbg.so","libstrongswan-nonce.so","libstrongswan-openssl.so","libstrongswan-pem.so","libstrongswan-pkcs1.so","libstrongswan-pkcs7.so","libstrongswan-pkcs8.so","libstrongswan-pubkey.so","libstrongswan-random.so","libstrongswan-revocation.so","libstrongswan-tnc-tnccs.so","libstrongswan-x509.so"]}
+{"command":"swanctl","env":["STRONGSWAN_CONF","SWANCTL_DIR"],"preload":["libstrongswan.so.0","libstrongswan-constraints.so","libstrongswan-dnskey.so","libstrongswan-drbg.so","libstrongswan-nonce.so","libstrongswan-openssl.so","libstrongswan-pem.so","libstrongswan-pkcs1.so","libstrongswan-pkcs7.so","libstrongswan-pkcs8.so","libstrongswan-pubkey.so","libstrongswan-random.so","libstrongswan-revocation.so","libstrongswan-tnc-tnccs.so","libstrongswan-x509.so"]}
+[exit 0]
+
+== strongSwan: what the wrapper fixes (raw binary, then each piece)
+$ cd /tmp; LD_LIBRARY_PATH=/data/.local/share/t3code-tools/groups/vpn/current/root/usr/lib/ipsec:/data/.local/share/t3code-tools/groups/vpn/current/root/usr/lib/ipsec/plugins:/data/.local/share/t3code-tools/groups/vpn/current/root/usr/lib/x86_64-linux-gnu:/data/.local/share/t3code-tools/groups/vpn/current/root/usr/lib/aarch64-linux-gnu /data/.local/share/t3code-tools/groups/vpn/current/root/usr/bin/pki --gen --type ed25519 --outform pem 2>&1 | tail -2
+no files found matching '/etc/strongswan.conf'
+abort initialization due to invalid configuration
+[exit 64]
+$ cd /tmp; LD_LIBRARY_PATH=/data/.local/share/t3code-tools/groups/vpn/current/root/usr/lib/ipsec:/data/.local/share/t3code-tools/groups/vpn/current/root/usr/lib/ipsec/plugins:/data/.local/share/t3code-tools/groups/vpn/current/root/usr/lib/x86_64-linux-gnu:/data/.local/share/t3code-tools/groups/vpn/current/root/usr/lib/aarch64-linux-gnu STRONGSWAN_CONF=/data/.local/share/t3code-tools/groups/vpn/current/root/etc/strongswan.conf /data/.local/share/t3code-tools/groups/vpn/current/root/usr/bin/pki --gen --type ed25519 --outform pem 2>&1 | tail -2
+building CRED_PRIVATE_KEY - ED25519 failed, tried 0 builders
+private key generation failed
+[exit 1]
+$ cd /tmp; pki --gen --type ed25519 --outform pem 2>/dev/null | sed -n 1p; pki --help 2>&1 | grep "loaded plugins"
+-----BEGIN PRIVATE KEY-----
+loaded plugins: random x509 revocation constraints pubkey pkcs1 pkcs7 dnskey pem openssl pkcs8 drbg
+[exit 0]
+$ cd /tmp; time (for i in $(seq 50); do pki --help >/dev/null 2>&1; done)
+
+real	0m0.449s
+user	0m0.252s
+sys	0m0.196s
+[exit 0]
+$ cd /tmp; time (for i in $(seq 50); do wg --version >/dev/null; done)
+
+real	0m0.109s
+user	0m0.034s
+sys	0m0.077s
+[exit 0]
+
+== nmap and BIRD find their files without variables
+$ cd /tmp; nmap -d2 -sL -n 127.0.0.1 2>&1 | awk '/Fetchfile/ && n++ < 2'; status=$?; echo "NMAPDIR=${NMAPDIR:-}"; exit "$status"
+Fetchfile found /data/.local/share/t3code-tools/groups/routing/amd64-trixie-7d4831ecb9d171fa/root/usr/bin/../share/nmap/nmap.xsl
+NMAPDIR=
+[exit 0]
+$ grep -ao '/etc/bird/bird.conf\|/run/bird/bird.ctl' /data/.local/share/t3code-tools/groups/routing/current/root/usr/sbin/bird | sort -u
+/etc/bird/bird.conf
+/run/bird/bird.ctl
+[exit 0]
+
+== functional scripts (the docker test runs the same ones)
+$ bash /tests/vpn-tools.sh 2>/dev/null
+vpn ok: wireguard-tools v1.0.20210914; strongSwan 6.0.1 PKI tool; OpenVPN 2.6.14
+[exit 0]
+$ bash /tests/routing-tools.sh
+routing ok: BIRD version 2.17.5; Nmap version 7.95 ( https://nmap.org )
+[exit 0]
+
+== PPP family (not shipped in vpn): compiled-in paths and root
+$ cd /tmp/ppp; ls *.deb; for f in *.deb; do dpkg-deb -x "$f" root; done
+ppp_2.5.2-1+1_amd64.deb
+pppoe_4.0-1_amd64.deb
+sstp-client_1.0.20-1+b2_amd64.deb
+xl2tpd_1.3.18-1+b1_amd64.deb
+[exit 0]
+$ cd /tmp/ppp/root; LD_LIBRARY_PATH=$PWD/usr/lib/x86_64-linux-gnu:$PWD/usr/lib/aarch64-linux-gnu usr/sbin/pppd --version
+usr/sbin/pppd: Can't open options file /etc/ppp/options: No such file or directory
+[exit 2]
+$ cd /tmp/ppp/root; for b in usr/sbin/xl2tpd usr/sbin/sstpc; do echo "$b: $(grep -ao /usr/sbin/pppd "$b" | sort -u)"; done; echo "pppd: $(grep -ao "/etc/ppp/options" usr/sbin/pppd | sort -u)"
+usr/sbin/xl2tpd: /usr/sbin/pppd
+usr/sbin/sstpc: /usr/sbin/pppd
+pppd: /etc/ppp/options
+[exit 0]
+
+== stock Debian strongSwan prints the same plugin lines (root install, for comparison)
+$ /usr/bin/pki --gen --type ed25519 (stock, as node)
+plugin 'test-vectors': failed to load - test_vectors_plugin_create not found and no plugin file available
+plugin 'pkcs11': failed to load - pkcs11_plugin_create not found and no plugin file available
+plugin 'tpm': failed to load - tpm_plugin_create not found and no plugin file available
+[exit 0]

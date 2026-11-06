@@ -53,6 +53,7 @@ import {
 	debLockBytes,
 	imageCommand,
 	installDebPayload,
+	type PreloadCheck,
 	readDebLock,
 	SNAPSHOT_BASE,
 	sha256File,
@@ -100,6 +101,8 @@ export interface PayloadEnv {
 	snapshotRetryMs?: readonly number[];
 	/** Image filesystem root: deb payloads never shadow its commands. */
 	imageRoot: string;
+	/** deb wrapper preload check (default: ld.so loading the libraries into /bin/true). */
+	canPreload?: PreloadCheck;
 	sleep: (ms: number) => Promise<void>;
 	log: (line: string) => void;
 	/** Free bytes available to the payload root. */
@@ -188,6 +191,9 @@ export interface Desired {
 	debLock?: DebLock;
 }
 
+/** Bump when generated wrapper scripts change shape for groups with wrapper rules (their payload ids change). */
+export const WRAPPER_FORMAT = 1;
+
 const idHash = (parts: readonly (string | number)[]) => createHash("sha256").update(parts.join("\n")).digest("hex").slice(0, 16);
 
 function desiredNpm(group: GroupDef, env: PayloadEnv): Desired | { error: string } {
@@ -224,7 +230,10 @@ function desiredDeb(group: GroupDef, env: PayloadEnv): Desired | { error: string
 	}
 	const lockSha256 = createHash("sha256").update(text).digest("hex");
 	const codename = compat.distro.split("-").pop() ?? compat.distro;
-	const id = `${compat.arch}-${codename}-${idHash([PAYLOAD_SCHEMA, group.name, lockSha256, compat.platform, compat.arch, compat.distro])}`;
+	// Wrapper rules shape the files written into the payload, so a changed
+	// rule is a new payload. Groups without rules (capture) keep their ids.
+	const wiring = group.wrappers?.length ? [`wrappers:${WRAPPER_FORMAT}:${JSON.stringify(group.wrappers)}`] : [];
+	const id = `${compat.arch}-${codename}-${idHash([PAYLOAD_SCHEMA, group.name, lockSha256, compat.platform, compat.arch, compat.distro, ...wiring])}`;
 	return { id, lockSha256, compat, packages: Object.fromEntries(lock.packages.map((p) => [p.name, p.version])), debLock: lock };
 }
 
@@ -260,6 +269,8 @@ export interface Manifest {
 		skippedCommands: string[];
 		shadows: string[];
 		downloadedBytes: number;
+		/** Commands with extra wrapper wiring (WrapperRule): variables set and libraries preloaded. */
+		wired?: Record<string, { env: string[]; preload: string[] }>;
 	};
 }
 
@@ -328,8 +339,8 @@ function stillRuns(dir: string, group: GroupDef, imageRoot: string): boolean {
 		const path = join(dir, binRel(group, bin));
 		if (!existsSync(path)) continue; // provided by the image instead
 		try {
-			const proc = Bun.spawnSync([path, ...versionArgs(group, bin)], { cwd: dir, timeout: 10_000, stdout: "ignore", stderr: "ignore" });
-			if (proc.exitCode !== 0) return false;
+			const proc = Bun.spawnSync([path, ...versionArgs(group, bin)], { cwd: dir, timeout: 10_000, stdout: "pipe", stderr: "pipe" });
+			if (!versionProbeOk(group, bin, proc.exitCode ?? -1, `${proc.stdout.toString()}${proc.stderr.toString()}`)) return false;
 		} catch {
 			return false;
 		}
@@ -340,6 +351,13 @@ function stillRuns(dir: string, group: GroupDef, imageRoot: string): boolean {
 /** Arguments that make a command print its version and exit 0. */
 export function versionArgs(group: GroupDef, bin: string): string[] {
 	return [...(group.versionArgs?.[bin] ?? ["--version"])];
+}
+
+/** Whether a version probe proves the command runs: exit 0, or the group's declared exit code with its message. */
+export function versionProbeOk(group: GroupDef, bin: string, code: number, out: string): boolean {
+	if (code === 0) return true;
+	const special = group.versionExit?.[bin];
+	return special !== undefined && code === special.code && out.includes(special.expect);
 }
 
 function readLink(path: string): string | null {
@@ -721,17 +739,19 @@ async function buildDeb(group: GroupDef, desired: Desired, env: PayloadEnv, stag
 			snapshotBase: env.snapshotBase,
 			imageRoot: env.imageRoot,
 			log: env.log,
+			...(env.canPreload ? { canPreload: env.canPreload } : {}),
 			onChild: (pid) => setLockChild(env, pid, true),
 			...(env.snapshotRetryMs ? { snapshotRetryMs: env.snapshotRetryMs } : {}),
 		},
 		AbortSignal.timeout(env.installTimeoutMs),
+		group.wrappers ?? [],
 	);
 	// A required command the image itself provides is satisfied by the image.
 	const missing = groupBins(group).filter((bin) => !result.commands.includes(bin) && !imageCommand(env.imageRoot, bin));
 	if (missing.length) throw new Error(`neither the payload nor the image provides ${missing.join(", ")}`);
 	if (result.downloadedBytes) env.log(`${group.name}: downloaded ${(result.downloadedBytes / MiB).toFixed(1)} MiB in ${lock.packages.length} packages, all SHA256-verified`);
-	const { debs, libDirs, skippedCommands, shadows, downloadedBytes } = result;
-	return { commands: result.commands, deb: { debs, libDirs, skippedCommands, shadows, downloadedBytes } };
+	const { debs, libDirs, skippedCommands, shadows, downloadedBytes, wired } = result;
+	return { commands: result.commands, deb: { debs, libDirs, skippedCommands, shadows, downloadedBytes, ...(wired ? { wired } : {}) } };
 }
 
 async function installOnce(group: GroupDef, desired: Desired, env: PayloadEnv, staging: string, cache: string): Promise<Manifest> {
@@ -752,20 +772,20 @@ async function installOnce(group: GroupDef, desired: Desired, env: PayloadEnv, s
 		const probe = await run([path, ...versionArgs(group, bin)], staging, 60_000);
 		// Some tools (nfdump) print their own path; keep the manifest free of staging paths.
 		const first = (probe.out.split("\n").find((line) => line.trim()) ?? "").replaceAll(`${join(staging, "root", "usr", "bin")}/`, "").replaceAll(`${staging}/`, "");
-		if (probe.code !== 0) throw new Error(`${bin} ${versionArgs(group, bin).join(" ")} exited ${probe.code}: ${first}`);
+		if (!versionProbeOk(group, bin, probe.code, probe.out)) throw new Error(`${bin} ${versionArgs(group, bin).join(" ")} exited ${probe.code}: ${first}`);
 		versions[bin] = first.trim();
 	}
-	if (group.smoke) {
-		// A functional check of the real tools before the payload is trusted.
+	for (const smoke of group.smoke ?? []) {
+		// A functional check of the real tools, through their wrappers, before the payload is trusted.
 		const input = join(staging, ".smoke-input");
-		writeFileSync(input, Buffer.from(group.smoke.inputBase64 ?? "", "base64"));
-		const args = group.smoke.args.map((arg) => (arg === "{input}" ? input : arg));
-		const smokeBin = join(staging, binRel(group, group.smoke.command));
-		const smokePath = existsSync(smokeBin) ? smokeBin : ((group.delivery === "deb" ? imageCommand(env.imageRoot, group.smoke.command) : null) ?? smokeBin);
+		writeFileSync(input, Buffer.from(smoke.inputBase64 ?? "", "base64"));
+		const args = smoke.args.map((arg) => arg.replaceAll("{input}", input));
+		const smokeBin = join(staging, binRel(group, smoke.command));
+		const smokePath = existsSync(smokeBin) ? smokeBin : ((group.delivery === "deb" ? imageCommand(env.imageRoot, smoke.command) : null) ?? smokeBin);
 		const probe = await run([smokePath, ...args], staging, 60_000);
 		rmSync(input, { force: true });
-		if (probe.code !== 0 || !probe.out.includes(group.smoke.expect)) {
-			throw new Error(`smoke test ${group.smoke.command} ${group.smoke.args.join(" ")} failed (exit ${probe.code}): ${probe.out.split("\n").slice(-3).join(" | ")}`);
+		if (probe.code !== 0 || !probe.out.includes(smoke.expect)) {
+			throw new Error(`smoke test ${smoke.command} ${smoke.args.join(" ")} failed (exit ${probe.code}): ${probe.out.split("\n").slice(-3).join(" | ")}`);
 		}
 	}
 	const manifest: Manifest = {

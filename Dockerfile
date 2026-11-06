@@ -171,7 +171,7 @@ COPY profile.sh /etc/profile.d/t3code.sh
 COPY scripts/image-inventory.ts scripts/tool-groups.ts scripts/tool-payloads.ts scripts/deb-payloads.ts /usr/local/lib/t3code/
 COPY scripts/groups /usr/local/lib/t3code/groups
 
-# Native tool groups (`capture`) install as Debian-package payloads into the
+# Native tool groups (`capture`, `vpn`, `routing`) install as Debian-package payloads into the
 # home at runtime, as node. Pin each group's dependency closure (whatever this
 # image lacks) by version, size and SHA256 from apt's verified indexes now, so
 # a rebuild picks up Debian security updates and the payload id follows them.
@@ -190,7 +190,10 @@ WORKDIR /data
 # Capture the completed image before the entrypoint installs anything into HOME.
 RUN bun /usr/local/lib/t3code/image-inventory.ts --output /usr/share/t3code/inventory && \
     t3code-tools status --json --groups all > /usr/share/t3code/inventory/tool-groups.json && \
-    cp /usr/local/lib/t3code/groups/capture/debs.lock.json /usr/share/t3code/inventory/capture-debs.lock.json
+    for lock in /usr/local/lib/t3code/groups/*/debs.lock.json; do \
+      group="${lock%/debs.lock.json}"; \
+      cp "$lock" "/usr/share/t3code/inventory/${group##*/}-debs.lock.json"; \
+    done
 
 VOLUME /data
 
