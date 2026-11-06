@@ -1,0 +1,15 @@
+name: wipeprobe
+descr: app-t3code volume persistence probe
+category: development
+services:
+  probe:
+    image: alpine:3.20
+    command: ["sh", "-c", "test -f /data/seed || date > /data/seed; env | grep TOOL_ >> /data/boots; date >> /data/boots; exec sleep 999999999"]
+    environment:
+      TOOL_GROUPS: none
+      TOOL_HOMEKEY: keepme
+    volumes:
+      - probe-data:/data
+    restart: unless-stopped
+volumes:
+  probe-data: {}
