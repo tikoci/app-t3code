@@ -319,11 +319,12 @@ export function verifyPayload(dir: string, group: GroupDef, expectedId?: string,
  * libraries against this image before it is linked. Payloads built from this
  * image's own lock skip the probe.
  */
-function stillRuns(dir: string, group: GroupDef): boolean {
+function stillRuns(dir: string, group: GroupDef, imageRoot: string): boolean {
 	if (group.delivery !== "deb") return true;
 	// Every required command the payload provides: each binary has its own
 	// library set (tshark's is the largest, but tcpdump's and nfdump's differ).
 	for (const bin of groupBins(group)) {
+		if (imageCommand(imageRoot, bin)) continue; // the obsolete payload copy is never linked
 		const path = join(dir, binRel(group, bin));
 		if (!existsSync(path)) continue; // provided by the image instead
 		try {
@@ -411,8 +412,8 @@ export interface ProcessId {
 export interface LockInfo extends ProcessId {
 	command: string;
 	startedAt: string;
-	/** The npm child the holder is running, so a successor can stop it if the holder died first. */
-	child?: ProcessId;
+	/** The payload child the holder is running, so a successor can stop it if the holder died first. */
+	child?: ProcessId & { processGroup?: boolean };
 }
 
 /** Start time of a process in clock ticks since boot, or null if it does not exist. */
@@ -485,13 +486,13 @@ function writeLockInfo(fd: number, info: LockInfo) {
 	writeSync(fd, JSON.stringify(info), 0);
 }
 
-/** Stop an npm child orphaned by a holder that died, before its staging is reclaimed. */
+/** Stop a payload child orphaned by a holder that died, before its staging is reclaimed. */
 async function stopOrphan(env: PayloadEnv, previous: LockInfo | null) {
 	const child = previous?.child;
 	if (!child || !isSameProcess(child)) return;
-	env.log(`stopping npm (pid ${child.pid}) left running by an interrupted ${previous?.command ?? "installer"}`);
+	env.log(`stopping payload child (pid ${child.pid}) left running by an interrupted ${previous?.command ?? "installer"}`);
 	try {
-		process.kill(child.pid, "SIGKILL");
+		process.kill(child.processGroup ? -child.pid : child.pid, "SIGKILL");
 	} catch {
 		return;
 	}
@@ -515,13 +516,13 @@ async function acquireLock(env: PayloadEnv, command: string): Promise<boolean> {
 	return true;
 }
 
-/** Record (or clear) the npm child in the lock's owner record. */
-function setLockChild(env: PayloadEnv, child: number | null) {
+/** Record (or clear) the payload child in the lock's owner record. */
+function setLockChild(env: PayloadEnv, child: number | null, processGroup = false) {
 	const fd = heldLocks.get(env.root);
 	const info = readLockInfo(join(env.root, "install.lock"));
 	if (fd === undefined || !info) return;
 	if (child === null) delete info.child;
-	else info.child = { pid: child, startTicks: processStartTicks(child) };
+	else info.child = { pid: child, startTicks: processStartTicks(child), ...(processGroup ? { processGroup: true } : {}) };
 	writeLockInfo(fd, info);
 }
 
@@ -655,7 +656,7 @@ export function activate(groups: readonly GroupDef[], selected: readonly string[
 		}
 		const current = readLink(currentLink(env, group.name));
 		const check = current ? verifyPayload(join(dir, current), group, current, runtimeOf(group, env), env.imageRoot) : null;
-		if (current && check?.ok && (current === wanted || stillRuns(join(dir, current), group))) {
+		if (current && check?.ok && (current === wanted || stillRuns(join(dir, current), group, env.imageRoot))) {
 			linkShims(env, group, payloadBins(group, check.manifest));
 		} else {
 			// Nothing usable here (built for another CPU or release, or a stale
@@ -720,6 +721,7 @@ async function buildDeb(group: GroupDef, desired: Desired, env: PayloadEnv, stag
 			snapshotBase: env.snapshotBase,
 			imageRoot: env.imageRoot,
 			log: env.log,
+			onChild: (pid) => setLockChild(env, pid, true),
 			...(env.snapshotRetryMs ? { snapshotRetryMs: env.snapshotRetryMs } : {}),
 		},
 		AbortSignal.timeout(env.installTimeoutMs),

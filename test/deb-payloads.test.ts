@@ -17,7 +17,7 @@ import {
 	wrapperScript,
 } from "../scripts/deb-payloads.ts";
 import { buildStatus, GROUPS, type Probe, TZSP_DNS_PCAPNG } from "../scripts/tool-groups.ts";
-import { activate, installGroups, type Manifest, type PayloadEnv, prunePayloads, readState } from "../scripts/tool-payloads.ts";
+import { activate, installGroups, type Manifest, type PayloadEnv, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
 
 const capture = GROUPS.find((g) => g.name === "capture");
 if (!capture) throw new Error("capture group missing");
@@ -122,6 +122,39 @@ esac
 	);
 	chmodSync(path, 0o755);
 	return path;
+}
+
+/** Block the first extraction in a helper process, like dpkg-deb's tar child. */
+function holdExtraction() {
+	const hold = join(tmp, "hold-extract");
+	const pidFile = join(tmp, "extract-pid");
+	const workerPidFile = join(tmp, "extract-worker-pid");
+	const worker = join(tmp, "extract-worker.ts");
+	const extractor = join(tmp, "extractor.ts");
+	writeFileSync(hold, "");
+	writeFileSync(worker, `import { existsSync, writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(workerPidFile)}, String(process.pid));
+while (existsSync(${JSON.stringify(hold)})) await Bun.sleep(25);
+`);
+	writeFileSync(extractor, `import { existsSync, writeFileSync } from "node:fs";
+if (process.argv[2] === "-x" && existsSync(${JSON.stringify(hold)}) && !existsSync(${JSON.stringify(pidFile)})) {
+	writeFileSync(${JSON.stringify(pidFile)}, String(process.pid));
+	await Bun.spawn([process.execPath, ${JSON.stringify(worker)}], { stdout: "inherit", stderr: "inherit" }).exited;
+}
+const proc = Bun.spawn([${JSON.stringify(env.dpkgDeb[0])}, ...process.argv.slice(2)], { stdout: "inherit", stderr: "inherit" });
+process.exit(await proc.exited);
+`);
+	env.dpkgDeb = [process.execPath, extractor];
+	return { pidFile, workerPidFile };
+}
+
+/** A killed helper can remain as an inert zombie until init reaps it. */
+function stopped(pid: number): boolean {
+	try {
+		return readFileSync(`/proc/${pid}/stat`, "utf8").split(") ")[1]?.startsWith("Z ") ?? false;
+	} catch {
+		return true;
+	}
 }
 
 const sha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
@@ -468,6 +501,81 @@ describe("deb payload groups (capture)", () => {
 		expect(existsSync(shim("rawshark"))).toBe(false);
 		expect(existsSync(shim("tshark"))).toBe(true);
 		expect(captureState()?.state).toBe("ready");
+	});
+
+	test("a stale command replaced by the image cannot disable the remaining payload tools", async () => {
+		const broken = join(tmp, "tcpdump-broke");
+		const tcpdump = `#!/bin/sh\n[ -e "${broken}" ] && exit 127\necho "tcpdump fake 1.0"\n`;
+		publish(basePackages().map((p) => (p.name === "tcpdump" ? { ...p, files: { ...p.files, "usr/bin/tcpdump": tcpdump } } : p)));
+		await installGroups(payloadGroups, ["capture"], env);
+		const previous = captureState()?.payload?.active;
+		publish(basePackages().filter((p) => p.name !== "tcpdump"));
+		writeFileSync(join(tmp, "image", "usr", "bin", "tcpdump"), tool("image-tcpdump"));
+		chmodSync(join(tmp, "image", "usr", "bin", "tcpdump"), 0o755);
+		writeFileSync(broken, "");
+		served.clear(); // refresh cannot finish; the retained payload must keep serving
+		expect(activate(payloadGroups, ["capture"], env)).toEqual(["capture"]);
+		expect(existsSync(shim("tcpdump"))).toBe(false);
+		expect(Bun.spawnSync([shim("tshark"), "--version"]).exitCode).toBe(0);
+		expect(captureState()).toMatchObject({ state: "ready", payload: { active: previous, stale: true } });
+		await installGroups(payloadGroups, ["capture"], env);
+		expect(captureState()?.state).toBe("ready");
+	});
+
+	test("a dpkg-deb child orphaned by a killed installer is stopped before staging cleanup", async () => {
+		publish(basePackages());
+		const { pidFile, workerPidFile } = holdExtraction();
+		const script = join(tmp, "installer.ts");
+		writeFileSync(script, `import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-payloads.ts"))};
+import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-groups.ts"))};
+const config = JSON.parse(process.argv[2]);
+await installGroups(GROUPS.filter((g) => g.delivery === "deb"), ["capture"], {
+	...config.env, debCompat: () => config.compat, sleep: async () => {}, log: () => {}, freeBytes: () => 10 * 1024 ** 3,
+	fetch: async (url) => new Response(Buffer.from(config.served[url], "base64")),
+});
+`);
+		const installer = Bun.spawn([process.execPath, script, JSON.stringify({ env, compat, served: Object.fromEntries([...served].map(([url, bytes]) => [url, Buffer.from(bytes).toString("base64")])) })]);
+		let extractorPid: number | undefined;
+		let workerPid: number | undefined;
+		try {
+			for (let i = 0; i < 100 && !existsSync(workerPidFile); i++) await Bun.sleep(20);
+			extractorPid = Number(readFileSync(pidFile, "utf8"));
+			workerPid = Number(readFileSync(workerPidFile, "utf8"));
+			const lock = JSON.parse(readFileSync(join(env.root, "install.lock"), "utf8"));
+			expect(lock.child?.pid).toBe(extractorPid);
+			expect(lock.child?.processGroup).toBe(true);
+			installer.kill("SIGKILL");
+			await installer.exited;
+			expect(processStartTicks(extractorPid)).not.toBeNull();
+			const logs: string[] = [];
+			env.log = (line) => logs.push(line);
+			const result = await installGroups(payloadGroups, ["capture"], env);
+			expect(logs.some((line) => line.includes(`stopping payload child (pid ${extractorPid})`))).toBe(true);
+			expect(processStartTicks(extractorPid)).toBeNull();
+			expect(stopped(workerPid)).toBe(true);
+			expect(result.results["capture"]?.state).toBe("ready");
+			expect(readdirSync(join(env.root, "groups", "capture")).some((name) => name.startsWith(".staging-"))).toBe(false);
+		} finally {
+			installer.kill("SIGKILL");
+			await installer.exited;
+			if (extractorPid && processStartTicks(extractorPid) !== null) process.kill(extractorPid, "SIGKILL");
+			if (workerPid && processStartTicks(workerPid) !== null) process.kill(workerPid, "SIGKILL");
+		}
+	});
+
+	test("the install deadline stops extraction helpers and closes their output pipes", async () => {
+		publish(basePackages());
+		const { pidFile, workerPidFile } = holdExtraction();
+		env.installTimeoutMs = 1000;
+		env.backoffMs = [];
+		const started = Date.now();
+		const result = await installGroups(payloadGroups, ["capture"], env);
+		expect(Date.now() - started).toBeLessThan(3000);
+		expect(result.results["capture"]?.state).toBe("failed");
+		expect(stopped(Number(readFileSync(pidFile, "utf8")))).toBe(true);
+		expect(stopped(Number(readFileSync(workerPidFile, "utf8")))).toBe(true);
+		expect(captureState()?.payload?.active).toBeNull();
+		expect(JSON.parse(readFileSync(join(env.root, "install.lock"), "utf8") || "{}").child).toBeUndefined();
 	});
 
 	test("deselecting unlinks every capture shim; prune deletes the payload and kept downloads", async () => {

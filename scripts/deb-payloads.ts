@@ -212,6 +212,8 @@ export interface DebIo {
 	/** Root of the image filesystem, to keep payload commands and libraries from shadowing the image's. */
 	imageRoot: string;
 	log: (line: string) => void;
+	/** Record the running dpkg-deb child for interrupted-installer recovery; clear after it exits. */
+	onChild?: (pid: number | null) => void;
 }
 
 /** SHA256 of a file, streamed. */
@@ -316,15 +318,37 @@ export async function fetchDeb(pkg: DebLockPackage, cache: string, io: DebIo, si
 }
 
 /** Run a command, collecting its output. */
-async function exec(cmd: string[], signal?: AbortSignal): Promise<{ code: number; out: string; err: string }> {
-	const proc = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", ...(signal ? { signal } : {}) });
-	const [out, err, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
-	return { code, out, err };
+async function exec(cmd: string[], signal?: AbortSignal, onChild?: DebIo["onChild"]): Promise<{ code: number; out: string; err: string }> {
+	// dpkg-deb can spawn tar/decompressors: recovery must stop their whole
+	// process group before reclaiming files, not only the dpkg-deb parent.
+	const proc = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", detached: true, ...(signal ? { signal } : {}) });
+	const stopGroup = () => {
+		try {
+			process.kill(-proc.pid, "SIGKILL");
+		} catch {
+			// The process group has already exited.
+		}
+	};
+	// Kill helpers at abort time too: inherited output pipes must close before
+	// the output readers below can finish.
+	signal?.addEventListener("abort", stopGroup, { once: true });
+	if (signal?.aborted) stopGroup();
+	try {
+		onChild?.(proc.pid);
+		const [out, err, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
+		return { code, out, err };
+	} finally {
+		// An abort can terminate dpkg-deb before its helpers. Do not leave a
+		// writer behind after clearing the lock's child record.
+		signal?.removeEventListener("abort", stopGroup);
+		stopGroup();
+		onChild?.(null);
+	}
 }
 
 /** The control fields must name the pinned package; a hash match alone could be a mislabeled lock. */
 export async function checkControl(path: string, pkg: DebLockPackage, io: DebIo, signal?: AbortSignal) {
-	const res = await exec([...io.dpkgDeb, "-f", path, "Package", "Version", "Architecture"], signal);
+	const res = await exec([...io.dpkgDeb, "-f", path, "Package", "Version", "Architecture"], signal, io.onChild);
 	if (res.code !== 0) throw new Error(`dpkg-deb -f ${basename(path)} exited ${res.code}: ${res.err.trim()}`);
 	const fields = parseStanzas(res.out)[0] ?? {};
 	const got = `${fields["Package"]}=${fields["Version"]} [${fields["Architecture"]}]`;
@@ -448,7 +472,7 @@ export async function installDebPayload(group: string, lock: DebLock, staging: s
 		const { path, source } = await fetchDeb(pkg, cache, io, signal);
 		if (source !== "cache") downloadedBytes += pkg.size;
 		await checkControl(path, pkg, io, signal);
-		const res = await exec([...io.dpkgDeb, "-x", path, root], signal);
+		const res = await exec([...io.dpkgDeb, "-x", path, root], signal, io.onChild);
 		if (res.code !== 0) throw new Error(`dpkg-deb -x ${pkg.name} exited ${res.code}: ${res.err.trim()}`);
 		debs[pkg.name] = { version: pkg.version, sha256: pkg.sha256, source: source === "cache" ? "cache" : new URL(source).host };
 	}

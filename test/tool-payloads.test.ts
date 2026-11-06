@@ -339,7 +339,7 @@ await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 		const result = await installGroups(npmGroups, ["dev"], env);
 		clearTimeout(removeHold);
 		expect(result.locked).toBe(true);
-		expect(logs.some((line) => line.includes(`stopping npm (pid ${npm?.pid})`))).toBe(true);
+		expect(logs.some((line) => line.includes(`stopping payload child (pid ${npm?.pid})`))).toBe(true);
 		expect(processStartTicks(npm?.pid as number)).toBeNull();
 		expect(readdirSync(join(env.root, "groups", "dev")).filter((n) => n.startsWith(".staging-"))).toEqual([]);
 		expect(result.results["dev"]?.state).toBe("ready");

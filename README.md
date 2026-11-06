@@ -354,8 +354,8 @@ the same lifecycle:
   deletes older ones.
 - **Bounded.** Groups install one at a time under a lock
   (a kernel `flock` on `install.lock`, released automatically if the holder
-  dies; the next run also stops an npm left behind by a killed installer
-  before reclaiming its files). Each group gets three
+  dies; the next run also stops an npm or dpkg-deb left behind by a killed
+  installer before reclaiming its files). Each group gets three
   attempts with back-off (30 minute cap per attempt); with no network at all
   npm needs about five minutes to give up. The installer needs room for the
   payload and its downloads (for `dev`, twice the payload size; for
@@ -420,8 +420,9 @@ payload too. It installs as the app user with no root at runtime:
   same name in the image, including one the image gains later. A required
   command that the image already provides is checked and used from the image.
 - **Stale native payloads are checked.** While a refresh is pending after an
-  image update, the previous payload stays linked only if `tshark --version`
-  still runs against the new image.
+  image update, the previous payload stays linked only if every required
+  command it still provides passes its version probe against the new image.
+  Commands now provided by the image use the image copy instead.
 
 Measured on amd64 (habitat C, Debian trixie, Wireshark 4.4.19, tcpdump
 4.99.5, nfdump 1.7.5): 42 packages, 30.5 MiB to download, 152 MiB unpacked,
