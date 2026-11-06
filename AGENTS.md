@@ -75,8 +75,11 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   against libstrongswan alone. Probes that cannot exit 0 (birdc without a
   daemon; nft/conntrack without netfilter netlink, e.g. under QEMU user mode)
   declare `versionExit` so one kernel feature cannot fail the whole group.
-  PPP peers (pppd, xl2tpd, sstpc, pppoe) cannot run from `/data` (root,
-  `/etc/ppp`, `/usr/sbin/pppd`); they belong to the `labs` Linux guest.
+  PPP peers (pppd, xl2tpd, sstpc, pppoe) and lldpd cannot run from `/data`
+  even when privileged (root, `/etc/ppp`, `/usr/sbin/pppd`, a `_lldpd`
+  user); they belong to the `labs` Linux guest. Keep the README's
+  "Privileges by tool" table and each group's `privileges` (plus
+  `CORE_PRIVILEGES`) in step when tools move.
   See `docs/research/2026-11-06/vpn-routing-payloads.md`.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes

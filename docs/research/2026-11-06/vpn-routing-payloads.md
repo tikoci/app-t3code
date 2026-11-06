@@ -9,9 +9,9 @@ relocation checks to do first: strongSwan's compiled-in plugin directory,
 nmap's data directory, and BIRD's and lldpd's `/etc` and `/run` paths.
 
 **Answer: both are `deb` payloads.** Every tool relocates under the payload
-root except strongSwan, which needs two pieces of wrapper wiring, and the
-PPP family, which cannot work from `/data` at all and moves to the `labs`
-Linux guest. Baking would add about 13 MB to every image pull on every
+root with three exceptions. strongSwan needs two pieces of wrapper wiring.
+The PPP family and `lldpd` cannot work from `/data` at all, even in a
+privileged container, so they move to the `labs` Linux guest. Baking would add about 13 MB to every image pull on every
 router, selected or not. Baking also does not avoid the strongSwan issue:
 it would avoid the paths, but the container runs as `node` and charon,
 pppd and tunnels need root or capabilities either way.
@@ -25,18 +25,20 @@ As `node`, `CapEff 0`, through the payload shims, with no `LD_LIBRARY_PATH`,
 
 | Tool | Compiled-in paths | Result in the payload |
 | --- | --- | --- |
-| `wg`, `wg-quick` | none relevant (`wg-quick` calls `ip`, `wg` by name) | works: `wg genkey`, `wg pubkey` |
+| `wg` | none relevant | works: `wg genkey`, `wg pubkey`; interfaces need `CAP_NET_ADMIN` and the kernel module, not `/dev/net/tun` |
+| `wg-quick` | none relevant (calls `ip`, `wg` by name) | needs **root**: as non-root it re-executes itself with `sudo` (line 85 of the packaged script), and the image has no `sudo` → `exec: sudo: not found`. `CAP_NET_ADMIN` alone would not help |
 | strongSwan `pki`, `swanctl`, `pt-tls-client` | `/etc/strongswan.conf`; plugins in `/usr/lib/ipsec/plugins` (`PLUGINDIR`, no runtime override) | raw binary: `no files found matching '/etc/strongswan.conf'`, exit 64. With `STRONGSWAN_CONF` only: `building CRED_PRIVATE_KEY - ED25519 failed, tried 0 builders`. Through the wrapper (both fixes): ed25519 and RSA keys, a self-signed CA, a CSR with a SAN, an issued certificate, `pki --verify` → `certificate trusted` |
 | `charon` (`/usr/lib/ipsec/charon`) | same, plus `/var/run/charon.vici` | shipped, not on PATH, not wired: needs root/`CAP_NET_ADMIN`, and its plugins need libcharon's symbols |
 | `openvpn` | plugin dir (used only with `--plugin <name>`) | works: `openvpn --genkey secret` |
-| `ike-scan` | none | works with `--sport=0` (port 500 needs bind privilege) |
+| `ike-scan` | none | works with `--sport=0`; the default source port 500 needs `CAP_NET_BIND_SERVICE` where ports below 1024 are restricted |
 | `bird`, `birdc` | `/etc/bird/bird.conf`, `/run/bird/bird.ctl` | works with `-c`/`-s`/`-P`: two BIRDs on 127.0.0.1/127.0.0.2, ports 11791/11792, reach `Established` and exchange a prefix (`1 imported`, `BGP.as_path: 65002`) |
-| `nmap`, `nping` | `/usr/share/nmap`, but checked after `<exe dir>/../share/nmap` | works with no `NMAPDIR`: `Fetchfile found …/root/usr/bin/../share/nmap/nmap.xsl`, NSE `--script-help`, a connect scan |
-| `lldpd`, `lldpcli` | `/run/lldpd.socket` (`-u` overrides) | `-v` works; the daemon needs `CAP_NET_RAW` |
+| `nmap`, `nping` | `/usr/share/nmap`, but checked after `<exe dir>/../share/nmap` | works with no `NMAPDIR`: `Fetchfile found …/root/usr/bin/../share/nmap/nmap.xsl`, NSE `--script-help` (script data loads), a connect scan to an open port. Raw scans (`-sS`, refused) and NSE scripts that use raw sockets or capture need `CAP_NET_RAW`; running NSE scripts in general was not tested |
+| `lldpd`, `lldpcli` (moved out) | `/run/lldpd.socket` (`-u` overrides); a `_lldpd` user | `-v` works, but `lldpd -d -u /tmp/lldpd.socket` stops at `no _lldpd user for privilege separation, please create it`. The image has no such user, and extraction never runs Debian's maintainer scripts. Upstream also needs root for its privileged monitor. Moved to the `labs` guest |
 | `rdisc6`, `ndisc6`, `arping`, `arp-scan` | none relevant | load; probes need `CAP_NET_RAW` and are refused without it |
-| `nft`, `conntrack` | none relevant | load; every operation (even `nft -c`) needs netfilter netlink and `CAP_NET_ADMIN`, refused without it |
+| `nft`, `conntrack` | none relevant | `--version` works unprivileged natively; ruleset and connection operations (even `nft -c`) need netfilter netlink and `CAP_NET_ADMIN`, and `nft -c` and `conntrack -L` are refused without it |
 | `pppd` (ppp) | `/etc/ppp/options` read before any argument; plugins in `/usr/lib/pppd/2.5.2` | `Can't open options file /etc/ppp/options`, exit 2, as non-root even for `--version` |
 | `xl2tpd`, `sstpc` | start `/usr/sbin/pppd` by that path | cannot run a tunnel from `/data`, even with capabilities |
+| BGP on port 179 | n/a | not a raw-socket or admin matter: binding below 1024 needs `CAP_NET_BIND_SERVICE` only where the namespace restricts it. Docker sets `net.ipv4.ip_unprivileged_port_start=0`, so it is not even restricted here. The RouterOS value is unknown (#7). Not tested |
 
 ### strongSwan: config and plugins through the wrapper
 
@@ -98,7 +100,7 @@ Groups now take a list of smoke tests. `vpn`: `pki --gen --type ed25519`
 `routing`: `nmap --script-help banner` (NSE data from the payload) and
 `bird -p -c` on a BGP config (`BIRD_BGP_CONF`).
 
-### PPP-based peers move to the `labs` guest
+### PPP-based peers and lldpd move to the `labs` guest
 
 `ppp`, `xl2tpd`, `pppoe` and `sstp-client` were in `vpn` by the
 [2026-11-05 proposal](../2026-11-05/routeros-protocol-map.md). None of them
@@ -111,6 +113,11 @@ server), where a full Debian with root can test RouterOS's SSTP, L2TP and
 PPPoE servers. Baking them into the image would not help either: the
 container runs as `node`.
 
+`lldpd` follows the same reasoning (review round, below). It refuses to
+start without a `_lldpd` account for privilege separation, and its monitor
+needs root. `lldpcli` alone only talks to a running `lldpd`. Taking it out
+leaves `routing` at 21 packages.
+
 ## Measurements (amd64, the app image)
 
 The image is `app-t3code:slice4`: this branch's late Dockerfile layers on
@@ -119,23 +126,57 @@ Debian 13 trixie.
 
 | | `vpn` | `routing` |
 | --- | ---: | ---: |
-| Packages (closure the image lacks) | 14 | 23 |
-| Download | 3,700,844 B (3.5 MiB) | 9,118,684 B (8.7 MiB) |
-| On disk | 11,976,936 B (11.4 MiB) | 35,058,034 B (33.4 MiB) |
+| Packages (closure the image lacks) | 14 | 21 (23 before `lldpd` moved out) |
+| Download | 3,700,844 B (3.5 MiB) | 8,687,316 B (8.3 MiB) |
+| On disk | 11,976,942 B (11.4 MiB) | 34,073,691 B (32.5 MiB) |
 | Baked layer instead (slice 3, gzip) | +3.9 MB per image pull (20 packages, including PPP) | +9.2 MB per image pull |
-| Install (`durationMs`: download on a fast link, verify, extract, probes, smoke; two runs) | 0.65–0.66 s | 1.03–1.28 s |
-| Both groups end to end, fast link (`time t3code-tools install`, two runs) | 1.8–2.1 s | |
-| At 1 Mbit/s (computed) | about 30 s | about 73 s |
+| Install (`durationMs`: download on a fast link, verify, extract, probes, smoke; three runs) | 0.64–0.66 s | 0.99–1.28 s |
+| Both groups end to end, fast link (`time t3code-tools install`, three runs) | 1.75–2.1 s | |
+| At 1 Mbit/s (computed) | about 30 s | about 70 s |
 | Through the shim, 50 runs | `pki --help` 0.44–0.55 s (9–11 ms each, with 15 preloads) | `wg --version` 0.11–0.13 s (2–3 ms each) |
 
 Payload libraries shadowing image libraries: 0 for both. Commands skipped
 because the image has them: none.
 
-`routing`'s closure also brings `ucf` and `sensible-utils` as dependencies,
+`routing`'s closure still brings `ucf` and `sensible-utils` as dependencies,
 so their commands (`ucf`, `sensible-editor`,
 `select-editor`, …) get shims too. They are harmless, but not tools the
 group promises. Exposing only the commands of a group's root packages is a
 possible follow-up.
+
+## Review round (Codex, GPT-6.1 Sol, on the draft PR)
+
+The review found no blocking bug. It found privilege claims that were wrong
+or unproven, and three latent wrapper-rule bugs. Each finding was checked on
+the app image before it was changed:
+
+- `lldpd` cannot start from the payload (`no _lldpd user for privilege
+  separation`, reproduced): moved to the `labs` guest, see above.
+- `wg-quick` needs root, not just `CAP_NET_ADMIN` (`exec: sudo: not found`,
+  reproduced). Kernel WireGuard needs no `/dev/net/tun`; only OpenVPN's
+  tunnel does. The `vpn` privileges string now splits these.
+- The README's "apart from ping, [core tools] work without extra
+  privileges" was wrong both ways. `mtr-packet` carries a `cap_net_raw` file
+  capability (`security.capability` = `0x2000` permitted+effective),
+  `radsniff` (in core's `freeradius-utils`) and `traceroute -T` are refused,
+  and `ping` has **no** file capability: it works only because Docker sets
+  `net.ipv4.ping_group_range` to all groups. Core now reports
+  `core.privileges`, and the README has a per-tool privilege table with
+  what was tested.
+- BGP on 179 needs `CAP_NET_BIND_SERVICE` (namespace-dependent), not
+  `CAP_NET_RAW`. "NSE needs none" was narrowed to NSE data plus non-raw
+  scripts. The write-up no longer says `nft`/`conntrack` need privileges
+  for every operation.
+- Wrapper rules: a rule whose commands get no wrapper is no longer resolved
+  (an image that provides the tool cannot fail the payload). A command
+  preloaded by several rules has its merged, deduplicated set checked
+  together. Env values are shell-quoted literals; only `{root}` expands.
+  Each has a new unit test, and the quoting test runs the generated shell.
+- `test/routing-tools.sh` arms BIRD cleanup before the first start and waits
+  for exit. It requires the BIRD port to be `open`. Its checks no longer
+  pipe into `grep -q`, which can SIGPIPE a producer under `pipefail`. The
+  evidence script runs with `pipefail`, so transcript exit codes are real
+  (raw `pki` 64, config-only `pki` 1).
 
 ## arm64 (QEMU user-mode emulation via binfmt on orca, not native)
 
@@ -143,7 +184,8 @@ Base `node:24-trixie-slim` (arm64) with Bun 1.4.4 copied in, this branch's
 scripts, the real `t3code-tools deb-lock` as root, then the installer and
 the functional scripts as `node` ([transcript](vpn-routing-arm64-qemu.txt)).
 That base lacks libraries the app image has, so its closures are bigger:
-`vpn` 29 packages (5.5 MiB), `routing` 54 packages (23.2 MiB).
+`vpn` 29 packages (5.5 MiB), `routing` 54 packages (23.2 MiB). This run was
+before the review round, with `lldpd` still in `routing`.
 
 - `vpn`: ready on the first attempt. The same 14 strongSwan plugins were
   selected and preloaded, and [`test/vpn-tools.sh`](../../../test/vpn-tools.sh)
@@ -164,7 +206,7 @@ That base lacks libraries the app image has, so its closures are bigger:
 
 ## Evidence for the implementation (habitat C)
 
-- `bun run check` is green. `bun run test` passes 73 tests across 3 files.
+- `bun run check` is green. `bun run test` passes 75 tests across 3 files.
   The new tests cover a synthetic strongSwan-like group: wrapper variables,
   preload selection order and the combined check, the user's own
   `LD_PRELOAD` kept after the payload's, other commands left unwired, a
@@ -184,7 +226,10 @@ That base lacks libraries the app image has, so its closures are bigger:
 
 - Nothing ran on a RouterOS container. Capabilities, `/dev/net/tun`, and
   whether a RouterOS host kernel offers netfilter netlink to a container
-  are [#7](https://github.com/tikoci/app-t3code/issues/7).
+  are [#7](https://github.com/tikoci/app-t3code/issues/7). So are two
+  Docker defaults the unprivileged results lean on:
+  `net.ipv4.ping_group_range` (core `ping`) and
+  `net.ipv4.ip_unprivileged_port_start` (BGP on 179, low-port listeners).
 - arm64 was emulated, not native, and on a bare base image rather than the
   app image.
 - No tunnel was brought up, charon never ran, and no BGP session with a

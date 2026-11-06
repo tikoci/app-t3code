@@ -12,6 +12,7 @@ import {
 	osReleaseDistro,
 	parseAptSimulation,
 	parsePrintUris,
+	layoutDebPayload,
 	parseStanzas,
 	preloadLoads,
 	resolveDebLock,
@@ -854,6 +855,56 @@ esac
 		expect(preloadLoads([join(tmp, "garbage.so")], "")).toBe(false);
 	});
 
+	test("wrapper values are literal except {root}: quotes, dollars, backticks and backslashes survive", () => {
+		const staging = join(tmp, "quoting");
+		mkdirSync(join(staging, "root", "usr", "bin"), { recursive: true });
+		writeFileSync(join(staging, "root", "usr", "bin", "show"), '#!/bin/sh\nprintf "%s\\n" "$WEIRD" "$PLAIN" "$EMPTY"\n');
+		chmodSync(join(staging, "root", "usr", "bin", "show"), 0o755);
+		const weird = `it's "$HOME" \`id\` $(echo x) \\n {root}/etc {root}`;
+		layoutDebPayload("t", staging, join(tmp, "image"), [{ commands: ["show"], env: { WEIRD: weird, PLAIN: "{root}", EMPTY: "" } }]);
+		const out = Bun.spawnSync([join(staging, "bin", "show")], { env: { PATH: "/usr/bin:/bin", HOME: "/home/x" } }).stdout.toString();
+		const root = join(staging, "root");
+		expect(out).toBe(`${weird.replaceAll("{root}", root)}\n${root}\n\n`);
+		expect(() => layoutDebPayload("t", staging, join(tmp, "image"), [{ commands: ["show"], env: { "BAD-NAME": "x" } }])).toThrow("not a shell variable name");
+	});
+
+	test("a rule whose commands get no wrapper is never resolved; merged preload sets are checked together", () => {
+		const staging = join(tmp, "rules");
+		for (const [path, content] of Object.entries({
+			"usr/bin/tool": "#!/bin/sh\necho tool\n",
+			"usr/bin/ip": "#!/bin/sh\necho payload-ip\n", // the image has ip(8)
+			"usr/lib/a/libbase.so.0": "elf",
+			"usr/lib/a/plugins/one.so": "elf",
+			"usr/lib/b/libother.so.0": "elf",
+			"usr/lib/b/plugins/two.so": "elf",
+		})) {
+			mkdirSync(join(staging, "root", path, ".."), { recursive: true });
+			writeFileSync(join(staging, "root", path), content);
+			if (content.startsWith("#!")) chmodSync(join(staging, "root", path), 0o755);
+		}
+		const missingBase = { libraries: ["usr/lib/none/libmissing.so.0"], pluginDir: "usr/lib/none" };
+		// Commands absent from the payload or provided by the image: the broken rule is skipped.
+		const layout = layoutDebPayload("t", staging, join(tmp, "image"), [{ commands: ["absent", "ip"], preload: missingBase }], () => true);
+		expect(layout.commands).toEqual(["tool"]);
+		expect(layout.skippedCommands).toEqual(["ip"]);
+		expect(layout.wired).toBeUndefined();
+		// The same rule on a wrapped command still fails loudly.
+		expect(() => layoutDebPayload("t", staging, join(tmp, "image"), [{ commands: ["tool"], preload: missingBase }], () => true)).toThrow("is not in the payload");
+		// Two rules that each load alone, but not together.
+		const rules = [
+			{ commands: ["tool"], preload: { libraries: ["usr/lib/a/libbase.so.0"], pluginDir: "usr/lib/a/plugins" } },
+			{ commands: ["tool"], preload: { libraries: ["usr/lib/b/libother.so.0"], pluginDir: "usr/lib/b/plugins" } },
+		];
+		const apart = (libs: readonly string[]) => !(libs.some((l) => l.includes("/a/")) && libs.some((l) => l.includes("/b/")));
+		expect(() => layoutDebPayload("t", staging, join(tmp, "image"), rules, apart)).toThrow("tool: its 4 merged preload libraries do not load together");
+		expect(layoutDebPayload("t", staging, join(tmp, "image"), rules, () => true).wired?.["tool"]?.preload).toEqual([
+			"usr/lib/a/libbase.so.0",
+			"usr/lib/a/plugins/one.so",
+			"usr/lib/b/libother.so.0",
+			"usr/lib/b/plugins/two.so",
+		]);
+	});
+
 	test("wrappers set extra variables and preloads after the library path, sorted, for their own process", () => {
 		const script = wrapperScript("vpn", "root/usr/bin/pki", ["usr/lib/ipsec"], {
 			env: { STRONGSWAN_CONF: "{root}/etc/strongswan.conf", A_FIRST: "x" },
@@ -863,7 +914,7 @@ esac
 		const at = (prefix: string) => lines.findIndex((line) => line.startsWith(prefix));
 		expect(at("LD_LIBRARY_PATH=")).toBeLessThan(at("A_FIRST="));
 		expect(at("A_FIRST=")).toBeLessThan(at("STRONGSWAN_CONF="));
-		expect(script).toContain('STRONGSWAN_CONF="$p/root/etc/strongswan.conf"\nexport STRONGSWAN_CONF');
+		expect(script).toContain(`STRONGSWAN_CONF="$p/root"'/etc/strongswan.conf'\nexport STRONGSWAN_CONF`);
 		expect(script).toContain(`LD_PRELOAD="$p/root/usr/lib/ipsec/libstrongswan.so.0\${LD_PRELOAD:+:$LD_PRELOAD}"\nexport LD_PRELOAD`);
 		expect(wrapperScript("vpn", "root/usr/bin/wg", ["usr/lib/ipsec"])).not.toContain("LD_PRELOAD");
 	});

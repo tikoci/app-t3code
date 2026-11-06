@@ -279,15 +279,75 @@ whether or not you select them.
 | `capture` | tcpdump, TShark (`dumpcap`, `capinfos`, `editcap`, `mergecap`, `text2pcap`), nfdump (`nfcapd`) | installs into `/data` when selected |
 | `labs` | quickchr, QEMU x86/ARM64 emulators, qemu-img, firmware | baked in |
 | `vpn` | WireGuard tools (`wg`, `wg-quick`), strongSwan (`pki`, `swanctl`, charon), OpenVPN, ike-scan; no tunnel or service starts by default | installs into `/data` when selected |
-| `routing` | BIRD 2 (`bird`, `birdc`), lldpd, ndisc6, arping, arp-scan, nftables, conntrack, nmap | installs into `/data` when selected |
+| `routing` | BIRD 2 (`bird`, `birdc`), ndisc6, arping, arp-scan, nftables, conntrack, nmap | installs into `/data` when selected |
 | `dev` | TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks; project lockfiles win | installs into `/data` when selected |
 | `browser` | Native libraries for T3's built-in browser (the browser downloads itself on first use) | baked in |
 | `agents-extra` | Provider CLIs beyond the core provider (Codex, opencode, Muse today; core provider not chosen yet) | baked in |
 
 Installing a tool does not grant the privileges to use it. Live capture,
 raw-socket peers, tunnels and firewall changes need capabilities or devices
-that a RouterOS container may not have. Each group's `privileges` field in
-the status output says what it needs.
+that a RouterOS container may not have; see
+[Privileges by tool](#privileges-by-tool). Each group's `privileges` field
+(and `core.privileges`) in the status output says the same.
+
+#### Privileges by tool
+
+The app runs as `node` (UID 1000) with no capabilities. "None" means the
+operation works that way; everything else needs a privileged container,
+and whether RouterOS can grant it is
+[#7](https://github.com/tikoci/app-t3code/issues/7). **Tested** means
+run here as `node` with `CapEff 0` under Docker (habitat C): *works* or
+*refused* (with a permission error). *Expected* means not demonstrated.
+
+| Where | Tool / operation | Needs | Tested |
+|---|---|---|---|
+| core | `dig`, `whois`, SNMP, RADIUS (`radclient`) and MQTT clients, `curl`, `ssh`, `centrs` | None | expected |
+| core | `nc`, `socat`, `iperf3` | None on ports ≥1024; `CAP_NET_BIND_SERVICE` below that where the namespace restricts it | expected |
+| core | `ip`, `ethtool` | None to query; `CAP_NET_ADMIN` to change anything | expected |
+| core | `traceroute` (UDP, default) | None | expected |
+| core | `traceroute -T`/`-I` | `CAP_NET_RAW` | refused |
+| core | `ping` | ICMP echo sockets allowed by `net.ipv4.ping_group_range` (Docker allows all groups); otherwise `CAP_NET_RAW`. The image's `ping` has no file capability | works under Docker |
+| core | `mtr` | Its helper `mtr-packet` has a `cap_net_raw` file capability: `CAP_NET_RAW` must be in the container's bounding set | works under Docker |
+| core | `radsniff` (from `freeradius-utils`) | None for files; `CAP_NET_RAW` to capture | refused |
+| `capture` | `tshark -r`, `tcpdump -r`, `capinfos`, `editcap`, `mergecap`, `text2pcap`, `nfdump`, `dumpcap -D` | None | works |
+| `capture` | `nfcapd` on a port ≥1024 | None | works (NetFlow v5) |
+| `capture` | `tcpdump -i`, `dumpcap -i`, `tshark -i` | `CAP_NET_RAW` | refused |
+| `vpn` | `wg genkey`/`pubkey`, `pki` keys/CA/certificates, `openvpn --genkey`, `ike-scan --sport=0` | None | works |
+| `vpn` | `swanctl` | A running charon's VICI socket | no charon (reported, not refused) |
+| `vpn` | WireGuard interface (`ip link add … type wireguard`, `wg set`) | `CAP_NET_ADMIN` and the kernel module (no `/dev/net/tun`) | expected |
+| `vpn` | `wg-quick up` | **Root**: it re-runs itself with `sudo`, which the image lacks | fails as `node` (`sudo: not found`) |
+| `vpn` | OpenVPN tunnel | `CAP_NET_ADMIN` and `/dev/net/tun` | expected |
+| `vpn` | charon (IKE daemon) | **Root**; shipped but not wired or proven | expected |
+| `vpn` | `ike-scan` default source port 500 | `CAP_NET_BIND_SERVICE` where ports below 1024 are restricted | expected |
+| `routing` | `bird -p`, BGP on ports ≥1024, `birdc` on its socket | None | works (eBGP prefix exchange) |
+| `routing` | BGP on port 179 | `CAP_NET_BIND_SERVICE` where ports below 1024 are restricted (Docker sets `ip_unprivileged_port_start=0`) | expected |
+| `routing` | BIRD OSPF; kernel route sync | `CAP_NET_RAW`; `CAP_NET_ADMIN` | expected |
+| `routing` | `nmap -sT`, NSE script data | None | works |
+| `routing` | `nmap -sS` and other raw scans, raw NSE scripts | `CAP_NET_RAW` | refused (`-sS`) |
+| `routing` | `arping`, `arp-scan` | `CAP_NET_RAW` | refused |
+| `routing` | `rdisc6`, `ndisc6` | `CAP_NET_RAW` | expected |
+| `routing` | `nft` (even `nft -c`), `conntrack -L` | `CAP_NET_ADMIN` and netfilter netlink | refused |
+| `labs` | quickchr / QEMU with TCG and user networking | None | (earlier research) |
+| `labs` | KVM acceleration; TAP networking | `/dev/kvm` usable by `node`; `CAP_NET_ADMIN` and `/dev/net/tun` (or a TAP pre-created for `node`) | expected |
+| `browser` | T3's built-in browser sandbox | User namespaces, if the host allows them | expected |
+| `dev`, `agents-extra` | everything | None | works |
+
+Tools changed or moved because of privileges, not size:
+
+- **Moved to a Linux guest under `labs`**: `pppd`, `xl2tpd`, `sstpc`,
+  `pppoe` and `lldpd`. They cannot work from a payload under `/data` even
+  in a privileged container. `pppd` needs root and reads `/etc/ppp/options`
+  before its arguments. `xl2tpd` and `sstpc` start `/usr/sbin/pppd` by a
+  compiled-in path. `lldpd` needs root and a `_lldpd` user for privilege
+  separation (`no _lldpd user for privilege separation`).
+- **Shipped, but needs root**: `wg-quick` and charon. As `node`, use `wg`
+  with `ip link` for WireGuard, and `pki` for IKEv2 certificates.
+- **Unprivileged defaults in tests and docs**: `ike-scan --sport=0`, BIRD
+  BGP on ports ≥1024, `nmap -sT`, NetFlow collection on ports ≥1024.
+- **Readiness does not depend on privileges**: `nft` and `conntrack` open
+  a netfilter netlink socket even for `--version`. If a kernel (or QEMU
+  user-mode emulation) lacks it, their probe still counts the tool as
+  loaded, so one missing kernel feature does not fail `routing`.
 
 #### Group status for agents
 
@@ -427,9 +487,9 @@ installs as the app user with no root at runtime:
   Wireshark finds its data files and plugins relative to the binary, so
   `tshark` decodes with its full dissector set, RADIUS dictionaries and
   plugins from the payload; nmap finds its NSE scripts and service names the
-  same way. BIRD and lldpcli take config and socket paths as arguments
-  (`bird -c … -s …`, `birdc -s …`, `lldpcli -u …`); the image has no
-  `/etc/bird` or `/run/bird`. strongSwan only knows compiled-in paths
+  same way. BIRD takes its config and socket paths as arguments
+  (`bird -c … -s …`, `birdc -s …`); the image has no `/etc/bird` or
+  `/run/bird`. strongSwan only knows compiled-in paths
   (`/etc/strongswan.conf`, `/usr/lib/ipsec/plugins`), so the wrappers of
   `pki`, `swanctl` and `pt-tls-client` also set `STRONGSWAN_CONF` to the
   payload's config and `LD_PRELOAD` the payload's plugins. Only plugins that
@@ -470,22 +530,13 @@ refused without it. Without privileges, save a capture on the router
 privileges needs a UDP listener in front of the decoder and is not tested
 here.
 
-`vpn` and `routing` grant nothing either. Without privileges, `wg genkey`
-and `wg pubkey`, the strongSwan `pki` CA and certificate workflow (the same
-certificates RouterOS IKEv2 imports), `openvpn --genkey`, `ike-scan
---sport=0`, a BIRD BGP session on ports of 1024 or above (two BIRDs
-exchanged a prefix over eBGP on loopback), nmap connect scans and NSE all
-work. Tunnels, charon, `wg-quick up`, raw scans, ARP/ND probes, LLDP, BGP
-on port 179, `nft` (even `nft -c`, which needs netlink) and `conntrack` need
-`CAP_NET_ADMIN` or `CAP_NET_RAW` and are refused without them. Whether a
-RouterOS container can get them is
-[#7](https://github.com/tikoci/app-t3code/issues/7).
-
-PPP-based peers (SSTP, L2TP, PPPoE) are not in `vpn`. `pppd` needs root and
-reads `/etc/ppp/options` before its arguments, and `xl2tpd` and `sstpc`
-start `/usr/sbin/pppd` by a compiled-in path, so a payload under `/data`
-cannot run them even with capabilities. Test those from a Linux guest
-under `labs`.
+`vpn` and `routing` grant nothing either. Without privileges, the strongSwan
+`pki` CA and certificate workflow (the same certificates RouterOS IKEv2
+imports), WireGuard and OpenVPN keys, `ike-scan --sport=0`, a BIRD BGP
+session on ports of 1024 or above (two BIRDs exchanged a prefix over eBGP on
+loopback), and nmap connect scans all work. The rest is in
+[Privileges by tool](#privileges-by-tool), including the PPP peers and
+`lldpd`, which moved to the `labs` guest.
 
 #### Changing groups on RouterOS
 
@@ -529,15 +580,18 @@ assigned here. `t3code-tools groups` prints the same table as JSON.
 | core (in the image) | `iproute2`, `iputils-ping`, `bind9-dnsutils`, `netcat-openbsd`, `socat`, `traceroute`, `mtr-tiny`, `iperf3`, `ethtool`, `whois`, `snmp`, `freeradius-utils`, `mosquitto-clients` |
 | `capture` | `tcpdump`, `tshark`, `wireshark-common`, `nfdump` |
 | `vpn` | `wireguard-tools`, `strongswan-swanctl`, `strongswan-pki`, `strongswan-charon`, `openvpn`, `ike-scan` |
-| `routing` | `bird2`, `lldpd`, `ndisc6`, `arping`, `arp-scan`, `nftables`, `conntrack`, `nmap` |
-| QEMU Linux guest under `labs` | FRR, keepalived, a FreeRADIUS server, and the PPP-based peers `sstp-client`, `ppp`, `xl2tpd`, `pppoe` (they need root and `/usr/sbin/pppd`) |
+| `routing` | `bird2`, `ndisc6`, `arping`, `arp-scan`, `nftables`, `conntrack`, `nmap` |
+| QEMU Linux guest under `labs` | FRR, keepalived, a FreeRADIUS server, `lldpd` (needs root and a `_lldpd` user), and the PPP-based peers `sstp-client`, `ppp`, `xl2tpd`, `pppoe` (they need root and `/usr/sbin/pppd`) |
 | not shipped | `pptp-linux` (legacy), `zerotier-one` (not in Debian main), `smbclient` (large Samba dependencies), `snmptrapd` (port 162 needs bind privilege; use a uvx `pysnmp` receiver), `eapoltest` and `ntpsec-ntpdate` (on request) |
 
 Core gets only small user-space clients. With dependencies, their image
 layer measured 29.3 MB uncompressed on amd64. The largest are `snmp` (9 MiB
 with libsnmp and `pci.ids`) and `bind9-dnsutils` (6 MiB), per the apt
 estimates in the [cost data](docs/research/2026-11-05/network-package-costs-amd64.json).
-Apart from ping, they work without extra privileges. centrs already covers MikroTik
+Ordinary client use needs no privileges, with two exceptions worth knowing:
+`ping` relies on ICMP echo sockets being allowed (`net.ipv4.ping_group_range`)
+and `mtr` on a `cap_net_raw` file capability; see
+[Privileges by tool](#privileges-by-tool). centrs already covers MikroTik
 btest, MNDP, MAC-Telnet and RoMON.
 
 `routing` is its own group rather than part of `labs`. `labs` is about
@@ -546,7 +600,7 @@ a CHR. The routing peers are a few MiB, and they are most useful without
 QEMU, peering with the host router from a privileged container. Folding
 them into `labs` would make a small router download QEMU to get `bird`. It
 would also mix tools that need `CAP_NET_RAW`/`CAP_NET_ADMIN` into a group
-that works unprivileged. `nftables` and `conntrack` join `routing` for the
+whose default mode (TCG, user networking) needs no privileges. `nftables` and `conntrack` join `routing` for the
 same reason: they are Linux router tools that need `CAP_NET_ADMIN`.
 
 #### Roadmap

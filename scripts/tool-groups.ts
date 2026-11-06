@@ -106,7 +106,8 @@ export const GROUPS: readonly GroupDef[] = [
 		delivery: "deb",
 		packages: ["tcpdump", "tshark", "wireshark-common", "nfdump"],
 		checks: cmd("tcpdump", "tshark", "dumpcap", "capinfos", "editcap", "mergecap", "text2pcap", "nfcapd", "nfdump"),
-		privileges: "Offline decoding needs none; live capture needs CAP_NET_RAW (tcpdump/dumpcap). TZSP/NetFlow receivers on ports >=1024 need none.",
+		privileges:
+			"None: offline decoding and capture-file tools, `dumpcap -D`, nfcapd on ports >=1024. CAP_NET_RAW: live capture (tcpdump -i, dumpcap/tshark -i). A TZSP stream on UDP 37008 needs no privilege to receive, but no tested receiver ships.",
 		// Measured on amd64 (2026-11-06): 152 MiB unpacked from 30.5 MiB of .debs.
 		approxBytes: 160 * 1024 * 1024,
 		versionArgs: { nfcapd: ["-V"], nfdump: ["-V"] },
@@ -125,7 +126,7 @@ export const GROUPS: readonly GroupDef[] = [
 			{ kind: "file", name: "/usr/share/qemu-efi-aarch64/QEMU_EFI.fd" },
 			{ kind: "file", name: "/usr/share/seabios/bios-256k.bin" },
 		],
-		privileges: "None for TCG with user networking; /dev/kvm for acceleration; TAP needs CAP_NET_ADMIN.",
+		privileges: "None: TCG with user-mode networking. /dev/kvm (readable and writable by node): acceleration. CAP_NET_ADMIN plus /dev/net/tun: creating TAP devices (or a TAP pre-created for node).",
 		note: "Still baked into the image, so it is present whether or not it is selected. Readiness probes files only; status never boots a CHR.",
 	},
 	{
@@ -135,7 +136,7 @@ export const GROUPS: readonly GroupDef[] = [
 		packages: ["wireguard-tools", "strongswan-swanctl", "strongswan-pki", "strongswan-charon", "openvpn", "ike-scan"],
 		checks: cmd("wg", "swanctl", "pki", "openvpn", "ike-scan"),
 		privileges:
-			"`wg genkey`, `pki`, `openvpn --genkey` and `ike-scan --sport=0` need none; tunnels and charon need CAP_NET_ADMIN plus /dev/net/tun and host kernel modules.",
+			"None: `wg genkey`/`wg pubkey`, `pki` keys and certificates, `openvpn --genkey`, `ike-scan --sport=0`. CAP_NET_ADMIN: WireGuard interfaces (`ip link add type wireguard` + `wg set`; kernel module, no /dev/net/tun). CAP_NET_ADMIN plus /dev/net/tun: OpenVPN tunnels. Root: `wg-quick` (it re-executes itself with sudo, which the image lacks) and charon (shipped, not wired). CAP_NET_BIND_SERVICE: ike-scan's default source port 500 where ports below 1024 are restricted.",
 		// Measured on amd64 (2026-11-06): see docs/research/2026-11-06/vpn-routing-payloads.md.
 		approxBytes: 16 * 1024 * 1024,
 		// swanctl --version asks charon over VICI; --help prints the version line offline.
@@ -160,18 +161,16 @@ export const GROUPS: readonly GroupDef[] = [
 	},
 	{
 		name: "routing",
-		summary: "Linux router-peer tools: BIRD, LLDP/CDP, ND/ARP probes, nftables, conntrack, nmap",
+		summary: "Linux router-peer tools: BIRD, ND/ARP probes, nftables, conntrack, nmap",
 		delivery: "deb",
-		packages: ["bird2", "lldpd", "ndisc6", "arping", "arp-scan", "nftables", "conntrack", "nmap"],
-		checks: cmd("bird", "birdc", "lldpd", "lldpcli", "rdisc6", "ndisc6", "arping", "arp-scan", "nft", "conntrack", "nmap"),
+		packages: ["bird2", "ndisc6", "arping", "arp-scan", "nftables", "conntrack", "nmap"],
+		checks: cmd("bird", "birdc", "rdisc6", "ndisc6", "arping", "arp-scan", "nft", "conntrack", "nmap"),
 		privileges:
-			"BIRD with BGP on ports >=1024, nmap connect scans and NSE need none; OSPF, LLDP, ARP/ND, raw scans and BGP on 179 need CAP_NET_RAW or CAP_NET_BIND_SERVICE; nftables (even `nft -c`) and conntrack need CAP_NET_ADMIN.",
+			"None: BIRD config parsing and BGP on ports >=1024 (birdc needs only its socket), nmap connect scans and NSE data. CAP_NET_RAW: ARP/ND probes (arping, arp-scan, rdisc6, ndisc6), nmap raw scans and raw NSE scripts, BIRD OSPF. CAP_NET_BIND_SERVICE: BGP on port 179 where the namespace restricts ports below 1024. CAP_NET_ADMIN and netfilter netlink: nft (even `nft -c`) and conntrack operations, BIRD kernel route sync.",
 		// Measured on amd64 (2026-11-06): see docs/research/2026-11-06/vpn-routing-payloads.md.
 		approxBytes: 40 * 1024 * 1024,
 		versionArgs: {
 			birdc: ["-s", "/nonexistent/bird.ctl", "show", "status"],
-			lldpd: ["-v"],
-			lldpcli: ["-v"],
 			rdisc6: ["-V"],
 			ndisc6: ["-V"],
 			arping: ["--help"],
@@ -190,7 +189,7 @@ export const GROUPS: readonly GroupDef[] = [
 			{ command: "nmap", args: ["--script-help", "banner"], expect: "discovery" },
 			{ command: "bird", args: ["-p", "-c", "{input}"], inputBase64: Buffer.from(BIRD_BGP_CONF).toString("base64"), expect: "" },
 		],
-		note: "Persistent payload of Debian packages under the home, like capture. Tools take their config and socket paths as arguments (bird -c/-s, birdc -s, lldpcli -u); the image has no /etc/bird or /run/bird.",
+		note: "Persistent payload of Debian packages under the home, like capture. BIRD takes its config and socket paths as arguments (bird -c/-s, birdc -s); the image has no /etc/bird or /run/bird. lldpd is not here: it needs root and a _lldpd user for privilege separation, which an extracted payload cannot provide.",
 	},
 	{
 		name: "dev",
@@ -280,6 +279,10 @@ export const CORE_CHECKS: readonly Check[] = cmd(
 	"mosquitto_pub",
 );
 
+/** What the core network tools need beyond installation (verified on the app image under Docker, 2026-11-06). */
+export const CORE_PRIVILEGES =
+	"None for ordinary client use: dig, whois, nc/socat and iperf3 on ports >=1024, SNMP, RADIUS and MQTT clients, curl/ssh/centrs, UDP traceroute, ip and ethtool queries. ping uses ICMP echo sockets, which net.ipv4.ping_group_range must allow (Docker allows every group; the image's ping has no file capability), otherwise CAP_NET_RAW. mtr: its helper mtr-packet has a cap_net_raw file capability, so CAP_NET_RAW must be in the container's bounding set. CAP_NET_RAW: traceroute -T/-I, radsniff live capture. CAP_NET_ADMIN: ip and ethtool changes.";
+
 /**
  * Where every network package named in the 2026-11-05 research lives. `core`
  * is installed in the image; group names match GROUPS; `lab-guest` runs only
@@ -311,13 +314,13 @@ export const NETWORK_PACKAGE_ASSIGNMENT: Readonly<Record<string, string>> = {
 	openvpn: "vpn",
 	"ike-scan": "vpn",
 	bird2: "routing",
-	lldpd: "routing",
 	ndisc6: "routing",
 	arping: "routing",
 	"arp-scan": "routing",
 	nftables: "routing",
 	conntrack: "routing",
 	nmap: "routing",
+	lldpd: "lab-guest",
 	"sstp-client": "lab-guest",
 	ppp: "lab-guest",
 	xl2tpd: "lab-guest",
@@ -505,7 +508,7 @@ export function buildStatus(
 		schemaVersion: 1,
 		generatedAt: new Date().toISOString(),
 		selector: selection,
-		core: { state: coreMissing.length === 0 ? "ready" : "degraded", missing: coreMissing, checks: core },
+		core: { state: coreMissing.length === 0 ? "ready" : "degraded", missing: coreMissing, privileges: CORE_PRIVILEGES, checks: core },
 		groups: GROUPS.map((group) =>
 			groupStatus(group, selection.selected.includes(group.name), probe, isPayloadGroup(group) && payloads ? payloadInfo(group, payloads) : undefined),
 		),

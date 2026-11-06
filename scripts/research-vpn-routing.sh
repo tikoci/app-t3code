@@ -11,7 +11,7 @@
 set -u
 export LC_ALL=C
 TOOLS=/data/.local/share/t3code-tools
-node_sh() { runuser -u node -- env HOME=/data T3CODE_TOOL_GROUPS="vpn routing" bash -c "$1"; }
+node_sh() { runuser -u node -- env HOME=/data T3CODE_TOOL_GROUPS="vpn routing" bash -o pipefail -c "$1"; }
 section() { printf '\n== %s\n' "$*"; }
 run() { printf '$ %s\n' "$1"; node_sh "$1" 2>&1; printf '[exit %s]\n' "$?"; }
 
@@ -37,12 +37,12 @@ R="$TOOLS/groups/vpn/current/root"
 L="$R/usr/lib/ipsec:$R/usr/lib/ipsec/plugins:$R/usr/lib/x86_64-linux-gnu:$R/usr/lib/aarch64-linux-gnu"
 run "cd /tmp; LD_LIBRARY_PATH=$L $R/usr/bin/pki --gen --type ed25519 --outform pem 2>&1 | tail -2"
 run "cd /tmp; LD_LIBRARY_PATH=$L STRONGSWAN_CONF=$R/etc/strongswan.conf $R/usr/bin/pki --gen --type ed25519 --outform pem 2>&1 | tail -2"
-run 'cd /tmp; pki --gen --type ed25519 --outform pem 2>/dev/null | head -1; pki --help 2>&1 | grep "loaded plugins"'
+run 'cd /tmp; pki --gen --type ed25519 --outform pem 2>/dev/null | sed -n 1p; pki --help 2>&1 | grep "loaded plugins"'
 run 'cd /tmp; time (for i in $(seq 50); do pki --help >/dev/null 2>&1; done)'
 run 'cd /tmp; time (for i in $(seq 50); do wg --version >/dev/null; done)'
 
 section "nmap and BIRD find their files without variables"
-run 'cd /tmp; nmap -d2 -sL -n 127.0.0.1 2>&1 | grep -m2 Fetchfile; echo "NMAPDIR=${NMAPDIR:-}"'
+run 'cd /tmp; nmap -d2 -sL -n 127.0.0.1 2>&1 | awk '"'"'/Fetchfile/ && n++ < 2'"'"'; echo "NMAPDIR=${NMAPDIR:-}"'
 run "grep -ao '/etc/bird/bird.conf\\|/run/bird/bird.ctl' $TOOLS/groups/routing/current/root/usr/sbin/bird | sort -u"
 
 section "functional scripts (the docker test runs the same ones)"

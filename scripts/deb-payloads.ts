@@ -423,9 +423,9 @@ export function imageCommand(imageRoot: string, name: string): string | null {
  * through paths compiled into them rather than relative to the binary.
  */
 export interface WrapperRule {
-	/** Commands the rule applies to (wrappers that exist; others are ignored). */
+	/** Commands the rule applies to. Commands without a wrapper (absent, or provided by the image) are ignored; a rule with none is never resolved. */
 	commands: readonly string[];
-	/** Variables set for these commands only; `{root}` is the payload's extracted root. */
+	/** Variables set for these commands only; `{root}` is the payload's extracted root, everything else is literal. */
 	env?: Readonly<Record<string, string>>;
 	/**
 	 * LD_PRELOAD for these commands: `libraries` (relative to root), then every
@@ -455,6 +455,15 @@ export interface WrapperExtras {
 	preload?: readonly string[];
 }
 
+const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const shellQuote = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`;
+
+/** A wrapper variable's value as shell words: literal text single-quoted, only `{root}` expanded. */
+export function shellValue(value: string): string {
+	const parts = value.split("{root}");
+	return parts.map((part, i) => (i === 0 ? "" : '"$p/root"') + (part ? shellQuote(part) : "")).join("") || "''";
+}
+
 /** The `sh` wrapper for one payload command: payload libraries for this process tree only, then exec. */
 export function wrapperScript(group: string, payloadRelTarget: string, libDirs: readonly string[], extras: WrapperExtras = {}): string {
 	const lines = [
@@ -471,7 +480,8 @@ export function wrapperScript(group: string, payloadRelTarget: string, libDirs: 
 		lines.push(`LD_LIBRARY_PATH="${libDirs.map((d) => `$p/root/${d}`).join(":")}\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"`, "export LD_LIBRARY_PATH");
 	}
 	for (const [name, value] of Object.entries(extras.env ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
-		lines.push(`${name}="${value.replaceAll("{root}", "$p/root")}"`, `export ${name}`);
+		if (!ENV_NAME.test(name)) throw new Error(`wrapper variable name ${JSON.stringify(name)} is not a shell variable name`);
+		lines.push(`${name}=${shellValue(value)}`, `export ${name}`);
 	}
 	if (extras.preload?.length) {
 		lines.push(`LD_PRELOAD="${extras.preload.map((l) => `$p/root/${l}`).join(":")}\${LD_PRELOAD:+:$LD_PRELOAD}"`, "export LD_PRELOAD");
@@ -519,48 +529,59 @@ export function layoutDebPayload(
 		const imagePaths = [join(imageRoot, rel), join(imageRoot, rel.replace(/^usr\//, ""))];
 		if (imagePaths.some((p) => existsSync(p))) shadows.push(rel);
 	});
-	const commands: string[] = [];
-	const skippedCommands: string[] = [];
-	mkdirSync(join(staging, "bin"), { recursive: true });
 	const sortedLibDirs = [...libDirs].sort();
-	// Per-command extras; a preload rule is resolved once, however many commands share it.
-	const extras = new Map<string, WrapperExtras>();
-	for (const rule of rules) {
-		const preload = rule.preload ? resolvePreload(root, rule.preload, sortedLibDirs, canPreload) : undefined;
-		for (const command of rule.commands) {
-			const prev = extras.get(command) ?? {};
-			extras.set(command, {
-				env: { ...prev.env, ...rule.env },
-				...(preload || prev.preload ? { preload: [...(prev.preload ?? []), ...(preload ?? [])] } : {}),
-			});
-		}
-	}
-	const wired: NonNullable<DebPayloadLayout["wired"]> = {};
-	const seen = new Set<string>();
+	// Pass 1: the commands that get wrappers (an image command of the same name wins).
+	const skippedCommands: string[] = [];
+	const targets = new Map<string, string>();
 	for (const dir of BIN_DIRS) {
 		const abs = join(root, dir);
 		if (!existsSync(abs)) continue;
 		for (const name of readdirSync(abs).sort()) {
-			const path = join(abs, name);
 			let st: ReturnType<typeof statSync>;
 			try {
-				st = statSync(path); // follows symlinks inside the payload
+				st = statSync(join(abs, name)); // follows symlinks inside the payload
 			} catch {
 				continue;
 			}
-			if (!st.isFile() || !(st.mode & 0o111) || seen.has(name)) continue;
-			seen.add(name);
-			if (imageCommand(imageRoot, name)) {
-				skippedCommands.push(name);
-				continue;
-			}
-			const wrapper = join(staging, "bin", name);
-			const extra = extras.get(name);
-			writeFileSync(wrapper, wrapperScript(group, join("root", dir, name), sortedLibDirs, extra));
-			chmodSync(wrapper, 0o755);
-			commands.push(name);
-			if (extra) wired[name] = { env: Object.keys(extra.env ?? {}).sort(), preload: [...(extra.preload ?? [])] };
+			if (!st.isFile() || !(st.mode & 0o111) || targets.has(name) || skippedCommands.includes(name)) continue;
+			if (imageCommand(imageRoot, name)) skippedCommands.push(name);
+			else targets.set(name, join("root", dir, name));
 		}
+	}
+	// Pass 2: rules for wrapped commands only. A rule none of whose commands
+	// is wrapped is never resolved, so an image that provides the tool (and
+	// its libraries) instead cannot fail the payload. A preload rule is
+	// resolved once; a command that several rules preload into is checked
+	// again with its merged, deduplicated set.
+	const extras = new Map<string, WrapperExtras>();
+	const preloadSources = new Map<string, number>();
+	for (const rule of rules) {
+		const commands = rule.commands.filter((command) => targets.has(command));
+		if (commands.length === 0) continue;
+		const preload = rule.preload ? resolvePreload(root, rule.preload, sortedLibDirs, canPreload) : undefined;
+		for (const command of commands) {
+			const prev = extras.get(command) ?? {};
+			const merged = [...new Set([...(prev.preload ?? []), ...(preload ?? [])])];
+			extras.set(command, { env: { ...prev.env, ...rule.env }, ...(merged.length ? { preload: merged } : {}) });
+			if (preload) preloadSources.set(command, (preloadSources.get(command) ?? 0) + 1);
+		}
+	}
+	for (const [command, count] of preloadSources) {
+		const set = extras.get(command)?.preload ?? [];
+		if (count > 1 && !canPreload(set.map((lib) => join(root, lib)), sortedLibDirs.map((dir) => join(root, dir)).join(":"))) {
+			throw new Error(`${command}: its ${set.length} merged preload libraries do not load together`);
+		}
+	}
+	mkdirSync(join(staging, "bin"), { recursive: true });
+	const commands: string[] = [];
+	const wired: NonNullable<DebPayloadLayout["wired"]> = {};
+	for (const [name, target] of targets) {
+		const wrapper = join(staging, "bin", name);
+		const extra = extras.get(name);
+		writeFileSync(wrapper, wrapperScript(group, target, sortedLibDirs, extra));
+		chmodSync(wrapper, 0o755);
+		commands.push(name);
+		if (extra) wired[name] = { env: Object.keys(extra.env ?? {}).sort(), preload: [...(extra.preload ?? [])] };
 	}
 	return {
 		commands: commands.sort(),
