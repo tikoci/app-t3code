@@ -53,6 +53,13 @@ export interface DebLock {
 	/** `<ID>-<VERSION_CODENAME>` from /etc/os-release, e.g. debian-trixie. */
 	distro: string;
 	packages: DebLockPackage[];
+	/**
+	 * Image packages apt wanted to upgrade for this group. Never extracted: a
+	 * payload copy would shadow the image's library (a lagging libc6, say). If
+	 * a tool truly needs the newer version, its version probe fails and the
+	 * payload is never activated; the fix is an image rebuild.
+	 */
+	imageUpgrades?: { name: string; installed: string; candidate: string }[];
 }
 
 export interface DebCompat {
@@ -87,12 +94,23 @@ export function debCompat(): DebCompat | null {
 
 // ---- build time: resolve the lock from apt metadata ----------------------
 
-/** `Inst name [old] (version origin… [arch])` lines of `apt-get install -s`. */
-export function parseAptSimulation(text: string): { name: string; version: string; architecture: string }[] {
-	const out: { name: string; version: string; architecture: string }[] = [];
+export interface AptInst {
+	name: string;
+	version: string;
+	architecture: string;
+	/** Set when the image already has this package and apt would upgrade it. */
+	installed?: string;
+}
+
+/** `Inst name [installed] (version origin… [arch])` lines of `apt-get install -s`. */
+export function parseAptSimulation(text: string): AptInst[] {
+	const out: AptInst[] = [];
 	for (const line of text.split("\n")) {
-		const match = line.match(/^Inst (\S+) (?:\[[^\]]*\] )?\((\S+) .*\[([^\]]+)\]\)/);
-		if (match) out.push({ name: match[1] as string, version: match[2] as string, architecture: match[3] as string });
+		const match = line.match(/^Inst (\S+) (?:\[([^\]]*)\] )?\((\S+) .*\[([^\]]+)\]\)/);
+		if (!match) continue;
+		const inst: AptInst = { name: match[1] as string, version: match[3] as string, architecture: match[4] as string };
+		if (match[2]) inst.installed = match[2];
+		out.push(inst);
 	}
 	return out;
 }
@@ -145,7 +163,10 @@ export type Exec = (cmd: string[]) => string;
  */
 export function resolveDebLock(group: string, roots: readonly string[], exec: Exec, osRelease: string): DebLock {
 	const args = ["--no-install-recommends", ...roots];
-	const closure = parseAptSimulation(exec(["apt-get", "install", "-s", ...args]));
+	const simulated = parseAptSimulation(exec(["apt-get", "install", "-s", ...args]));
+	// Only what the image lacks: an upgrade of an image package is recorded, not extracted.
+	const closure = simulated.filter((p) => p.installed === undefined);
+	const imageUpgrades = simulated.filter((p) => p.installed !== undefined).map((p) => ({ name: p.name, installed: p.installed as string, candidate: p.version }));
 	if (closure.length === 0) throw new Error(`${group}: apt resolves nothing to install for ${roots.join(" ")} (already in the image?)`);
 	const uris = parsePrintUris(exec(["apt-get", "install", "--print-uris", "-qq", ...args]));
 	const stanzas = parseStanzas(exec(["apt-cache", "show", "--no-all-versions", ...closure.map((p) => `${p.name}=${p.version}`)]));
@@ -172,7 +193,7 @@ export function resolveDebLock(group: string, roots: readonly string[], exec: Ex
 		};
 	});
 	packages.sort((a, b) => a.name.localeCompare(b.name));
-	return { schemaVersion: DEB_LOCK_SCHEMA, group, roots: [...roots], arch, distro, packages };
+	return { schemaVersion: DEB_LOCK_SCHEMA, group, roots: [...roots], arch, distro, packages, ...(imageUpgrades.length ? { imageUpgrades } : {}) };
 }
 
 // ---- runtime: download, verify, extract, wrap ----------------------------
@@ -189,16 +210,41 @@ export interface DebIo {
 	log: (line: string) => void;
 }
 
+/** SHA256 of a file, streamed. */
 export async function sha256File(path: string): Promise<string> {
 	const hash = createHash("sha256");
 	for await (const chunk of Bun.file(path).stream()) hash.update(chunk);
 	return hash.digest("hex");
 }
 
-async function fetchTo(url: string, path: string, io: DebIo, signal?: AbortSignal) {
+/**
+ * Stream a URL to `path`, refusing to write more than `limit` bytes: a
+ * mirror serving the wrong (or an endless) file cannot fill the volume.
+ */
+async function fetchTo(url: string, path: string, limit: number, io: DebIo, signal?: AbortSignal) {
 	const response = await io.fetch(url, signal ? { signal } : {});
 	if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
-	await Bun.write(path, response);
+	const declared = Number(response.headers.get("content-length") ?? Number.NaN);
+	if (declared > limit) {
+		await response.body?.cancel();
+		throw new Error(`${url}: ${declared} bytes, pinned ${limit}`);
+	}
+	const writer = Bun.file(path).writer();
+	let written = 0;
+	try {
+		if (response.body) {
+			for await (const chunk of response.body) {
+				written += chunk.byteLength;
+				if (written > limit) throw new Error(`${url}: more than the pinned ${limit} bytes`);
+				writer.write(chunk);
+			}
+		}
+	} catch (error) {
+		await response.body?.cancel().catch(() => {});
+		throw error;
+	} finally {
+		await writer.end();
+	}
 }
 
 /** snapshot.debian.org keeps every version Debian ever published, keyed by SHA1. */
@@ -221,6 +267,7 @@ async function snapshotUrl(pkg: DebLockPackage, io: DebIo, signal?: AbortSignal)
 	throw new Error(`snapshot.debian.org has no ${want}`);
 }
 
+/** Null when a downloaded file matches its pin, else what differs. */
 async function checkFile(path: string, pkg: DebLockPackage): Promise<string | null> {
 	const size = statSync(path).size;
 	if (size !== pkg.size) return `size ${size}, pinned ${pkg.size}`;
@@ -237,7 +284,7 @@ export async function fetchDeb(pkg: DebLockPackage, cache: string, io: DebIo, si
 	const errors: string[] = [];
 	const attempt = async (url: string) => {
 		rmSync(part, { force: true });
-		await fetchTo(url, part, io, signal);
+		await fetchTo(url, part, pkg.size, io, signal);
 		const mismatch = await checkFile(part, pkg);
 		if (mismatch) throw new Error(`${url}: ${mismatch}`);
 		renameSync(part, path);
@@ -264,6 +311,7 @@ export async function fetchDeb(pkg: DebLockPackage, cache: string, io: DebIo, si
 	throw new Error(`${pkg.name} ${pkg.version}: ${errors.join("; ")}`);
 }
 
+/** Run a command, collecting its output. */
 async function exec(cmd: string[], signal?: AbortSignal): Promise<{ code: number; out: string; err: string }> {
 	const proc = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", ...(signal ? { signal } : {}) });
 	const [out, err, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
@@ -280,6 +328,7 @@ export async function checkControl(path: string, pkg: DebLockPackage, io: DebIo,
 	if (got !== want) throw new Error(`${basename(path)} contains ${got}, pinned ${want}`);
 }
 
+/** Depth-first walk that does not follow symlinked directories. */
 function walk(dir: string, visit: (path: string, isDir: boolean) => void) {
 	for (const name of readdirSync(dir)) {
 		const path = join(dir, name);
@@ -290,6 +339,21 @@ function walk(dir: string, visit: (path: string, isDir: boolean) => void) {
 }
 
 const BIN_DIRS = ["usr/bin", "usr/sbin", "bin", "sbin"];
+const IMAGE_BIN_DIRS = ["usr/local/bin", "usr/local/sbin", ...BIN_DIRS];
+
+/** The image's own executable of this name, if any: an image command always wins over a payload's. */
+export function imageCommand(imageRoot: string, name: string): string | null {
+	for (const dir of IMAGE_BIN_DIRS) {
+		const path = join(imageRoot, dir, name);
+		try {
+			const st = statSync(path);
+			if (st.isFile() && st.mode & 0o111) return path;
+		} catch {
+			// not here
+		}
+	}
+	return null;
+}
 
 export interface DebPayloadLayout {
 	/** Commands exposed through wrappers (and shims). */
@@ -302,6 +366,7 @@ export interface DebPayloadLayout {
 	shadows: string[];
 }
 
+/** The `sh` wrapper for one payload command: payload libraries for this process tree only, then exec. */
 export function wrapperScript(group: string, payloadRelTarget: string, libDirs: readonly string[]): string {
 	const lines = [
 		"#!/bin/sh",
@@ -351,7 +416,7 @@ export function layoutDebPayload(group: string, staging: string, imageRoot: stri
 			}
 			if (!st.isFile() || !(st.mode & 0o111) || seen.has(name)) continue;
 			seen.add(name);
-			if (BIN_DIRS.some((d) => existsSync(join(imageRoot, d, name))) || existsSync(join(imageRoot, "usr/local/bin", name))) {
+			if (imageCommand(imageRoot, name)) {
 				skippedCommands.push(name);
 				continue;
 			}
@@ -386,6 +451,7 @@ export async function installDebPayload(group: string, lock: DebLock, staging: s
 	return { ...layoutDebPayload(group, staging, io.imageRoot), debs, downloadedBytes };
 }
 
+/** Read and schema-check a lock file. */
 export function readDebLock(path: string): DebLock {
 	const lock = JSON.parse(readFileSync(path, "utf8")) as DebLock;
 	if (lock.schemaVersion !== DEB_LOCK_SCHEMA || !Array.isArray(lock.packages)) throw new Error(`${path}: unsupported lock schema`);

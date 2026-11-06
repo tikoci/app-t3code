@@ -44,7 +44,19 @@ import {
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { dlopen, FFIType } from "bun:ffi";
-import { DEB_CACHE_DIR, DEB_LOCK_FILE, type DebCompat, type DebLock, debCompat, debLockBytes, installDebPayload, readDebLock, SNAPSHOT_BASE } from "./deb-payloads.ts";
+import {
+	DEB_CACHE_DIR,
+	DEB_LOCK_FILE,
+	type DebCompat,
+	type DebLock,
+	debCompat,
+	debLockBytes,
+	imageCommand,
+	installDebPayload,
+	readDebLock,
+	SNAPSHOT_BASE,
+	sha256File,
+} from "./deb-payloads.ts";
 import type { GroupDef } from "./tool-groups.ts";
 
 export const PAYLOAD_SCHEMA = 1;
@@ -269,7 +281,7 @@ export interface Verification {
  * between amd64 and arm64 routers) is rejected; a Node ABI difference alone
  * is not, so a stale payload keeps serving while its refresh installs.
  */
-export function verifyPayload(dir: string, group: GroupDef, expectedId?: string, compat?: RuntimeId | null): Verification {
+export function verifyPayload(dir: string, group: GroupDef, expectedId?: string, compat?: RuntimeId | null, imageRoot?: string): Verification {
 	let manifest: Manifest;
 	try {
 		manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
@@ -292,9 +304,13 @@ export function verifyPayload(dir: string, group: GroupDef, expectedId?: string,
 			return { ok: false, missing: [], manifest, error: `built for ${show(manifest.compat)}, this runtime is ${show(compat)}` };
 		}
 	}
-	// Every required command must be in the payload, and every linked one present.
-	const bins = [...new Set([...groupBins(group), ...payloadBins(group, manifest)])];
-	const missing = bins.filter((bin) => !existsSync(join(dir, binRel(group, bin))));
+	// Every linked command must be present, and every required one in the
+	// payload or (deb only) provided by the image itself.
+	const linked = payloadBins(group, manifest);
+	const missing = [
+		...linked.filter((bin) => !existsSync(join(dir, binRel(group, bin)))),
+		...groupBins(group).filter((bin) => !linked.includes(bin) && !(group.delivery === "deb" && imageRoot !== undefined && imageCommand(imageRoot, bin))),
+	];
 	return { ok: missing.length === 0, missing, manifest, ...(missing.length ? { error: "payload files missing" } : {}) };
 }
 
@@ -306,7 +322,7 @@ export function verifyPayload(dir: string, group: GroupDef, expectedId?: string,
 function stillRuns(dir: string, group: GroupDef): boolean {
 	if (group.delivery !== "deb") return true;
 	const bin = group.smoke?.command ?? groupBins(group)[0];
-	if (!bin) return true;
+	if (!bin || !existsSync(join(dir, binRel(group, bin)))) return true;
 	try {
 		const proc = Bun.spawnSync([join(dir, binRel(group, bin)), ...versionArgs(group, bin)], { cwd: dir, timeout: 10_000, stdout: "ignore", stderr: "ignore" });
 		return proc.exitCode === 0;
@@ -527,8 +543,11 @@ export interface PayloadInfo {
 	installer: LockInfo | null;
 	last: StateRecord | null;
 	log: string;
+	/** Where each required command resolves: its shim, or (deb) the image's own copy; null if neither. */
+	commandPaths: Record<string, string | null>;
 }
 
+/** Directory entries, or none if it does not exist. */
 function readdirOrEmpty(dir: string): string[] {
 	try {
 		return readdirSync(dir);
@@ -537,14 +556,18 @@ function readdirOrEmpty(dir: string): string[] {
 	}
 }
 
-/** Point a group's shims at its current payload: exactly `bins`, never another group's shim. */
+/**
+ * Point a group's shims at its current payload: exactly `bins`, never another
+ * group's shim, and (deb) never a command the image now provides itself; a
+ * payload kept from an older image may predate that command in the image.
+ */
 function linkShims(env: PayloadEnv, group: GroupDef, bins: readonly string[]) {
 	const dir = binDir(env);
-	const want = new Set(bins);
+	const want = new Set(group.delivery === "deb" ? bins.filter((bin) => !imageCommand(env.imageRoot, bin)) : bins);
 	for (const name of readdirOrEmpty(dir)) {
 		if (!want.has(name) && readLink(join(dir, name))?.startsWith(shimPrefix(group.name))) removeLink(join(dir, name));
 	}
-	for (const bin of bins) {
+	for (const bin of want) {
 		const target = readLink(join(dir, bin));
 		if (target?.startsWith(`${join("..", "groups")}/`) && !target.startsWith(shimPrefix(group.name))) {
 			env.log(`${group.name}: not linking ${bin}; another group provides it (${target})`);
@@ -554,6 +577,7 @@ function linkShims(env: PayloadEnv, group: GroupDef, bins: readonly string[]) {
 	}
 }
 
+/** Remove every shim that points into this group's directory. */
 function unlinkShims(env: PayloadEnv, group: GroupDef) {
 	const dir = binDir(env);
 	for (const name of readdirOrEmpty(dir)) {
@@ -564,11 +588,12 @@ function unlinkShims(env: PayloadEnv, group: GroupDef) {
 export function payloadInfo(group: GroupDef, env: PayloadEnv): PayloadInfo {
 	const desired = desiredPayload(group, env);
 	const current = readLink(currentLink(env, group.name));
-	const activeCheck = current ? verifyPayload(join(groupDir(env, group.name), current), group, current, runtimeOf(group, env)) : null;
+	const activeCheck = current ? verifyPayload(join(groupDir(env, group.name), current), group, current, runtimeOf(group, env), env.imageRoot) : null;
 	const active = activeCheck?.ok ? current : null;
-	const linked =
-		active !== null &&
-		payloadBins(group, activeCheck?.manifest ?? null).every((bin) => readLink(join(binDir(env), bin)) === shimTarget(group, bin) && existsSync(join(binDir(env), bin)));
+	const owned = (bin: string) => (group.delivery === "deb" ? imageCommand(env.imageRoot, bin) : null);
+	const shimOk = (bin: string) => readLink(join(binDir(env), bin)) === shimTarget(group, bin) && existsSync(join(binDir(env), bin));
+	const linked = active !== null && payloadBins(group, activeCheck?.manifest ?? null).every((bin) => owned(bin) !== null || shimOk(bin));
+	const commandPaths = Object.fromEntries(groupBins(group).map((bin) => [bin, owned(bin) ?? (shimOk(bin) ? join(binDir(env), bin) : null)]));
 	return {
 		root: env.root,
 		desired: "id" in desired ? desired.id : null,
@@ -581,6 +606,7 @@ export function payloadInfo(group: GroupDef, env: PayloadEnv): PayloadInfo {
 		installer: liveInstaller(env),
 		last: readState(env)[group.name] ?? null,
 		log: join(env.root, "install.log"),
+		commandPaths,
 	};
 }
 
@@ -617,13 +643,13 @@ export function activate(groups: readonly GroupDef[], selected: readonly string[
 		const desired = desiredPayload(group, env);
 		const dir = groupDir(env, group.name);
 		const wanted = "id" in desired ? desired.id : null;
-		if ("id" in desired && verifyPayload(join(dir, desired.id), group, desired.id, desired.compat).ok) {
+		if ("id" in desired && verifyPayload(join(dir, desired.id), group, desired.id, desired.compat, env.imageRoot).ok) {
 			swapLink(currentLink(env, group.name), desired.id);
 		} else {
 			needInstall.push(group.name);
 		}
 		const current = readLink(currentLink(env, group.name));
-		const check = current ? verifyPayload(join(dir, current), group, current, runtimeOf(group, env)) : null;
+		const check = current ? verifyPayload(join(dir, current), group, current, runtimeOf(group, env), env.imageRoot) : null;
 		if (current && check?.ok && (current === wanted || stillRuns(join(dir, current), group))) {
 			linkShims(env, group, payloadBins(group, check.manifest));
 		} else {
@@ -693,8 +719,9 @@ async function buildDeb(group: GroupDef, desired: Desired, env: PayloadEnv, stag
 		},
 		AbortSignal.timeout(env.installTimeoutMs),
 	);
-	const missing = groupBins(group).filter((bin) => !result.commands.includes(bin));
-	if (missing.length) throw new Error(`payload does not provide ${missing.join(", ")}${result.skippedCommands.length ? ` (image already has ${result.skippedCommands.join(", ")})` : ""}`);
+	// A required command the image itself provides is satisfied by the image.
+	const missing = groupBins(group).filter((bin) => !result.commands.includes(bin) && !imageCommand(env.imageRoot, bin));
+	if (missing.length) throw new Error(`neither the payload nor the image provides ${missing.join(", ")}`);
 	if (result.downloadedBytes) env.log(`${group.name}: downloaded ${(result.downloadedBytes / MiB).toFixed(1)} MiB in ${lock.packages.length} packages, all SHA256-verified`);
 	const { debs, libDirs, skippedCommands, shadows, downloadedBytes } = result;
 	return { commands: result.commands, deb: { debs, libDirs, skippedCommands, shadows, downloadedBytes } };
@@ -713,7 +740,9 @@ async function installOnce(group: GroupDef, desired: Desired, env: PayloadEnv, s
 	const versions: Record<string, string> = {};
 	for (const bin of groupBins(group)) {
 		// cwd is the staging dir: markdownlint-cli2 treats --version as a glob.
-		const probe = await run([join(staging, binRel(group, bin)), ...versionArgs(group, bin)], staging, 60_000);
+		const inPayload = join(staging, binRel(group, bin));
+		const path = existsSync(inPayload) ? inPayload : ((group.delivery === "deb" ? imageCommand(env.imageRoot, bin) : null) ?? inPayload);
+		const probe = await run([path, ...versionArgs(group, bin)], staging, 60_000);
 		// Some tools (nfdump) print their own path; keep the manifest free of staging paths.
 		const first = (probe.out.split("\n").find((line) => line.trim()) ?? "").replaceAll(`${join(staging, "root", "usr", "bin")}/`, "").replaceAll(`${staging}/`, "");
 		if (probe.code !== 0) throw new Error(`${bin} ${versionArgs(group, bin).join(" ")} exited ${probe.code}: ${first}`);
@@ -724,7 +753,9 @@ async function installOnce(group: GroupDef, desired: Desired, env: PayloadEnv, s
 		const input = join(staging, ".smoke-input");
 		writeFileSync(input, Buffer.from(group.smoke.inputBase64 ?? "", "base64"));
 		const args = group.smoke.args.map((arg) => (arg === "{input}" ? input : arg));
-		const probe = await run([join(staging, binRel(group, group.smoke.command)), ...args], staging, 60_000);
+		const smokeBin = join(staging, binRel(group, group.smoke.command));
+		const smokePath = existsSync(smokeBin) ? smokeBin : ((group.delivery === "deb" ? imageCommand(env.imageRoot, group.smoke.command) : null) ?? smokeBin);
+		const probe = await run([smokePath, ...args], staging, 60_000);
 		rmSync(input, { force: true });
 		if (probe.code !== 0 || !probe.out.includes(group.smoke.expect)) {
 			throw new Error(`smoke test ${group.smoke.command} ${group.smoke.args.join(" ")} failed (exit ${probe.code}): ${probe.out.split("\n").slice(-3).join(" | ")}`);
@@ -758,8 +789,23 @@ function pruneOld(env: PayloadEnv, group: string, keep: readonly (string | null)
 }
 
 /** Bytes an install needs free: payload plus downloads (npm cache or .debs). */
-function installBudget(group: GroupDef, desired: Desired): number {
-	return (desired.debLock ? debLockBytes(desired.debLock) : (group.approxBytes ?? 0) * 2) + DISK_RESERVE_BYTES;
+/**
+ * Bytes an install needs free: payload plus downloads (npm cache or .debs)
+ * plus the reserve. For deb, a .deb already in the cache that still matches
+ * its pinned size and SHA256 needs no new download, so it is not counted.
+ */
+async function installBudget(group: GroupDef, desired: Desired, cache: string): Promise<number> {
+	if (!desired.debLock) return (group.approxBytes ?? 0) * 2 + DISK_RESERVE_BYTES;
+	let cached = 0;
+	for (const pkg of desired.debLock.packages) {
+		const path = join(cache, `${pkg.sha256}.deb`);
+		try {
+			if (statSync(path).size === pkg.size && (await sha256File(path)) === pkg.sha256) cached += pkg.size;
+		} catch {
+			// not cached
+		}
+	}
+	return debLockBytes(desired.debLock) - cached + DISK_RESERVE_BYTES;
 }
 
 export interface InstallResult {
@@ -806,7 +852,7 @@ export async function installGroups(
 			const staging = join(dir, `.staging-${desired.id}-${process.pid}`);
 			// Verified .debs survive an interrupted run (slow links); npm's cache does not.
 			const cache = group.delivery === "deb" ? join(dir, DEB_CACHE_DIR) : join(dir, `.staging-cache-${process.pid}`);
-			const budget = installBudget(group, desired);
+			const budget = await installBudget(group, desired, cache);
 			const free = env.freeBytes(env.root);
 			if (free < budget) {
 				const error = `low disk: ${Math.floor(free / MiB)} MiB free, ${Math.ceil(budget / MiB)} MiB needed (payload, downloads and reserve)`;

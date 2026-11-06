@@ -25,12 +25,27 @@ capinfos -c /tmp/capture-merged.pcapng | grep -Eq 'Number of packets: +2'
 tshark -r "$fixture" -x | text2pcap -q - /tmp/capture-text.pcap
 tshark -r /tmp/capture-text.pcap -T fields -e dns.qry.name | grep -qx routeros.example
 
-# Listing interfaces needs no privilege; capturing does, and is refused.
-# CAPTURE_TOOLS_QEMU_USER=1 skips the interface listing, whose ethtool ioctl
-# QEMU user-mode emulation does not implement (arm64 runs on an amd64 host).
-if [ -z "${CAPTURE_TOOLS_QEMU_USER:-}" ]; then dumpcap -D | grep -q 'lo'; fi
-if timeout 10 dumpcap -i lo -c 1 -a duration:2 -w /tmp/capture-live.pcapng 2>/dev/null; then echo "dumpcap captured without CAP_NET_RAW" >&2; exit 1; fi
-if timeout 10 tcpdump -i lo -c 1 2>/dev/null; then echo "tcpdump captured without CAP_NET_RAW" >&2; exit 1; fi
+# Listing interfaces needs no privilege; capturing does, and must be refused
+# with a permission error. Success, a timeout, or any other failure fails the
+# check: only an explicit denial proves the missing CAP_NET_RAW is the cause.
+refused() {
+	local name=$1 err rc
+	shift
+	set +e
+	err=$(timeout 10 "$@" 2>&1 >/dev/null)
+	rc=$?
+	set -e
+	if [ "$rc" -eq 0 ]; then echo "$name captured without CAP_NET_RAW" >&2; exit 1; fi
+	if [ "$rc" -eq 124 ]; then echo "$name timed out instead of being refused" >&2; exit 1; fi
+	if ! grep -Eqi 'permission|operation not permitted' <<<"$err"; then echo "$name failed for another reason (exit $rc): $err" >&2; exit 1; fi
+}
+# CAPTURE_TOOLS_QEMU_USER=1 skips both: QEMU user-mode emulation (arm64 on an
+# amd64 host) does not implement the ethtool ioctls they hit first.
+if [ -z "${CAPTURE_TOOLS_QEMU_USER:-}" ]; then
+	dumpcap -D | grep -q 'lo'
+	refused dumpcap dumpcap -i lo -c 1 -a duration:2 -w /tmp/capture-live.pcapng
+	refused tcpdump tcpdump -i lo -c 1
+fi
 
 # NetFlow v5 collector on an unprivileged port: one record, 192.0.2.1 -> 192.0.2.2 udp/53, 5 packets, 500 bytes.
 rm -rf /tmp/capture-nf && mkdir /tmp/capture-nf

@@ -359,7 +359,8 @@ the same lifecycle:
   attempts with back-off (30 minute cap per attempt); with no network at all
   npm needs about five minutes to give up. The installer needs room for the
   payload and its downloads (for `dev`, twice the payload size; for
-  `capture`, the pinned `.deb` sizes plus their unpacked sizes) plus 256 MiB,
+  `capture`, the pinned `.deb` sizes not already verified in the cache, plus
+  their unpacked sizes) plus 256 MiB,
   and otherwise fails with a `low disk` error rather than filling the
   volume. It never deletes projects, VMs or other home data. Interrupted
   installs (`.staging-*`) are removed on the next run.
@@ -396,6 +397,7 @@ payload too. It installs as the app user with no root at runtime:
   downloaded again.
 - **Verified before extraction.** Each `.deb` is downloaded from
   `deb.debian.org` (https first) and must match its pinned size and SHA256.
+  A download is cut off as soon as it exceeds the pinned size.
   Its control fields must also name the pinned package, version and
   architecture. Only then is it unpacked with `dpkg-deb -x`. Maintainer
   scripts never run. If a superseded version has left the mirror, it is
@@ -407,11 +409,16 @@ payload too. It installs as the app user with no root at runtime:
   wrapper in the payload's `bin/` that sets `LD_LIBRARY_PATH` to the
   payload's own library directory for that process and its children only,
   then runs the real binary from the payload. The payload holds only
-  libraries the image lacks, so it does not replace the image's copies.
+  packages the image lacks, so it does not replace the image's copies. If
+  apt would upgrade a package the image already has, the lock records that
+  under `imageUpgrades` and the build log warns, but the package is not
+  extracted. If a tool really needs the newer version, its version check
+  fails and the payload is never activated; an image rebuild fixes that.
   Wireshark finds its data files and plugins relative to the binary, so
   `tshark` decodes with its full dissector set, RADIUS dictionaries and
   plugins from the payload. A payload command never shadows a command of the
-  same name in the image.
+  same name in the image, including one the image gains later. A required
+  command that the image already provides is checked and used from the image.
 - **Stale native payloads are checked.** While a refresh is pending after an
   image update, the previous payload stays linked only if `tshark --version`
   still runs against the new image.

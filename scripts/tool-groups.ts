@@ -373,14 +373,14 @@ function payloadState(info: PayloadInfo): GroupState {
 }
 
 export function groupStatus(group: GroupDef, selected: boolean, probe: Probe, payload?: PayloadInfo): GroupStatus {
-	// Payload groups are checked at their shims, so the result does not depend
-	// on the caller's PATH; other groups are probed where the image put them.
+	// Payload groups are checked at their shims (or, for deb, the image's own
+	// command of that name), so the result does not depend on the caller's
+	// PATH; other groups are probed where the image put them.
 	const checks =
 		isPayloadGroup(group) && payload
 			? group.checks.map((check) => {
-					const path = join(payload.root, "bin", check.name);
-					const ok = check.kind === "command" && existsSync(path);
-					return { kind: check.kind, name: check.name, ok, path: ok ? path : null };
+					const path = check.kind === "command" ? (payload.commandPaths?.[check.name] ?? null) : null;
+					return { kind: check.kind, name: check.name, ok: path !== null && existsSync(path), path };
 				})
 			: group.checks.map((check) => runCheck(check, probe));
 	const missing = checks.filter((check) => !check.ok).map((check) => check.name);
@@ -578,6 +578,9 @@ export async function main(argv: string[]): Promise<number> {
 			const download = lock.packages.reduce((s, p) => s + p.size, 0);
 			const installed = lock.packages.reduce((s, p) => s + p.installedSize, 0);
 			process.stdout.write(`${group.name}: ${lock.packages.length} packages for ${lock.arch} ${lock.distro}, ${mib(download)} MiB download, ${mib(installed)} MiB unpacked -> ${path}\n`);
+			for (const up of lock.imageUpgrades ?? []) {
+				process.stdout.write(`${group.name}: warning: apt wants ${up.name} ${up.installed} -> ${up.candidate}; not extracted (the image copy wins). Rebuild the image if the tools need it.\n`);
+			}
 		}
 		return 0;
 	}

@@ -137,10 +137,13 @@ Native arm64 (a RouterOS ARM64 router) is #7 territory.
 MiB download, 190.0 MiB unpacked by apt metadata, 58 s including `apt-get
 update`), then `t3code-tools install` as node: ready in 37 s, all 9 version
 probes and the decode smoke test passed, 196,305,250 B on disk.
-`test/capture-tools.sh` then passed with `CAPTURE_TOOLS_QEMU_USER=1`, which
-skips only `dumpcap -D`. Its live-capture checks passed because capture
-failed, but under emulation the failure is the ioctl, not a missing
-privilege. `t3code-tools init` relinked the payload after its shims were
+`test/capture-tools.sh` then passed with `CAPTURE_TOOLS_QEMU_USER=1`. In
+that recorded run the flag skipped only `dumpcap -D`, and the live-capture
+checks passed merely because capture failed: on the ioctl, not on a missing
+privilege. After review the script requires an explicit permission error,
+treats a timeout or any other failure as a test failure, and under
+`CAPTURE_TOOLS_QEMU_USER=1` skips the live-capture checks as well, so an
+emulated run claims nothing about privileges. `t3code-tools init` relinked the payload after its shims were
 deleted. The container had network for this run; the offline relink is
 proven on amd64 (`--network none` in the docker test). (The lock has more
 packages than the spike's 67 because the spike first installs `curl`, whose
@@ -183,7 +186,11 @@ That choice is left to the next slice.
   `groups/capture/debs.lock.json`. It is deterministic and sorted, with no
   timestamps, so an unchanged Debian state gives a byte-identical lock and
   the same payload id. It is copied into the build inventory as
-  `capture-debs.lock.json`.
+  `capture-debs.lock.json`. Packages the image already has are never in the
+  closure. If apt would *upgrade* one of them, the lock records it under
+  `imageUpgrades` and the build prints a warning, but it is not extracted, so
+  a payload copy never shadows an image library such as a lagging `libc6`.
+  The current amd64 lock has none.
 - **Payload id**: `<arch>-<codename>-<sha256(schema, group, lock bytes,
   platform, dpkg arch, distro)[:16]>`. A Debian security update in a rebuilt
   image changes the lock, which gives a new id and a background refresh
@@ -198,7 +205,12 @@ That choice is left to the next slice.
     extracted with `dpkg-deb -x` into `<staging>/root`. Maintainer scripts
     never run.
   - Every executable in `root/usr/{bin,sbin}` gets a wrapper in `bin/`,
-    except names the image already has.
+    except names the image already has. A required command the image itself
+    provides satisfies the group and is version-probed from the image. Each
+    relink re-checks this, so a command an updated image gains wins over a
+    kept payload's shim.
+  - Downloads stream with a hard stop at the pinned size. The disk budget
+    excludes `.deb`s already verified in the cache.
   - Every `--version` probe must exit 0 and the smoke decode must print
     `routeros.example`. Only then are the manifest (debs with SHA256 and
     source host, library dirs, skipped commands, shadows) and the atomic
