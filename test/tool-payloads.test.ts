@@ -249,7 +249,18 @@ process.exit(r.locked ? 0 : 3);
 		const second = await installGroups(npmGroups, ["dev"], env);
 		expect(second.locked).toBe(false);
 		await expect(prunePayloads(npmGroups, [], env)).rejects.toThrow("installer is running");
-		expect(JSON.parse(readFileSync(lock, "utf8"))).toMatchObject({ pid: child.pid, child: { pid: expect.any(Number) } });
+		// The installer records npm's pid just after spawning it, while npm itself
+		// writes npm-calls at once: two processes, so wait for the record.
+		let record: { pid?: number; child?: { pid: number } } = {};
+		for (let i = 0; i < 200 && !record.child; i++) {
+			try {
+				record = JSON.parse(readFileSync(lock, "utf8"));
+			} catch {
+				// Caught mid-rewrite (truncate, then write): read again.
+			}
+			if (!record.child) await Bun.sleep(25);
+		}
+		expect(record).toMatchObject({ pid: child.pid, child: { pid: expect.any(Number) } });
 
 		rmSync(join(tmp, "hold"));
 		expect(await child.exited).toBe(0);
