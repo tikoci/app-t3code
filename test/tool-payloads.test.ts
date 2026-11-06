@@ -4,7 +4,7 @@ import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rea
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildStatus, GROUPS, type Probe } from "../scripts/tool-groups.ts";
-import { activate, type Compat, installGroups, type PayloadEnv, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
+import { activate, activateIfIdle, type Compat, installGroups, type PayloadEnv, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
 
 const SPEC = join(import.meta.dir, "..", "scripts", "groups");
 const dev = GROUPS.find((g) => g.name === "dev");
@@ -326,6 +326,40 @@ await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 		expect(processStartTicks(npm?.pid as number)).toBeNull();
 		expect(readdirSync(join(env.root, "groups", "dev")).filter((n) => n.startsWith(".staging-"))).toEqual([]);
 		expect(result.results["dev"]?.state).toBe("ready");
+	});
+
+	test("startup activation never races install/prune: it defers while the lock is held", async () => {
+		await installGroups(npmGroups, ["dev"], env);
+		const lock = join(env.root, "install.lock");
+		const holder = Bun.spawn(["flock", "-o", lock, "sleep", "30"]);
+		try {
+			for (let i = 0; i < 100 && Bun.spawnSync(["flock", "-n", lock, "true"]).exitCode === 0; i++) await Bun.sleep(20);
+			expect(await activateIfIdle(npmGroups, [], env)).toBeNull();
+			expect(existsSync(join(env.root, "bin", "tsc"))).toBe(true); // untouched
+		} finally {
+			holder.kill();
+			await holder.exited;
+		}
+		expect(await activateIfIdle(npmGroups, [], env)).toEqual([]);
+		expect(existsSync(join(env.root, "bin", "tsc"))).toBe(false);
+		expect(await activateIfIdle(npmGroups, ["dev"], env)).toEqual([]);
+		expect(devState()?.state).toBe("ready");
+	});
+
+	test("an unusable Node runtime never reports a payload active or keeps its shims", async () => {
+		await installGroups(npmGroups, ["dev"], env);
+		const working = compat;
+		env.compat = () => null;
+		expect(activate(npmGroups, ["dev"], env)).toEqual(["dev"]);
+		expect(existsSync(join(env.root, "bin", "tsc"))).toBe(false);
+		const status = devState();
+		expect(status?.payload?.active).toBeNull();
+		expect(status?.payload?.desiredError).toContain("node is not usable");
+		expect(status?.state).not.toBe("ready");
+		// Node comes back: the same payload is relinked offline.
+		env.compat = () => working;
+		expect(activate(npmGroups, ["dev"], env)).toEqual([]);
+		expect(npmCalls()).toBe(1);
 	});
 
 	test("interrupted installs of deselected groups are cleaned too", async () => {

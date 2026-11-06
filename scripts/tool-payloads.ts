@@ -200,6 +200,8 @@ export function verifyPayload(dir: string, group: GroupDef, expectedId?: string,
 	if (expectedId && manifest.payloadId !== expectedId) {
 		return { ok: false, missing: [], manifest, error: `manifest id ${manifest.payloadId} does not match ${expectedId}` };
 	}
+	// null: Node is unusable here, so no payload of #!/usr/bin/env node tools can run.
+	if (compat === null) return { ok: false, missing: [], manifest, error: "node is not usable in this runtime" };
 	if (compat && (manifest.compat?.platform !== compat.platform || manifest.compat?.arch !== compat.arch)) {
 		return { ok: false, missing: [], manifest, error: `built for ${manifest.compat?.platform}-${manifest.compat?.arch}, this runtime is ${compat.platform}-${compat.arch}` };
 	}
@@ -438,10 +440,26 @@ export function payloadInfo(group: GroupDef, env: PayloadEnv): PayloadInfo {
 }
 
 /**
+ * Startup activation under the shared kernel lock, never waiting for it: if
+ * an installer or prune holds the lock, skip (the holder activates when it
+ * finishes) and return null. Otherwise relink and return the groups that
+ * still need the installer.
+ */
+export async function activateIfIdle(groups: readonly GroupDef[], selected: readonly string[], env: PayloadEnv): Promise<string[] | null> {
+	if (!(await acquireLock(env, "init"))) return null;
+	try {
+		return activate(groups, selected, env);
+	} finally {
+		releaseLock(env);
+	}
+}
+
+/**
  * Fast, offline, idempotent: point selected groups at their best verified
  * payload (the desired one if present, else keep the current one) and link
  * their shims; unlink shims of deselected groups. Returns the selected groups
- * that still need the installer.
+ * that still need the installer. Mutates links: callers hold the install lock
+ * (installGroups, prunePayloads, activateIfIdle).
  */
 export function activate(groups: readonly GroupDef[], selected: readonly string[], env: PayloadEnv): string[] {
 	const needInstall: string[] = [];
@@ -454,7 +472,7 @@ export function activate(groups: readonly GroupDef[], selected: readonly string[
 		}
 		const desired = desiredPayload(group, env);
 		const dir = groupDir(env, group.name);
-		if ("id" in desired && verifyPayload(join(dir, desired.id), group, desired.id).ok) {
+		if ("id" in desired && verifyPayload(join(dir, desired.id), group, desired.id, desired.compat).ok) {
 			swapLink(currentLink(env, group.name), desired.id);
 		} else {
 			needInstall.push(group.name);

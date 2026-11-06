@@ -27,7 +27,13 @@ push:
 
 # Refresh the dev tool group's pinned lockfile after editing
 # scripts/groups/dev/package.json. A changed lockfile gives every installed
-# home a new payload on its next start (security refresh).
+# home a new payload on its next start (security refresh). `npm update`
+# re-resolves transitive dependencies within their ranges (direct ones are
+# exact pins) on a temp copy; the committed lockfile is replaced only if npm
+# succeeds.
 dev-lock:
-	cd scripts/groups/dev && rm -f package-lock.json && \
-		npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && \
+		cp scripts/groups/dev/package.json scripts/groups/dev/package-lock.json "$$tmp/" && \
+		(cd "$$tmp" && npm update --package-lock-only --ignore-scripts --no-audit --no-fund) && \
+		cp "$$tmp/package-lock.json" scripts/groups/dev/package-lock.json && \
+		echo "updated scripts/groups/dev/package-lock.json"

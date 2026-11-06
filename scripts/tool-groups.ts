@@ -8,7 +8,7 @@
 // warning, and T3 must always start.
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { activate, defaultPayloadEnv, installGroups, type PayloadEnv, type PayloadInfo, payloadInfo, prunePayloads } from "./tool-payloads.ts";
+import { activateIfIdle, defaultPayloadEnv, installGroups, type PayloadEnv, type PayloadInfo, payloadInfo, prunePayloads } from "./tool-payloads.ts";
 
 export const SELECTOR_ENV = "T3CODE_TOOL_GROUPS";
 export const BUILD_INVENTORY_DIR = "/usr/share/t3code/inventory";
@@ -500,7 +500,9 @@ export async function main(argv: string[]): Promise<number> {
 	if (command === "init") {
 		const selection = parseToolGroups(raw);
 		try {
-			activate(GROUPS.filter((g) => g.delivery === "npm"), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
+			// Serialized with install/prune; if one is running it activates instead.
+			const pending = await activateIfIdle(GROUPS.filter((g) => g.delivery === "npm"), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
+			if (pending === null) console.error("t3code-tools: an install or prune is running; it will relink payloads when done");
 		} catch (error) {
 			console.error(`t3code-tools: warning: payload activation failed: ${String(error)}`);
 		}

@@ -13,7 +13,8 @@ cd "${HOME}"
 if [ -n "${T3CODE_TOOLS_HOME:-}" ]; then
 	case ":${PATH}:" in
 	*:/data/.bun/bin:*) PATH="${PATH/\/data\/.bun\/bin:/\/data\/.bun\/bin:${T3CODE_TOOLS_HOME}\/bin:}" ;;
-	*) PATH="${PATH}:${T3CODE_TOOLS_HOME}/bin" ;;
+	*:/data/.local/share/t3code-tools/bin:*) PATH="${PATH/\/data\/.local\/share\/t3code-tools\/bin:/${T3CODE_TOOLS_HOME}\/bin:\/data\/.local\/share\/t3code-tools\/bin:}" ;;
+	*) PATH="${T3CODE_TOOLS_HOME}/bin:${PATH}" ;;
 	esac
 	export PATH
 fi
