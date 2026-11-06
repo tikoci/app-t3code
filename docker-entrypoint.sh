@@ -6,6 +6,13 @@ set -eu
 mkdir -p "${HOME}/projects"
 cd "${HOME}"
 
+# The image PATH carries the default tool-group shim dir; a relocated payload
+# root (T3CODE_TOOLS_HOME) needs its own, resolved here at runtime so T3 and
+# every agent it starts inherit it. Login shells get it from profile.d.
+if [ -n "${T3CODE_TOOLS_HOME:-}" ]; then
+	export PATH="${T3CODE_TOOLS_HOME}/bin:${PATH}"
+fi
+
 # Report the T3CODE_TOOL_GROUPS selection (warnings go to the container log),
 # relink tool-group payloads already in the home (offline, fast) and write the
 # runtime status JSON. Bounded and never fatal: T3 must start whatever the

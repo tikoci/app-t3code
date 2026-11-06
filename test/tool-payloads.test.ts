@@ -1,10 +1,10 @@
 /** Persistent npm payload lifecycle (issue #5 slice 2), offline with a fake npm. */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildStatus, GROUPS, type Probe } from "../scripts/tool-groups.ts";
-import { activate, type Compat, installGroups, type PayloadEnv, prunePayloads, readState } from "../scripts/tool-payloads.ts";
+import { activate, type Compat, installGroups, type PayloadEnv, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
 
 const SPEC = join(import.meta.dir, "..", "scripts", "groups");
 const dev = GROUPS.find((g) => g.name === "dev");
@@ -25,12 +25,17 @@ function fakeNpm(dir: string): string {
 set -eu
 echo x >> "${dir}/npm-calls"
 [ -e "${dir}/fail" ] && { echo "registry unreachable" >&2; exit 1; }
+# Hold the install open until the test releases it (lock tests).
+while [ -e "${dir}/hold" ]; do sleep 0.05; done
 prefix=""; while [ $# -gt 0 ]; do [ "$1" = "--prefix" ] && prefix="$2"; shift; done
 mkdir -p "$prefix/node_modules/.bin"
 for b in tsc cspell markdownlint-cli2 biome; do
   printf '#!/bin/sh\\necho "%s fake 1.0"\\n' "$b" > "$prefix/node_modules/.bin/$b"
   chmod +x "$prefix/node_modules/.bin/$b"
 done
+# A broken native binary: installs, but its version probe fails.
+[ -e "${dir}/badbin" ] && printf '#!/bin/sh\\necho "exec format error" >&2\\nexit 126\\n' > "$prefix/node_modules/.bin/biome"
+exit 0
 `,
 	);
 	chmodSync(path, 0o755);
@@ -178,13 +183,103 @@ describe("npm payload groups", () => {
 		expect(devState()?.state).toBe("ready");
 	});
 
-	test("a live installer holds the lock; a second one leaves it alone", async () => {
-		mkdirSync(env.root, { recursive: true });
-		writeFileSync(join(env.root, "install.lock"), JSON.stringify({ pid: process.pid, startedAt: "now" }));
-		const result = await installGroups(npmGroups, ["dev"], env);
-		expect(result.locked).toBe(false);
-		expect(npmCalls()).toBe(0);
+	test("a failing version probe never creates or activates the payload; a failed refresh keeps the previous one", async () => {
+		writeFileSync(join(tmp, "badbin"), "");
+		const first = await installGroups(npmGroups, ["dev"], env);
+		expect(first.results["dev"]?.state).toBe("failed");
+		expect(first.results["dev"]?.error).toContain("biome --version exited 126");
+		expect(readdirSync(join(env.root, "groups", "dev"))).toEqual([]);
+		expect(existsSync(join(env.root, "bin", "biome"))).toBe(false);
+		expect(devState()?.state).toBe("failed");
+
+		rmSync(join(tmp, "badbin"));
+		await installGroups(npmGroups, ["dev"], env);
+		const good = devState()?.payload?.active;
+		expect(good).toBeString();
+
+		compat = { ...compat, nodeAbi: "141" };
+		writeFileSync(join(tmp, "badbin"), "");
+		const refresh = await installGroups(npmGroups, ["dev"], env);
+		expect(refresh.results["dev"]?.state).toBe("failed");
+		const status = devState();
+		expect(status?.state).toBe("ready");
+		expect(status?.payload).toMatchObject({ active: good, stale: true, installed: [good] });
+		expect(Bun.spawnSync([join(env.root, "bin", "biome")]).stdout.toString().trim()).toBe("biome fake 1.0");
+	});
+
+	test("a payload built for another CPU is never linked or reported active", async () => {
+		await installGroups(npmGroups, ["dev"], env);
+		compat = { ...compat, arch: "arm64" }; // the same home on an arm64 router
+		expect(activate(npmGroups, ["dev"], env)).toEqual(["dev"]);
+		expect(existsSync(join(env.root, "bin", "tsc"))).toBe(false);
+		const status = devState();
+		expect(status?.payload?.active).toBeNull();
+		expect(status?.state).toBe("pending");
+		await installGroups(npmGroups, ["dev"], env);
+		expect(devState()?.payload?.active).toStartWith("arm64-");
+	});
+
+	test("a separate live installer holds the lock; install and prune leave it alone", async () => {
+		// A real second process installing (held open by the fake npm).
+		const script = join(tmp, "child.ts");
+		writeFileSync(
+			script,
+			`import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-payloads.ts"))};
+import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-groups.ts"))};
+const env = JSON.parse(process.argv[2]);
+const r = await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
+	...env, compat: () => env.compatValue, sleep: async () => {}, log: () => {}, freeBytes: () => 10 * 1024 ** 3,
+});
+process.exit(r.locked ? 0 : 3);
+`,
+		);
+		writeFileSync(join(tmp, "hold"), "");
+		const child = Bun.spawn(["bun", script, JSON.stringify({ ...env, compatValue: compat })], { stdout: "inherit", stderr: "inherit" });
+		const lock = join(env.root, "install.lock");
+		for (let i = 0; i < 200 && !existsSync(join(tmp, "npm-calls")); i++) await Bun.sleep(25);
+		expect(JSON.parse(readFileSync(lock, "utf8"))).toMatchObject({ pid: child.pid, command: "install" });
+		expect(devState()?.state).toBe("installing");
+
+		const second = await installGroups(npmGroups, ["dev"], env);
+		expect(second.locked).toBe(false);
 		expect(() => prunePayloads(npmGroups, [], env)).toThrow("installer is running");
+		expect(existsSync(lock)).toBe(true);
+
+		rmSync(join(tmp, "hold"));
+		expect(await child.exited).toBe(0);
+		expect(existsSync(lock)).toBe(false);
+		expect(devState()?.state).toBe("ready");
+		expect(npmCalls()).toBe(1);
+	});
+
+	test("a live prune holder is respected; a recycled pid is not", async () => {
+		mkdirSync(env.root, { recursive: true });
+		const lock = join(env.root, "install.lock");
+		const holder = Bun.spawn(["sleep", "30"]);
+		try {
+			writeFileSync(lock, JSON.stringify({ pid: holder.pid, startTicks: processStartTicks(holder.pid), command: "prune", startedAt: "now" }));
+			expect((await installGroups(npmGroups, ["dev"], env)).locked).toBe(false);
+			expect(npmCalls()).toBe(0);
+		} finally {
+			holder.kill();
+			await holder.exited;
+		}
+		// After a container restart the new installer can get the dead holder's
+		// pid: same pid, different start time, so the lock is stale.
+		writeFileSync(lock, JSON.stringify({ pid: process.pid, startTicks: "1", command: "install", startedAt: "earlier boot" }));
+		expect(devState()?.payload?.installer).toBeNull();
+		const result = await installGroups(npmGroups, ["dev"], env);
+		expect(result.locked).toBe(true);
+		expect(devState()?.state).toBe("ready");
+		expect(existsSync(lock)).toBe(false);
+	});
+
+	test("interrupted installs of deselected groups are cleaned too", async () => {
+		const staging = join(env.root, "groups", "dev", ".staging-x64-abi137-dead-99");
+		mkdirSync(staging, { recursive: true });
+		await installGroups(npmGroups, [], env);
+		expect(existsSync(staging)).toBe(false);
+		expect(npmCalls()).toBe(0);
 	});
 
 	test("prune deletes payloads no selected group uses", async () => {

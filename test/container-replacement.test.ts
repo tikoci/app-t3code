@@ -143,14 +143,28 @@ test.skipIf(!image)(
 			expect(written.selector).toEqual(live.selector);
 			return live;
 		};
-		/** Wait for the background installer to settle a payload group. */
+		/**
+		 * Wait for the background installer to settle a payload group, in both
+		 * the live status and the runtime JSON the installer rewrites. Until the
+		 * entrypoint has written that file (a fresh container), keep polling.
+		 */
 		const settled = async (group: string, timeoutMs: number) => {
 			const deadline = Date.now() + timeoutMs;
+			let last = "no status yet";
 			for (;;) {
-				const status = await toolStatus();
-				const found = status.groups.find((g) => g.name === group);
-				if (found && !["pending", "installing"].includes(found.state)) return { status, group: found };
-				if (Date.now() > deadline) throw new Error(`${group} still ${found?.state}:\n${await run("cat", "/data/.local/share/t3code-tools/install.log").catch(() => "")}`);
+				try {
+					const status = await toolStatus();
+					const written = JSON.parse(await run("cat", "/tmp/t3code-tools/status.json")) as Awaited<ReturnType<typeof toolStatus>>;
+					const found = status.groups.find((g) => g.name === group);
+					const persisted = written.groups.find((g) => g.name === group);
+					last = `live ${found?.state}, written ${persisted?.state}`;
+					if (found && !["pending", "installing"].includes(found.state) && persisted?.state === found.state && persisted.payload?.active === found.payload?.active) {
+						return { status, group: found };
+					}
+				} catch (error) {
+					last = String(error);
+				}
+				if (Date.now() > deadline) throw new Error(`${group} not settled (${last}):\n${await run("cat", "/data/.local/share/t3code-tools/install.log").catch(() => "")}`);
 				await Bun.sleep(2000);
 			}
 		};

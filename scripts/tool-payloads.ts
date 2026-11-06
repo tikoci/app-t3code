@@ -22,6 +22,7 @@
 import {
 	closeSync,
 	existsSync,
+	linkSync,
 	lstatSync,
 	mkdirSync,
 	openSync,
@@ -179,8 +180,13 @@ export interface Verification {
 	error?: string;
 }
 
-/** Check a payload directory's real files, not just a marker. */
-export function verifyPayload(dir: string, group: GroupDef, expectedId?: string): Verification {
+/**
+ * Check a payload directory's real files, not just a marker. With `compat`,
+ * a payload built for another platform or CPU (a home moved between amd64
+ * and arm64 routers) is rejected; a Node ABI difference alone is not, so a
+ * stale payload keeps serving while its refresh installs.
+ */
+export function verifyPayload(dir: string, group: GroupDef, expectedId?: string, compat?: Compat | null): Verification {
 	let manifest: Manifest;
 	try {
 		manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
@@ -192,6 +198,9 @@ export function verifyPayload(dir: string, group: GroupDef, expectedId?: string)
 	}
 	if (expectedId && manifest.payloadId !== expectedId) {
 		return { ok: false, missing: [], manifest, error: `manifest id ${manifest.payloadId} does not match ${expectedId}` };
+	}
+	if (compat && (manifest.compat?.platform !== compat.platform || manifest.compat?.arch !== compat.arch)) {
+		return { ok: false, missing: [], manifest, error: `built for ${manifest.compat?.platform}-${manifest.compat?.arch}, this runtime is ${compat.platform}-${compat.arch}` };
 	}
 	const missing = groupBins(group).filter((bin) => !existsSync(join(dir, "node_modules", ".bin", bin)));
 	return { ok: missing.length === 0, missing, manifest, ...(missing.length ? { error: "payload files missing" } : {}) };
@@ -259,59 +268,90 @@ function writeState(env: PayloadEnv, group: string, record: StateRecord) {
 
 export interface LockInfo {
 	pid: number;
+	/** Kernel start time of the holder (/proc/<pid>/stat field 22): pid + start time identify a process even when pids are recycled. */
+	startTicks: string | null;
+	command: string;
 	startedAt: string;
 }
 
-function isInstallerProcess(pid: number): boolean {
-	if (pid === process.pid) return true;
+/** Start time of a process in clock ticks since boot, or null if it does not exist. */
+export function processStartTicks(pid: number): string | null {
 	try {
-		process.kill(pid, 0);
-	} catch {
-		return false;
-	}
-	// A recycled pid after a container restart belongs to something else.
-	try {
-		const cmdline = readFileSync(`/proc/${pid}/cmdline`, "utf8");
-		return cmdline.includes("tool-groups") && cmdline.includes("install");
-	} catch {
-		return false;
-	}
-}
-
-/** The live installer, if one holds the lock. */
-export function liveInstaller(env: PayloadEnv): LockInfo | null {
-	try {
-		const info = JSON.parse(readFileSync(join(env.root, "install.lock"), "utf8")) as LockInfo;
-		return isInstallerProcess(info.pid) ? info : null;
+		const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
+		// Fields after the parenthesised command name; starttime is field 22.
+		return stat.slice(stat.lastIndexOf(")") + 2).split(" ")[19] ?? null;
 	} catch {
 		return null;
 	}
 }
 
-function acquireLock(env: PayloadEnv): boolean {
+/** Whether the lock's holder is still the same live process (install or prune). */
+function isLiveHolder(info: LockInfo): boolean {
+	if (!Number.isInteger(info.pid) || info.pid <= 0) return false;
+	const ticks = processStartTicks(info.pid);
+	if (ticks !== null) return ticks === info.startTicks;
+	// No /proc (not Linux): fall back to pid existence.
+	if (existsSync("/proc/self/stat")) return false;
+	try {
+		process.kill(info.pid, 0);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function readLock(path: string): { raw: string; info: LockInfo | null } | null {
+	let raw: string;
+	try {
+		raw = readFileSync(path, "utf8");
+	} catch {
+		return null;
+	}
+	try {
+		return { raw, info: JSON.parse(raw) as LockInfo };
+	} catch {
+		return { raw, info: null };
+	}
+}
+
+/** The live installer or pruner, if one holds the lock. */
+export function liveInstaller(env: PayloadEnv): LockInfo | null {
+	const lock = readLock(join(env.root, "install.lock"));
+	return lock?.info && isLiveHolder(lock.info) ? lock.info : null;
+}
+
+function acquireLock(env: PayloadEnv, command: string): boolean {
 	mkdirSync(env.root, { recursive: true });
 	const path = join(env.root, "install.lock");
-	for (let i = 0; i < 2; i++) {
-		try {
-			const fd = openSync(path, "wx");
-			writeSync(fd, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() } satisfies LockInfo));
-			closeSync(fd);
-			return true;
-		} catch {
-			if (liveInstaller(env)) return false;
-			rmSync(path, { force: true }); // stale: the holder died (interrupted install)
+	// Write the owner record first, then hard-link it into place: link() fails
+	// if the lock exists, and the lock is never visible without its owner.
+	const tmp = `${path}.${process.pid}.tmp`;
+	const info: LockInfo = { pid: process.pid, startTicks: processStartTicks(process.pid), command, startedAt: new Date().toISOString() };
+	writeFileSync(tmp, JSON.stringify(info));
+	try {
+		for (let i = 0; i < 2; i++) {
+			try {
+				linkSync(tmp, path);
+				return true;
+			} catch {
+				const held = readLock(path);
+				if (held === null) continue; // released meanwhile
+				if (held.info && isLiveHolder(held.info)) return false;
+				// Stale (holder died, or pid recycled after a restart). Remove it
+				// only if it is still the record we judged stale.
+				if (readLock(path)?.raw === held.raw) rmSync(path, { force: true });
+			}
 		}
+		return false;
+	} finally {
+		rmSync(tmp, { force: true });
 	}
-	return false;
 }
 
 function releaseLock(env: PayloadEnv) {
 	const path = join(env.root, "install.lock");
-	try {
-		if ((JSON.parse(readFileSync(path, "utf8")) as LockInfo).pid === process.pid) rmSync(path, { force: true });
-	} catch {
-		// Already gone.
-	}
+	const held = readLock(path)?.info;
+	if (held && held.pid === process.pid && held.startTicks === processStartTicks(process.pid)) rmSync(path, { force: true });
 }
 
 export interface PayloadInfo {
@@ -334,7 +374,7 @@ export interface PayloadInfo {
 export function payloadInfo(group: GroupDef, env: PayloadEnv): PayloadInfo {
 	const desired = desiredPayload(group, env);
 	const current = readLink(currentLink(env, group.name));
-	const activeCheck = current ? verifyPayload(join(groupDir(env, group.name), current), group, current) : null;
+	const activeCheck = current ? verifyPayload(join(groupDir(env, group.name), current), group, current, env.compat()) : null;
 	const active = activeCheck?.ok ? current : null;
 	const linked = active !== null && groupBins(group).every((bin) => readLink(join(binDir(env), bin)) === shimTarget(group.name, bin) && existsSync(join(binDir(env), bin)));
 	return {
@@ -375,8 +415,11 @@ export function activate(groups: readonly GroupDef[], selected: readonly string[
 			needInstall.push(group.name);
 		}
 		const current = readLink(currentLink(env, group.name));
-		if (current && verifyPayload(join(dir, current), group, current).ok) {
+		if (current && verifyPayload(join(dir, current), group, current, env.compat()).ok) {
 			for (const bin of bins) swapLink(join(binDir(env), bin), shimTarget(group.name, bin));
+		} else {
+			// Nothing usable here (e.g. built for another CPU): no shims to it.
+			for (const bin of bins) if (readLink(join(binDir(env), bin)) === shimTarget(group.name, bin)) removeLink(join(binDir(env), bin));
 		}
 	}
 	return needInstall;
@@ -475,15 +518,16 @@ export async function installGroups(
 	onChange: () => void = () => {},
 ): Promise<InstallResult> {
 	const results: Record<string, StateRecord> = {};
-	if (!acquireLock(env)) {
-		env.log("another installer is running; leaving it to finish");
+	if (!acquireLock(env, "install")) {
+		env.log("another installer or prune is running; leaving it to finish");
 		return { locked: false, results };
 	}
 	try {
+		// Interrupted installs of every group, selected or not.
+		for (const group of groups) cleanStaging(env, group.name);
 		const todo = activate(groups, selected, env);
 		for (const name of todo) {
 			const group = groups.find((g) => g.name === name) as GroupDef;
-			cleanStaging(env, name);
 			const desired = desiredPayload(group, env);
 			const record = (state: StateRecord["state"], attempt: number, extra: Partial<StateRecord> = {}) => {
 				const rec: StateRecord = { state, payloadId: "id" in desired ? desired.id : "", attempt, updatedAt: new Date().toISOString(), ...extra };
@@ -542,7 +586,7 @@ export async function installGroups(
 
 /** Delete payloads no selected group is using, plus interrupted installs. */
 export function prunePayloads(groups: readonly GroupDef[], selected: readonly string[], env: PayloadEnv): string[] {
-	if (!acquireLock(env)) throw new Error("the installer is running; try again when it finishes");
+	if (!acquireLock(env, "prune")) throw new Error("the installer is running; try again when it finishes");
 	const removed: string[] = [];
 	try {
 		activate(groups, selected, env);
