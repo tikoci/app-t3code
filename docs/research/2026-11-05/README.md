@@ -18,6 +18,7 @@ or native ARM64 image. The [initial comparison](runner-comparison.md) and
 | [Runner comparison](runner-comparison.md) | Initial baseline, source pins, package estimates, and build inventory |
 | [Networking and Node evidence](network-and-agent-tools.md) | Capabilities, packet parsing, IPsec, and CLI footprints |
 | [uv and core footprint evidence](uv-and-core-scope.md) | Persistent Python tool proof and core removal candidates |
+| [RouterOS protocol map](routeros-protocol-map.md) | Review addendum: RouterOS protocols → Linux tools, privilege tiers, vpn/capture/routing gaps |
 
 ## Raw evidence
 
