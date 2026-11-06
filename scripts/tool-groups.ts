@@ -2,14 +2,14 @@
 // report (`t3code-tools status`). Issue #5: slice 1 parses and reports; slice 2
 // adds persistent npm payloads under the home (tool-payloads.ts), starting
 // with `dev`; slice 3 adds Debian-package payloads (deb-payloads.ts), starting
-// with `capture`. The image copies these files to /usr/local/lib/t3code/ and
+// with `capture`; slice 4 moves `vpn` and `routing` onto them. The image copies these files to /usr/local/lib/t3code/ and
 // runs them with Bun.
 //
 // Never throw on operator input: an unknown or malformed selection is a
 // warning, and T3 must always start.
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEB_LOCK_FILE, resolveDebLock } from "./deb-payloads.ts";
+import { DEB_LOCK_FILE, resolveDebLock, type WrapperRule } from "./deb-payloads.ts";
 import { activateIfIdle, defaultPayloadEnv, installGroups, isPayloadGroup, type PayloadEnv, type PayloadInfo, payloadInfo, prunePayloads } from "./tool-payloads.ts";
 
 export const SELECTOR_ENV = "T3CODE_TOOL_GROUPS";
@@ -56,9 +56,27 @@ export interface GroupDef {
 	approxBytes?: number;
 	/** Payload groups: arguments that print a version and exit 0 (default `--version`). */
 	versionArgs?: Readonly<Record<string, readonly string[]>>;
-	/** Payload groups: a functional check run before the payload is trusted. `{input}` is a file holding inputBase64. */
-	smoke?: { command: string; args: readonly string[]; inputBase64?: string; expect: string };
+	/**
+	 * Payload groups: a non-zero exit that also passes a command's probe when
+	 * the output contains `expect`, for commands that cannot exit 0 without a
+	 * daemon (birdc) or a kernel feature (nft and conntrack open a netfilter
+	 * netlink socket even for --version). The message comes from the tool's own code, so it
+	 * still proves the binary and its libraries load. Exit 0 always passes.
+	 */
+	versionExit?: Readonly<Record<string, { code: number; expect: string }>>;
+	/** Payload groups: functional checks run before the payload is trusted. */
+	smoke?: readonly Smoke[];
+	/** deb groups: extra wrapper wiring for tools that only know compiled-in paths. */
+	wrappers?: readonly WrapperRule[];
 	note?: string;
+}
+
+/** One functional check: `{input}` in args is a file holding inputBase64; the output must contain `expect` and the exit code be 0. */
+export interface Smoke {
+	command: string;
+	args: readonly string[];
+	inputBase64?: string;
+	expect: string;
 }
 
 /**
@@ -68,6 +86,16 @@ export interface GroupDef {
  */
 export const TZSP_DNS_PCAPNG =
 	"Cg0NChwAAABNPCsaAQAAAP//////////HAAAAAEAAAAUAAAAAQAAAP//AAAUAAAABgAAAJwAAAAAAAAAAAAAAEBCDwB7AAAAewAAAAIAAAAAAgIAAAAAAQgARQAAbQAAAABAEfZ8wAACAcAAAgKn+JCQAFkAAAEAAAEBAgAAAAACAgAAAAABCABFAAA+AAAAAEAR9qvAAAIBwAACAjA5ADUAKgAAEjQBAAABAAAAAAAACHJvdXRlcm9zB2V4YW1wbGUAAAEAAQCcAAAA";
+
+/** A BGP peer of a RouterOS router, parsed (not run) by the routing group's smoke test. */
+export const BIRD_BGP_CONF = `router id 192.0.2.1;
+protocol device {}
+protocol bgp routeros {
+	local as 65001;
+	neighbor 192.0.2.2 as 65002;
+	ipv4 { import all; export none; };
+}
+`;
 
 const cmd = (...names: string[]): Check[] => names.map((name) => ({ kind: "command", name }));
 
@@ -82,7 +110,9 @@ export const GROUPS: readonly GroupDef[] = [
 		// Measured on amd64 (2026-11-06): 152 MiB unpacked from 30.5 MiB of .debs.
 		approxBytes: 160 * 1024 * 1024,
 		versionArgs: { nfcapd: ["-V"], nfdump: ["-V"] },
-		smoke: { command: "tshark", args: ["-r", "{input}", "-T", "fields", "-e", "tzsp.encap", "-e", "dns.qry.name"], inputBase64: TZSP_DNS_PCAPNG, expect: "routeros.example" },
+		smoke: [
+			{ command: "tshark", args: ["-r", "{input}", "-T", "fields", "-e", "tzsp.encap", "-e", "dns.qry.name"], inputBase64: TZSP_DNS_PCAPNG, expect: "routeros.example" },
+		],
 		note: "Persistent payload of Debian packages under the home, pinned by version and SHA256 from the image's apt metadata, installed in the background as the app user and reused across container replacement. Installing it grants no capture privileges.",
 	},
 	{
@@ -100,30 +130,67 @@ export const GROUPS: readonly GroupDef[] = [
 	},
 	{
 		name: "vpn",
-		summary: "WireGuard, strongSwan, OpenVPN, SSTP, L2TP and PPPoE peer tools (no default tunnel or service)",
-		delivery: "none",
-		packages: [
-			"wireguard-tools",
-			"strongswan-swanctl",
-			"strongswan-pki",
-			"strongswan-charon",
-			"openvpn",
-			"sstp-client",
-			"ppp",
-			"xl2tpd",
-			"pppoe",
-			"ike-scan",
+		summary: "WireGuard, strongSwan and OpenVPN peer and key tools, ike-scan (no default tunnel or service)",
+		delivery: "deb",
+		packages: ["wireguard-tools", "strongswan-swanctl", "strongswan-pki", "strongswan-charon", "openvpn", "ike-scan"],
+		checks: cmd("wg", "swanctl", "pki", "openvpn", "ike-scan"),
+		privileges:
+			"`wg genkey`, `pki`, `openvpn --genkey` and `ike-scan --sport=0` need none; tunnels and charon need CAP_NET_ADMIN plus /dev/net/tun and host kernel modules.",
+		// Measured on amd64 (2026-11-06): see docs/research/2026-11-06/vpn-routing-payloads.md.
+		approxBytes: 16 * 1024 * 1024,
+		// swanctl --version asks charon over VICI; --help prints the version line offline.
+		versionArgs: { pki: ["--help"], swanctl: ["--help"] },
+		// strongSwan reads /etc/strongswan.conf and loads plugins from
+		// /usr/lib/ipsec/plugins, both compiled in. The wrapper points it at the
+		// payload's config and preloads the plugins that load against
+		// libstrongswan alone (the crypto, encoding and credential ones); its
+		// loader finds a preloaded plugin by symbol before it looks for a file.
+		wrappers: [
+			{
+				commands: ["pki", "swanctl", "pt-tls-client"],
+				env: { STRONGSWAN_CONF: "{root}/etc/strongswan.conf" },
+				preload: { libraries: ["usr/lib/ipsec/libstrongswan.so.0"], pluginDir: "usr/lib/ipsec/plugins" },
+			},
 		],
-		checks: cmd("wg", "swanctl", "pki", "openvpn", "sstpc", "pppd", "xl2tpd", "pppoe-discovery", "ike-scan"),
-		privileges: "`wg genkey`/`pki` need none; tunnels need CAP_NET_ADMIN plus /dev/net/tun or /dev/ppp and host kernel modules.",
+		smoke: [
+			{ command: "pki", args: ["--gen", "--type", "ed25519", "--outform", "pem"], expect: "BEGIN PRIVATE KEY" },
+			{ command: "wg", args: ["genkey"], expect: "=" },
+		],
+		note: "Persistent payload of Debian packages under the home, like capture. strongSwan's pki and swanctl get the payload's config and plugins through their wrappers; charon is shipped but not wired or proven (it needs root). PPP-based peers (SSTP, L2TP, PPPoE) are not here: pppd needs root and /etc/ppp, and xl2tpd and sstpc start /usr/sbin/pppd by a compiled-in path.",
 	},
 	{
 		name: "routing",
 		summary: "Linux router-peer tools: BIRD, LLDP/CDP, ND/ARP probes, nftables, conntrack, nmap",
-		delivery: "none",
+		delivery: "deb",
 		packages: ["bird2", "lldpd", "ndisc6", "arping", "arp-scan", "nftables", "conntrack", "nmap"],
 		checks: cmd("bird", "birdc", "lldpd", "lldpcli", "rdisc6", "ndisc6", "arping", "arp-scan", "nft", "conntrack", "nmap"),
-		privileges: "An active BGP session needs none; OSPF, LLDP, ARP/ND and raw scans need CAP_NET_RAW; nftables/conntrack need CAP_NET_ADMIN.",
+		privileges:
+			"BIRD with BGP on ports >=1024, nmap connect scans and NSE need none; OSPF, LLDP, ARP/ND, raw scans and BGP on 179 need CAP_NET_RAW or CAP_NET_BIND_SERVICE; nftables (even `nft -c`) and conntrack need CAP_NET_ADMIN.",
+		// Measured on amd64 (2026-11-06): see docs/research/2026-11-06/vpn-routing-payloads.md.
+		approxBytes: 40 * 1024 * 1024,
+		versionArgs: {
+			birdc: ["-s", "/nonexistent/bird.ctl", "show", "status"],
+			lldpd: ["-v"],
+			lldpcli: ["-v"],
+			rdisc6: ["-V"],
+			ndisc6: ["-V"],
+			arping: ["--help"],
+		},
+		// birdc has no version flag and needs a running BIRD: refusing to
+		// connect is the proof that it loads. nft and conntrack open a
+		// netfilter netlink socket even for --version; a kernel (or QEMU
+		// user-mode emulation) without one must not fail the whole group.
+		versionExit: {
+			birdc: { code: 1, expect: "Unable to connect to server control socket" },
+			nft: { code: 3, expect: "Unable to initialize Netlink socket" },
+			conntrack: { code: 1, expect: "mnl_socket_open" },
+		},
+		smoke: [
+			// NSE and service names come from nmap's data dir, found relative to the binary.
+			{ command: "nmap", args: ["--script-help", "banner"], expect: "discovery" },
+			{ command: "bird", args: ["-p", "-c", "{input}"], inputBase64: Buffer.from(BIRD_BGP_CONF).toString("base64"), expect: "" },
+		],
+		note: "Persistent payload of Debian packages under the home, like capture. Tools take their config and socket paths as arguments (bird -c/-s, birdc -s, lldpcli -u); the image has no /etc/bird or /run/bird.",
 	},
 	{
 		name: "dev",
@@ -242,10 +309,6 @@ export const NETWORK_PACKAGE_ASSIGNMENT: Readonly<Record<string, string>> = {
 	"strongswan-pki": "vpn",
 	"strongswan-charon": "vpn",
 	openvpn: "vpn",
-	"sstp-client": "vpn",
-	ppp: "vpn",
-	xl2tpd: "vpn",
-	pppoe: "vpn",
 	"ike-scan": "vpn",
 	bird2: "routing",
 	lldpd: "routing",
@@ -255,6 +318,10 @@ export const NETWORK_PACKAGE_ASSIGNMENT: Readonly<Record<string, string>> = {
 	nftables: "routing",
 	conntrack: "routing",
 	nmap: "routing",
+	"sstp-client": "lab-guest",
+	ppp: "lab-guest",
+	xl2tpd: "lab-guest",
+	pppoe: "lab-guest",
 	frr: "lab-guest",
 	keepalived: "lab-guest",
 	"freeradius (server)": "lab-guest",

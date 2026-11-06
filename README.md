@@ -268,18 +268,18 @@ means core only; `all` selects every group. An unknown name is logged as a
 warning and ignored. T3 always starts, whatever the selection says.
 
 The selection is parsed, logged, and reported to agents. `dev` (npm packages)
-and `capture` (Debian packages) are delivered as persistent payloads in the
-home (see [Persistent payloads](#persistent-payloads-dev-capture)). Other
-selected groups whose tools are not in the image report `not-implemented`.
-`labs`, `browser` and `agents-extra` are still baked into the image, so their
-tools are present whether or not you select them.
+and `capture`, `vpn` and `routing` (Debian packages) are delivered as
+persistent payloads in the home (see
+[Persistent payloads](#persistent-payloads)). `labs`, `browser` and
+`agents-extra` are still baked into the image, so their tools are present
+whether or not you select them.
 
 | Group | Contents | In this image |
 |---|---|---|
 | `capture` | tcpdump, TShark (`dumpcap`, `capinfos`, `editcap`, `mergecap`, `text2pcap`), nfdump (`nfcapd`) | installs into `/data` when selected |
 | `labs` | quickchr, QEMU x86/ARM64 emulators, qemu-img, firmware | baked in |
-| `vpn` | WireGuard tools, strongSwan (`swanctl`, `pki`, charon), OpenVPN, sstp-client, ppp, xl2tpd, pppoe, ike-scan; no tunnel or service starts by default | not yet |
-| `routing` | BIRD 2, lldpd, ndisc6, arping, arp-scan, nftables, conntrack, nmap | not yet |
+| `vpn` | WireGuard tools (`wg`, `wg-quick`), strongSwan (`pki`, `swanctl`, charon), OpenVPN, ike-scan; no tunnel or service starts by default | installs into `/data` when selected |
+| `routing` | BIRD 2 (`bird`, `birdc`), lldpd, ndisc6, arping, arp-scan, nftables, conntrack, nmap | installs into `/data` when selected |
 | `dev` | TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks; project lockfiles win | installs into `/data` when selected |
 | `browser` | Native libraries for T3's built-in browser (the browser downloads itself on first use) | baked in |
 | `agents-extra` | Provider CLIs beyond the core provider (Codex, opencode, Muse today; core provider not chosen yet) | baked in |
@@ -308,7 +308,7 @@ files (`present`, `missing`). The states are:
 | `installing` | The background installer is working on it, including retry back-off |
 | `ready` | Selected, and every check passed |
 | `failed` | Selected, and checks failed for tools the image should provide, or the last install failed and nothing usable is active |
-| `not-implemented` | Selected, but this image has no way to provide the group yet |
+| `not-implemented` | Selected, but this image has no way to provide the group yet (no group today) |
 
 Checks are presence probes (PATH, files, `ldconfig`), not functional tests.
 Payload groups are checked at their own shims and manifest instead, so the
@@ -320,13 +320,14 @@ the container log and writes the same JSON to `/tmp/t3code-tools/status.json`.
 The output also points at the immutable build inventory in
 `/usr/share/t3code/inventory`.
 
-#### Persistent payloads (`dev`, `capture`)
+#### Persistent payloads
 
 A payload group installs into the home volume, not the image, so it costs
 nothing until selected and survives image replacement and `auto-update`.
-`dev` is built from an npm lockfile; `capture` from pinned Debian packages
-(see [Debian-package payloads](#debian-package-payloads-capture)). Both share
-the same lifecycle:
+`dev` is built from an npm lockfile; `capture`, `vpn` and `routing` from
+pinned Debian packages (see
+[Debian-package payloads](#debian-package-payloads)). All share the same
+lifecycle:
 
 - **Start never waits.** At each start the entrypoint relinks payloads that
   are already in the home (offline, no download) and then runs
@@ -335,12 +336,14 @@ the same lifecycle:
 - **Pinned and verified.** For `dev`, the image ships the group's
   `package.json` and `package-lock.json` (with npm integrity hashes); the
   installer runs `npm ci --ignore-scripts` from them. Each command must answer
-  `--version` before the payload gets a `manifest.json` and is activated
-  (`capture` also has to decode a test capture). A payload without a
-  manifest is never trusted.
+  `--version` (or its group's declared probe) before the payload gets a
+  `manifest.json` and is activated. The Debian groups also run functional
+  smoke tests: `capture` decodes a test capture, `vpn` generates a strongSwan
+  key and a WireGuard key, `routing` loads nmap's NSE help and parses a BIRD
+  BGP config. A payload without a manifest is never trusted.
 - **Versioned and atomic.** The payload id is derived from the lock and the
   runtime: CPU architecture and Node's module ABI for `dev`, dpkg
-  architecture and Debian release for `capture`. Payloads live in
+  architecture and Debian release for the Debian groups. Payloads live in
   `/data/.local/share/t3code-tools/groups/<group>/<id>/`; a `current` link is
   swapped atomically, and shims in `/data/.local/share/t3code-tools/bin` are
   on PATH after `/data/.local/bin` and `/data/.bun/bin`. A tool you install
@@ -358,9 +361,9 @@ the same lifecycle:
   installer before reclaiming its files). Each group gets three
   attempts with back-off (30 minute cap per attempt); with no network at all
   npm needs about five minutes to give up. The installer needs room for the
-  payload and its downloads (for `dev`, twice the payload size; for
-  `capture`, the pinned `.deb` sizes not already verified in the cache, plus
-  their unpacked sizes) plus 256 MiB,
+  payload and its downloads (for `dev`, twice the payload size; for the
+  Debian groups, the pinned `.deb` sizes not already verified in the cache,
+  plus their unpacked sizes) plus 256 MiB,
   and otherwise fails with a `low disk` error rather than filling the
   volume. It never deletes projects, VMs or other home data. Interrupted
   installs (`.staging-*`) are removed on the next run.
@@ -379,19 +382,22 @@ The `dev` payload is about 154 MiB on amd64 (TypeScript 7.0.2, CSpell 10.4.0,
 markdownlint-cli2 0.24.0, Biome 2.6.5). Maintainers refresh the pins with
 `make dev-lock` after editing `scripts/groups/dev/package.json`.
 
-#### Debian-package payloads (`capture`)
+#### Debian-package payloads
 
 `capture` is too big to bake into every image (about 157 MB more on disk and
 42 MB more to pull on every image update, measured on amd64), so it is a
-payload too. It installs as the app user with no root at runtime:
+payload too. `vpn` and `routing` are smaller, but use the same machinery
+rather than adding 13 MB to every image pull for routers that never select
+them ([write-up](docs/research/2026-11-06/vpn-routing-payloads.md)). Each
+installs as the app user with no root at runtime:
 
 - **Pinned at image build.** The Dockerfile runs `t3code-tools deb-lock` after
   the last apt layer. It asks apt for the group's dependency closure that the
   image does not already have, and records each package's version,
   architecture, size and SHA256 from the apt indexes. apt has already checked
   those indexes against Debian's signing keys. The lock is
-  `/usr/local/lib/t3code/groups/capture/debs.lock.json` (also in the build
-  inventory as `capture-debs.lock.json`). Every image rebuild picks up Debian
+  `/usr/local/lib/t3code/groups/<group>/debs.lock.json` (also in the build
+  inventory as `<group>-debs.lock.json`). Every image rebuild picks up Debian
   security updates, and a changed lock is a new payload id, which refreshes
   as described above. An unchanged lock keeps the same id, so nothing is
   downloaded again.
@@ -402,7 +408,7 @@ payload too. It installs as the app user with no root at runtime:
   architecture. Only then is it unpacked with `dpkg-deb -x`. Maintainer
   scripts never run. If a superseded version has left the mirror, it is
   fetched from `snapshot.debian.org` and checked the same way. Verified
-  downloads survive an interrupted install in `groups/capture/.cache-debs`,
+  downloads survive an interrupted install in `groups/<group>/.cache-debs`,
   so a slow link resumes rather than starting over. They are removed once
   the payload is ready.
 - **No global library path, no `/usr` overlay.** Each command gets a small
@@ -410,9 +416,9 @@ payload too. It installs as the app user with no root at runtime:
   payload's own library directory for that process and its children only,
   then runs the real binary from the payload. The payload holds only
   packages the image lacks, so it does not replace the image's copies. If
-  apt would upgrade a root package (`tcpdump`, `tshark`, `wireshark-common`
-  or `nfdump`) already in the image, lock generation fails: update that image
-  package before rebuilding. An older tool answering `--version` is not proof
+  apt would upgrade one of a group's root packages (for `capture`: `tcpdump`,
+  `tshark`, `wireshark-common` or `nfdump`) already in the image, lock
+  generation fails: update that image package before rebuilding. An older tool answering `--version` is not proof
   that its security update was applied. For other image dependencies, the
   lock records proposed upgrades under `imageUpgrades` and the build log
   warns, but the package is not extracted. If a tool really needs the newer
@@ -420,7 +426,19 @@ payload too. It installs as the app user with no root at runtime:
   fails and the payload is never activated; an image rebuild fixes that.
   Wireshark finds its data files and plugins relative to the binary, so
   `tshark` decodes with its full dissector set, RADIUS dictionaries and
-  plugins from the payload. A payload command never shadows a command of the
+  plugins from the payload; nmap finds its NSE scripts and service names the
+  same way. BIRD and lldpcli take config and socket paths as arguments
+  (`bird -c … -s …`, `birdc -s …`, `lldpcli -u …`); the image has no
+  `/etc/bird` or `/run/bird`. strongSwan only knows compiled-in paths
+  (`/etc/strongswan.conf`, `/usr/lib/ipsec/plugins`), so the wrappers of
+  `pki`, `swanctl` and `pt-tls-client` also set `STRONGSWAN_CONF` to the
+  payload's config and `LD_PRELOAD` the payload's plugins. Only plugins that
+  load against libstrongswan alone are preloaded (the crypto, encoding and
+  credential ones; checked at install time and recorded in the manifest
+  under `deb.wired`); strongSwan finds a preloaded plugin by symbol before
+  it searches its plugin directory. Like a stock Debian install, `pki` and
+  `swanctl` still print `failed to load` lines for plugins Debian builds
+  elsewhere or that need charon. A payload command never shadows a command of the
   same name in the image, including one the image gains later. A required
   command that the image already provides is checked and used from the image.
 - **Stale native payloads are checked.** While a refresh is pending after an
@@ -437,6 +455,10 @@ emulation on an amd64 host. That is not native hardware, and interface
 listing and the live-capture refusal could not be tested there. See the
 [spike write-up](docs/research/2026-11-06/capture-native-bundle.md).
 
+Measured on amd64 for the other two (same image): `vpn` is 14 packages, 3.5
+MiB to download and 11.4 MiB on disk; `routing` is 23 packages, 8.7 MiB and
+33.4 MiB.
+
 Installing `capture` grants no capture privileges. Offline decoding
 (`tshark -r`, `tcpdump -r`, `capinfos`, `editcap`, `mergecap`, `text2pcap`),
 `dumpcap -D` (listing interfaces) and an `nfcapd` NetFlow collector on a port
@@ -447,6 +469,23 @@ refused without it. Without privileges, save a capture on the router
 `/ip/traffic-flow` at `nfcapd`. Receiving a live TZSP stream without
 privileges needs a UDP listener in front of the decoder and is not tested
 here.
+
+`vpn` and `routing` grant nothing either. Without privileges, `wg genkey`
+and `wg pubkey`, the strongSwan `pki` CA and certificate workflow (the same
+certificates RouterOS IKEv2 imports), `openvpn --genkey`, `ike-scan
+--sport=0`, a BIRD BGP session on ports of 1024 or above (two BIRDs
+exchanged a prefix over eBGP on loopback), nmap connect scans and NSE all
+work. Tunnels, charon, `wg-quick up`, raw scans, ARP/ND probes, LLDP, BGP
+on port 179, `nft` (even `nft -c`, which needs netlink) and `conntrack` need
+`CAP_NET_ADMIN` or `CAP_NET_RAW` and are refused without them. Whether a
+RouterOS container can get them is
+[#7](https://github.com/tikoci/app-t3code/issues/7).
+
+PPP-based peers (SSTP, L2TP, PPPoE) are not in `vpn`. `pppd` needs root and
+reads `/etc/ppp/options` before its arguments, and `xl2tpd` and `sstpc`
+start `/usr/sbin/pppd` by a compiled-in path, so a payload under `/data`
+cannot run them even with capabilities. Test those from a Linux guest
+under `labs`.
 
 #### Changing groups on RouterOS
 
@@ -489,9 +528,9 @@ assigned here. `t3code-tools groups` prints the same table as JSON.
 |---|---|
 | core (in the image) | `iproute2`, `iputils-ping`, `bind9-dnsutils`, `netcat-openbsd`, `socat`, `traceroute`, `mtr-tiny`, `iperf3`, `ethtool`, `whois`, `snmp`, `freeradius-utils`, `mosquitto-clients` |
 | `capture` | `tcpdump`, `tshark`, `wireshark-common`, `nfdump` |
-| `vpn` | `wireguard-tools`, `strongswan-swanctl`, `strongswan-pki`, `strongswan-charon`, `openvpn`, `sstp-client`, `ppp`, `xl2tpd`, `pppoe`, `ike-scan` |
+| `vpn` | `wireguard-tools`, `strongswan-swanctl`, `strongswan-pki`, `strongswan-charon`, `openvpn`, `ike-scan` |
 | `routing` | `bird2`, `lldpd`, `ndisc6`, `arping`, `arp-scan`, `nftables`, `conntrack`, `nmap` |
-| QEMU Linux guest under `labs` | FRR, keepalived, a FreeRADIUS server |
+| QEMU Linux guest under `labs` | FRR, keepalived, a FreeRADIUS server, and the PPP-based peers `sstp-client`, `ppp`, `xl2tpd`, `pppoe` (they need root and `/usr/sbin/pppd`) |
 | not shipped | `pptp-linux` (legacy), `zerotier-one` (not in Debian main), `smbclient` (large Samba dependencies), `snmptrapd` (port 162 needs bind privilege; use a uvx `pysnmp` receiver), `eapoltest` and `ntpsec-ntpdate` (on request) |
 
 Core gets only small user-space clients. With dependencies, their image
@@ -512,13 +551,13 @@ same reason: they are Linux router tools that need `CAP_NET_ADMIN`.
 
 #### Roadmap
 
-`dev` and `capture` already install as persistent payloads under `/data` in
-the background, after T3 starts, and reuse compatible payloads across image
-replacements. `vpn` and `routing` are small enough (about 4 MB and 9 MB
-compressed) that baking them into the image and gating them by PATH is the
-measured alternative; see the
-[spike write-up](docs/research/2026-11-06/capture-native-bundle.md). Groups that are baked in today
-move out only after their persistent replacement is proven. See the
+`dev`, `capture`, `vpn` and `routing` already install as persistent payloads
+under `/data` in the background, after T3 starts, and reuse compatible
+payloads across image replacements (write-ups:
+[capture](docs/research/2026-11-06/capture-native-bundle.md),
+[vpn and routing](docs/research/2026-11-06/vpn-routing-payloads.md)). Groups
+that are baked in today (`labs`, `browser`, `agents-extra`) move out only
+after their persistent replacement is proven. See the
 [review brief](docs/research/2026-11-05/REVIEW.md) and
 [issue #5](https://github.com/tikoci/app-t3code/issues/5). Automatic
 upstream-release and security delivery is tracked in
@@ -602,10 +641,11 @@ APP_T3CODE_ROS=stable APP_T3CODE_ARCH=arm64 APP_T3CODE_INTEGRATION=1 \
 ```
 
 The Docker replacement test removes the original container and starts a new
-one with only the same home volume. It installs the `dev` and `capture`
-payloads under `all`, runs the capture tools as the unprivileged user
-([test/capture-tools.sh](test/capture-tools.sh)), and relinks both payloads in
-later containers, including with no network. It checks tool discovery in
+one with only the same home volume. It installs the `dev`, `capture`, `vpn`
+and `routing` payloads under `all`, runs each Debian group's tools as the
+unprivileged user ([capture](test/capture-tools.sh),
+[vpn](test/vpn-tools.sh), [routing](test/routing-tools.sh)), and relinks the
+payloads in later containers, including with no network. It checks tool discovery in
 ordinary and login shells, a real T3 project record and environment identity, settings
 (including the restarted server's effective preference through read-only MCP),
 uncommitted worktree/project files, and a user-installed Bun CLI. CI runs

@@ -6,6 +6,7 @@ import {
 	buildStatus,
 	GROUP_NAMES,
 	GROUPS,
+	groupStatus,
 	NETWORK_PACKAGE_ASSIGNMENT,
 	type Probe,
 	parseToolGroups,
@@ -263,8 +264,10 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 			browser: "not-selected",
 			"agents-extra": "not-selected",
 		});
-		// Groups without an installer never claim ready, even if tools happen to exist.
-		expect(buildStatus("vpn", everything, "/nonexistent", null).groups.find((g) => g.name === "vpn")?.state).toBe("not-implemented");
+		// A group without an installer never claims ready, even if its tools happen to exist.
+		const labs = GROUPS.find((g) => g.name === "labs");
+		if (!labs) throw new Error("labs group missing");
+		expect(groupStatus({ ...labs, name: "future", delivery: "none" }, true, everything).state).toBe("not-implemented");
 		// Payload groups never claim ready from PATH either: only their payload counts.
 		expect(buildStatus("capture", everything, "/nonexistent", null).groups.find((g) => g.name === "capture")?.state).toBe("pending");
 	});

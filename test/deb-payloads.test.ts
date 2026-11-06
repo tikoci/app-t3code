@@ -1,4 +1,4 @@
-/** Debian-package payloads (issue #5 slice 3, `capture`), offline: fake dpkg-deb, fake .debs, fake mirror. */
+/** Debian-package payloads (issue #5 slices 3-4: capture, vpn, routing), offline: fake dpkg-deb, fake .debs, fake mirror. */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
@@ -13,10 +13,11 @@ import {
 	parseAptSimulation,
 	parsePrintUris,
 	parseStanzas,
+	preloadLoads,
 	resolveDebLock,
 	wrapperScript,
 } from "../scripts/deb-payloads.ts";
-import { buildStatus, GROUPS, type Probe, TZSP_DNS_PCAPNG } from "../scripts/tool-groups.ts";
+import { BIRD_BGP_CONF, buildStatus, type GroupDef, GROUPS, NETWORK_PACKAGE_ASSIGNMENT, type Probe, TZSP_DNS_PCAPNG } from "../scripts/tool-groups.ts";
 import { activate, installGroups, type Manifest, type PayloadEnv, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
 
 const capture = GROUPS.find((g) => g.name === "capture");
@@ -160,8 +161,9 @@ function stopped(pid: number): boolean {
 const sha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
 /** Build the debs, serve them, and write the lock the image build would have produced. */
-function publish(pkgs: FakePkg[], lockArch = "amd64") {
-	const lock: DebLock = { schemaVersion: 1, group: "capture", roots: ["tcpdump", "tshark", "wireshark-common", "nfdump"], arch: lockArch, distro: "debian-trixie", packages: [] };
+function publish(pkgs: FakePkg[], lockArch = "amd64", group = "capture") {
+	const roots = group === "capture" ? ["tcpdump", "tshark", "wireshark-common", "nfdump"] : pkgs.map((p) => p.name);
+	const lock: DebLock = { schemaVersion: 1, group, roots, arch: lockArch, distro: "debian-trixie", packages: [] };
 	for (const pkg of pkgs) {
 		const bytes = buildDeb(pkg);
 		debs.set(pkg.name, bytes);
@@ -171,8 +173,8 @@ function publish(pkgs: FakePkg[], lockArch = "amd64") {
 		lock.packages.push({ name: pkg.name, version: pkg.version, architecture: "amd64", size: bytes.length, installedSize: 4096, sha256: sha256(bytes), filename, uris: [url] });
 	}
 	lock.packages.sort((a, b) => a.name.localeCompare(b.name));
-	mkdirSync(join(env.specDir, "capture"), { recursive: true });
-	writeFileSync(join(env.specDir, "capture", DEB_LOCK_FILE), `${JSON.stringify(lock, null, 2)}\n`);
+	mkdirSync(join(env.specDir, group), { recursive: true });
+	writeFileSync(join(env.specDir, group, DEB_LOCK_FILE), `${JSON.stringify(lock, null, 2)}\n`);
 	return lock;
 }
 
@@ -685,7 +687,7 @@ Conf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])
 	test("the docker test's capture script uses the same fixture as the installer's smoke test", () => {
 		const script = readFileSync(join(import.meta.dir, "capture-tools.sh"), "utf8");
 		expect(script).toContain(`printf %s '${TZSP_DNS_PCAPNG}' | base64 -d`);
-		expect(capture.smoke?.inputBase64).toBe(TZSP_DNS_PCAPNG);
+		expect(capture.smoke?.[0]?.inputBase64).toBe(TZSP_DNS_PCAPNG);
 	});
 
 	test("wrappers set the library path for their own process only and resolve the payload through links", () => {
@@ -694,5 +696,210 @@ Conf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])
 		expect(script).toContain(`LD_LIBRARY_PATH="$p/root/usr/lib/x86_64-linux-gnu\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"`);
 		expect(script).toContain('exec "$p/root/usr/bin/tshark" "$@"');
 		expect(wrapperScript("capture", "root/usr/bin/nfdump", [])).not.toContain("LD_LIBRARY_PATH=");
+	});
+});
+
+describe("deb wrapper rules, expected-exit probes and smoke lists (vpn, routing)", () => {
+	// A strongSwan-like tool: its config and plugins are found only through the
+	// wrapper; a birdc-like client that cannot exit 0 without its daemon.
+	const strong: GroupDef = {
+		name: "strong",
+		summary: "test",
+		delivery: "deb",
+		packages: ["strong"],
+		checks: [
+			{ kind: "command", name: "pki" },
+			{ kind: "command", name: "ctl" },
+		],
+		privileges: "None.",
+		versionArgs: { pki: ["--help"], ctl: ["-s", "/nonexistent/ctl.sock"] },
+		versionExit: { ctl: { code: 1, expect: "Unable to connect" } },
+		wrappers: [
+			{
+				commands: ["pki", "not-in-payload"],
+				env: { STRONGSWAN_CONF: "{root}/etc/strongswan.conf" },
+				preload: { libraries: ["usr/lib/ipsec/libstrongswan.so.0"], pluginDir: "usr/lib/ipsec/plugins" },
+			},
+		],
+		smoke: [
+			{ command: "pki", args: ["--gen"], expect: "BEGIN PRIVATE KEY" },
+			{ command: "ctl", args: ["parse", "{input}"], inputBase64: Buffer.from("router id 192.0.2.1;\n").toString("base64"), expect: "" },
+		],
+	};
+	const groups = [strong];
+	const pki = `#!/bin/sh
+case "$1" in
+--help) [ -s "$STRONGSWAN_CONF" ] || { echo "no files found matching '/etc/strongswan.conf'" >&2; exit 64; }; echo "strongSwan 6.0.1 PKI tool" ;;
+--gen) case "$LD_PRELOAD" in *libstrongswan-openssl.so*) echo "-----BEGIN PRIVATE KEY-----" ;; *) echo "building CRED_PRIVATE_KEY failed, tried 0 builders" >&2; exit 1 ;; esac ;;
+env) echo "STRONGSWAN_CONF=$STRONGSWAN_CONF"; echo "LD_PRELOAD=$LD_PRELOAD" ;;
+esac
+`;
+	const ctl = (connect = 'echo "Unable to connect to server control socket ($2): No such file or directory" >&2; exit 1') => `#!/bin/sh
+case "$1" in
+-s) ${connect} ;;
+parse) grep -q "router id" "$2" ;;
+*) echo "LD_PRELOAD=$LD_PRELOAD" ;;
+esac
+`;
+	const packages = (over: Partial<Record<"pki" | "ctl", string>> = {}): FakePkg[] => [
+		{
+			name: "strong",
+			version: "6.0.1-6",
+			files: {
+				"usr/bin/pki": over.pki ?? pki,
+				"usr/sbin/ctl": over.ctl ?? ctl(),
+				"etc/strongswan.conf": "charon { load_modular = yes }\n",
+				"usr/lib/ipsec/libstrongswan.so.0": "elf",
+				"usr/lib/ipsec/plugins/libstrongswan-openssl.so": "elf",
+				"usr/lib/ipsec/plugins/libstrongswan-x509.so": "elf",
+				// Needs symbols only charon provides: never preloaded.
+				"usr/lib/ipsec/plugins/libstrongswan-kernel-netlink.so": "elf",
+				"usr/lib/ipsec/plugins/README": "not a plugin",
+			},
+		},
+	];
+	const preloadCalls: string[][] = [];
+	beforeEach(() => {
+		preloadCalls.length = 0;
+		env.canPreload = (libs, libraryPath) => {
+			preloadCalls.push([...libs]);
+			// Checked with the payload's own library dirs, as the wrapper will run.
+			expect(libraryPath).toContain("/root/usr/lib/ipsec");
+			return !libs.some((lib) => lib.endsWith("kernel-netlink.so"));
+		};
+	});
+	/** The active payload's manifest. */
+	const state = () => JSON.parse(readFileSync(join(env.root, "groups", "strong", "current", "manifest.json"), "utf8")) as Manifest;
+
+	test("the wrapper carries the rule's variables and the plugins that load against the base library alone", async () => {
+		publish(packages(), "amd64", "strong");
+		const result = await installGroups(groups, ["strong"], env);
+		expect(result.results["strong"]).toMatchObject({ state: "ready", attempt: 1 });
+		const manifest = state();
+		const payload = join(env.root, "groups", "strong", manifest.payloadId, "root");
+		const preload = [
+			"usr/lib/ipsec/libstrongswan.so.0",
+			"usr/lib/ipsec/plugins/libstrongswan-openssl.so",
+			"usr/lib/ipsec/plugins/libstrongswan-x509.so",
+		];
+		// Recorded for agents; the rule's command that the payload lacks is ignored.
+		expect(manifest.deb?.wired).toEqual({ pki: { env: ["STRONGSWAN_CONF"], preload } });
+		expect(manifest.versions).toEqual({ pki: "strongSwan 6.0.1 PKI tool", ctl: "Unable to connect to server control socket (/nonexistent/ctl.sock): No such file or directory" });
+		const out = Bun.spawnSync([shim("pki"), "env"], { env: { PATH: "/usr/bin:/bin", LD_PRELOAD: "/user/own.so" } }).stdout.toString();
+		expect(out).toContain(`STRONGSWAN_CONF=${payload}/etc/strongswan.conf\n`);
+		// The user's own LD_PRELOAD is kept, after the payload's.
+		expect(out).toContain(`LD_PRELOAD=${preload.map((l) => join(payload, l)).join(":")}:/user/own.so\n`);
+		// Other commands get no preload at all.
+		expect(Bun.spawnSync([shim("ctl"), "env"], { env: { PATH: "/usr/bin:/bin" } }).stdout.toString().trim()).toBe("LD_PRELOAD=");
+		// Each plugin was tried alone with the base library, then the chosen set together.
+		// (Checked in the staging dir, before the payload took its final name.)
+		expect(preloadCalls.map((libs) => libs.map((l) => l.replace(/^.*?\/root\//, "")))).toEqual([
+			["usr/lib/ipsec/libstrongswan.so.0", "usr/lib/ipsec/plugins/libstrongswan-kernel-netlink.so"],
+			["usr/lib/ipsec/libstrongswan.so.0", "usr/lib/ipsec/plugins/libstrongswan-openssl.so"],
+			["usr/lib/ipsec/libstrongswan.so.0", "usr/lib/ipsec/plugins/libstrongswan-x509.so"],
+			preload,
+		]);
+	});
+
+	test("a stale payload whose client exits with its declared code still relinks", async () => {
+		publish(packages(), "amd64", "strong");
+		await installGroups(groups, ["strong"], env);
+		const first = state().payloadId;
+		// A new image pins a new version: the old payload is stale but still runs.
+		publish(packages().map((p) => ({ ...p, version: "6.0.1-6+deb13u1" })), "amd64", "strong");
+		rmSync(join(env.root, "bin"), { recursive: true, force: true });
+		// Still needs the installer (the refresh), but stays linked meanwhile.
+		expect(activate(groups, ["strong"], env)).toEqual(["strong"]);
+		expect(readlinkSync(shim("ctl"))).toBe("../groups/strong/current/bin/ctl");
+		expect(state().payloadId).toBe(first);
+		// A client that no longer loads is not kept.
+		writeFileSync(join(env.root, "groups", "strong", first, "root", "usr", "sbin", "ctl"), '#!/bin/sh\necho "error while loading shared libraries" >&2\nexit 127\n');
+		activate(groups, ["strong"], env);
+		expect(existsSync(shim("ctl"))).toBe(false);
+	});
+
+	test("a declared exit code passes only with its message; exit 0 always passes", async () => {
+		publish(packages({ ctl: ctl('echo "error while loading shared libraries: libreadline.so.8" >&2; exit 1') }), "amd64", "strong");
+		const result = await installGroups(groups, ["strong"], env);
+		expect(result.results["strong"]?.error).toContain("ctl -s /nonexistent/ctl.sock exited 1: error while loading shared libraries");
+		// The message with another exit code fails too; exit 0 always passes.
+		publish(packages({ ctl: ctl('echo "Unable to connect" >&2; exit 2') }), "amd64", "strong");
+		expect((await installGroups(groups, ["strong"], env)).results["strong"]?.error).toContain("ctl -s /nonexistent/ctl.sock exited 2: Unable to connect");
+		publish(packages({ ctl: ctl('echo "ctl 2.17.5"; exit 0') }), "amd64", "strong");
+		expect((await installGroups(groups, ["strong"], env)).results["strong"]).toMatchObject({ state: "ready" });
+	});
+
+	test("every smoke test must pass, not only the first", async () => {
+		publish(packages({ ctl: ctl().replace('grep -q "router id" "$2"', "exit 3") }), "amd64", "strong");
+		const result = await installGroups(groups, ["strong"], env);
+		expect(result.results["strong"]?.error).toContain("smoke test ctl parse {input} failed (exit 3)");
+	});
+
+	test("a missing preload library or a plugin set that does not load together keeps the payload out", async () => {
+		publish(packages().map((p) => ({ ...p, files: Object.fromEntries(Object.entries(p.files).filter(([f]) => !f.endsWith("libstrongswan.so.0"))) })), "amd64", "strong");
+		expect((await installGroups(groups, ["strong"], env)).results["strong"]?.error).toContain("preload library usr/lib/ipsec/libstrongswan.so.0 is not in the payload");
+
+		publish(packages(), "amd64", "strong");
+		env.canPreload = (libs) => libs.length < 3 && !libs.some((lib) => lib.endsWith("kernel-netlink.so"));
+		expect((await installGroups(groups, ["strong"], env)).results["strong"]?.error).toContain("the 3 preload libraries from usr/lib/ipsec/plugins do not load together");
+
+		env.canPreload = () => false;
+		expect((await installGroups(groups, ["strong"], env)).results["strong"]?.error).toContain("no plugin in usr/lib/ipsec/plugins loads against usr/lib/ipsec/libstrongswan.so.0");
+	});
+
+	test("the default preload check asks ld.so: a library it cannot load is rejected", () => {
+		expect(preloadLoads([], "")).toBe(true);
+		expect(preloadLoads([join(tmp, "missing.so")], "")).toBe(false);
+		writeFileSync(join(tmp, "garbage.so"), "not an ELF file");
+		expect(preloadLoads([join(tmp, "garbage.so")], "")).toBe(false);
+	});
+
+	test("wrappers set extra variables and preloads after the library path, sorted, for their own process", () => {
+		const script = wrapperScript("vpn", "root/usr/bin/pki", ["usr/lib/ipsec"], {
+			env: { STRONGSWAN_CONF: "{root}/etc/strongswan.conf", A_FIRST: "x" },
+			preload: ["usr/lib/ipsec/libstrongswan.so.0"],
+		});
+		const lines = script.split("\n");
+		const at = (prefix: string) => lines.findIndex((line) => line.startsWith(prefix));
+		expect(at("LD_LIBRARY_PATH=")).toBeLessThan(at("A_FIRST="));
+		expect(at("A_FIRST=")).toBeLessThan(at("STRONGSWAN_CONF="));
+		expect(script).toContain('STRONGSWAN_CONF="$p/root/etc/strongswan.conf"\nexport STRONGSWAN_CONF');
+		expect(script).toContain(`LD_PRELOAD="$p/root/usr/lib/ipsec/libstrongswan.so.0\${LD_PRELOAD:+:$LD_PRELOAD}"\nexport LD_PRELOAD`);
+		expect(wrapperScript("vpn", "root/usr/bin/wg", ["usr/lib/ipsec"])).not.toContain("LD_PRELOAD");
+	});
+});
+
+describe("vpn and routing group definitions", () => {
+	const vpn = GROUPS.find((g) => g.name === "vpn");
+	const routing = GROUPS.find((g) => g.name === "routing");
+	if (!vpn || !routing) throw new Error("vpn or routing group missing");
+
+	test("both are Debian payloads with probes for every special command and a functional smoke test", () => {
+		for (const group of [vpn, routing]) {
+			expect(group.delivery).toBe("deb");
+			expect(group.smoke?.length).toBeGreaterThan(0);
+			const commands = group.checks.filter((c) => c.kind === "command").map((c) => c.name);
+			for (const bin of Object.keys(group.versionArgs ?? {})) expect(commands).toContain(bin);
+			for (const bin of Object.keys(group.versionExit ?? {})) expect(commands).toContain(bin);
+			for (const smoke of group.smoke ?? []) expect(commands).toContain(smoke.command);
+		}
+		// strongSwan's pki and swanctl get the payload's config and plugins.
+		const rule = vpn.wrappers?.[0];
+		expect(rule?.commands).toEqual(expect.arrayContaining(["pki", "swanctl"]));
+		expect(rule?.env?.["STRONGSWAN_CONF"]).toBe("{root}/etc/strongswan.conf");
+		expect(rule?.preload).toEqual({ libraries: ["usr/lib/ipsec/libstrongswan.so.0"], pluginDir: "usr/lib/ipsec/plugins" });
+		expect(vpn.smoke?.map((s) => s.command)).toEqual(["pki", "wg"]);
+		expect(routing.smoke?.find((s) => s.command === "bird")?.inputBase64).toBe(Buffer.from(BIRD_BGP_CONF).toString("base64"));
+	});
+
+	test("PPP-based peers left vpn for the lab guest: pppd needs root and /usr/sbin/pppd", () => {
+		for (const pkg of ["ppp", "xl2tpd", "pppoe", "sstp-client"]) {
+			expect(vpn.packages).not.toContain(pkg);
+			expect(NETWORK_PACKAGE_ASSIGNMENT[pkg]).toBe("lab-guest");
+		}
+		for (const bin of ["pppd", "xl2tpd", "sstpc", "pppoe-discovery"]) expect(vpn.checks.map((c) => c.name)).not.toContain(bin);
+		for (const group of [vpn, routing]) {
+			for (const pkg of group.packages) expect(NETWORK_PACKAGE_ASSIGNMENT[pkg]).toBe(group.name);
+		}
 	});
 });

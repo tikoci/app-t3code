@@ -169,26 +169,35 @@ test.skipIf(!image)(
 			}
 		};
 		const devTools = "cd /tmp; tsc --version; biome --version; cspell --version; markdownlint-cli2 --version";
-		// The capture payload, as node with no capabilities (test/capture-tools.sh).
-		const captureTools = async (shell: string) => {
-			await docker("cp", new URL("./capture-tools.sh", import.meta.url).pathname, `${name}:/tmp/capture-tools.sh`);
-			return run("bash", shell, "bash /tmp/capture-tools.sh");
+		// A deb payload's functional script, as node with no capabilities
+		// (test/capture-tools.sh, vpn-tools.sh, routing-tools.sh).
+		const groupTools = async (group: string, shell: string) => {
+			await docker("cp", new URL(`./${group}-tools.sh`, import.meta.url).pathname, `${name}:/tmp/${group}-tools.sh`);
+			return run("bash", shell, `bash /tmp/${group}-tools.sh`);
 		};
+		const captureTools = (shell: string) => groupTools("capture", shell);
+		const nativeOk = { capture: "capture ok: TShark (Wireshark) ", vpn: "vpn ok: wireguard-tools ", routing: "routing ok: BIRD version " };
 		await docker("volume", "create", volume);
 		try {
 			// CI exercises every group so the reported states cover the full set.
 			await start("all");
 			await waitForServer(name);
 			expect(await run("printenv", "T3CODE_TELEMETRY_ENABLED")).toBe("false");
-			// T3 is already serving; the dev and capture payloads install in the
-			// background, one after the other.
+			// T3 is already serving; the dev, capture, vpn and routing payloads
+			// install in the background, one after the other.
 			const { group: devFirst } = await settled("dev", 180_000);
 			expect(devFirst.payload?.last?.error).toBeUndefined();
 			expect(devFirst.payload?.activeVersions?.["tsc"]).toStartWith("Version ");
-			const { status: all, group: captureFirst } = await settled("capture", 300_000);
+			const { group: captureFirst } = await settled("capture", 300_000);
 			expect(captureFirst.payload?.last?.error).toBeUndefined();
 			expect(captureFirst.payload?.activeVersions?.["tshark"]).toStartWith("TShark (Wireshark) ");
 			expect(captureFirst.payload?.active).toMatch(/^(amd64|arm64)-trixie-[0-9a-f]{16}$/);
+			const { group: vpnFirst } = await settled("vpn", 180_000);
+			expect(vpnFirst.payload?.last?.error).toBeUndefined();
+			expect(vpnFirst.payload?.activeVersions?.["pki"]).toStartWith("strongSwan ");
+			const { status: all, group: routingFirst } = await settled("routing", 180_000);
+			expect(routingFirst.payload?.last?.error).toBeUndefined();
+			expect(routingFirst.payload?.activeVersions?.["bird"]).toStartWith("BIRD version ");
 			expect(all.core).toMatchObject({ state: "ready", missing: [] });
 			expect(all.buildInventory.present).toBe(true);
 			expect(all.selector.warnings).toEqual([]);
@@ -196,8 +205,8 @@ test.skipIf(!image)(
 			expect(Object.fromEntries(all.groups.map((group) => [group.name, group.state]))).toEqual({
 				capture: "ready",
 				labs: "ready",
-				vpn: "not-implemented",
-				routing: "not-implemented",
+				vpn: "ready",
+				routing: "ready",
 				dev: "ready",
 				browser: "ready",
 				"agents-extra": "ready",
@@ -208,7 +217,7 @@ test.skipIf(!image)(
 					shell,
 					`set -e; bun --version; bunx --version; quickchr --help; centrs explain '/ip/address print' --json; muse --version; qemu-system-x86_64 --version; qemu-system-aarch64 --version; qemu-img --version; ${devTools}`,
 				);
-				expect(await captureTools(shell)).toContain("capture ok: TShark (Wireshark) ");
+				for (const [group, ok] of Object.entries(nativeOk)) expect(await groupTools(group, shell)).toContain(ok);
 			}
 			await run(
 				"bash",
@@ -334,24 +343,31 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			expect(devOffline.payload?.active).toBe(devFirst.payload?.active as string);
 			expect(devOffline.payload?.last?.updatedAt).toBe(devFirst.payload?.last?.updatedAt as string);
 			for (const shell of ["-c", "-lc"]) await run("bash", shell, `set -e; ${devTools}`);
-			// capture deselected: its shims are gone, its payload stays on disk.
-			const captureOff = devOnly.groups.find((group) => group.name === "capture");
-			expect(captureOff?.state).toBe("not-selected");
-			expect(captureOff?.payload?.installed).toEqual([captureFirst.payload?.active as string]);
-			expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", "command -v tshark"]).exitCode).not.toBe(0);
+			// The native groups deselected: their shims are gone, their payloads stay on disk.
+			const nativeFirst = { capture: captureFirst, vpn: vpnFirst, routing: routingFirst };
+			const probes = { capture: "tshark", vpn: "pki", routing: "bird" };
+			for (const [group, first] of Object.entries(nativeFirst)) {
+				const off = devOnly.groups.find((g) => g.name === group);
+				expect(off?.state).toBe("not-selected");
+				expect(off?.payload?.installed).toEqual([first.payload?.active as string]);
+				expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", `command -v ${probes[group as keyof typeof probes]}`]).exitCode).not.toBe(0);
+			}
 
-			// And capture comes back offline in a fourth container, still verified.
+			// And they come back offline in a fourth container, still verified,
+			// with nothing reinstalled.
 			await docker("rm", "--force", name);
-			await start("capture", true);
-			const { group: captureOffline } = await settled("capture", 60_000);
-			expect(captureOffline.state).toBe("ready");
-			expect(captureOffline.payload?.active).toBe(captureFirst.payload?.active as string);
-			expect(captureOffline.payload?.last?.updatedAt).toBe(captureFirst.payload?.last?.updatedAt as string);
-			await captureTools("-c");
+			await start("capture vpn routing", true);
+			for (const [group, first] of Object.entries(nativeFirst)) {
+				const { group: offline } = await settled(group, 60_000);
+				expect(offline.state).toBe("ready");
+				expect(offline.payload?.active).toBe(first.payload?.active as string);
+				expect(offline.payload?.last?.updatedAt).toBe(first.payload?.last?.updatedAt as string);
+				expect(await groupTools(group, "-c")).toContain(nativeOk[group as keyof typeof nativeOk]);
+			}
 		} finally {
 			await docker("rm", "--force", name).catch(() => {});
 			await docker("volume", "rm", volume);
 		}
 	},
-	12 * 60_000,
+	15 * 60_000,
 );
