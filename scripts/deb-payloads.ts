@@ -54,7 +54,8 @@ export interface DebLock {
 	distro: string;
 	packages: DebLockPackage[];
 	/**
-	 * Image packages apt wanted to upgrade for this group. Never extracted: a
+	 * Image dependencies apt wanted to upgrade for this group. Root-package
+	 * upgrades are rejected at lock generation. Dependencies are never extracted: a
 	 * payload copy would shadow the image's library (a lagging libc6, say). If
 	 * a tool truly needs the newer version, its version probe fails and the
 	 * payload is never activated; the fix is an image rebuild.
@@ -164,6 +165,14 @@ export type Exec = (cmd: string[]) => string;
 export function resolveDebLock(group: string, roots: readonly string[], exec: Exec, osRelease: string): DebLock {
 	const args = ["--no-install-recommends", ...roots];
 	const simulated = parseAptSimulation(exec(["apt-get", "install", "-s", ...args]));
+	// Image commands win over payload commands. An old root can still pass
+	// --version, so reject its upgrade here rather than certify a lock that
+	// leaves the old tool in use after a supposed security refresh.
+	const outdatedRoots = simulated.filter((p) => p.installed !== undefined && roots.includes(p.name));
+	if (outdatedRoots.length) {
+		const versions = outdatedRoots.map((p) => `${p.name} ${p.installed} -> ${p.version}`).join(", ");
+		throw new Error(`${group}: outdated root packages in the image (${versions}); update the image packages before generating the Debian lock`);
+	}
 	// Only what the image lacks: an upgrade of an image package is recorded, not extracted.
 	const closure = simulated.filter((p) => p.installed === undefined);
 	// Sorted like packages: the lock bytes (and so the payload id) must not depend on apt's order.

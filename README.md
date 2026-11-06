@@ -410,9 +410,13 @@ payload too. It installs as the app user with no root at runtime:
   payload's own library directory for that process and its children only,
   then runs the real binary from the payload. The payload holds only
   packages the image lacks, so it does not replace the image's copies. If
-  apt would upgrade a package the image already has, the lock records that
-  under `imageUpgrades` and the build log warns, but the package is not
-  extracted. If a tool really needs the newer version, its version check
+  apt would upgrade a root package (`tcpdump`, `tshark`, `wireshark-common`
+  or `nfdump`) already in the image, lock generation fails: update that image
+  package before rebuilding. An older tool answering `--version` is not proof
+  that its security update was applied. For other image dependencies, the
+  lock records proposed upgrades under `imageUpgrades` and the build log
+  warns, but the package is not extracted. If a tool really needs the newer
+  version, its version check
   fails and the payload is never activated; an image rebuild fixes that.
   Wireshark finds its data files and plugins relative to the binary, so
   `tshark` decodes with its full dissector set, RADIUS dictionaries and

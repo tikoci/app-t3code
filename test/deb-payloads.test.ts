@@ -670,6 +670,18 @@ Conf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])
 		expect(() => resolveDebLock("capture", ["tcpdump"], (cmd) => (cmd[0] === "apt-cache" ? show.replace("a".repeat(64), "") : exec(cmd)), osRelease)).toThrow("no SHA256");
 	});
 
+	test("rejects outdated image roots before resolving downloads, with or without missing dependencies", () => {
+		for (const root of capture.packages) {
+			for (const dependencies of ["", simulation]) {
+				const exec = (cmd: string[]) => {
+					if (cmd.includes("-s")) return `Inst ${root} [1.0-1] (1.0-1+deb13u1 Debian-Security:13/stable-security [amd64])\n${dependencies}`;
+					throw new Error("must reject the outdated root before resolving downloads");
+				};
+				expect(() => resolveDebLock("capture", capture.packages, exec, osRelease)).toThrow(`${root} 1.0-1 -> 1.0-1+deb13u1`);
+			}
+		}
+	});
+
 	test("the docker test's capture script uses the same fixture as the installer's smoke test", () => {
 		const script = readFileSync(join(import.meta.dir, "capture-tools.sh"), "utf8");
 		expect(script).toContain(`printf %s '${TZSP_DNS_PCAPNG}' | base64 -d`);
