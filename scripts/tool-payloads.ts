@@ -22,7 +22,7 @@
 import {
 	closeSync,
 	existsSync,
-	linkSync,
+	ftruncateSync,
 	lstatSync,
 	mkdirSync,
 	openSync,
@@ -40,6 +40,7 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
+import { dlopen, FFIType } from "bun:ffi";
 import type { GroupDef } from "./tool-groups.ts";
 
 export const PAYLOAD_SCHEMA = 1;
@@ -266,12 +267,18 @@ function writeState(env: PayloadEnv, group: string, record: StateRecord) {
 	renameSync(`${path}.tmp`, path);
 }
 
-export interface LockInfo {
+export interface ProcessId {
 	pid: number;
-	/** Kernel start time of the holder (/proc/<pid>/stat field 22): pid + start time identify a process even when pids are recycled. */
+	/** Kernel start time (/proc/<pid>/stat field 22): pid + start time identify a process even when pids are recycled. */
 	startTicks: string | null;
+}
+
+/** Owner record kept in install.lock. Exclusion itself is the kernel flock on that file. */
+export interface LockInfo extends ProcessId {
 	command: string;
 	startedAt: string;
+	/** The npm child the holder is running, so a successor can stop it if the holder died first. */
+	child?: ProcessId;
 }
 
 /** Start time of a process in clock ticks since boot, or null if it does not exist. */
@@ -285,73 +292,111 @@ export function processStartTicks(pid: number): string | null {
 	}
 }
 
-/** Whether the lock's holder is still the same live process (install or prune). */
-function isLiveHolder(info: LockInfo): boolean {
-	if (!Number.isInteger(info.pid) || info.pid <= 0) return false;
-	const ticks = processStartTicks(info.pid);
-	if (ticks !== null) return ticks === info.startTicks;
+/** Whether pid still names the same process (not a recycled pid). */
+function isSameProcess(id: ProcessId | undefined): boolean {
+	if (!id || !Number.isInteger(id.pid) || id.pid <= 0) return false;
+	const ticks = processStartTicks(id.pid);
+	if (ticks !== null) return ticks === id.startTicks;
 	// No /proc (not Linux): fall back to pid existence.
 	if (existsSync("/proc/self/stat")) return false;
 	try {
-		process.kill(info.pid, 0);
+		process.kill(id.pid, 0);
 		return true;
 	} catch {
 		return false;
 	}
 }
 
-function readLock(path: string): { raw: string; info: LockInfo | null } | null {
-	let raw: string;
+function readLockInfo(path: string): LockInfo | null {
 	try {
-		raw = readFileSync(path, "utf8");
+		return JSON.parse(readFileSync(path, "utf8")) as LockInfo;
 	} catch {
 		return null;
 	}
-	try {
-		return { raw, info: JSON.parse(raw) as LockInfo };
-	} catch {
-		return { raw, info: null };
-	}
 }
 
-/** The live installer or pruner, if one holds the lock. */
+/**
+ * The live installer or pruner, if one holds the lock. Status only: the
+ * record is advisory and may outlive a holder that died, so liveness is
+ * checked by pid + start time. Exclusion uses the kernel lock.
+ */
 export function liveInstaller(env: PayloadEnv): LockInfo | null {
-	const lock = readLock(join(env.root, "install.lock"));
-	return lock?.info && isLiveHolder(lock.info) ? lock.info : null;
+	const info = readLockInfo(join(env.root, "install.lock"));
+	return info && isSameProcess(info) ? info : null;
 }
 
-function acquireLock(env: PayloadEnv, command: string): boolean {
+const LOCK_EX = 2;
+const LOCK_NB = 4;
+let flockFn: ((fd: number, op: number) => number) | null | undefined;
+/** flock(2) via libc. The kernel drops the lock when the holder dies, so there is no stale-lock recovery to race. */
+function kernelFlock(fd: number, op: number): boolean {
+	if (flockFn === undefined) {
+		try {
+			const lib = process.platform === "darwin" ? "/usr/lib/libSystem.B.dylib" : "libc.so.6";
+			const { symbols } = dlopen(lib, { flock: { args: [FFIType.i32, FFIType.i32], returns: FFIType.i32 } });
+			flockFn = (f, o) => symbols.flock(f, o) as number;
+		} catch {
+			flockFn = null;
+		}
+	}
+	if (flockFn === null) throw new Error("flock(2) is unavailable; cannot lock the payload root");
+	return flockFn(fd, op) === 0;
+}
+
+/** Open lock fds by payload root (closed on release, or by the kernel on exit). */
+const heldLocks = new Map<string, number>();
+
+function writeLockInfo(fd: number, info: LockInfo) {
+	ftruncateSync(fd, 0);
+	writeSync(fd, JSON.stringify(info), 0);
+}
+
+/** Stop an npm child orphaned by a holder that died, before its staging is reclaimed. */
+async function stopOrphan(env: PayloadEnv, previous: LockInfo | null) {
+	const child = previous?.child;
+	if (!child || !isSameProcess(child)) return;
+	env.log(`stopping npm (pid ${child.pid}) left running by an interrupted ${previous?.command ?? "installer"}`);
+	try {
+		process.kill(child.pid, "SIGKILL");
+	} catch {
+		return;
+	}
+	for (let i = 0; i < 100 && isSameProcess(child); i++) await Bun.sleep(50);
+}
+
+async function acquireLock(env: PayloadEnv, command: string): Promise<boolean> {
 	mkdirSync(env.root, { recursive: true });
 	const path = join(env.root, "install.lock");
-	// Write the owner record first, then hard-link it into place: link() fails
-	// if the lock exists, and the lock is never visible without its owner.
-	const tmp = `${path}.${process.pid}.tmp`;
-	const info: LockInfo = { pid: process.pid, startTicks: processStartTicks(process.pid), command, startedAt: new Date().toISOString() };
-	writeFileSync(tmp, JSON.stringify(info));
-	try {
-		for (let i = 0; i < 2; i++) {
-			try {
-				linkSync(tmp, path);
-				return true;
-			} catch {
-				const held = readLock(path);
-				if (held === null) continue; // released meanwhile
-				if (held.info && isLiveHolder(held.info)) return false;
-				// Stale (holder died, or pid recycled after a restart). Remove it
-				// only if it is still the record we judged stale.
-				if (readLock(path)?.raw === held.raw) rmSync(path, { force: true });
-			}
-		}
+	// The file is never unlinked: removing it would let a waiter lock an
+	// orphaned inode while a newcomer locks a new file.
+	const fd = openSync(path, "a+");
+	if (!kernelFlock(fd, LOCK_EX | LOCK_NB)) {
+		closeSync(fd);
 		return false;
-	} finally {
-		rmSync(tmp, { force: true });
 	}
+	const previous = readLockInfo(path);
+	writeLockInfo(fd, { pid: process.pid, startTicks: processStartTicks(process.pid), command, startedAt: new Date().toISOString() });
+	heldLocks.set(env.root, fd);
+	await stopOrphan(env, previous);
+	return true;
+}
+
+/** Record (or clear) the npm child in the lock's owner record. */
+function setLockChild(env: PayloadEnv, child: number | null) {
+	const fd = heldLocks.get(env.root);
+	const info = readLockInfo(join(env.root, "install.lock"));
+	if (fd === undefined || !info) return;
+	if (child === null) delete info.child;
+	else info.child = { pid: child, startTicks: processStartTicks(child) };
+	writeLockInfo(fd, info);
 }
 
 function releaseLock(env: PayloadEnv) {
-	const path = join(env.root, "install.lock");
-	const held = readLock(path)?.info;
-	if (held && held.pid === process.pid && held.startTicks === processStartTicks(process.pid)) rmSync(path, { force: true });
+	const fd = heldLocks.get(env.root);
+	if (fd === undefined) return;
+	heldLocks.delete(env.root);
+	ftruncateSync(fd, 0);
+	closeSync(fd); // closing the last fd drops the flock
 }
 
 export interface PayloadInfo {
@@ -441,7 +486,7 @@ function cleanStaging(env: PayloadEnv, group: string) {
 	}
 }
 
-async function run(cmd: string[], cwd: string, timeoutMs: number): Promise<{ code: number; out: string }> {
+async function run(cmd: string[], cwd: string, timeoutMs: number, onSpawn?: (pid: number) => void): Promise<{ code: number; out: string }> {
 	const proc = Bun.spawn(cmd, {
 		cwd,
 		stdout: "pipe",
@@ -449,6 +494,7 @@ async function run(cmd: string[], cwd: string, timeoutMs: number): Promise<{ cod
 		timeout: timeoutMs,
 		env: { ...process.env, npm_config_update_notifier: "false", npm_config_fund: "false", npm_config_audit: "false" },
 	});
+	onSpawn?.(proc.pid);
 	const [out, err, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
 	return { code: proc.signalCode ? -1 : code, out: `${out}${err}`.trim() };
 }
@@ -466,7 +512,9 @@ async function installOnce(group: GroupDef, desired: Desired, env: PayloadEnv, s
 		[...env.npm, "ci", "--prefix", staging, "--cache", cache, "--ignore-scripts", "--no-audit", "--no-fund", "--loglevel=warn", "--fetch-retries=2"],
 		staging,
 		env.installTimeoutMs,
+		(pid) => setLockChild(env, pid),
 	);
+	setLockChild(env, null);
 	if (npm.code !== 0) throw new Error(`npm ci exited ${npm.code === -1 ? "on timeout" : npm.code}: ${npm.out.split("\n").slice(-5).join(" | ")}`);
 	const versions: Record<string, string> = {};
 	for (const bin of groupBins(group)) {
@@ -518,7 +566,7 @@ export async function installGroups(
 	onChange: () => void = () => {},
 ): Promise<InstallResult> {
 	const results: Record<string, StateRecord> = {};
-	if (!acquireLock(env, "install")) {
+	if (!(await acquireLock(env, "install"))) {
 		env.log("another installer or prune is running; leaving it to finish");
 		return { locked: false, results };
 	}
@@ -585,8 +633,8 @@ export async function installGroups(
 }
 
 /** Delete payloads no selected group is using, plus interrupted installs. */
-export function prunePayloads(groups: readonly GroupDef[], selected: readonly string[], env: PayloadEnv): string[] {
-	if (!acquireLock(env, "prune")) throw new Error("the installer is running; try again when it finishes");
+export async function prunePayloads(groups: readonly GroupDef[], selected: readonly string[], env: PayloadEnv): Promise<string[]> {
+	if (!(await acquireLock(env, "prune"))) throw new Error("the installer is running; try again when it finishes");
 	const removed: string[] = [];
 	try {
 		activate(groups, selected, env);

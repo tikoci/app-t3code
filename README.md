@@ -348,7 +348,9 @@ nothing until selected and survives image replacement and `auto-update`:
   working. The installer keeps the active payload and the one before it and
   deletes older ones.
 - **Bounded.** Groups install one at a time under a lock
-  (`install.lock`, recovered if its holder died). Each group gets three
+  (a kernel `flock` on `install.lock`, released automatically if the holder
+  dies; the next run also stops an npm left behind by a killed installer
+  before reclaiming its files). Each group gets three
   attempts with back-off (30 minute cap per attempt); with no network at all
   npm needs about five minutes to give up. The installer needs the payload's
   size twice (payload plus download cache) plus 256 MiB of free space, and

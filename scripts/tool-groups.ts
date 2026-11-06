@@ -522,7 +522,7 @@ export async function main(argv: string[]): Promise<number> {
 	if (command === "prune") {
 		const selection = parseToolGroups(raw);
 		try {
-			const removed = prunePayloads(GROUPS.filter((g) => g.delivery === "npm"), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
+			const removed = await prunePayloads(GROUPS.filter((g) => g.delivery === "npm"), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
 			process.stdout.write(removed.length ? `removed ${removed.join(" ")}\n` : "nothing to remove\n");
 		} catch (error) {
 			process.stderr.write(`t3code-tools: ${error instanceof Error ? error.message : String(error)}\n`);

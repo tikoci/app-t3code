@@ -8,9 +8,14 @@ cd "${HOME}"
 
 # The image PATH carries the default tool-group shim dir; a relocated payload
 # root (T3CODE_TOOLS_HOME) needs its own, resolved here at runtime so T3 and
-# every agent it starts inherit it. Login shells get it from profile.d.
+# every agent it starts inherit it. Same slot as profile.d: after the user's
+# own installs (/data/.local/bin, /data/.bun/bin), which must keep winning.
 if [ -n "${T3CODE_TOOLS_HOME:-}" ]; then
-	export PATH="${T3CODE_TOOLS_HOME}/bin:${PATH}"
+	case ":${PATH}:" in
+	*:/data/.bun/bin:*) PATH="${PATH/\/data\/.bun\/bin:/\/data\/.bun\/bin:${T3CODE_TOOLS_HOME}\/bin:}" ;;
+	*) PATH="${PATH}:${T3CODE_TOOLS_HOME}/bin" ;;
+	esac
+	export PATH
 fi
 
 # Report the T3CODE_TOOL_GROUPS selection (warnings go to the container log),

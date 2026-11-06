@@ -179,7 +179,7 @@ describe("npm payload groups", () => {
 		const result = await installGroups(npmGroups, ["dev"], env);
 		expect(result.locked).toBe(true);
 		expect(existsSync(staging)).toBe(false);
-		expect(existsSync(join(env.root, "install.lock"))).toBe(false);
+		expect(devState()?.payload?.installer).toBeNull();
 		expect(devState()?.state).toBe("ready");
 	});
 
@@ -242,36 +242,90 @@ process.exit(r.locked ? 0 : 3);
 
 		const second = await installGroups(npmGroups, ["dev"], env);
 		expect(second.locked).toBe(false);
-		expect(() => prunePayloads(npmGroups, [], env)).toThrow("installer is running");
-		expect(existsSync(lock)).toBe(true);
+		await expect(prunePayloads(npmGroups, [], env)).rejects.toThrow("installer is running");
+		expect(JSON.parse(readFileSync(lock, "utf8"))).toMatchObject({ pid: child.pid, child: { pid: expect.any(Number) } });
 
 		rmSync(join(tmp, "hold"));
 		expect(await child.exited).toBe(0);
-		expect(existsSync(lock)).toBe(false);
+		expect(devState()?.payload?.installer).toBeNull();
 		expect(devState()?.state).toBe("ready");
 		expect(npmCalls()).toBe(1);
 	});
 
-	test("a live prune holder is respected; a recycled pid is not", async () => {
+	test("the kernel lock excludes holders of any kind; a stale record or recycled pid does not", async () => {
 		mkdirSync(env.root, { recursive: true });
 		const lock = join(env.root, "install.lock");
-		const holder = Bun.spawn(["sleep", "30"]);
+		writeFileSync(lock, "");
+		// Another process (here flock(1), standing in for a prune) holds the lock.
+		const holder = Bun.spawn(["flock", "-o", lock, "sleep", "30"]);
 		try {
-			writeFileSync(lock, JSON.stringify({ pid: holder.pid, startTicks: processStartTicks(holder.pid), command: "prune", startedAt: "now" }));
+			for (let i = 0; i < 100 && Bun.spawnSync(["flock", "-n", lock, "true"]).exitCode === 0; i++) await Bun.sleep(20);
 			expect((await installGroups(npmGroups, ["dev"], env)).locked).toBe(false);
+			await expect(prunePayloads(npmGroups, [], env)).rejects.toThrow("installer is running");
 			expect(npmCalls()).toBe(0);
 		} finally {
 			holder.kill();
 			await holder.exited;
 		}
 		// After a container restart the new installer can get the dead holder's
-		// pid: same pid, different start time, so the lock is stale.
+		// pid: same pid, different start time. The record is not a lock.
 		writeFileSync(lock, JSON.stringify({ pid: process.pid, startTicks: "1", command: "install", startedAt: "earlier boot" }));
 		expect(devState()?.payload?.installer).toBeNull();
 		const result = await installGroups(npmGroups, ["dev"], env);
 		expect(result.locked).toBe(true);
 		expect(devState()?.state).toBe("ready");
-		expect(existsSync(lock)).toBe(false);
+		expect(readFileSync(lock, "utf8")).toBe("");
+	});
+
+	test("concurrent installers in one process: exactly one proceeds", async () => {
+		writeFileSync(join(tmp, "hold"), "");
+		const first = installGroups(npmGroups, ["dev"], env);
+		for (let i = 0; i < 200 && !existsSync(join(tmp, "npm-calls")); i++) await Bun.sleep(25);
+		const results = await Promise.all([installGroups(npmGroups, ["dev"], env), installGroups(npmGroups, ["dev"], env)]);
+		expect(results.map((r) => r.locked)).toEqual([false, false]);
+		rmSync(join(tmp, "hold"));
+		expect((await first).locked).toBe(true);
+		expect(npmCalls()).toBe(1);
+	});
+
+	test("an npm child orphaned by a killed installer is stopped before its staging is reclaimed", async () => {
+		const script = join(tmp, "child.ts");
+		writeFileSync(
+			script,
+			`import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-payloads.ts"))};
+import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-groups.ts"))};
+const env = JSON.parse(process.argv[2]);
+await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
+	...env, compat: () => env.compatValue, sleep: async () => {}, log: () => {}, freeBytes: () => 10 * 1024 ** 3,
+});
+`,
+		);
+		writeFileSync(join(tmp, "hold"), "");
+		const child = Bun.spawn(["bun", script, JSON.stringify({ ...env, compatValue: compat })]);
+		const lock = join(env.root, "install.lock");
+		let npm: { pid: number } | undefined;
+		for (let i = 0; i < 200 && !npm; i++) {
+			await Bun.sleep(25);
+			try {
+				npm = JSON.parse(readFileSync(lock, "utf8")).child;
+			} catch {}
+		}
+		expect(npm?.pid).toBeNumber();
+		child.kill("SIGKILL"); // the installer dies; its npm keeps running
+		await child.exited;
+		expect(processStartTicks(npm?.pid as number)).not.toBeNull();
+
+		// The hold file is still there: only stopping the orphan lets this finish.
+		const logs: string[] = [];
+		env.log = (line) => logs.push(line);
+		const removeHold = setTimeout(() => rmSync(join(tmp, "hold"), { force: true }), 3000);
+		const result = await installGroups(npmGroups, ["dev"], env);
+		clearTimeout(removeHold);
+		expect(result.locked).toBe(true);
+		expect(logs.some((line) => line.includes(`stopping npm (pid ${npm?.pid})`))).toBe(true);
+		expect(processStartTicks(npm?.pid as number)).toBeNull();
+		expect(readdirSync(join(env.root, "groups", "dev")).filter((n) => n.startsWith(".staging-"))).toEqual([]);
+		expect(result.results["dev"]?.state).toBe("ready");
 	});
 
 	test("interrupted installs of deselected groups are cleaned too", async () => {
@@ -284,8 +338,8 @@ process.exit(r.locked ? 0 : 3);
 
 	test("prune deletes payloads no selected group uses", async () => {
 		await installGroups(npmGroups, ["dev"], env);
-		expect(prunePayloads(npmGroups, ["dev"], env)).toEqual([]);
-		const removed = prunePayloads(npmGroups, [], env);
+		expect(await prunePayloads(npmGroups, ["dev"], env)).toEqual([]);
+		const removed = await prunePayloads(npmGroups, [], env);
 		expect(removed).toHaveLength(1);
 		expect(existsSync(join(env.root, "groups", "dev", "current"))).toBe(false);
 		expect(() => readlinkSync(join(env.root, "bin", "tsc"))).toThrow();
