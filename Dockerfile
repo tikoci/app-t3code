@@ -168,8 +168,18 @@ ENV PATH="/data/.local/bin:/data/.bun/bin:/data/.local/share/t3code-tools/bin:/o
 COPY docker-entrypoint.sh /
 COPY bin /usr/local/bin
 COPY profile.sh /etc/profile.d/t3code.sh
-COPY scripts/image-inventory.ts scripts/tool-groups.ts scripts/tool-payloads.ts /usr/local/lib/t3code/
+COPY scripts/image-inventory.ts scripts/tool-groups.ts scripts/tool-payloads.ts scripts/deb-payloads.ts /usr/local/lib/t3code/
 COPY scripts/groups /usr/local/lib/t3code/groups
+
+# Native tool groups (`capture`) install as Debian-package payloads into the
+# home at runtime, as node. Pin each group's dependency closure (whatever this
+# image lacks) by version, size and SHA256 from apt's verified indexes now, so
+# a rebuild picks up Debian security updates and the payload id follows them.
+# Must stay after every apt layer: the closure is computed against them.
+# HOME=/root: Bun run as root would otherwise seed a root-owned /data/.bun.
+RUN apt-get update && \
+    HOME=/root t3code-tools deb-lock && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN install -d -o node -g node /usr/share/t3code/inventory
 
@@ -179,7 +189,8 @@ WORKDIR /data
 
 # Capture the completed image before the entrypoint installs anything into HOME.
 RUN bun /usr/local/lib/t3code/image-inventory.ts --output /usr/share/t3code/inventory && \
-    t3code-tools status --json --groups all > /usr/share/t3code/inventory/tool-groups.json
+    t3code-tools status --json --groups all > /usr/share/t3code/inventory/tool-groups.json && \
+    cp /usr/local/lib/t3code/groups/capture/debs.lock.json /usr/share/t3code/inventory/capture-debs.lock.json
 
 VOLUME /data
 

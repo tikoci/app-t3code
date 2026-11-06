@@ -1,0 +1,475 @@
+/** Debian-package payloads (issue #5 slice 3, `capture`), offline: fake dpkg-deb, fake .debs, fake mirror. */
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+	DEB_CACHE_DIR,
+	DEB_LOCK_FILE,
+	type DebCompat,
+	type DebLock,
+	osReleaseDistro,
+	parseAptSimulation,
+	parsePrintUris,
+	parseStanzas,
+	resolveDebLock,
+	wrapperScript,
+} from "../scripts/deb-payloads.ts";
+import { buildStatus, GROUPS, type Probe, TZSP_DNS_PCAPNG } from "../scripts/tool-groups.ts";
+import { activate, installGroups, type Manifest, type PayloadEnv, prunePayloads, readState } from "../scripts/tool-payloads.ts";
+
+const capture = GROUPS.find((g) => g.name === "capture");
+if (!capture) throw new Error("capture group missing");
+const payloadGroups = GROUPS.filter((g) => g.delivery === "deb");
+const nothing: Probe = { which: () => null, exists: () => false, library: () => null };
+const MIRROR = "https://deb.example/debian";
+const SNAPSHOT = "https://snapshot.example";
+
+let tmp: string;
+let env: PayloadEnv;
+let compat: DebCompat;
+/** Served by the fake mirror: url -> bytes. */
+let served: Map<string, Uint8Array>;
+let fetched: string[];
+/** Package name -> .deb bytes, as built. */
+let debs: Map<string, Uint8Array>;
+
+interface FakePkg {
+	name: string;
+	version: string;
+	files: Record<string, string>;
+	/** Control fields claim this version instead (a mislabeled file). */
+	claims?: string;
+}
+
+const tool = (name: string) => `#!/bin/sh\necho "${name} fake 1.0"\n`;
+/** Fake tshark: needs its payload library dir on LD_LIBRARY_PATH, like the real one. */
+const tshark = (broken: string) => `#!/bin/sh
+[ -e "${broken}" ] && { echo "error while loading shared libraries: libgcrypt.so.20" >&2; exit 127; }
+case ":$LD_LIBRARY_PATH:" in *"/root/usr/lib/x86_64-linux-gnu:"*) ;; *) echo "libwireshark.so.18: cannot open shared object file" >&2; exit 127 ;; esac
+case "$1" in
+--version) echo "TShark (Wireshark) 4.4.19 (fake)" ;;
+-r) [ -s "$2" ] && echo "1	routeros.example" ;;
+*) echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" ;;
+esac
+`;
+
+function basePackages(): FakePkg[] {
+	return [
+		{ name: "libwireshark18", version: "4.4.19-0+deb13u1", files: { "usr/lib/x86_64-linux-gnu/libwireshark.so.18": "elf", "usr/lib/x86_64-linux-gnu/libz.so.1": "dup" } },
+		{
+			name: "tshark",
+			version: "4.4.19-0+deb13u1",
+			files: {
+				"usr/bin/tshark": tshark(join(tmp, "image-broke")),
+				"usr/bin/rawshark": tool("rawshark"),
+				// The image has ip(8): never shadowed by a payload shim.
+				"usr/bin/ip": tool("payload-ip"),
+			},
+		},
+		{
+			name: "wireshark-common",
+			version: "4.4.19-0+deb13u1",
+			files: Object.fromEntries(["dumpcap", "capinfos", "editcap", "mergecap", "text2pcap"].map((b) => [`usr/bin/${b}`, tool(b)])),
+		},
+		{ name: "tcpdump", version: "4.99.5-2", files: { "usr/bin/tcpdump": tool("tcpdump"), "usr/lib/x86_64-linux-gnu/libpcap.so.0.8": "elf" } },
+		{ name: "nfdump", version: "1.7.5-2+deb13u1", files: { "usr/bin/nfdump": tool("nfdump"), "usr/bin/nfcapd": tool("nfcapd") } },
+	];
+}
+
+/** A fake .deb: a tar of `control` and `data/`. */
+function buildDeb(pkg: FakePkg): Uint8Array {
+	const dir = mkdtempSync(join(tmp, "deb-"));
+	writeFileSync(join(dir, "control"), `Package: ${pkg.name}\nVersion: ${pkg.claims ?? pkg.version}\nArchitecture: amd64\n`);
+	for (const [path, content] of Object.entries(pkg.files)) {
+		mkdirSync(join(dir, "data", path, ".."), { recursive: true });
+		writeFileSync(join(dir, "data", path), content);
+		if (content.startsWith("#!")) chmodSync(join(dir, "data", path), 0o755);
+	}
+	const out = join(dir, "pkg.deb");
+	const tar = Bun.spawnSync(["tar", "-cf", out, "-C", dir, "control", "data"]);
+	if (tar.exitCode !== 0) throw new Error(tar.stderr.toString());
+	const bytes = new Uint8Array(readFileSync(out));
+	rmSync(dir, { recursive: true, force: true });
+	return bytes;
+}
+
+/** Fake `dpkg-deb -f <deb> fields…` / `-x <deb> <dir>` over the fake format. */
+function fakeDpkgDeb(): string {
+	const path = join(tmp, "fake-dpkg-deb");
+	writeFileSync(
+		path,
+		`#!/bin/sh
+set -eu
+case "$1" in
+-f) tar -xOf "$2" control ;;
+-x) mkdir -p "$3" && tar -xf "$2" -C "$3" --strip-components=1 data ;;
+*) exit 2 ;;
+esac
+`,
+	);
+	chmodSync(path, 0o755);
+	return path;
+}
+
+const sha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
+
+/** Build the debs, serve them, and write the lock the image build would have produced. */
+function publish(pkgs: FakePkg[], lockArch = "amd64") {
+	const lock: DebLock = { schemaVersion: 1, group: "capture", roots: ["tcpdump", "tshark", "wireshark-common", "nfdump"], arch: lockArch, distro: "debian-trixie", packages: [] };
+	for (const pkg of pkgs) {
+		const bytes = buildDeb(pkg);
+		debs.set(pkg.name, bytes);
+		const filename = `pool/main/${pkg.name[0]}/${pkg.name}/${pkg.name}_${pkg.version}_amd64.deb`;
+		const url = `${MIRROR}/${filename}`;
+		served.set(url, bytes);
+		lock.packages.push({ name: pkg.name, version: pkg.version, architecture: "amd64", size: bytes.length, installedSize: 4096, sha256: sha256(bytes), filename, uris: [url] });
+	}
+	lock.packages.sort((a, b) => a.name.localeCompare(b.name));
+	mkdirSync(join(env.specDir, "capture"), { recursive: true });
+	writeFileSync(join(env.specDir, "capture", DEB_LOCK_FILE), `${JSON.stringify(lock, null, 2)}\n`);
+	return lock;
+}
+
+const captureState = () => buildStatus("capture", nothing, "/nonexistent", env).groups.find((g) => g.name === "capture");
+const manifestOf = (id: string) => JSON.parse(readFileSync(join(env.root, "groups", "capture", id, "manifest.json"), "utf8")) as Manifest;
+const shim = (bin: string) => join(env.root, "bin", bin);
+
+beforeEach(() => {
+	tmp = mkdtempSync(join(tmpdir(), "t3code-debs-"));
+	// The image already has ip(8) and zlib.
+	mkdirSync(join(tmp, "image", "usr", "bin"), { recursive: true });
+	writeFileSync(join(tmp, "image", "usr", "bin", "ip"), "");
+	mkdirSync(join(tmp, "image", "usr", "lib", "x86_64-linux-gnu"), { recursive: true });
+	writeFileSync(join(tmp, "image", "usr", "lib", "x86_64-linux-gnu", "libz.so.1"), "");
+	compat = { platform: "linux", arch: "amd64", distro: "debian-trixie" };
+	served = new Map();
+	fetched = [];
+	debs = new Map();
+	env = {
+		root: join(tmp, "home", ".local/share/t3code-tools"),
+		specDir: join(tmp, "spec"),
+		compat: () => ({ platform: "linux", arch: "x64", nodeAbi: "137", node: "v24.0.0" }),
+		debCompat: () => compat,
+		npm: ["false"],
+		dpkgDeb: [fakeDpkgDeb()],
+		fetch: async (url) => {
+			fetched.push(url);
+			const bytes = served.get(url);
+			return bytes ? new Response(bytes) : new Response("not found", { status: 404 });
+		},
+		snapshotBase: SNAPSHOT,
+		snapshotRetryMs: [0],
+		imageRoot: join(tmp, "image"),
+		sleep: async () => {},
+		log: () => {},
+		freeBytes: () => 10 * 1024 ** 3,
+		backoffMs: [0, 0],
+		installTimeoutMs: 30_000,
+	};
+});
+afterEach(() => rmSync(tmp, { recursive: true, force: true }));
+
+describe("deb payload groups (capture)", () => {
+	test("installs from the pinned lock: verified, extracted as this user, wrapped and linked", async () => {
+		publish(basePackages());
+		expect(captureState()?.state).toBe("pending");
+		const result = await installGroups(payloadGroups, ["capture"], env);
+		expect(result.results["capture"]).toMatchObject({ state: "ready", attempt: 1 });
+		const status = captureState();
+		expect(status).toMatchObject({ state: "ready", present: true, missing: [] });
+		const id = status?.payload?.active as string;
+		expect(id).toStartWith("amd64-trixie-");
+		expect(status?.payload?.activeVersions?.["tshark"]).toBe("TShark (Wireshark) 4.4.19 (fake)");
+		expect(status?.payload?.activeVersions?.["nfdump"]).toBe("nfdump fake 1.0");
+
+		const manifest = manifestOf(id);
+		expect(manifest.delivery).toBe("deb");
+		expect(Object.keys(manifest.deb?.debs ?? {}).sort()).toEqual(["libwireshark18", "nfdump", "tcpdump", "tshark", "wireshark-common"]);
+		expect(manifest.deb?.debs["tcpdump"]).toEqual({ version: "4.99.5-2", sha256: sha256(debs.get("tcpdump") as Uint8Array), source: "deb.example" });
+		expect(manifest.deb?.libDirs).toEqual(["usr/lib/x86_64-linux-gnu"]);
+		// The image's ip(8) wins: the payload's copy gets no shim.
+		expect(manifest.deb?.skippedCommands).toEqual(["ip"]);
+		expect(manifest.deb?.shadows).toEqual(["usr/lib/x86_64-linux-gnu/libz.so.1"]);
+		expect(manifest.commands).toContain("rawshark");
+		expect(existsSync(shim("ip"))).toBe(false);
+
+		// Shim -> current -> wrapper -> real binary, with the payload's libraries for that process only.
+		expect(readlinkSync(shim("tshark"))).toBe("../groups/capture/current/bin/tshark");
+		const run = Bun.spawnSync([shim("tshark"), "env"], { env: { PATH: "/usr/bin:/bin" } });
+		expect(run.stdout.toString().trim()).toBe(`LD_LIBRARY_PATH=${join(env.root, "groups", "capture", id, "root", "usr/lib/x86_64-linux-gnu")}`);
+		expect(Bun.spawnSync([shim("rawshark")]).stdout.toString().trim()).toBe("rawshark fake 1.0");
+		expect(process.env["LD_LIBRARY_PATH"] ?? "").not.toContain("t3code-tools");
+		// Downloads are not kept once the payload is ready.
+		expect(existsSync(join(env.root, "groups", "capture", DEB_CACHE_DIR))).toBe(false);
+		expect(fetched).toHaveLength(5);
+	});
+
+	test("a replaced container relinks the payload offline", async () => {
+		publish(basePackages());
+		await installGroups(payloadGroups, ["capture"], env);
+		rmSync(join(env.root, "bin"), { recursive: true, force: true });
+		served.clear();
+		expect(activate(payloadGroups, ["capture"], env)).toEqual([]);
+		await installGroups(payloadGroups, ["capture"], env);
+		expect(fetched).toHaveLength(5);
+		expect(captureState()?.state).toBe("ready");
+		expect(Bun.spawnSync([shim("tshark"), "--version"]).exitCode).toBe(0);
+	});
+
+	test("a download that does not match its pinned SHA256 is never extracted", async () => {
+		const lock = publish(basePackages());
+		const tsharkUrl = lock.packages.find((p) => p.name === "tshark")?.uris[0] as string;
+		const tampered = new Uint8Array(served.get(tsharkUrl) as Uint8Array);
+		tampered[tampered.length - 1] = (tampered.at(-1) ?? 0) ^ 1;
+		served.set(tsharkUrl, tampered);
+		const result = await installGroups(payloadGroups, ["capture"], env);
+		expect(result.results["capture"]?.state).toBe("failed");
+		expect(result.results["capture"]?.error).toContain("sha256");
+		expect(readdirSync(join(env.root, "groups", "capture")).filter((n) => !n.startsWith("."))).toEqual([]);
+		expect(existsSync(shim("tshark"))).toBe(false);
+		expect(captureState()?.state).toBe("failed");
+	});
+
+	test("a file whose control fields name another version is rejected even though its hash is pinned", async () => {
+		publish(basePackages().map((p) => (p.name === "tcpdump" ? { ...p, claims: "9.9-1" } : p)));
+		const result = await installGroups(payloadGroups, ["capture"], env);
+		expect(result.results["capture"]?.state).toBe("failed");
+		expect(result.results["capture"]?.error).toContain("contains tcpdump=9.9-1 [amd64], pinned tcpdump=4.99.5-2 [amd64]");
+		expect(captureState()?.payload?.active).toBeNull();
+	});
+
+	test("a version gone from the mirror is fetched from snapshot.debian.org and verified the same way", async () => {
+		const lock = publish(basePackages());
+		const pkg = lock.packages.find((p) => p.name === "nfdump");
+		if (!pkg) throw new Error("nfdump missing");
+		const bytes = served.get(pkg.uris[0] as string) as Uint8Array;
+		served.delete(pkg.uris[0] as string);
+		const sha1 = createHash("sha1").update(bytes).digest("hex");
+		served.set(
+			`${SNAPSHOT}/mr/binary/nfdump/${encodeURIComponent(pkg.version)}/binfiles?fileinfo=1`,
+			new TextEncoder().encode(
+				JSON.stringify({
+					fileinfo: {
+						"0000000000000000000000000000000000000000": [{ name: `nfdump_${pkg.version}_arm64.deb`, archive_name: "debian" }],
+						[sha1]: [{ name: `nfdump_${pkg.version}_amd64.deb`, archive_name: "debian" }],
+					},
+				}),
+			),
+		);
+		served.set(`${SNAPSHOT}/file/${sha1}`, bytes);
+		// The API answers 504 to a cold query first.
+		const realFetch = env.fetch;
+		let cold = true;
+		env.fetch = async (url, init) => {
+			if (url.includes("/mr/binary/") && cold) {
+				cold = false;
+				fetched.push(url);
+				return new Response("Gateway Timeout", { status: 504 });
+			}
+			return realFetch(url, init);
+		};
+		await installGroups(payloadGroups, ["capture"], env);
+		expect(fetched.filter((u) => u.includes("/mr/binary/"))).toHaveLength(2);
+		const status = captureState();
+		expect(status?.state).toBe("ready");
+		expect(manifestOf(status?.payload?.active as string).deb?.debs["nfdump"]?.source).toBe("snapshot.example");
+	});
+
+	test("verified downloads survive an interrupted or failed run; the next run fetches only what is missing", async () => {
+		const lock = publish(basePackages());
+		const last = lock.packages.at(-1)?.uris[0] as string;
+		const bytes = served.get(last) as Uint8Array;
+		served.delete(last);
+		const first = await installGroups(payloadGroups, ["capture"], env);
+		expect(first.results["capture"]).toMatchObject({ state: "failed", attempt: 3 });
+		expect(readdirSync(join(env.root, "groups", "capture", DEB_CACHE_DIR)).filter((n) => n.endsWith(".deb"))).toHaveLength(4);
+		expect(readdirSync(join(env.root, "groups", "capture", DEB_CACHE_DIR)).filter((n) => n.endsWith(".part"))).toEqual([]);
+
+		served.set(last, bytes);
+		fetched = [];
+		const second = await installGroups(payloadGroups, ["capture"], env);
+		expect(second.results["capture"]?.state).toBe("ready");
+		expect(fetched).toEqual([last]);
+		expect(existsSync(join(env.root, "groups", "capture", DEB_CACHE_DIR))).toBe(false);
+	});
+
+	test("a new lock refreshes with rollback; a payload for another CPU is never linked", async () => {
+		publish(basePackages());
+		await installGroups(payloadGroups, ["capture"], env);
+		const first = captureState()?.payload?.active as string;
+
+		// The next image pins a security update of tcpdump.
+		publish(basePackages().map((p) => (p.name === "tcpdump" ? { ...p, version: "4.99.5-2+deb13u1" } : p)));
+		expect(activate(payloadGroups, ["capture"], env)).toEqual(["capture"]);
+		expect(captureState()).toMatchObject({ state: "ready", payload: { active: first, stale: true } });
+
+		const keep = new Map(served);
+		served.clear();
+		const failed = await installGroups(payloadGroups, ["capture"], env);
+		expect(failed.results["capture"]?.state).toBe("failed");
+		expect(captureState()).toMatchObject({ state: "ready", payload: { active: first, stale: true } });
+		expect(Bun.spawnSync([shim("tcpdump")]).exitCode).toBe(0);
+
+		served = keep;
+		await installGroups(payloadGroups, ["capture"], env);
+		const second = captureState()?.payload?.active as string;
+		expect(second).not.toBe(first);
+		expect(manifestOf(second).packages["tcpdump"]).toBe("4.99.5-2+deb13u1");
+		expect(captureState()?.payload?.installed.sort()).toEqual([first, second].sort());
+
+		// The same home on an arm64 router: the amd64 payload is not usable there.
+		compat = { ...compat, arch: "arm64" };
+		expect(activate(payloadGroups, ["capture"], env)).toEqual(["capture"]);
+		expect(existsSync(shim("tshark"))).toBe(false);
+		const status = captureState();
+		expect(status?.payload?.active).toBeNull();
+		expect(status?.payload?.desiredError).toContain("lock is for amd64 debian-trixie, this runtime is arm64 debian-trixie");
+		await installGroups(payloadGroups, ["capture"], env);
+		expect(captureState()?.state).toBe("failed");
+		expect(readState(env)["capture"]).toMatchObject({ state: "failed", permanent: true });
+	});
+
+	test("a stale payload that no longer loads against the new image is unlinked until its refresh lands", async () => {
+		publish(basePackages());
+		await installGroups(payloadGroups, ["capture"], env);
+		publish(basePackages().map((p) => (p.name === "nfdump" ? { ...p, version: "1.7.5-2+deb13u2" } : p)));
+		writeFileSync(join(tmp, "image-broke"), ""); // the new image lost a library the old payload used
+		expect(activate(payloadGroups, ["capture"], env)).toEqual(["capture"]);
+		expect(existsSync(shim("tshark"))).toBe(false);
+		expect(captureState()?.state).not.toBe("ready");
+		rmSync(join(tmp, "image-broke"));
+		await installGroups(payloadGroups, ["capture"], env);
+		expect(captureState()).toMatchObject({ state: "ready", payload: { stale: false } });
+	});
+
+	test("a failing smoke test or version probe keeps the payload out", async () => {
+		publish(basePackages().map((p) => (p.name === "tshark" ? { ...p, files: { ...p.files, "usr/bin/tshark": tshark(join(tmp, "image-broke")).replace('echo "1\trouteros.example"', "echo nothing") } } : p)));
+		const result = await installGroups(payloadGroups, ["capture"], env);
+		expect(result.results["capture"]?.error).toContain("smoke test tshark -r {input}");
+		expect(captureState()?.payload?.active).toBeNull();
+
+		publish(basePackages().map((p) => (p.name === "tcpdump" ? { ...p, files: { ...p.files, "usr/bin/tcpdump": "#!/bin/sh\nexit 126\n" } } : p)));
+		const again = await installGroups(payloadGroups, ["capture"], env);
+		expect(again.results["capture"]?.error).toContain("tcpdump --version exited 126");
+	});
+
+	test("a lock missing a required command fails with the reason", async () => {
+		publish(basePackages().filter((p) => p.name !== "nfdump"));
+		const result = await installGroups(payloadGroups, ["capture"], env);
+		expect(result.results["capture"]?.error).toContain("payload does not provide nfcapd, nfdump");
+	});
+
+	test("an image without a lock reports a permanent failure, not a download", async () => {
+		const result = await installGroups(payloadGroups, ["capture"], env);
+		expect(result.results["capture"]).toMatchObject({ state: "failed", permanent: true });
+		expect(result.results["capture"]?.error).toContain("no Debian lock for capture");
+		expect(fetched).toEqual([]);
+	});
+
+	test("low disk is checked against the lock's download and unpacked sizes", async () => {
+		publish(basePackages());
+		env.freeBytes = () => 200 * 1024 * 1024; // below the 256 MiB reserve alone
+		const result = await installGroups(payloadGroups, ["capture"], env);
+		expect(result.results["capture"]?.error).toContain("low disk");
+		expect(fetched).toEqual([]);
+	});
+
+	test("deselecting unlinks every capture shim; prune deletes the payload and kept downloads", async () => {
+		publish(basePackages());
+		await installGroups(payloadGroups, ["capture"], env);
+		mkdirSync(join(env.root, "groups", "capture", DEB_CACHE_DIR), { recursive: true });
+		activate(payloadGroups, [], env);
+		expect(readdirSync(join(env.root, "bin"))).toEqual([]);
+		expect(buildStatus("none", nothing, "/nonexistent", env).groups.find((g) => g.name === "capture")?.payload?.installed).toHaveLength(1);
+		const removed = await prunePayloads(payloadGroups, [], env);
+		expect(removed).toHaveLength(2);
+		expect(removed).toContain(`capture/${DEB_CACHE_DIR}`);
+		expect(removed.find((r) => r !== `capture/${DEB_CACHE_DIR}`)).toStartWith("capture/amd64-trixie-");
+		expect(readdirSync(join(env.root, "groups", "capture"))).toEqual([]);
+	});
+});
+
+describe("deb lock resolution (image build)", () => {
+	const simulation = `NOTE: This is only a simulation!
+Inst libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])
+Inst libcares2 [1.34.5-1] (1.34.5-1+deb13u1 Debian:13.7/stable, Debian-Security:13/stable-security [amd64])
+Inst libwireshark-data (4.4.19-0+deb13u1 Debian-Security:13/stable-security [all])
+Inst libcap2-bin (1:2.75-10+deb13u1+b3 Debian:13.7/stable [amd64])
+Conf libpcap0.8t64 (1.10.5-2 Debian:13.7/stable [amd64])
+`;
+	const uris = `'http://deb.debian.org/debian/pool/main/libp/libpcap/libpcap0.8t64_1.10.5-2_amd64.deb' libpcap0.8t64_1.10.5-2_amd64.deb 169000 MD5Sum:00
+'http://deb.debian.org/debian/pool/main/c/c-ares/libcares2_1.34.5-1%2bdeb13u1_amd64.deb' libcares2_1.34.5-1+deb13u1_amd64.deb 98272 MD5Sum:00
+'http://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwireshark-data_4.4.19-0%2bdeb13u1_all.deb' libwireshark-data_4.4.19-0+deb13u1_all.deb 464736 MD5Sum:00
+'http://deb.debian.org/debian/pool/main/libc/libcap2/libcap2-bin_2.75-10%2bdeb13u1%2bb3_amd64.deb' libcap2-bin_1%3a2.75-10+deb13u1+b3_amd64.deb 36500 MD5Sum:00
+`;
+	const stanza = (name: string, version: string, arch: string, filename: string, sha: string) =>
+		`Package: ${name}\nVersion: ${version}\nArchitecture: ${arch}\nInstalled-Size: 100\nDescription: x\n multi-line\nFilename: ${filename}\nSize: 1000\nSHA256: ${sha}\n`;
+	const show = [
+		stanza("libpcap0.8t64", "1.10.5-2", "amd64", "pool/main/libp/libpcap/libpcap0.8t64_1.10.5-2_amd64.deb", "a".repeat(64)),
+		stanza("libcares2", "1.34.5-1+deb13u1", "amd64", "pool/main/c/c-ares/libcares2_1.34.5-1+deb13u1_amd64.deb", "b".repeat(64)),
+		stanza("libwireshark-data", "4.4.19-0+deb13u1", "all", "pool/updates/main/w/wireshark/libwireshark-data_4.4.19-0+deb13u1_all.deb", "c".repeat(64)),
+		// An epoch: in the version and apt's local file name, never in the pool file name.
+		stanza("libcap2-bin", "1:2.75-10+deb13u1+b3", "amd64", "pool/main/libc/libcap2/libcap2-bin_2.75-10+deb13u1+b3_amd64.deb", "d".repeat(64)),
+	].join("\n");
+	const osRelease = 'PRETTY_NAME="Debian GNU/Linux 13 (trixie)"\nID=debian\nVERSION_CODENAME=trixie\n';
+
+	test("parses apt's simulation, URIs and index stanzas", () => {
+		expect(parseAptSimulation(simulation)).toEqual([
+			{ name: "libpcap0.8t64", version: "1.10.5-2", architecture: "amd64" },
+			{ name: "libcares2", version: "1.34.5-1+deb13u1", architecture: "amd64" },
+			{ name: "libwireshark-data", version: "4.4.19-0+deb13u1", architecture: "all" },
+			{ name: "libcap2-bin", version: "1:2.75-10+deb13u1+b3", architecture: "amd64" },
+		]);
+		expect(parsePrintUris(uris).get("libcares2_1.34.5-1+deb13u1_amd64.deb")).toBe("http://deb.debian.org/debian/pool/main/c/c-ares/libcares2_1.34.5-1%2bdeb13u1_amd64.deb");
+		expect(parseStanzas(show)[0]?.["Description"]).toBe("x\nmulti-line");
+		expect(osReleaseDistro(osRelease)).toBe("debian-trixie");
+	});
+
+	test("pins the closure with SHA256 from the index, https first, sorted and timestamp-free", () => {
+		const calls: string[][] = [];
+		const exec = (cmd: string[]) => {
+			calls.push(cmd);
+			if (cmd[0] === "dpkg") return "amd64\n";
+			if (cmd.includes("-s")) return simulation;
+			if (cmd.includes("--print-uris")) return uris;
+			return show;
+		};
+		const lock = resolveDebLock("capture", ["tcpdump"], exec, osRelease);
+		expect(lock).toMatchObject({ schemaVersion: 1, group: "capture", roots: ["tcpdump"], arch: "amd64", distro: "debian-trixie" });
+		expect(lock.packages.map((p) => p.name)).toEqual(["libcap2-bin", "libcares2", "libpcap0.8t64", "libwireshark-data"]);
+		expect(lock.packages[0]?.uris[0]).toBe("https://deb.debian.org/debian/pool/main/libc/libcap2/libcap2-bin_2.75-10%2bdeb13u1%2bb3_amd64.deb");
+		expect(lock.packages[3]).toEqual({
+			name: "libwireshark-data",
+			version: "4.4.19-0+deb13u1",
+			architecture: "all",
+			size: 1000,
+			installedSize: 100 * 1024,
+			sha256: "c".repeat(64),
+			filename: "pool/updates/main/w/wireshark/libwireshark-data_4.4.19-0+deb13u1_all.deb",
+			uris: [
+				"https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwireshark-data_4.4.19-0%2bdeb13u1_all.deb",
+				"http://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwireshark-data_4.4.19-0%2bdeb13u1_all.deb",
+			],
+		});
+		expect(JSON.stringify(lock)).not.toMatch(/20\d\d-\d\d-\d\dT/);
+		expect(calls.find((c) => c[0] === "apt-cache")).toContain("libcares2=1.34.5-1+deb13u1");
+		expect(() => resolveDebLock("capture", ["tcpdump"], (cmd) => (cmd.includes("-s") ? "" : exec(cmd)), osRelease)).toThrow("apt resolves nothing");
+		expect(() => resolveDebLock("capture", ["tcpdump"], (cmd) => (cmd[0] === "apt-cache" ? show.replace("a".repeat(64), "") : exec(cmd)), osRelease)).toThrow("no SHA256");
+	});
+
+	test("the docker test's capture script uses the same fixture as the installer's smoke test", () => {
+		const script = readFileSync(join(import.meta.dir, "capture-tools.sh"), "utf8");
+		expect(script).toContain(`printf %s '${TZSP_DNS_PCAPNG}' | base64 -d`);
+		expect(capture.smoke?.inputBase64).toBe(TZSP_DNS_PCAPNG);
+	});
+
+	test("wrappers set the library path for their own process only and resolve the payload through links", () => {
+		const script = wrapperScript("capture", "root/usr/bin/tshark", ["usr/lib/x86_64-linux-gnu"]);
+		expect(script).toContain('p=$(readlink -f -- "$0")');
+		expect(script).toContain(`LD_LIBRARY_PATH="$p/root/usr/lib/x86_64-linux-gnu\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"`);
+		expect(script).toContain('exec "$p/root/usr/bin/tshark" "$@"');
+		expect(wrapperScript("capture", "root/usr/bin/nfdump", [])).not.toContain("LD_LIBRARY_PATH=");
+	});
+});

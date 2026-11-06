@@ -9,6 +9,7 @@ import { activate, activateIfIdle, type Compat, installGroups, type PayloadEnv, 
 const SPEC = join(import.meta.dir, "..", "scripts", "groups");
 const dev = GROUPS.find((g) => g.name === "dev");
 if (!dev) throw new Error("dev group missing");
+// The npm group alone: these tests cover the shared lifecycle with npm.
 const npmGroups = GROUPS.filter((g) => g.delivery === "npm");
 const nothing: Probe = { which: () => null, exists: () => false, library: () => null };
 
@@ -53,7 +54,12 @@ beforeEach(() => {
 		root: join(tmp, "home", ".local/share/t3code-tools"),
 		specDir: join(tmp, "spec"),
 		compat: () => compat,
+		debCompat: () => null,
 		npm: [fakeNpm(tmp)],
+		dpkgDeb: ["false"],
+		fetch: async () => new Response("offline", { status: 503 }),
+		snapshotBase: "http://snapshot.invalid",
+		imageRoot: join(tmp, "image"),
 		sleep: async () => {},
 		log: () => {},
 		freeBytes: () => 10 * 1024 ** 3,

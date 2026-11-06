@@ -1,0 +1,22 @@
+# habitat C (orca), 2026-11-06T13:40:26Z, image app-t3code:slice3 (amd64), as root in a disposable container
+# command:
+#   apt-get update -qq >/dev/null 2>&1; DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends tshark >/dev/null 2>&1
+#   echo "## stock /usr/bin/tshark"; su node -s /bin/sh -c "tshark -G plugins | wc -l; tshark -G fields | grep -c \"^F.*radius\\.\""
+#   mkdir -p /usr/lib/t3code/capture/bin; dpkg-divert --quiet --local --rename --divert /usr/lib/t3code/capture/bin/tshark --add /usr/bin/tshark
+#   echo "## naive divert to /usr/lib/t3code/capture/bin"; su node -s /bin/sh -c "/usr/lib/t3code/capture/bin/tshark -G folders | grep -E \"Program|Global (configuration|Plugins)\"; /usr/lib/t3code/capture/bin/tshark -G plugins | wc -l; /usr/lib/t3code/capture/bin/tshark -G fields | grep -c \"^F.*radius\\.\""
+#   dpkg-divert --quiet --local --rename --remove /usr/bin/tshark
+#   mkdir -p /usr/lib/t3code/capture2/usr/bin; ln -s /usr/share /usr/lib/t3code/capture2/usr/share; ln -s /usr/lib /usr/lib/t3code/capture2/usr/lib
+#   dpkg-divert --quiet --local --rename --divert /usr/lib/t3code/capture2/usr/bin/tshark --add /usr/bin/tshark
+#   echo "## divert with usr/share and usr/lib symlinks"; su node -s /bin/sh -c "/usr/lib/t3code/capture2/usr/bin/tshark -G plugins | wc -l; /usr/lib/t3code/capture2/usr/bin/tshark -G fields | grep -c \"^F.*radius\\.\""
+## stock /usr/bin/tshark
+29
+13434
+## naive divert to /usr/lib/t3code/capture/bin
+Global configuration:	/usr/lib/t3code/capture/share/wireshark
+Program:             	/usr/lib/t3code/capture/bin
+Global Plugins:      	/usr/lib/t3code/capture/lib/x86_64-linux-gnu/wireshark/plugins/4.4
+0
+91
+## divert with usr/share and usr/lib symlinks
+29
+13434

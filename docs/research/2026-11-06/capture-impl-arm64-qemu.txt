@@ -1,0 +1,82 @@
+# habitat C (orca, x86_64): the slice-3 implementation itself on linux/arm64 under QEMU user-mode emulation (binfmt), 2026-11-06.
+# Base: node:24-trixie-slim (arm64 variant), Bun 1.4.4 arm64 binary from oven/bun:1.4.4-slim, this branch's scripts/ and test/ mounted read-only.
+# CAPTURE_TOOLS_QEMU_USER=1 skips only 'dumpcap -D': QEMU user mode does not implement the ethtool ioctl it uses
+# (first run failed there with: dumpcap: Can't get list of interfaces: eth0: SIOCETHTOOL(ETHTOOL_GLINK) ioctl failed: Inappropriate ioctl for device).
+# docker run --rm --platform linux/arm64 --user root -v bun-arm64:/in/bun-arm64:ro -v $PWD:/src:ro -v run.sh:/run.sh:ro --entrypoint bash node:24-trixie-slim /run.sh
+# run.sh:
+#   #!/bin/bash
+#   # arm64 (QEMU user emulation) run of the real slice-3 implementation:
+#   # build-time deb-lock as root, then install/status/capture checks as node.
+#   set -euo pipefail
+#   install -m 0755 /in/bun-arm64 /usr/local/bin/bun
+#   mkdir -p /opt/t3 && cp /src/scripts/*.ts /opt/t3/ && cp -r /src/scripts/groups /opt/t3/groups && rm -f /opt/t3/groups/*/debs.lock.json
+#   t0=$(date +%s)
+#   apt-get update -qq >/dev/null
+#   HOME=/root bun /opt/t3/tool-groups.ts deb-lock
+#   rm -rf /var/lib/apt/lists/*
+#   echo "lock_s=$(( $(date +%s)-t0 ))"
+#   mkdir -p /data && chown node /data
+#   su node -s /bin/bash -c '
+#   set -euo pipefail
+#   export HOME=/data T3CODE_TOOL_GROUPS=capture
+#   export PATH="/data/.local/share/t3code-tools/bin:$PATH"
+#   t0=$(date +%s)
+#   bun /opt/t3/tool-groups.ts install || { cat /data/.local/share/t3code-tools/install.log; exit 1; }
+#   echo "install_s=$(( $(date +%s)-t0 ))"
+#   cat /data/.local/share/t3code-tools/install.log
+#   bun /opt/t3/tool-groups.ts status
+#   bun /opt/t3/tool-groups.ts status --json | bun -e "const s=await Bun.stdin.json(); const g=s.groups.find(x=>x.name===\"capture\"); console.log(JSON.stringify({state:g.state, active:g.payload.active, versions:g.payload.activeVersions}, null, 1))"
+#   du -sb /data/.local/share/t3code-tools/groups/capture/*/ 
+#   CAPTURE_TOOLS_QEMU_USER=1 bash /src/test/capture-tools.sh
+#   echo "== relink offline (no network calls): init again"
+#   rm -rf /data/.local/share/t3code-tools/bin
+#   bun /opt/t3/tool-groups.ts init
+#   command -v tshark
+#   '
+
+capture: 83 packages for arm64 debian-trixie, 38.7 MiB download, 190.0 MiB unpacked -> /opt/t3/groups/capture/debs.lock.json
+lock_s=58
+t3code-tools: capture: installing payload arm64-trixie-5ae83aa6d7af92b0 (attempt 1/3)
+t3code-tools: capture: downloaded 38.7 MiB in 83 packages, all SHA256-verified
+t3code-tools: capture: ready in 37s (tcpdump version 4.99.5; TShark (Wireshark) 4.4.19.; Dumpcap (Wireshark) 4.4.19.; Capinfos (Wireshark) 4.4.19.; Editcap (Wireshark) 4.4.19.; Mergecap (Wireshark) 4.4.19.; Text2pcap (Wireshark) 4.4.19.; nfcapd: Version: 1.7.5-release Options: NSEL-NEL ZSTD BZIP2 Date: Wed Oct 23 19:53:03 CEST 2024; nfdump: Version: 1.7.5-release Options: NSEL-NEL ZSTD BZIP2 Date: Wed Oct 23 19:53:03 CEST 2024)
+install_s=40
+2026-11-06T13:49:14.345Z capture: installing payload arm64-trixie-5ae83aa6d7af92b0 (attempt 1/3)
+2026-11-06T13:49:45.954Z capture: downloaded 38.7 MiB in 83 packages, all SHA256-verified
+2026-11-06T13:49:51.685Z capture: ready in 37s (tcpdump version 4.99.5; TShark (Wireshark) 4.4.19.; Dumpcap (Wireshark) 4.4.19.; Capinfos (Wireshark) 4.4.19.; Editcap (Wireshark) 4.4.19.; Mergecap (Wireshark) 4.4.19.; Text2pcap (Wireshark) 4.4.19.; nfcapd: Version: 1.7.5-release Options: NSEL-NEL ZSTD BZIP2 Date: Wed Oct 23 19:53:03 CEST 2024; nfdump: Version: 1.7.5-release Options: NSEL-NEL ZSTD BZIP2 Date: Wed Oct 23 19:53:03 CEST 2024)
+T3CODE_TOOL_GROUPS="capture" -> capture
+core: degraded (missing: t3, python3, git, ssh, curl, jq, rg, centrs, ip, ping, dig, nc, socat, traceroute, mtr, iperf3, ethtool, whois, snmpget, radclient, mosquitto_pub)
+capture       ready           present  Packet capture, decoding and flow collection
+              payload arm64-trixie-5ae83aa6d7af92b0
+labs          not-selected    absent   quickchr with QEMU emulators, qemu-img and firmware (one readiness contract)
+vpn           not-selected    absent   WireGuard, strongSwan, OpenVPN, SSTP, L2TP and PPPoE peer tools (no default tunnel or service)
+routing       not-selected    absent   Linux router-peer tools: BIRD, LLDP/CDP, ND/ARP probes, nftables, conntrack, nmap
+dev           not-selected    absent   TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks (project lockfiles win)
+browser       not-selected    absent   Native libraries for T3's built-in browser (the browser downloads itself on first use)
+agents-extra  not-selected    absent   Provider CLIs beyond the core provider
+build inventory: missing at /usr/share/t3code/inventory
+{
+ "state": "ready",
+ "active": "arm64-trixie-5ae83aa6d7af92b0",
+ "versions": {
+  "tcpdump": "tcpdump version 4.99.5",
+  "tshark": "TShark (Wireshark) 4.4.19.",
+  "dumpcap": "Dumpcap (Wireshark) 4.4.19.",
+  "capinfos": "Capinfos (Wireshark) 4.4.19.",
+  "editcap": "Editcap (Wireshark) 4.4.19.",
+  "mergecap": "Mergecap (Wireshark) 4.4.19.",
+  "text2pcap": "Text2pcap (Wireshark) 4.4.19.",
+  "nfcapd": "nfcapd: Version: 1.7.5-release Options: NSEL-NEL ZSTD BZIP2 Date: Wed Oct 23 19:53:03 CEST 2024",
+  "nfdump": "nfdump: Version: 1.7.5-release Options: NSEL-NEL ZSTD BZIP2 Date: Wed Oct 23 19:53:03 CEST 2024"
+ }
+}
+196305250	/data/.local/share/t3code-tools/groups/capture/arm64-trixie-5ae83aa6d7af92b0/
+
+-------------------------
+capture ok: TShark (Wireshark) 4.4.19.; tcpdump version 4.99.5; /data/.local/share/t3code-tools/groups/capture/arm64-trixie-5ae83aa6d7af92b0/root/usr/bin/nfdump: Version: 1.7.5-release Options: NSEL-NEL ZSTD BZIP2 Date: Wed Oct 23 19:53:03 CEST 2024
+== relink offline (no network calls): init again
+t3code-tools: groups capture=ready; core degraded
+/data/.local/share/t3code-tools/bin/tshark
+
+real	2m6.425s
+user	0m0.021s
+sys	0m0.018s

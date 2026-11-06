@@ -1,0 +1,146 @@
+arch=arm64 triplet=aarch64-linux-gnu
+apt_update_s=9.684
+packages=67 download_bytes=37099120
+a_download_s=49.381 a_verify_s=21.082 a_extract_s=13.494
+a_installed_bytes=184023513 a_debs_bytes=37099120
+a_tar_gz_bytes=51896892
+a_libdirs=/data/.local/share/t3code-tools/groups/capture/spike/root/usr/lib/aarch64-linux-gnu
+a_overlap=0
+a_tshark_first_s=1.972 a_tshark_warm_avg_s=2.019
+a_wrapper_overhead_ms=72.0
+b_install_s=99.601 b_new_packages=67
+b_files_bytes=178919014
+b_layer_gz_bytes=47431144
+b_tshark_first_s=2.418
+
+## tshark fields
+1	1	routeros.example
+## tshark -G folders
+Global configuration:	/data/.local/share/t3code-tools/groups/capture/spike/root/usr/share/wireshark
+Program:             	/data/.local/share/t3code-tools/groups/capture/spike/root/usr/bin
+Global Plugins:      	/data/.local/share/t3code-tools/groups/capture/spike/root/usr/lib/aarch64-linux-gnu/wireshark/plugins/4.4
+## plugins
+29
+## tshark --version
+TShark (Wireshark) 4.4.19.
+## capinfos
+Number of packets:   1
+## editcap -> pcap
+File type:           Wireshark/tcpdump/... - pcap
+## mergecap
+Number of packets:   2
+## text2pcap
+
+-------------------------
+routeros.example
+## tcpdump -r
+reading from file /tmp/fixture.pcapng, link-type EN10MB (Ethernet), snapshot length 65535
+00:00:01.000000 IP 192.0.2.1.43000 > 192.0.2.2.37008: UDP, length 81
+## capabilities of this shell (node)
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+LD_LIBRARY_PATH=[]
+## dumpcap -D (no caps)
+dumpcap: Can't get list of interfaces: eth0: SIOCETHTOOL(ETHTOOL_GLINK) ioctl failed: Inappropriate ioctl for device
+exit=2
+## tshark -D (no caps)
+tshark: Can't get list of interfaces: eth0: SIOCETHTOOL(ETHTOOL_GLINK) ioctl failed: Inappropriate ioctl for device
+1. ciscodump (Cisco remote capture)
+2. dpauxmon (DisplayPort AUX channel monitor capture)
+exit=13
+## dumpcap live lo (no caps)
+(lo: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: Inappropriate ioctl for device)
+Please check that you have the proper interface or pipe specified.
+exit=1
+## tcpdump live (no caps)
+tcpdump: lo: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: Inappropriate ioctl for device
+exit=1
+## RADIUS fields with payload data dir / with it hidden
+13434
+91
+## nfcapd + nfdump (NetFlow v5 over UDP 9995, unprivileged)
+       192.0.2.1        192.0.2.2     53        5      500
+## nfdump -V
+/data/.local/share/t3code-tools/groups/capture/spike/root/usr/bin/nfdump: Version: 1.7.5-release Options: NSEL-NEL ZSTD BZIP2 Date: Wed Oct 23 19:53:03 CEST 2024
+## ld.so --library-path variant (no env leak)
+Program:             	/usr/lib/aarch64-linux-gnu
+Global Plugins:      	/usr/lib/aarch64-linux-gnu/plugins/4.4
+
+## command -v tshark after divert: none
+Global configuration:	/usr/lib/t3code/capture/usr/share/wireshark
+Program:             	/usr/lib/t3code/capture/usr/bin
+Global Plugins:      	/usr/lib/t3code/capture/usr/lib/aarch64-linux-gnu/wireshark/plugins/4.4
+29
+routeros.example
+tshark: Can't get list of interfaces: eth0: SIOCETHTOOL(ETHTOOL_GLINK) ioctl failed: Inappropriate ioctl for device
+1. ciscodump (Cisco remote capture)
+
+## lock
+libexpat1	2.9.0-1~deb13u1	113920	d9e1c50fcdad079fe16d77f1578adcc763be1bf7f2da7fa8adca7010b0c84c83	https://deb.debian.org/debian-security/pool/updates/main/e/expat/libexpat1_2.9.0-1%7edeb13u1_arm64.deb
+libdbus-1-3	1.16.2-2	169068	ca6bb5f2047ad58d274cb7d14216035a07d8e5aae6f6a0122c4f6293c9c39515	https://deb.debian.org/debian/pool/main/d/dbus/libdbus-1-3_1.16.2-2_arm64.deb
+libpcap0.8t64	1.10.5-2	159584	9db27b0ebf0333ea8524feac225d39db283235bb408eee90cb59d426d5a422a5	https://deb.debian.org/debian/pool/main/libp/libpcap/libpcap0.8t64_1.10.5-2_arm64.deb
+libpng16-16t64	1.6.48-1+deb13u6	275220	57177299a638e30032a7191cc32a1b25fe4de7565164d770685d6d7f56771317	https://deb.debian.org/debian-security/pool/updates/main/libp/libpng1.6/libpng16-16t64_1.6.48-1%2bdeb13u6_arm64.deb
+libfreetype6	2.13.3+dfsg-1+deb13u1	422284	0c426e83f1af816b9a4df9056fd2238463d1cd07969ee640965da9fb6ecaf107	https://deb.debian.org/debian/pool/main/f/freetype/libfreetype6_2.13.3%2bdfsg-1%2bdeb13u1_arm64.deb
+fonts-dejavu-mono	2.37-8	488808	3003e98a5debfdeadc7040a7f715fe9fe6fb67f68deacf6049b54e30f07fc014	https://deb.debian.org/debian/pool/main/f/fonts-dejavu/fonts-dejavu-mono_2.37-8_all.deb
+fonts-dejavu-core	2.37-8	840460	86635b3d25b3655fc11cb3ecc3af59f0bf19643b02b94f2de48bd10253cdba12	https://deb.debian.org/debian/pool/main/f/fonts-dejavu/fonts-dejavu-core_2.37-8_all.deb
+fontconfig-config	2.15.0-2.3	318304	10f643f467b51cf25fc18d1945bc61246dd8d8d1fe6bc712a2b1712c74ebc4d6	https://deb.debian.org/debian/pool/main/f/fontconfig/fontconfig-config_2.15.0-2.3_arm64.deb
+libfontconfig1	2.15.0-2.3	387092	872781cf62926b68c34a4302a3caae334ff8d4d83a2b2477f8fb454460aadc99	https://deb.debian.org/debian/pool/main/f/fontconfig/libfontconfig1_2.15.0-2.3_arm64.deb
+libpixman-1-0	0.44.0-3	168440	b502cd8b1ece222f42b44c42c33a300d84152c20089660167b9422ad2ebb6132	https://deb.debian.org/debian/pool/main/p/pixman/libpixman-1-0_0.44.0-3_arm64.deb
+libxau6	1:1.0.11-1	20576	ac1061728670f4626adaa1288953a0e6fb801c9cae72ee1c3231e63e2609d23a	https://deb.debian.org/debian/pool/main/libx/libxau/libxau6_1.0.11-1_arm64.deb
+libxdmcp6	1:1.1.5-1	27752	e10bbb0802181992ecf091e9425171850eee16068729c109214ba4924f81fb52	https://deb.debian.org/debian/pool/main/libx/libxdmcp/libxdmcp6_1.1.5-1_arm64.deb
+libxcb1	1.17.0-2+b1	143168	d0178198e80ed4cacdececabe2c112ec88c7a9258cc11a55b8e267ab14a90d82	https://deb.debian.org/debian/pool/main/libx/libxcb/libxcb1_1.17.0-2%2bb1_arm64.deb
+libx11-data	2:1.8.12-1	343072	c54f87069888f80ba4da586da6147d74c7598ccdd8b90906dbc4271fa414c738	https://deb.debian.org/debian/pool/main/libx/libx11/libx11-data_1.8.12-1_all.deb
+libx11-6	2:1.8.12-1	794952	646f2d3f2165c8eebceb7f4aaca31e97a818bb11a045964833a9f764b738bac2	https://deb.debian.org/debian/pool/main/libx/libx11/libx11-6_1.8.12-1_arm64.deb
+libxcb-render0	1.17.0-2+b1	114896	7d6faf0afad0b27a047bbf320bf80999e94b7e6a0f73e42069e8b08958910466	https://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-render0_1.17.0-2%2bb1_arm64.deb
+libxcb-shm0	1.17.0-2+b1	105480	e9e871dc5d2f9265eb5d3028f0d0545cb6f8b748a68997b4c43f5a9416c7ead7	https://deb.debian.org/debian/pool/main/libx/libxcb/libxcb-shm0_1.17.0-2%2bb1_arm64.deb
+libxext6	2:1.3.4-1+b3	49244	27cf208c6d2924b22ed3b9ceff304b992e1f07ef7b0ef00239585595581dac99	https://deb.debian.org/debian/pool/main/libx/libxext/libxext6_1.3.4-1%2bb3_arm64.deb
+libxrender1	1:0.9.12-1	27024	28396c96e460288d5851913121b053609f7ff34f996d78d7a38c1d2b6ab9f006	https://deb.debian.org/debian/pool/main/libx/libxrender/libxrender1_0.9.12-1_arm64.deb
+libcairo2	1.18.4-1+b1	483084	de0e190f4566b51942387fb84fe85f064d23da896b8e2080930d53879a11630d	https://deb.debian.org/debian/pool/main/c/cairo/libcairo2_1.18.4-1%2bb1_arm64.deb
+libdbi1t64	0.9.0-6.1+b1	25592	15f352d2348b823bbbd508bb620cc1c7e9eb8334248678038c5a20e7714f2d84	https://deb.debian.org/debian/pool/main/libd/libdbi/libdbi1t64_0.9.0-6.1%2bb1_arm64.deb
+libatomic1	14.2.0-19	10128	7ccff90234484bf21ae5ecb79d25b6a84b2f4038f65dd139085b2e3a937cd8dc	https://deb.debian.org/debian/pool/main/g/gcc-14/libatomic1_14.2.0-19_arm64.deb
+libglib2.0-0t64	2.84.4-3~deb13u5	1428508	d446f0ea85fb9dc411219ce861e59e5eabe1981c796918771a7d2aa97cc72481	https://deb.debian.org/debian/pool/main/g/glib2.0/libglib2.0-0t64_2.84.4-3%7edeb13u5_arm64.deb
+fontconfig	2.15.0-2.3	463008	f899e800435bc3bd3ecc6139bfcb2b45b3dbd2ffa59c4b9b3cc246e9661052af	https://deb.debian.org/debian/pool/main/f/fontconfig/fontconfig_2.15.0-2.3_arm64.deb
+libfribidi0	1.0.16-1	26460	5f5bfdf6ef126b0a38f8ebb8751cbbb845fe2cd4e1dd5258d241be243e09897f	https://deb.debian.org/debian/pool/main/f/fribidi/libfribidi0_1.0.16-1_arm64.deb
+libgraphite2-3	1.3.14-2+deb13u1	70348	b0c3414b113de62be1dc28fa2c899ac0856256e2f094d92c36c3275a5053311a	https://deb.debian.org/debian/pool/main/g/graphite2/libgraphite2-3_1.3.14-2%2bdeb13u1_arm64.deb
+libharfbuzz0b	10.2.0-1+deb13u1	441932	3ff928f981b54b491ee12e4cf68558cc5d61c652bdab276cd4c4c3fbbcee16ca	https://deb.debian.org/debian/pool/main/h/harfbuzz/libharfbuzz0b_10.2.0-1%2bdeb13u1_arm64.deb
+libthai-data	0.1.29-2	167504	fd38d40602834d510a29140bd27fd48485105e834f03dccab1c02e2edaa794dd	https://deb.debian.org/debian/pool/main/libt/libthai/libthai-data_0.1.29-2_all.deb
+libdatrie1	0.2.13-3+b1	37596	d513d0602836c4df782c15dc9472c17ab5a815343aabc9ebe7dc9604c0acfaa0	https://deb.debian.org/debian/pool/main/libd/libdatrie/libdatrie1_0.2.13-3%2bb1_arm64.deb
+libthai0	0.1.29-2+b1	48440	4ea5b9d09449023a30e4d5237b8a69e19d6b3e576e36570818c87a093e2b5eec	https://deb.debian.org/debian/pool/main/libt/libthai/libthai0_0.1.29-2%2bb1_arm64.deb
+libpango-1.0-0	1.56.3-1	212956	5c5c6061afdff84a76418c9c2cf8bd4f3b6174aa7bf39ddf58bfa7702a59d3f2	https://deb.debian.org/debian/pool/main/p/pango1.0/libpango-1.0-0_1.56.3-1_arm64.deb
+libpangoft2-1.0-0	1.56.3-1	52940	f0e32d579c7b40dee0ed43355dd832857cf5d477cfb50b0bda56097eca8a81c0	https://deb.debian.org/debian/pool/main/p/pango1.0/libpangoft2-1.0-0_1.56.3-1_arm64.deb
+libpangocairo-1.0-0	1.56.3-1	33676	1bb68c8dfa0f829cf9834a2dec4af49f82a8dd211e3a9c1fa0446b3f32fa6991	https://deb.debian.org/debian/pool/main/p/pango1.0/libpangocairo-1.0-0_1.56.3-1_arm64.deb
+libxml2	2.12.7+dfsg+really2.9.14-2.1+deb13u3	631428	a66b9c960acef8ed9653223cbd00b155a92ebb758ea13a788c41609246c23bc7	https://deb.debian.org/debian/pool/main/libx/libxml2/libxml2_2.12.7%2bdfsg%2breally2.9.14-2.1%2bdeb13u3_arm64.deb
+librrd8t64	1.7.2-4.2+b5	230512	813824ab38ad1002ade44c8218abc636418c29d0cd92b45a07fab40af1b5ceda	https://deb.debian.org/debian/pool/main/r/rrdtool/librrd8t64_1.7.2-4.2%2bb5_arm64.deb
+nfdump	1.7.5-2+deb13u1	416008	53b98905d73c3dea643526571e23c5f481dc62c7273f6845e74f5435e0bf96db	https://deb.debian.org/debian/pool/main/n/nfdump/nfdump_1.7.5-2%2bdeb13u1_arm64.deb
+libbcg729-0	1.1.1-3+deb13u1	33228	abf4977a3be675c2c3c2b182b584422d8d8800bf14348ce17377fcc61fe380c1	https://deb.debian.org/debian/pool/main/b/bcg729/libbcg729-0_1.1.1-3%2bdeb13u1_arm64.deb
+libcares2	1.34.5-1+deb13u1	92408	138f3224f7ee18555bdcd20424b7d9de723095f8eca8379e6722ad070c4dd089	https://deb.debian.org/debian/pool/main/c/c-ares/libcares2_1.34.5-1%2bdeb13u1_arm64.deb
+libdeflate0	1.23-2	42376	ddd23094f9608f2ff9ea2256df2e917e315524371a6a82cb9daa921557c5a595	https://deb.debian.org/debian/pool/main/libd/libdeflate/libdeflate0_1.23-2_arm64.deb
+libgpg-error0	1.51-4	78544	f9a8ee3f325360dbbb1c98331c60c7aa454a054a8a4564bc36b3e52fb53e019e	https://deb.debian.org/debian/pool/main/libg/libgpg-error/libgpg-error0_1.51-4_arm64.deb
+libgcrypt20	1.11.0-7+deb13u1	741128	243a42b879c6675348279a3f9a40e535d57185af00dbfd51b7481e777f163da6	https://deb.debian.org/debian/pool/main/libg/libgcrypt20/libgcrypt20_1.11.0-7%2bdeb13u1_arm64.deb
+libjbig0	2.1-6.1+b2	30360	dbecef09dbafd82ff6444aa1cb45053b6331985b20ab2590eff052d7d6b1bb18	https://deb.debian.org/debian/pool/main/j/jbigkit/libjbig0_2.1-6.1%2bb2_arm64.deb
+libjpeg62-turbo	1:2.1.5-4	172784	e4989073bb0bac8a6ec043c7adb80e1dfe601d8552233da48bb24ab45d1a1d4a	https://deb.debian.org/debian/pool/main/libj/libjpeg-turbo/libjpeg62-turbo_2.1.5-4_arm64.deb
+liblerc4	4.0.0+ds-5	146184	db015dc1888371e490594f8aaaaa55356313478d744fa69e242e034e4c2a0019	https://deb.debian.org/debian/pool/main/l/lerc/liblerc4_4.0.0%2bds-5_arm64.deb
+liblua5.4-0	5.4.7-1+b2	133868	56c90caee447f0c9bc9390f822cb1d8ffd37e44041c736e2d8d86040c23547d8	https://deb.debian.org/debian/pool/main/l/lua5.4/liblua5.4-0_5.4.7-1%2bb2_arm64.deb
+libmaxminddb0	1.12.2-1	25892	6b4b476be27770f79964c8e1c236419280e6edce62c4f0d29fd0ce460cfec245	https://deb.debian.org/debian/pool/main/libm/libmaxminddb/libmaxminddb0_1.12.2-1_arm64.deb
+libnl-3-200	3.7.0-2	57068	0489548a052d64b1acf7f61b0f08fd2da954b6fd6b9c729a4e740d7d39652d00	https://deb.debian.org/debian/pool/main/libn/libnl3/libnl-3-200_3.7.0-2_arm64.deb
+libnl-genl-3-200	3.7.0-2	18020	5455099e4ae9a013a44bce245678b50c84b93f9983cd3005f49e6a94d14e30ee	https://deb.debian.org/debian/pool/main/libn/libnl3/libnl-genl-3-200_3.7.0-2_arm64.deb
+libnl-route-3-200	3.7.0-2	167324	86cd5b58c83cd70a834625f112a6c30da249bb842c4ac4daa44fd4c08298b7be	https://deb.debian.org/debian/pool/main/libn/libnl3/libnl-route-3-200_3.7.0-2_arm64.deb
+libopencore-amrnb0	0.1.6-1+b2	90956	56ff1db89f45f7e488fced4b6468001ab5da98638a19d115e7d87233d4f3915c	https://deb.debian.org/debian/pool/main/o/opencore-amr/libopencore-amrnb0_0.1.6-1%2bb2_arm64.deb
+libopus0	1.5.2-2	2812952	1d980e8a4717074805a98dbe07671cb3bee068c25709315f3de836980c629836	https://deb.debian.org/debian/pool/main/o/opus/libopus0_1.5.2-2_arm64.deb
+libsbc1	2.1-1	26596	5fad812e85c434c4e9dfdc3c48e457fe78fe30dbd5949fd0edac25914e1760af	https://deb.debian.org/debian/pool/main/s/sbc/libsbc1_2.1-1_arm64.deb
+libsharpyuv0	1.5.0-0.1	114456	5a37f40f806df4b67a2bdaa750add7a9ff29abd3119a8ceac773b886cbf3d9f9	https://deb.debian.org/debian/pool/main/libw/libwebp/libsharpyuv0_1.5.0-0.1_arm64.deb
+libsmi2t64	0.4.8+dfsg2-17+b1	113572	7a01baf4e8418a196391582790ab5b01b1bcdf61159c67e13339c67095c98735	https://deb.debian.org/debian/pool/main/libs/libsmi/libsmi2t64_0.4.8%2bdfsg2-17%2bb1_arm64.deb
+libsnappy1v5	1.2.2-1	28320	b307da3076ad257cd8adec2faa5ad051fa9bd54edc1f473ecaf69b1456fdebd2	https://deb.debian.org/debian/pool/main/s/snappy/libsnappy1v5_1.2.2-1_arm64.deb
+libwebp7	1.5.0-0.1	271148	d5ebdb920770ee135c4e319babb2bcef61e9f37283a37a8cb4e673769dd0d676	https://deb.debian.org/debian/pool/main/libw/libwebp/libwebp7_1.5.0-0.1_arm64.deb
+libtiff6	4.7.0-3+deb13u3	325232	208e9fdc14ed88a30f31fdfb993d1e8ab19f9ab29f3cd8546ffb4ea3f74f5a3f	https://deb.debian.org/debian/pool/main/t/tiff/libtiff6_4.7.0-3%2bdeb13u3_arm64.deb
+libspandsp2t64	0.0.6+dfsg-2.2	272700	31b36e6d6426b5d2919a3ef83493f20f8a55e57662010e40174af329e20511b0	https://deb.debian.org/debian/pool/main/s/spandsp/libspandsp2t64_0.0.6%2bdfsg-2.2_arm64.deb
+libspeexdsp1	1.2.1-3	38092	edb6b04791bccdb37bedb570255d224b1e9c69efa6084e4dac61b3b4904329a2	https://deb.debian.org/debian/pool/main/s/speexdsp/libspeexdsp1_1.2.1-3_arm64.deb
+libssh-4	0.11.5-0+deb13u1	199476	bc70c157a3850050e256d293be0e5a851b1f98ae6dd4e31b2c7d237b670eb1c9	https://deb.debian.org/debian/pool/main/libs/libssh/libssh-4_0.11.5-0%2bdeb13u1_arm64.deb
+libwireshark-data	4.4.19-0+deb13u1	464736	217534b05ac05933fb1f41b2e2683e77f1f1c1759bfbb4086c9a7d0bf9ec01f5	https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwireshark-data_4.4.19-0%2bdeb13u1_all.deb
+libwsutil16	4.4.19-0+deb13u1	129224	2816043d848c9e69ac28571574398bb9bae16f0c4cd85e54e740e37080e210ce	https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwsutil16_4.4.19-0%2bdeb13u1_arm64.deb
+libwiretap15	4.4.19-0+deb13u1	260344	83fefbdd3e5644201f030fae27d7a52db60cc7d677c9b8bbc4fb25d000772a71	https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwiretap15_4.4.19-0%2bdeb13u1_arm64.deb
+libwireshark18	4.4.19-0+deb13u1	19268288	bfe7f6e178d775c84cb173ed73cb0a9c0ab55c8b3e6aebfb6d248aa16dcb6211	https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/libwireshark18_4.4.19-0%2bdeb13u1_arm64.deb
+tcpdump	4.99.5-2	440144	46c6c212edf2a1b08f1b3be39a29ada0605aca37b0daa17b346972d6286cdf00	https://deb.debian.org/debian/pool/main/t/tcpdump/tcpdump_4.99.5-2_arm64.deb
+wireshark-common	4.4.19-0+deb13u1	579980	a1e24737dcdbab45e9c8b873e0248ac9b9fec659f618135b0e4712e3714a2a0d	https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/wireshark-common_4.4.19-0%2bdeb13u1_arm64.deb
+tshark	4.4.19-0+deb13u1	174256	c9500ea8e158afb85a4ff62e5c1a77c74927407e9aab7ac7f891cb0d8acd0b65	https://deb.debian.org/debian-security/pool/updates/main/w/wireshark/tshark_4.4.19-0%2bdeb13u1_arm64.deb
+## overlap

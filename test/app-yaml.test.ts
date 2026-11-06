@@ -249,7 +249,7 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 		expect(missing.buildInventory.present).toBe(false);
 		for (const group of missing.groups) {
 			expect(group.selected).toBe(true);
-			const expected: Record<string, string> = { image: "failed", npm: "pending", none: "not-implemented" };
+			const expected: Record<string, string> = { image: "failed", npm: "pending", deb: "pending", none: "not-implemented" };
 			expect(group.state as string).toBe(expected[group.delivery] as string);
 		}
 		const present = buildStatus("labs", everything, "/nonexistent", null);
@@ -264,7 +264,9 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 			"agents-extra": "not-selected",
 		});
 		// Groups without an installer never claim ready, even if tools happen to exist.
-		expect(buildStatus("capture", everything, "/nonexistent", null).groups.find((g) => g.name === "capture")?.state).toBe("not-implemented");
+		expect(buildStatus("vpn", everything, "/nonexistent", null).groups.find((g) => g.name === "vpn")?.state).toBe("not-implemented");
+		// Payload groups never claim ready from PATH either: only their payload counts.
+		expect(buildStatus("capture", everything, "/nonexistent", null).groups.find((g) => g.name === "capture")?.state).toBe("pending");
 	});
 });
 

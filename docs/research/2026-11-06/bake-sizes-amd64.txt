@@ -1,0 +1,6 @@
+vpn packages=20 download_bytes=4437712 installed_size_meta_bytes=14907392
+routing packages=23 download_bytes=9118684 installed_size_meta_bytes=36143104
+capture-no-tshark packages=16 download_bytes=3104136 installed_size_meta_bytes=9222144
+tshark-only packages=26 download_bytes=28850848 installed_size_meta_bytes=151634944
+vpn bake files_bytes=12149272 layer_gz_bytes=3938048
+routing bake files_bytes=32654696 layer_gz_bytes=9157747

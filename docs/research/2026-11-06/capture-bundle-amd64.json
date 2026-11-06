@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-11-06T13:53:40.134Z",
+  "habitat": "C (orca)",
+  "image": "app-t3code:slice3",
+  "imageId": "sha256:0f9d664ce5edcb10a0e82ea97c9c33f2a2630f8cb4cda1bd1e267cb99c89eaa9",
+  "platform": "linux/amd64",
+  "exitCode": 0,
+  "wallSeconds": 49.463,
+  "measurements": {
+    "arch": "amd64",
+    "triplet": "x86_64-linux-gnu",
+    "apt_update_s": "1.733",
+    "packages": "42",
+    "download_bytes": "31954984",
+    "a_download_s": "2.402",
+    "a_verify_s": "0.487",
+    "a_extract_s": "1.121",
+    "a_installed_bytes": "159569254",
+    "a_debs_bytes": "31954984",
+    "a_tar_gz_bytes": "43458174",
+    "a_libdirs": "/data/.local/share/t3code-tools/groups/capture/spike/root/usr/lib/x86_64-linux-gnu",
+    "a_overlap": "0",
+    "a_tshark_first_s": "0.160",
+    "a_tshark_warm_avg_s": "0.237",
+    "a_wrapper_overhead_ms": "1.4",
+    "b_install_s": "18.047",
+    "b_new_packages": "42",
+    "b_files_bytes": "157178522",
+    "b_layer_gz_bytes": "41648417",
+    "b_tshark_first_s": "0.164"
+  }
+}
