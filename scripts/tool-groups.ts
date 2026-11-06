@@ -71,7 +71,7 @@ export interface GroupDef {
 	note?: string;
 }
 
-/** One functional check: `{input}` in args is a file holding inputBase64; the output must contain `expect` and the exit code be 0. */
+/** One functional check: `{input}` in args (alone or inside one, as in `--file={input}`) is a file holding inputBase64; the output must contain `expect` and the exit code be 0. */
 export interface Smoke {
 	command: string;
 	args: readonly string[];
@@ -96,6 +96,14 @@ protocol bgp routeros {
 	ipv4 { import all; export none; };
 }
 `;
+
+/**
+ * A pcap with one ARP reply from 192.0.2.1 at 4c:5e:0c:11:22:33 (a MikroTik
+ * OUI), for `arp-scan --readpktfromfile`, which decodes it without sending
+ * anything or opening an interface.
+ */
+export const ARP_REPLY_PCAP =
+	"1MOyoQIABAAAAAAAAAAAAP//AAABAAAAAAAAAAAAAAA8AAAAPAAAAAIAAAAAAUxeDBEiMwgGAAEIAAYEAAJMXgwRIjPAAAIBAgAAAAABwAACAgAAAAAAAAAAAAAAAAAAAAAAAA==";
 
 const cmd = (...names: string[]): Check[] => names.map((name) => ({ kind: "command", name }));
 
@@ -141,15 +149,17 @@ export const GROUPS: readonly GroupDef[] = [
 		approxBytes: 16 * 1024 * 1024,
 		// swanctl --version asks charon over VICI; --help prints the version line offline.
 		versionArgs: { pki: ["--help"], swanctl: ["--help"] },
-		// strongSwan reads /etc/strongswan.conf and loads plugins from
-		// /usr/lib/ipsec/plugins, both compiled in. The wrapper points it at the
-		// payload's config and preloads the plugins that load against
-		// libstrongswan alone (the crypto, encoding and credential ones); its
-		// loader finds a preloaded plugin by symbol before it looks for a file.
+		// strongSwan reads /etc/strongswan.conf (and swanctl /etc/swanctl) and
+		// loads plugins from /usr/lib/ipsec/plugins, all compiled in. The
+		// wrapper defaults STRONGSWAN_CONF and SWANCTL_DIR to the payload's
+		// copies (a caller's own setting wins) and preloads the plugins that
+		// load against libstrongswan alone (the crypto, encoding and credential
+		// ones); its loader finds a preloaded plugin by symbol before it looks
+		// for a file.
 		wrappers: [
 			{
 				commands: ["pki", "swanctl", "pt-tls-client"],
-				env: { STRONGSWAN_CONF: "{root}/etc/strongswan.conf" },
+				env: { STRONGSWAN_CONF: "{root}/etc/strongswan.conf", SWANCTL_DIR: "{root}/etc/swanctl" },
 				preload: { libraries: ["usr/lib/ipsec/libstrongswan.so.0"], pluginDir: "usr/lib/ipsec/plugins" },
 			},
 		],
@@ -175,6 +185,15 @@ export const GROUPS: readonly GroupDef[] = [
 			ndisc6: ["-V"],
 			arping: ["--help"],
 		},
+		// arp-scan looks for its vendor files in the current directory, then at
+		// compiled-in paths the image lacks; without them every MAC is
+		// "(Unknown)". A later --ouifile/--macfile from the caller still wins.
+		wrappers: [
+			{
+				commands: ["arp-scan"],
+				args: ["--ouifile={root}/usr/share/arp-scan/ieee-oui.txt", "--macfile={root}/etc/arp-scan/mac-vendor.txt"],
+			},
+		],
 		// birdc has no version flag and needs a running BIRD: refusing to
 		// connect is the proof that it loads. nft and conntrack open a
 		// netfilter netlink socket even for --version; a kernel (or QEMU
@@ -188,6 +207,8 @@ export const GROUPS: readonly GroupDef[] = [
 			// NSE and service names come from nmap's data dir, found relative to the binary.
 			{ command: "nmap", args: ["--script-help", "banner"], expect: "discovery" },
 			{ command: "bird", args: ["-p", "-c", "{input}"], inputBase64: Buffer.from(BIRD_BGP_CONF).toString("base64"), expect: "" },
+			// Vendor lookup through the wrapper's files, from a capture: no privilege needed.
+			{ command: "arp-scan", args: ["--readpktfromfile={input}", "192.0.2.1"], inputBase64: ARP_REPLY_PCAP, expect: "Routerboard.com" },
 		],
 		note: "Persistent payload of Debian packages under the home, like capture. BIRD takes its config and socket paths as arguments (bird -c/-s, birdc -s); the image has no /etc/bird or /run/bird. lldpd is not here: it needs root and a _lldpd user for privilege separation, which an extracted payload cannot provide.",
 	},
@@ -286,7 +307,8 @@ export const CORE_PRIVILEGES =
 /**
  * Where every network package named in the 2026-11-05 research lives. `core`
  * is installed in the image; group names match GROUPS; `lab-guest` runs only
- * inside a QEMU Linux guest under `labs`; `not-shipped` stays out unless
+ * inside a QEMU Linux guest under `labs` that the user boots and provisions
+ * (nothing installs it); `not-shipped` stays out unless
  * requested (with the reason).
  */
 export const NETWORK_PACKAGE_ASSIGNMENT: Readonly<Record<string, string>> = {

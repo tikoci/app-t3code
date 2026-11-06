@@ -230,10 +230,16 @@ export interface DebIo {
 	log: (line: string) => void;
 	/** Record the running dpkg-deb child for interrupted-installer recovery; clear after it exits. */
 	onChild?: (pid: number | null) => void;
-	/** Whether these absolute library paths load together under LD_PRELOAD with this library path (default: run /bin/true). */
+	/** Whether these library file names load together under LD_PRELOAD with this library path (default: run /bin/true). */
 	canPreload?: PreloadCheck;
 }
 
+/**
+ * `libraries` are file names without a directory: ld.so looks them up on
+ * `libraryPath`, exactly as the wrapper's LD_PRELOAD does. (ld.so splits
+ * LD_PRELOAD on spaces and colons with no escape, so absolute paths under a
+ * home containing a space would break.)
+ */
 export type PreloadCheck = (libraries: readonly string[], libraryPath: string) => boolean;
 
 /** Preload `libraries` into /bin/true: true only if ld.so loads them all silently. */
@@ -425,8 +431,13 @@ export function imageCommand(imageRoot: string, name: string): string | null {
 export interface WrapperRule {
 	/** Commands the rule applies to. Commands without a wrapper (absent, or provided by the image) are ignored; a rule with none is never resolved. */
 	commands: readonly string[];
-	/** Variables set for these commands only; `{root}` is the payload's extracted root, everything else is literal. */
+	/**
+	 * Defaults for these commands only: a variable the caller already set wins.
+	 * `{root}` is the payload's extracted root; everything else is literal.
+	 */
 	env?: Readonly<Record<string, string>>;
+	/** Arguments placed before the caller's (`{root}` expands); for most tools a later repeat of an option wins, so the caller can still override. */
+	args?: readonly string[];
 	/**
 	 * LD_PRELOAD for these commands: `libraries` (relative to root), then every
 	 * `.so` in `pluginDir` that loads against them alone, as checked at install
@@ -445,13 +456,14 @@ export interface DebPayloadLayout {
 	libDirs: string[];
 	/** Payload library files that the image also has (the payload's copy wins for payload processes only). */
 	shadows: string[];
-	/** Commands with extra wiring from a WrapperRule: variable names set, and libraries preloaded (relative to root). */
-	wired?: Record<string, { env: string[]; preload: string[] }>;
+	/** Commands with extra wiring from a WrapperRule: variable defaults, leading arguments (`{root}` unexpanded), libraries preloaded (relative to root). */
+	wired?: Record<string, { env: string[]; args?: string[]; preload: string[] }>;
 }
 
-/** Extra wiring for one wrapper: variables (`{root}` already in the value) and libraries to preload, relative to root. */
+/** Extra wiring for one wrapper: variable defaults and leading arguments (with `{root}`), and libraries to preload (relative to root). */
 export interface WrapperExtras {
 	env?: Readonly<Record<string, string>>;
+	args?: readonly string[];
 	preload?: readonly string[];
 }
 
@@ -481,12 +493,17 @@ export function wrapperScript(group: string, payloadRelTarget: string, libDirs: 
 	}
 	for (const [name, value] of Object.entries(extras.env ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
 		if (!ENV_NAME.test(name)) throw new Error(`wrapper variable name ${JSON.stringify(name)} is not a shell variable name`);
-		lines.push(`${name}=${shellValue(value)}`, `export ${name}`);
+		// A default: the caller's own setting (even an empty one) wins.
+		lines.push(`[ -n "\${${name}+x}" ] || ${name}=${shellValue(value)}`, `export ${name}`);
 	}
 	if (extras.preload?.length) {
-		lines.push(`LD_PRELOAD="${extras.preload.map((l) => `$p/root/${l}`).join(":")}\${LD_PRELOAD:+:$LD_PRELOAD}"`, "export LD_PRELOAD");
+		// File names only, found on the LD_LIBRARY_PATH above: ld.so splits
+		// LD_PRELOAD on spaces, so absolute paths would break under a home
+		// path containing one.
+		lines.push(`LD_PRELOAD="${extras.preload.map((l) => basename(l)).join(":")}\${LD_PRELOAD:+:$LD_PRELOAD}"`, "export LD_PRELOAD");
 	}
-	lines.push(`exec "$p/${payloadRelTarget}" "$@"`, "");
+	const args = (extras.args ?? []).map((arg) => ` ${shellValue(arg)}`).join("");
+	lines.push(`exec "$p/${payloadRelTarget}"${args} "$@"`, "");
 	return lines.join("\n");
 }
 
@@ -498,14 +515,22 @@ export function wrapperScript(group: string, payloadRelTarget: string, libDirs: 
 export function resolvePreload(root: string, rule: NonNullable<WrapperRule["preload"]>, libDirs: readonly string[], canPreload: PreloadCheck): string[] {
 	const abs = (rel: string) => join(root, rel);
 	const libraryPath = libDirs.map(abs).join(":");
-	for (const lib of rule.libraries) if (!existsSync(abs(lib))) throw new Error(`preload library ${lib} is not in the payload`);
+	// Preloads are named by file name, so each must be the first file of that
+	// name on the wrapper's library path.
+	const reachable = (rel: string) => libDirs.find((dir) => existsSync(join(root, dir, basename(rel)))) === dirname(rel);
+	for (const lib of rule.libraries) {
+		if (!existsSync(abs(lib))) throw new Error(`preload library ${lib} is not in the payload`);
+		if (!reachable(lib)) throw new Error(`preload library ${lib} is not first on the payload's library path`);
+	}
 	const dir = abs(rule.pluginDir);
 	const plugins = existsSync(dir) ? readdirSync(dir).filter((name) => name.endsWith(".so")).sort() : [];
-	const base = rule.libraries.map(abs);
-	const chosen = plugins.map((name) => join(rule.pluginDir, name)).filter((rel) => canPreload([...base, abs(rel)], libraryPath));
+	const base = rule.libraries.map((lib) => basename(lib));
+	const chosen = plugins
+		.map((name) => join(rule.pluginDir, name))
+		.filter((rel) => reachable(rel) && canPreload([...base, basename(rel)], libraryPath));
 	if (chosen.length === 0) throw new Error(`no plugin in ${rule.pluginDir} loads against ${rule.libraries.join(", ")}`);
 	const all = [...rule.libraries, ...chosen];
-	if (!canPreload(all.map(abs), libraryPath)) throw new Error(`the ${all.length} preload libraries from ${rule.pluginDir} do not load together`);
+	if (!canPreload(all.map((lib) => basename(lib)), libraryPath)) throw new Error(`the ${all.length} preload libraries from ${rule.pluginDir} do not load together`);
 	return all;
 }
 
@@ -530,6 +555,8 @@ export function layoutDebPayload(
 		if (imagePaths.some((p) => existsSync(p))) shadows.push(rel);
 	});
 	const sortedLibDirs = [...libDirs].sort();
+	// LD_LIBRARY_PATH has no escape for its separators.
+	if (sortedLibDirs.length && /[:;]/.test(root)) throw new Error(`the payload path ${root} contains ':' or ';', which LD_LIBRARY_PATH cannot carry`);
 	// Pass 1: the commands that get wrappers (an image command of the same name wins).
 	const skippedCommands: string[] = [];
 	const targets = new Map<string, string>();
@@ -562,13 +589,14 @@ export function layoutDebPayload(
 		for (const command of commands) {
 			const prev = extras.get(command) ?? {};
 			const merged = [...new Set([...(prev.preload ?? []), ...(preload ?? [])])];
-			extras.set(command, { env: { ...prev.env, ...rule.env }, ...(merged.length ? { preload: merged } : {}) });
+			const args = [...(prev.args ?? []), ...(rule.args ?? [])];
+			extras.set(command, { env: { ...prev.env, ...rule.env }, ...(args.length ? { args } : {}), ...(merged.length ? { preload: merged } : {}) });
 			if (preload) preloadSources.set(command, (preloadSources.get(command) ?? 0) + 1);
 		}
 	}
 	for (const [command, count] of preloadSources) {
 		const set = extras.get(command)?.preload ?? [];
-		if (count > 1 && !canPreload(set.map((lib) => join(root, lib)), sortedLibDirs.map((dir) => join(root, dir)).join(":"))) {
+		if (count > 1 && !canPreload(set.map((lib) => basename(lib)), sortedLibDirs.map((dir) => join(root, dir)).join(":"))) {
 			throw new Error(`${command}: its ${set.length} merged preload libraries do not load together`);
 		}
 	}
@@ -581,7 +609,7 @@ export function layoutDebPayload(
 		writeFileSync(wrapper, wrapperScript(group, target, sortedLibDirs, extra));
 		chmodSync(wrapper, 0o755);
 		commands.push(name);
-		if (extra) wired[name] = { env: Object.keys(extra.env ?? {}).sort(), preload: [...(extra.preload ?? [])] };
+		if (extra) wired[name] = { env: Object.keys(extra.env ?? {}).sort(), ...(extra.args?.length ? { args: [...extra.args] } : {}), preload: [...(extra.preload ?? [])] };
 	}
 	return {
 		commands: commands.sort(),

@@ -19,7 +19,7 @@ import {
 	wrapperScript,
 } from "../scripts/deb-payloads.ts";
 import { BIRD_BGP_CONF, buildStatus, type GroupDef, GROUPS, NETWORK_PACKAGE_ASSIGNMENT, type Probe, TZSP_DNS_PCAPNG } from "../scripts/tool-groups.ts";
-import { activate, installGroups, type Manifest, type PayloadEnv, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
+import { activate, desiredPayload, installGroups, type Manifest, type PayloadEnv, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
 
 const capture = GROUPS.find((g) => g.name === "capture");
 if (!capture) throw new Error("capture group missing");
@@ -725,6 +725,8 @@ describe("deb wrapper rules, expected-exit probes and smoke lists (vpn, routing)
 		smoke: [
 			{ command: "pki", args: ["--gen"], expect: "BEGIN PRIVATE KEY" },
 			{ command: "ctl", args: ["parse", "{input}"], inputBase64: Buffer.from("router id 192.0.2.1;\n").toString("base64"), expect: "" },
+			// {input} inside an argument, like arp-scan's --readpktfromfile={input}.
+			{ command: "ctl", args: ["--file={input}"], inputBase64: Buffer.from("router id 192.0.2.1;\n").toString("base64"), expect: "file ok" },
 		],
 	};
 	const groups = [strong];
@@ -739,6 +741,7 @@ esac
 case "$1" in
 -s) ${connect} ;;
 parse) grep -q "router id" "$2" ;;
+--file=*) grep -q "router id" "\${1#--file=}" && echo "file ok" ;;
 *) echo "LD_PRELOAD=$LD_PRELOAD" ;;
 esac
 `;
@@ -788,17 +791,20 @@ esac
 		expect(manifest.versions).toEqual({ pki: "strongSwan 6.0.1 PKI tool", ctl: "Unable to connect to server control socket (/nonexistent/ctl.sock): No such file or directory" });
 		const out = Bun.spawnSync([shim("pki"), "env"], { env: { PATH: "/usr/bin:/bin", LD_PRELOAD: "/user/own.so" } }).stdout.toString();
 		expect(out).toContain(`STRONGSWAN_CONF=${payload}/etc/strongswan.conf\n`);
-		// The user's own LD_PRELOAD is kept, after the payload's.
-		expect(out).toContain(`LD_PRELOAD=${preload.map((l) => join(payload, l)).join(":")}:/user/own.so\n`);
+		// File names, found on the wrapper's library path; the user's own LD_PRELOAD is kept after them.
+		expect(out).toContain(`LD_PRELOAD=libstrongswan.so.0:libstrongswan-openssl.so:libstrongswan-x509.so:/user/own.so\n`);
+		// The rule's variables are defaults: a caller's own setting wins, even an empty one.
+		const own = (value: string) => Bun.spawnSync([shim("pki"), "env"], { env: { PATH: "/usr/bin:/bin", STRONGSWAN_CONF: value } }).stdout.toString();
+		expect(own("/mine/strongswan.conf")).toContain("STRONGSWAN_CONF=/mine/strongswan.conf\n");
+		expect(own("")).toContain("STRONGSWAN_CONF=\n");
 		// Other commands get no preload at all.
 		expect(Bun.spawnSync([shim("ctl"), "env"], { env: { PATH: "/usr/bin:/bin" } }).stdout.toString().trim()).toBe("LD_PRELOAD=");
 		// Each plugin was tried alone with the base library, then the chosen set together.
-		// (Checked in the staging dir, before the payload took its final name.)
-		expect(preloadCalls.map((libs) => libs.map((l) => l.replace(/^.*?\/root\//, "")))).toEqual([
-			["usr/lib/ipsec/libstrongswan.so.0", "usr/lib/ipsec/plugins/libstrongswan-kernel-netlink.so"],
-			["usr/lib/ipsec/libstrongswan.so.0", "usr/lib/ipsec/plugins/libstrongswan-openssl.so"],
-			["usr/lib/ipsec/libstrongswan.so.0", "usr/lib/ipsec/plugins/libstrongswan-x509.so"],
-			preload,
+		expect(preloadCalls).toEqual([
+			["libstrongswan.so.0", "libstrongswan-kernel-netlink.so"],
+			["libstrongswan.so.0", "libstrongswan-openssl.so"],
+			["libstrongswan.so.0", "libstrongswan-x509.so"],
+			preload.map((l) => l.split("/").pop() as string),
 		]);
 	});
 
@@ -874,9 +880,9 @@ esac
 			"usr/bin/tool": "#!/bin/sh\necho tool\n",
 			"usr/bin/ip": "#!/bin/sh\necho payload-ip\n", // the image has ip(8)
 			"usr/lib/a/libbase.so.0": "elf",
-			"usr/lib/a/plugins/one.so": "elf",
+			"usr/lib/a/plugins/libone.so": "elf",
 			"usr/lib/b/libother.so.0": "elf",
-			"usr/lib/b/plugins/two.so": "elf",
+			"usr/lib/b/plugins/libtwo.so": "elf",
 		})) {
 			mkdirSync(join(staging, "root", path, ".."), { recursive: true });
 			writeFileSync(join(staging, "root", path), content);
@@ -895,13 +901,13 @@ esac
 			{ commands: ["tool"], preload: { libraries: ["usr/lib/a/libbase.so.0"], pluginDir: "usr/lib/a/plugins" } },
 			{ commands: ["tool"], preload: { libraries: ["usr/lib/b/libother.so.0"], pluginDir: "usr/lib/b/plugins" } },
 		];
-		const apart = (libs: readonly string[]) => !(libs.some((l) => l.includes("/a/")) && libs.some((l) => l.includes("/b/")));
+		const apart = (libs: readonly string[]) => !(libs.some((l) => /base|one/.test(l)) && libs.some((l) => /other|two/.test(l)));
 		expect(() => layoutDebPayload("t", staging, join(tmp, "image"), rules, apart)).toThrow("tool: its 4 merged preload libraries do not load together");
 		expect(layoutDebPayload("t", staging, join(tmp, "image"), rules, () => true).wired?.["tool"]?.preload).toEqual([
 			"usr/lib/a/libbase.so.0",
-			"usr/lib/a/plugins/one.so",
+			"usr/lib/a/plugins/libone.so",
 			"usr/lib/b/libother.so.0",
-			"usr/lib/b/plugins/two.so",
+			"usr/lib/b/plugins/libtwo.so",
 		]);
 	});
 
@@ -912,11 +918,39 @@ esac
 		});
 		const lines = script.split("\n");
 		const at = (prefix: string) => lines.findIndex((line) => line.startsWith(prefix));
-		expect(at("LD_LIBRARY_PATH=")).toBeLessThan(at("A_FIRST="));
-		expect(at("A_FIRST=")).toBeLessThan(at("STRONGSWAN_CONF="));
-		expect(script).toContain(`STRONGSWAN_CONF="$p/root"'/etc/strongswan.conf'\nexport STRONGSWAN_CONF`);
-		expect(script).toContain(`LD_PRELOAD="$p/root/usr/lib/ipsec/libstrongswan.so.0\${LD_PRELOAD:+:$LD_PRELOAD}"\nexport LD_PRELOAD`);
+		expect(at("LD_LIBRARY_PATH=")).toBeLessThan(at("[ -n \"${A_FIRST+x}\" ]"));
+		expect(at("[ -n \"${A_FIRST+x}\" ] || A_FIRST=")).toBeLessThan(at("[ -n \"${STRONGSWAN_CONF+x}\" ]"));
+		expect(script).toContain(`[ -n "\${STRONGSWAN_CONF+x}" ] || STRONGSWAN_CONF="$p/root"'/etc/strongswan.conf'\nexport STRONGSWAN_CONF`);
+		expect(script).toContain(`LD_PRELOAD="libstrongswan.so.0\${LD_PRELOAD:+:$LD_PRELOAD}"\nexport LD_PRELOAD`);
 		expect(wrapperScript("vpn", "root/usr/bin/wg", ["usr/lib/ipsec"])).not.toContain("LD_PRELOAD");
+		// Leading arguments go before the caller's, so a repeated option from the caller wins.
+		expect(wrapperScript("routing", "root/usr/sbin/arp-scan", [], { args: ["--ouifile={root}/x y.txt"] })).toContain(
+			`exec "$p/root/usr/sbin/arp-scan" '--ouifile='"$p/root"'/x y.txt' "$@"`,
+		);
+	});
+
+	test("a payload under a path with a space still preloads and runs; ':' in the path is refused", async () => {
+		env.root = join(tmp, "home with space", ".local/share/t3code-tools");
+		env.canPreload = (libs, libraryPath) => !libs.some((l) => l.includes(" ") || l.includes("/")) && libraryPath.includes("home with space") && !libs.some((l) => l.endsWith("kernel-netlink.so"));
+		publish(packages(), "amd64", "strong");
+		expect((await installGroups(groups, ["strong"], env)).results["strong"]).toMatchObject({ state: "ready" });
+		expect(Bun.spawnSync([shim("pki"), "--gen"], { env: { PATH: "/usr/bin:/bin" } }).stdout.toString()).toContain("BEGIN PRIVATE KEY");
+		const staging = join(tmp, "a:b");
+		mkdirSync(join(staging, "root", "usr", "lib"), { recursive: true });
+		writeFileSync(join(staging, "root", "usr", "lib", "libx.so.1"), "elf");
+		expect(() => layoutDebPayload("t", staging, join(tmp, "image"))).toThrow("LD_LIBRARY_PATH cannot carry");
+	});
+
+	test("wrapper rules are part of a payload's id; groups without rules keep theirs", async () => {
+		publish(packages(), "amd64", "strong");
+		const before = desiredPayload(strong, env);
+		const changed = desiredPayload({ ...strong, wrappers: [{ commands: ["pki"], env: { STRONGSWAN_CONF: "{root}/etc/other.conf" } }] }, env);
+		const none = desiredPayload({ ...strong, wrappers: [] }, env);
+		const plain = desiredPayload({ ...strong, wrappers: undefined }, env);
+		if ("error" in before || "error" in changed || "error" in none || "error" in plain) throw new Error("no desired payload");
+		expect(changed.id).not.toBe(before.id);
+		expect(none.id).toBe(plain.id);
+		expect(none.id).not.toBe(before.id);
 	});
 });
 

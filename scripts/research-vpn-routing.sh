@@ -42,7 +42,7 @@ run 'cd /tmp; time (for i in $(seq 50); do pki --help >/dev/null 2>&1; done)'
 run 'cd /tmp; time (for i in $(seq 50); do wg --version >/dev/null; done)'
 
 section "nmap and BIRD find their files without variables"
-run 'cd /tmp; nmap -d2 -sL -n 127.0.0.1 2>&1 | awk '"'"'/Fetchfile/ && n++ < 2'"'"'; echo "NMAPDIR=${NMAPDIR:-}"'
+run 'cd /tmp; nmap -d2 -sL -n 127.0.0.1 2>&1 | awk '"'"'/Fetchfile/ && n++ < 2'"'"'; status=$?; echo "NMAPDIR=${NMAPDIR:-}"; exit "$status"'
 run "grep -ao '/etc/bird/bird.conf\\|/run/bird/bird.ctl' $TOOLS/groups/routing/current/root/usr/sbin/bird | sort -u"
 
 section "functional scripts (the docker test runs the same ones)"

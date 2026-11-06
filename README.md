@@ -293,8 +293,10 @@ that a RouterOS container may not have; see
 #### Privileges by tool
 
 The app runs as `node` (UID 1000) with no capabilities. "None" means the
-operation works that way; everything else needs a privileged container,
-and whether RouterOS can grant it is
+operation works that way. Other entries name what it needs: a host or
+namespace setting (such as `net.ipv4.ping_group_range` for `ping`), a
+capability, a device, or root. Most of those mean a privileged container.
+Whether RouterOS can provide any of them is
 [#7](https://github.com/tikoci/app-t3code/issues/7). **Tested** means
 run here as `node` with `CapEff 0` under Docker (habitat C): *works* or
 *refused* (with a permission error). *Expected* means not demonstrated.
@@ -324,7 +326,8 @@ run here as `node` with `CapEff 0` under Docker (habitat C): *works* or
 | `routing` | BIRD OSPF; kernel route sync | `CAP_NET_RAW`; `CAP_NET_ADMIN` | expected |
 | `routing` | `nmap -sT`, NSE script data | None | works |
 | `routing` | `nmap -sS` and other raw scans, raw NSE scripts | `CAP_NET_RAW` | refused (`-sS`) |
-| `routing` | `arping`, `arp-scan` | `CAP_NET_RAW` | refused |
+| `routing` | `arping`, `arp-scan` on an interface | `CAP_NET_RAW` | refused |
+| `routing` | `arp-scan --readpktfromfile` (decode a capture, with vendor names) | None | works |
 | `routing` | `rdisc6`, `ndisc6` | `CAP_NET_RAW` | expected |
 | `routing` | `nft` (even `nft -c`), `conntrack -L` | `CAP_NET_ADMIN` and netfilter netlink | refused |
 | `labs` | quickchr / QEMU with TCG and user networking | None | (earlier research) |
@@ -336,7 +339,9 @@ Tools changed or moved because of privileges, not size:
 
 - **Moved to a Linux guest under `labs`**: `pppd`, `xl2tpd`, `sstpc`,
   `pppoe` and `lldpd`. They cannot work from a payload under `/data` even
-  in a privileged container. `pppd` needs root and reads `/etc/ppp/options`
+  in a privileged container. Selecting `labs` does not create that guest or
+  install them: boot a Linux VM with QEMU yourself, then install them in it
+  with its own package manager (as root, in the guest). `pppd` needs root and reads `/etc/ppp/options`
   before its arguments. `xl2tpd` and `sstpc` start `/usr/sbin/pppd` by a
   compiled-in path. `lldpd` needs root and a `_lldpd` user for privilege
   separation (`no _lldpd user for privilege separation`).
@@ -481,9 +486,11 @@ installs as the app user with no root at runtime:
   generation fails: update that image package before rebuilding. An older tool answering `--version` is not proof
   that its security update was applied. For other image dependencies, the
   lock records proposed upgrades under `imageUpgrades` and the build log
-  warns, but the package is not extracted. If a tool really needs the newer
-  version, its version check
-  fails and the payload is never activated; an image rebuild fixes that.
+  warns, but the package is not extracted. Version probes and smoke tests
+  catch a tool that cannot load at all, but they do not cover every
+  operation, so a payload can be activated and still fail later for want of
+  a newer image library. If `imageUpgrades` lists a library the tools use,
+  rebuild the image.
   Wireshark finds its data files and plugins relative to the binary, so
   `tshark` decodes with its full dissector set, RADIUS dictionaries and
   plugins from the payload; nmap finds its NSE scripts and service names the
@@ -491,14 +498,19 @@ installs as the app user with no root at runtime:
   (`bird -c … -s …`, `birdc -s …`); the image has no `/etc/bird` or
   `/run/bird`. strongSwan only knows compiled-in paths
   (`/etc/strongswan.conf`, `/usr/lib/ipsec/plugins`), so the wrappers of
-  `pki`, `swanctl` and `pt-tls-client` also set `STRONGSWAN_CONF` to the
-  payload's config and `LD_PRELOAD` the payload's plugins. Only plugins that
+  `pki`, `swanctl` and `pt-tls-client` default `STRONGSWAN_CONF` and
+  `SWANCTL_DIR` to the payload's copies (set either yourself to use your own
+  config; put it outside the payload, which a refresh replaces) and
+  `LD_PRELOAD` the payload's plugins by file name. Only plugins that
   load against libstrongswan alone are preloaded (the crypto, encoding and
   credential ones; checked at install time and recorded in the manifest
   under `deb.wired`); strongSwan finds a preloaded plugin by symbol before
   it searches its plugin directory. Like a stock Debian install, `pki` and
   `swanctl` still print `failed to load` lines for plugins Debian builds
-  elsewhere or that need charon. A payload command never shadows a command of the
+  elsewhere or that need charon. `arp-scan` only looks for its vendor files
+  in the current directory and at compiled-in paths, so its wrapper passes
+  the payload's `--ouifile` and `--macfile` first; your own options come
+  later and win. A payload command never shadows a command of the
   same name in the image, including one the image gains later. A required
   command that the image already provides is checked and used from the image.
 - **Stale native payloads are checked.** While a refresh is pending after an
@@ -516,8 +528,8 @@ listing and the live-capture refusal could not be tested there. See the
 [spike write-up](docs/research/2026-11-06/capture-native-bundle.md).
 
 Measured on amd64 for the other two (same image): `vpn` is 14 packages, 3.5
-MiB to download and 11.4 MiB on disk; `routing` is 23 packages, 8.7 MiB and
-33.4 MiB.
+MiB to download and 11.4 MiB on disk; `routing` is 21 packages, 8.3 MiB and
+32.5 MiB.
 
 Installing `capture` grants no capture privileges. Offline decoding
 (`tshark -r`, `tcpdump -r`, `capinfos`, `editcap`, `mergecap`, `text2pcap`),
@@ -536,7 +548,7 @@ imports), WireGuard and OpenVPN keys, `ike-scan --sport=0`, a BIRD BGP
 session on ports of 1024 or above (two BIRDs exchanged a prefix over eBGP on
 loopback), and nmap connect scans all work. The rest is in
 [Privileges by tool](#privileges-by-tool), including the PPP peers and
-`lldpd`, which moved to the `labs` guest.
+`lldpd`, which moved to a Linux guest you provision under `labs`.
 
 #### Changing groups on RouterOS
 
@@ -581,7 +593,7 @@ assigned here. `t3code-tools groups` prints the same table as JSON.
 | `capture` | `tcpdump`, `tshark`, `wireshark-common`, `nfdump` |
 | `vpn` | `wireguard-tools`, `strongswan-swanctl`, `strongswan-pki`, `strongswan-charon`, `openvpn`, `ike-scan` |
 | `routing` | `bird2`, `ndisc6`, `arping`, `arp-scan`, `nftables`, `conntrack`, `nmap` |
-| QEMU Linux guest under `labs` | FRR, keepalived, a FreeRADIUS server, `lldpd` (needs root and a `_lldpd` user), and the PPP-based peers `sstp-client`, `ppp`, `xl2tpd`, `pppoe` (they need root and `/usr/sbin/pppd`) |
+| A Linux guest you boot under `labs` and provision yourself (not shipped) | FRR, keepalived, a FreeRADIUS server, `lldpd` (needs root and a `_lldpd` user), and the PPP-based peers `sstp-client`, `ppp`, `xl2tpd`, `pppoe` (they need root and `/usr/sbin/pppd`) |
 | not shipped | `pptp-linux` (legacy), `zerotier-one` (not in Debian main), `smbclient` (large Samba dependencies), `snmptrapd` (port 162 needs bind privilege; use a uvx `pysnmp` receiver), `eapoltest` and `ntpsec-ntpdate` (on request) |
 
 Core gets only small user-space clients. With dependencies, their image
@@ -699,7 +711,10 @@ one with only the same home volume. It installs the `dev`, `capture`, `vpn`
 and `routing` payloads under `all`, runs each Debian group's tools as the
 unprivileged user ([capture](test/capture-tools.sh),
 [vpn](test/vpn-tools.sh), [routing](test/routing-tools.sh)), and relinks the
-payloads in later containers, including with no network. It checks tool discovery in
+payloads in later containers, including with no network. Against an
+emulated (QEMU user-mode) image, set `CAPTURE_TOOLS_QEMU_USER=1` and/or
+`ROUTING_TOOLS_QEMU_USER=1` for the test; they are forwarded to the scripts,
+which then skip only the checks emulation breaks before any permission check. It checks tool discovery in
 ordinary and login shells, a real T3 project record and environment identity, settings
 (including the restarted server's effective preference through read-only MCP),
 uncommitted worktree/project files, and a user-installed Bun CLI. CI runs

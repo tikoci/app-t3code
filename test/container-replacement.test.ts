@@ -171,9 +171,14 @@ test.skipIf(!image)(
 		const devTools = "cd /tmp; tsc --version; biome --version; cspell --version; markdownlint-cli2 --version";
 		// A deb payload's functional script, as node with no capabilities
 		// (test/capture-tools.sh, vpn-tools.sh, routing-tools.sh).
+		// Against an emulated (QEMU user-mode) image, set CAPTURE_TOOLS_QEMU_USER
+		// and/or ROUTING_TOOLS_QEMU_USER for this test: they are forwarded so the
+		// scripts skip only checks that emulation breaks before any permission
+		// check. Native runs keep every privilege check.
+		const qemuFlags = ["CAPTURE_TOOLS_QEMU_USER", "ROUTING_TOOLS_QEMU_USER"].filter((key) => process.env[key]).map((key) => `${key}=1 `).join("");
 		const groupTools = async (group: string, shell: string) => {
 			await docker("cp", new URL(`./${group}-tools.sh`, import.meta.url).pathname, `${name}:/tmp/${group}-tools.sh`);
-			return run("bash", shell, `bash /tmp/${group}-tools.sh`);
+			return run("bash", shell, `${qemuFlags}bash /tmp/${group}-tools.sh`);
 		};
 		const captureTools = (shell: string) => groupTools("capture", shell);
 		const nativeOk = { capture: "capture ok: TShark (Wireshark) ", vpn: "vpn ok: wireguard-tools ", routing: "routing ok: BIRD version " };

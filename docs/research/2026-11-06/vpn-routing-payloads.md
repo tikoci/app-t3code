@@ -128,10 +128,10 @@ Debian 13 trixie.
 | --- | ---: | ---: |
 | Packages (closure the image lacks) | 14 | 21 (23 before `lldpd` moved out) |
 | Download | 3,700,844 B (3.5 MiB) | 8,687,316 B (8.3 MiB) |
-| On disk | 11,976,942 B (11.4 MiB) | 34,073,691 B (32.5 MiB) |
+| On disk (latest run) | 11,976,042 B (11.4 MiB) | 34,074,039 B (32.5 MiB) |
 | Baked layer instead (slice 3, gzip) | +3.9 MB per image pull (20 packages, including PPP) | +9.2 MB per image pull |
-| Install (`durationMs`: download on a fast link, verify, extract, probes, smoke; three runs) | 0.64–0.66 s | 0.99–1.28 s |
-| Both groups end to end, fast link (`time t3code-tools install`, three runs) | 1.75–2.1 s | |
+| Install (`durationMs`: download on a fast link, verify, extract, probes, smoke; four runs) | 0.64–0.74 s | 0.99–1.30 s |
+| Both groups end to end, fast link (`time t3code-tools install`, four runs) | 1.75–2.15 s | |
 | At 1 Mbit/s (computed) | about 30 s | about 70 s |
 | Through the shim, 50 runs | `pki --help` 0.44–0.55 s (9–11 ms each, with 15 preloads) | `wg --version` 0.11–0.13 s (2–3 ms each) |
 
@@ -178,6 +178,48 @@ the app image before it was changed:
   evidence script runs with `pipefail`, so transcript exit codes are real
   (raw `pki` 64, config-only `pki` 1).
 
+## Review round (CodeRabbit, on the ready PR)
+
+There were 11 findings, all valid once checked against the tools:
+
+- **arp-scan vendor names.** arp-scan looks for `ieee-oui.txt` and
+  `mac-vendor.txt` in the current directory and then at compiled-in paths
+  the image lacks. A crafted pcap (`ARP_REPLY_PCAP`: one ARP reply from
+  `4c:5e:0c:11:22:33`) decoded with `arp-scan --readpktfromfile` shows
+  `(Unknown)` and two `Cannot open MAC/Vendor file` warnings without the
+  files, and `Routerboard.com` with them. That needs no interface and no
+  privilege. Wrapper rules gained `args` (placed before the caller's;
+  arp-scan takes the last `--ouifile`, so the caller still wins), and the
+  same decode is now a `routing` smoke test and part of
+  `test/routing-tools.sh`.
+- **swanctl config.** swanctl reads `SWANCTL_DIR` (the string is in the
+  binary). The wrapper now sets it too. Rule variables became defaults: a
+  caller's own `STRONGSWAN_CONF` or `SWANCTL_DIR` (even an empty one) wins.
+- **LD_PRELOAD and spaces.** ld.so splits `LD_PRELOAD` on spaces and colons
+  with no escape. Preloads are now file names found on the wrapper's
+  `LD_LIBRARY_PATH`, which splits only on `:`/`;`. Each must be the first
+  file of that name on that path. With `T3CODE_TOOLS_HOME="/data/with
+  space/tools"`, both groups installed and both functional scripts passed.
+  A payload path containing `:` or `;` is refused with a clear error.
+- **Payload id.** Wrapper rules (and a `WRAPPER_FORMAT` version) are hashed
+  into the id of groups that have them, so a corrected rule reinstalls
+  them. `capture` has no rules and keeps its id.
+- **Smoke `{input}`.** The smoke test runner now substitutes `{input}`
+  inside an argument too (`--readpktfromfile={input}`). The first real run
+  of the new arp-scan smoke test failed on exactly that, which a new unit
+  test now covers.
+- **Docs and tests:**
+  - The README's privilege introduction separates host settings (the ping
+    sysctl) from container privileges.
+  - The lab guest is something you boot and provision yourself.
+  - Activation no longer implies compatibility for operations the probes do
+    not reach.
+  - The README routing numbers were stale and are updated.
+  - `ike-scan`'s exit status is checked.
+  - The evidence script keeps nmap's pipeline status.
+  - The docker test forwards `CAPTURE_TOOLS_QEMU_USER` and
+    `ROUTING_TOOLS_QEMU_USER` to the scripts for emulated images.
+
 ## arm64 (QEMU user-mode emulation via binfmt on orca, not native)
 
 Base `node:24-trixie-slim` (arm64) with Bun 1.4.4 copied in, this branch's
@@ -206,7 +248,7 @@ before the review round, with `lldpd` still in `routing`.
 
 ## Evidence for the implementation (habitat C)
 
-- `bun run check` is green. `bun run test` passes 75 tests across 3 files.
+- `bun run check` is green. `bun run test` passes 77 tests across 3 files.
   The new tests cover a synthetic strongSwan-like group: wrapper variables,
   preload selection order and the combined check, the user's own
   `LD_PRELOAD` kept after the payload's, other commands left unwired, a

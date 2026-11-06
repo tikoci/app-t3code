@@ -38,6 +38,8 @@ grep -q "connecting to 'unix:///var/run/charon.vici' failed" out.txt
 # OpenVPN: a static key; ike-scan: an unprivileged source port, no responder.
 openvpn --genkey secret ovpn.key
 grep -q 'BEGIN OpenVPN Static key' ovpn.key
-grep -q '1 hosts scanned' <<<"$(timeout 20 ike-scan --sport=0 --retry=1 127.0.0.1 2>&1)"
+# Assigned on its own line so set -e stops on a failed or timed-out probe.
+ike_output=$(timeout 20 ike-scan --sport=0 --retry=1 127.0.0.1 2>&1)
+grep -q '1 hosts scanned' <<<"$ike_output"
 
 echo "vpn ok: $(wg --version | cut -d' ' -f1-2); $(pki --help 2>/dev/null | sed -n 1p); $(openvpn --version | sed -n 1p | cut -d' ' -f1-2)"

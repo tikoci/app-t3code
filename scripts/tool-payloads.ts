@@ -191,6 +191,9 @@ export interface Desired {
 	debLock?: DebLock;
 }
 
+/** Bump when generated wrapper scripts change shape for groups with wrapper rules (their payload ids change). */
+export const WRAPPER_FORMAT = 1;
+
 const idHash = (parts: readonly (string | number)[]) => createHash("sha256").update(parts.join("\n")).digest("hex").slice(0, 16);
 
 function desiredNpm(group: GroupDef, env: PayloadEnv): Desired | { error: string } {
@@ -227,7 +230,10 @@ function desiredDeb(group: GroupDef, env: PayloadEnv): Desired | { error: string
 	}
 	const lockSha256 = createHash("sha256").update(text).digest("hex");
 	const codename = compat.distro.split("-").pop() ?? compat.distro;
-	const id = `${compat.arch}-${codename}-${idHash([PAYLOAD_SCHEMA, group.name, lockSha256, compat.platform, compat.arch, compat.distro])}`;
+	// Wrapper rules shape the files written into the payload, so a changed
+	// rule is a new payload. Groups without rules (capture) keep their ids.
+	const wiring = group.wrappers?.length ? [`wrappers:${WRAPPER_FORMAT}:${JSON.stringify(group.wrappers)}`] : [];
+	const id = `${compat.arch}-${codename}-${idHash([PAYLOAD_SCHEMA, group.name, lockSha256, compat.platform, compat.arch, compat.distro, ...wiring])}`;
 	return { id, lockSha256, compat, packages: Object.fromEntries(lock.packages.map((p) => [p.name, p.version])), debLock: lock };
 }
 
@@ -773,7 +779,7 @@ async function installOnce(group: GroupDef, desired: Desired, env: PayloadEnv, s
 		// A functional check of the real tools, through their wrappers, before the payload is trusted.
 		const input = join(staging, ".smoke-input");
 		writeFileSync(input, Buffer.from(smoke.inputBase64 ?? "", "base64"));
-		const args = smoke.args.map((arg) => (arg === "{input}" ? input : arg));
+		const args = smoke.args.map((arg) => arg.replaceAll("{input}", input));
 		const smokeBin = join(staging, binRel(group, smoke.command));
 		const smokePath = existsSync(smokeBin) ? smokeBin : ((group.delivery === "deb" ? imageCommand(env.imageRoot, smoke.command) : null) ?? smokeBin);
 		const probe = await run([smokePath, ...args], staging, 60_000);

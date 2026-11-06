@@ -71,6 +71,16 @@ grep -q 'Categories: discovery safe' <<<"$(nmap --script-help banner)"
 grep -Eq '^11791/tcp +open ' <<<"$(nmap -sT -p 11791 -Pn 127.0.0.1)"
 refused "nmap -sS" nmap -sS -p 1 127.0.0.1
 
+# arp-scan's vendor files come from the payload through its wrapper: decode
+# an ARP reply from a MikroTik OUI out of a capture (ARP_REPLY_PCAP in
+# scripts/tool-groups.ts), no interface or privilege needed. A later
+# --ouifile from the caller still wins over the wrapper's.
+printf %s '1MOyoQIABAAAAAAAAAAAAP//AAABAAAAAAAAAAAAAAA8AAAAPAAAAAIAAAAAAUxeDBEiMwgGAAEIAAYEAAJMXgwRIjPAAAIBAgAAAAABwAACAgAAAAAAAAAAAAAAAAAAAAAAAA==' | base64 -d >arp-reply.pcap
+arp_out=$(arp-scan --readpktfromfile=arp-reply.pcap 192.0.2.1 2>&1)
+grep -Eq '^192\.0\.2\.1	4c:5e:0c:11:22:33	Routerboard\.com' <<<"$arp_out"
+if grep -q 'Cannot open MAC/Vendor file' <<<"$arp_out"; then echo "arp-scan missed its vendor files: $arp_out" >&2; exit 1; fi
+grep -q 'Cannot open MAC/Vendor file /nonexistent.txt' <<<"$(arp-scan --ouifile=/nonexistent.txt --readpktfromfile=arp-reply.pcap 192.0.2.1 2>&1)"
+
 # These need CAP_NET_ADMIN or CAP_NET_RAW: refused with a permission error.
 # ROUTING_TOOLS_QEMU_USER=1 skips them: QEMU user-mode emulation (arm64 on an
 # amd64 host) has no netfilter netlink, so they fail before any permission check.
