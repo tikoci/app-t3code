@@ -218,7 +218,7 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			expect(partial.selector.unknown).toEqual(["bogus"]);
 			expect(partial.groups.find((group) => group.name === "vpn")?.state).toBe("not-selected");
 			const logs = Bun.spawnSync(["docker", "logs", name]);
-			expect(logs.stderr.toString()).toContain('unknown group "bogus" ignored');
+			expect(`${logs.stdout}${logs.stderr}`).toContain('unknown group "bogus" ignored');
 			await run("test", "!", "-e", "/tmp/replacement-fixture");
 			expect(
 				await run(
