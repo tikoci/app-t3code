@@ -187,10 +187,14 @@ That choice is left to the next slice.
   timestamps, so an unchanged Debian state gives a byte-identical lock and
   the same payload id. It is copied into the build inventory as
   `capture-debs.lock.json`. Packages the image already has are never in the
-  closure. If apt would *upgrade* one of them, the lock records it under
-  `imageUpgrades` and the build prints a warning, but it is not extracted, so
-  a payload copy never shadows an image library such as a lagging `libc6`.
-  The current amd64 lock has none.
+  closure. If apt would *upgrade* one of the group's root packages
+  (`tcpdump`, `tshark`, `wireshark-common`, `nfdump`) already in the image,
+  lock generation fails. The image copy would win over the payload's, and an
+  old tool still answering `--version` is no proof that a security update
+  landed. For any other image dependency, a proposed upgrade is recorded
+  under `imageUpgrades` and the build prints a warning, but it is not
+  extracted, so a payload copy never shadows an image library such as a
+  lagging `libc6`. The current amd64 lock has none.
 - **Payload id**: `<arch>-<codename>-<sha256(schema, group, lock bytes,
   platform, dpkg arch, distro)[:16]>`. A Debian security update in a rebuilt
   image changes the lock, which gives a new id and a background refresh
@@ -229,7 +233,7 @@ That choice is left to the next slice.
 
 ## Evidence for the implementation (habitat C)
 
-- `bun run check` is green. `bun run test` passes 60 tests across 3 files
+- `bun run check` is green. `bun run test` passes 64 tests across 3 files
   (YAML contract, npm payload lifecycle, deb payload lifecycle with a fake
   `dpkg-deb`, fake mirror and fake snapshot service).
 - `APP_T3CODE_DOCKER_IMAGE=app-t3code:slice3 bun test
