@@ -6,7 +6,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 ## Commands
 
 - `bun run check` — biome + `tsc --noEmit`. Keep both green.
-- `bun test test/app-yaml.test.ts` — offline `/app` YAML contract (always runs).
+- `bun run test` — offline `/app` YAML contract and tool-payload lifecycle (always runs).
 - `APP_T3CODE_INTEGRATION=1 bun test test/integration/` — full CHR
   boot + container install + web UI probe. Needs QEMU and network; slow
   (the GHCR image pull alone is ~1GB on a free-license CHR).
@@ -50,6 +50,13 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   YAML `environment:` must also be a Dockerfile `ENV` default with the same
   value (a test enforces it), because an operator's `environment=` set
   drops the YAML values. Never document group changes as a YAML edit.
+- npm payload groups (`dev`) are installed by `scripts/tool-payloads.ts`
+  from the lockfile in `scripts/groups/<group>/` into
+  `/data/.local/share/t3code-tools`; startup only relinks (offline) and
+  installs in the background. Pins change with `make dev-lock`; a changed
+  lockfile is a new payload id on every home. `bun run test` covers the
+  lifecycle with a fake npm; the docker replacement test covers real npm and
+  offline reuse.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
   (including comments), regenerate the link's `yaml` query parameter from

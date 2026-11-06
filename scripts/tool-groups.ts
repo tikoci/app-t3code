@@ -1,31 +1,38 @@
 // T3CODE_TOOL_GROUPS selector, group definitions, and the agent-facing status
-// report (`t3code-tools status`). Slice 1 of issue #5: this module parses and
-// reports; it installs nothing. The image copies it to
-// /usr/local/lib/t3code/tool-groups.ts and runs it with Bun.
+// report (`t3code-tools status`). Issue #5: slice 1 parses and reports; slice 2
+// adds persistent npm payloads under the home (tool-payloads.ts), starting
+// with `dev`. The image copies these files to /usr/local/lib/t3code/ and runs
+// them with Bun.
 //
 // Never throw on operator input: an unknown or malformed selection is a
 // warning, and T3 must always start.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { activateIfIdle, defaultPayloadEnv, installGroups, type PayloadEnv, type PayloadInfo, payloadInfo, prunePayloads } from "./tool-payloads.ts";
 
 export const SELECTOR_ENV = "T3CODE_TOOL_GROUPS";
 export const BUILD_INVENTORY_DIR = "/usr/share/t3code/inventory";
 export const RUNTIME_STATUS_PATH = "/tmp/t3code-tools/status.json";
+/** Lockfiles for npm payload groups: <dir>/<group>/package{,-lock}.json. */
+export const PAYLOAD_SPEC_DIR = join(import.meta.dir, "groups");
 
 /**
  * How a group's tools reach the container today.
  * - `image`: already baked into the image; selection does not gate them yet,
  *   so status probes the real files.
+ * - `npm`: a persistent payload under the home, installed in the background
+ *   from a lockfile shipped in the image (tool-payloads.ts).
  * - `none`: no installer exists in this image yet (later slices).
  */
-export type Delivery = "image" | "none";
+export type Delivery = "image" | "npm" | "none";
 
 /**
- * `pending` is reserved for the background installer (slice 2+); this image
- * never reports it. `not-implemented` means the group was selected but this
- * image has no way to provide it yet.
+ * `pending`: selected, waiting for the background installer. `installing`:
+ * the installer is working on it (including retry back-off). `failed`: the
+ * last install failed and no usable payload is active. `not-implemented`:
+ * selected, but this image has no way to provide the group yet.
  */
-export type GroupState = "not-selected" | "pending" | "ready" | "failed" | "not-implemented";
+export type GroupState = "not-selected" | "pending" | "installing" | "ready" | "failed" | "not-implemented";
 
 export type Check = { kind: "command"; name: string } | { kind: "file"; name: string } | { kind: "library"; name: string };
 
@@ -41,6 +48,8 @@ export interface GroupDef {
 	checks: readonly Check[];
 	/** Runtime privilege the tools need beyond installation (see routeros-protocol-map.md). */
 	privileges: string;
+	/** Installed payload size, for the installer's disk budget (npm delivery). */
+	approxBytes?: number;
 	note?: string;
 }
 
@@ -98,12 +107,14 @@ export const GROUPS: readonly GroupDef[] = [
 	{
 		name: "dev",
 		summary: "TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks (project lockfiles win)",
-		delivery: "none",
+		delivery: "npm",
 		packages: [],
 		npm: ["typescript", "cspell", "markdownlint-cli2", "@biomejs/biome"],
 		checks: cmd("tsc", "cspell", "markdownlint-cli2", "biome"),
 		privileges: "None.",
-		note: "Planned as the first persistent /data group (slice 2).",
+		// 154 MiB measured for node_modules on amd64 (2026-11-06).
+		approxBytes: 160 * 1024 * 1024,
+		note: "Persistent payload under the home, installed in the background on first selection and reused across container replacement. A project's own node_modules/.bin (bun run, npx) still wins.",
 	},
 	{
 		name: "browser",
@@ -294,6 +305,8 @@ export interface GroupStatus {
 	npm: readonly string[];
 	privileges: string;
 	checks: CheckResult[];
+	/** npm delivery only: desired/active payload ids, installer and last result. */
+	payload?: PayloadInfo;
 	note?: string;
 }
 
@@ -330,12 +343,33 @@ function runCheck(check: Check, probe: Probe): CheckResult {
 	return { kind: check.kind, name: check.name, ok: path !== null, path };
 }
 
-export function groupStatus(group: GroupDef, selected: boolean, probe: Probe): GroupStatus {
-	const checks = group.checks.map((check) => runCheck(check, probe));
+/** State of an npm payload group, from its payload info (never from PATH alone). */
+function payloadState(info: PayloadInfo): GroupState {
+	if (info.active && info.linked) return "ready";
+	if (info.installer && info.last?.state === "installing") return "installing";
+	if (info.last?.state === "failed" && (info.last.payloadId === info.desired || info.desired === null)) return "failed";
+	return "pending";
+}
+
+export function groupStatus(group: GroupDef, selected: boolean, probe: Probe, payload?: PayloadInfo): GroupStatus {
+	// Payload groups are checked at their shims, so the result does not depend
+	// on the caller's PATH; other groups are probed where the image put them.
+	const checks =
+		group.delivery === "npm" && payload
+			? group.checks.map((check) => {
+					const path = join(payload.root, "bin", check.name);
+					const ok = check.kind === "command" && existsSync(path);
+					return { kind: check.kind, name: check.name, ok, path: ok ? path : null };
+				})
+			: group.checks.map((check) => runCheck(check, probe));
 	const missing = checks.filter((check) => !check.ok).map((check) => check.name);
 	const present = missing.length === 0;
 	let state: GroupState = "not-selected";
-	if (selected) state = group.delivery === "none" ? "not-implemented" : present ? "ready" : "failed";
+	if (selected) {
+		if (group.delivery === "none") state = "not-implemented";
+		else if (group.delivery === "npm") state = payload ? payloadState(payload) : "pending";
+		else state = present ? "ready" : "failed";
+	}
 	return {
 		name: group.name,
 		summary: group.summary,
@@ -348,6 +382,7 @@ export function groupStatus(group: GroupDef, selected: boolean, probe: Probe): G
 		npm: group.npm ?? [],
 		privileges: group.privileges,
 		checks,
+		...(payload ? { payload } : {}),
 		...(group.note ? { note: group.note } : {}),
 	};
 }
@@ -369,7 +404,12 @@ function readBuildInventory(dir: string) {
 	}
 }
 
-export function buildStatus(raw: string | undefined | null, probe: Probe = systemProbe, inventoryDir = BUILD_INVENTORY_DIR) {
+export function buildStatus(
+	raw: string | undefined | null,
+	probe: Probe = systemProbe,
+	inventoryDir = BUILD_INVENTORY_DIR,
+	payloads: PayloadEnv | null = defaultPayloadEnv(PAYLOAD_SPEC_DIR),
+) {
 	const selection = parseToolGroups(raw);
 	const core = CORE_CHECKS.map((check) => runCheck(check, probe));
 	const coreMissing = core.filter((check) => !check.ok).map((check) => check.name);
@@ -378,11 +418,13 @@ export function buildStatus(raw: string | undefined | null, probe: Probe = syste
 		generatedAt: new Date().toISOString(),
 		selector: selection,
 		core: { state: coreMissing.length === 0 ? "ready" : "degraded", missing: coreMissing, checks: core },
-		groups: GROUPS.map((group) => groupStatus(group, selection.selected.includes(group.name), probe)),
+		groups: GROUPS.map((group) =>
+			groupStatus(group, selection.selected.includes(group.name), probe, group.delivery === "npm" && payloads ? payloadInfo(group, payloads) : undefined),
+		),
 		buildInventory: readBuildInventory(inventoryDir),
 		runtimeStatusPath: RUNTIME_STATUS_PATH,
 		notes: [
-			"Group payload installation is not implemented in this image; selection only reports state.",
+			"npm groups install in the background into the home and are reused across container replacement; image groups are baked in; not-implemented groups have no installer yet.",
 			"Checks are presence probes (PATH, files, ldconfig), not functional tests or capability grants.",
 			"Change the selection with /app/set environment= (see README), never by reapplying the /app YAML.",
 		],
@@ -399,6 +441,14 @@ export function formatStatus(status: Status): string {
 	for (const group of status.groups) {
 		const extra = group.missing.length && group.state !== "not-selected" ? ` missing: ${group.missing.join(", ")}` : "";
 		lines.push(`${group.name.padEnd(13)} ${group.state.padEnd(16)}${group.present ? "present" : "absent "}  ${group.summary}${extra}`);
+		const p = group.payload;
+		if (p && (group.selected || p.installed.length)) {
+			const detail = [`payload ${p.active ?? "none"}${p.stale ? ` (refresh to ${p.desired} due)` : ""}`];
+			if (!group.selected && p.installed.length) detail.push(`kept on disk: ${p.installed.join(", ")} (t3code-tools prune removes)`);
+			if (p.last?.error && group.state !== "ready") detail.push(`last error: ${p.last.error}`);
+			if (p.desiredError) detail.push(p.desiredError);
+			lines.push(`${"".padEnd(14)}${detail.join("; ")}`);
+		}
 	}
 	for (const warning of status.selector.warnings) lines.push(`warning: ${warning}`);
 	const inv = status.buildInventory;
@@ -408,16 +458,37 @@ export function formatStatus(status: Status): string {
 
 const USAGE = `usage: t3code-tools status [--json] [--groups <selection>]
        t3code-tools init
+       t3code-tools install
+       t3code-tools prune
        t3code-tools groups
 
 status   report the T3CODE_TOOL_GROUPS selection and per-group state
          (--groups evaluates another selection without changing anything)
-init     entrypoint hook: log warnings and write ${RUNTIME_STATUS_PATH}; never fails
+init     entrypoint hook: link already-installed payloads for the selection,
+         unlink deselected ones, log warnings and write ${RUNTIME_STATUS_PATH}.
+         Offline and never fails
+install  install missing payloads for the selection (the entrypoint runs this
+         in the background; run it again to retry a failed group)
+prune    delete payloads that no selected group uses, and interrupted installs
 groups   print group definitions and the network package assignment as JSON
 `;
 
-export function main(argv: string[]): number {
+function writeRuntimeStatus(raw: string | undefined) {
+	try {
+		const status = buildStatus(raw);
+		mkdirSync(dirname(RUNTIME_STATUS_PATH), { recursive: true });
+		writeFileSync(`${RUNTIME_STATUS_PATH}.tmp`, `${JSON.stringify(status, null, 2)}\n`);
+		renameSync(`${RUNTIME_STATUS_PATH}.tmp`, RUNTIME_STATUS_PATH);
+		return status;
+	} catch (error) {
+		console.error(`t3code-tools: warning: status unavailable: ${String(error)}`);
+		return null;
+	}
+}
+
+export async function main(argv: string[]): Promise<number> {
 	const [command = "status", ...rest] = argv;
+	const raw = process.env[SELECTOR_ENV];
 	if (command === "-h" || command === "--help" || command === "help") {
 		process.stdout.write(USAGE);
 		return 0;
@@ -427,16 +498,39 @@ export function main(argv: string[]): number {
 		return 0;
 	}
 	if (command === "init") {
+		const selection = parseToolGroups(raw);
 		try {
-			const status = buildStatus(process.env[SELECTOR_ENV]);
+			// Serialized with install/prune; if one is running it activates instead.
+			const pending = await activateIfIdle(GROUPS.filter((g) => g.delivery === "npm"), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
+			if (pending === null) console.error("t3code-tools: an install or prune is running; it will relink payloads when done");
+		} catch (error) {
+			console.error(`t3code-tools: warning: payload activation failed: ${String(error)}`);
+		}
+		const status = writeRuntimeStatus(raw);
+		if (status) {
 			for (const warning of status.selector.warnings) console.error(`t3code-tools: warning: ${warning}`);
 			const summary = status.groups.filter((g) => g.selected).map((g) => `${g.name}=${g.state}`);
 			console.error(`t3code-tools: groups ${summary.length ? summary.join(" ") : "none (core only)"}; core ${status.core.state}`);
-			mkdirSync(dirname(RUNTIME_STATUS_PATH), { recursive: true });
-			writeFileSync(RUNTIME_STATUS_PATH, `${JSON.stringify(status, null, 2)}\n`);
-		} catch (error) {
-			console.error(`t3code-tools: warning: status unavailable: ${String(error)}`);
 		}
+		return 0;
+	}
+	if (command === "install") {
+		const selection = parseToolGroups(raw);
+		const env = defaultPayloadEnv(PAYLOAD_SPEC_DIR);
+		const result = await installGroups(GROUPS.filter((g) => g.delivery === "npm"), selection.selected, env, () => writeRuntimeStatus(raw));
+		writeRuntimeStatus(raw);
+		return Object.values(result.results).some((r) => r.state === "failed") ? 1 : 0;
+	}
+	if (command === "prune") {
+		const selection = parseToolGroups(raw);
+		try {
+			const removed = await prunePayloads(GROUPS.filter((g) => g.delivery === "npm"), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
+			process.stdout.write(removed.length ? `removed ${removed.join(" ")}\n` : "nothing to remove\n");
+		} catch (error) {
+			process.stderr.write(`t3code-tools: ${error instanceof Error ? error.message : String(error)}\n`);
+			return 1;
+		}
+		writeRuntimeStatus(raw);
 		return 0;
 	}
 	if (command !== "status") {
@@ -444,20 +538,20 @@ export function main(argv: string[]): number {
 		return 2;
 	}
 	let json = false;
-	let raw = process.env[SELECTOR_ENV];
+	let selection = raw;
 	for (let i = 0; i < rest.length; i++) {
 		const arg = rest[i];
 		if (arg === "--json") json = true;
-		else if (arg === "--groups" && i + 1 < rest.length) raw = rest[++i];
-		else if (arg?.startsWith("--groups=")) raw = arg.slice("--groups=".length);
+		else if (arg === "--groups" && i + 1 < rest.length) selection = rest[++i];
+		else if (arg?.startsWith("--groups=")) selection = arg.slice("--groups=".length);
 		else {
 			process.stderr.write(USAGE);
 			return 2;
 		}
 	}
-	const status = buildStatus(raw);
+	const status = buildStatus(selection);
 	process.stdout.write(json ? `${JSON.stringify(status, null, 2)}\n` : formatStatus(status));
 	return 0;
 }
 
-if (import.meta.main) process.exit(main(process.argv.slice(2)));
+if (import.meta.main) process.exit(await main(process.argv.slice(2)));

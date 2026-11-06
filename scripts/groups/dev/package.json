@@ -1,0 +1,11 @@
+{
+	"name": "t3code-tools-dev",
+	"private": true,
+	"description": "dev tool group payload (issue #5). Regenerate the lockfile with `make dev-lock`.",
+	"dependencies": {
+		"@biomejs/biome": "2.6.5",
+		"cspell": "10.4.0",
+		"markdownlint-cli2": "0.24.0",
+		"typescript": "7.0.2"
+	}
+}
