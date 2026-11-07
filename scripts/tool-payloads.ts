@@ -172,6 +172,20 @@ export function groupBins(group: GroupDef): string[] {
 	return group.checks.filter((check) => check.kind === "command").map((check) => check.name);
 }
 
+/** deb groups: files the payload must contain, relative to its extracted root (its file checks). */
+export function groupFiles(group: GroupDef): string[] {
+	return group.delivery === "deb" ? group.checks.filter((check) => check.kind === "file").map((check) => check.name) : [];
+}
+
+/** A file check passes on a regular file only (a symlink to one counts): a directory or device at a firmware path is not the firmware. */
+function isRegularFile(path: string): boolean {
+	try {
+		return statSync(path).isFile();
+	} catch {
+		return false;
+	}
+}
+
 const groupDir = (env: PayloadEnv, group: string) => join(env.root, "groups", group);
 const binDir = (env: PayloadEnv) => join(env.root, "bin");
 const currentLink = (env: PayloadEnv, group: string) => join(groupDir(env, group), "current");
@@ -232,7 +246,11 @@ function desiredDeb(group: GroupDef, env: PayloadEnv): Desired | { error: string
 	const codename = compat.distro.split("-").pop() ?? compat.distro;
 	// Wrapper rules shape the files written into the payload, so a changed
 	// rule is a new payload. Groups without rules (capture) keep their ids.
-	const wiring = group.wrappers?.length ? [`wrappers:${WRAPPER_FORMAT}:${JSON.stringify(group.wrappers)}`] : [];
+	const wiring = [
+		...(group.wrappers?.length ? [`wrappers:${WRAPPER_FORMAT}:${JSON.stringify(group.wrappers)}`] : []),
+		// So is the prune list: it decides which files the payload holds.
+		...(group.prune?.length ? [`prune:${JSON.stringify(group.prune)}`] : []),
+	];
 	const id = `${compat.arch}-${codename}-${idHash([PAYLOAD_SCHEMA, group.name, lockSha256, compat.platform, compat.arch, compat.distro, ...wiring])}`;
 	return { id, lockSha256, compat, packages: Object.fromEntries(lock.packages.map((p) => [p.name, p.version])), debLock: lock };
 }
@@ -269,8 +287,11 @@ export interface Manifest {
 		skippedCommands: string[];
 		shadows: string[];
 		downloadedBytes: number;
-		/** Commands with extra wrapper wiring (WrapperRule): variables set and libraries preloaded. */
-		wired?: Record<string, { env: string[]; preload: string[] }>;
+		/** Commands with extra wrapper wiring (WrapperRule): variables set, leading arguments (`{root}` unexpanded) and libraries preloaded. */
+		wired?: Record<string, { env: string[]; args?: string[]; preload: string[] }>;
+		/** Paths removed after extraction (GroupDef.prune) and the bytes they held. */
+		pruned?: string[];
+		prunedBytes?: number;
 	};
 }
 
@@ -321,6 +342,7 @@ export function verifyPayload(dir: string, group: GroupDef, expectedId?: string,
 	const missing = [
 		...linked.filter((bin) => !existsSync(join(dir, binRel(group, bin)))),
 		...groupBins(group).filter((bin) => !linked.includes(bin) && !(group.delivery === "deb" && imageRoot !== undefined && imageCommand(imageRoot, bin))),
+		...groupFiles(group).filter((file) => !isRegularFile(join(dir, "root", file))),
 	];
 	return { ok: missing.length === 0, missing, manifest, ...(missing.length ? { error: "payload files missing" } : {}) };
 }
@@ -569,6 +591,8 @@ export interface PayloadInfo {
 	log: string;
 	/** Where each required command resolves: its shim, or (deb) the image's own copy; null if neither. */
 	commandPaths: Record<string, string | null>;
+	/** deb: where each required file resolves, through the group's `current` link (stable across refreshes); null unless active. */
+	filePaths: Record<string, string | null>;
 }
 
 /** Directory entries, or none if it does not exist. */
@@ -618,6 +642,12 @@ export function payloadInfo(group: GroupDef, env: PayloadEnv): PayloadInfo {
 	const shimOk = (bin: string) => readLink(join(binDir(env), bin)) === shimTarget(group, bin) && existsSync(join(binDir(env), bin));
 	const linked = active !== null && payloadBins(group, activeCheck?.manifest ?? null).every((bin) => owned(bin) !== null || shimOk(bin));
 	const commandPaths = Object.fromEntries(groupBins(group).map((bin) => [bin, owned(bin) ?? (shimOk(bin) ? join(binDir(env), bin) : null)]));
+	const filePaths = Object.fromEntries(
+		groupFiles(group).map((file) => {
+			const path = join(currentLink(env, group.name), "root", file);
+			return [file, active !== null && isRegularFile(path) ? path : null];
+		}),
+	);
 	return {
 		root: env.root,
 		desired: "id" in desired ? desired.id : null,
@@ -631,6 +661,7 @@ export function payloadInfo(group: GroupDef, env: PayloadEnv): PayloadInfo {
 		last: readState(env)[group.name] ?? null,
 		log: join(env.root, "install.log"),
 		commandPaths,
+		filePaths,
 	};
 }
 
@@ -745,13 +776,20 @@ async function buildDeb(group: GroupDef, desired: Desired, env: PayloadEnv, stag
 		},
 		AbortSignal.timeout(env.installTimeoutMs),
 		group.wrappers ?? [],
+		group.prune ?? [],
 	);
 	// A required command the image itself provides is satisfied by the image.
 	const missing = groupBins(group).filter((bin) => !result.commands.includes(bin) && !imageCommand(env.imageRoot, bin));
 	if (missing.length) throw new Error(`neither the payload nor the image provides ${missing.join(", ")}`);
+	const absent = groupFiles(group).filter((file) => !isRegularFile(join(staging, "root", file)));
+	if (absent.length) throw new Error(`the payload lacks ${absent.join(", ")}`);
 	if (result.downloadedBytes) env.log(`${group.name}: downloaded ${(result.downloadedBytes / MiB).toFixed(1)} MiB in ${lock.packages.length} packages, all SHA256-verified`);
-	const { debs, libDirs, skippedCommands, shadows, downloadedBytes, wired } = result;
-	return { commands: result.commands, deb: { debs, libDirs, skippedCommands, shadows, downloadedBytes, ...(wired ? { wired } : {}) } };
+	if (result.pruned.length) env.log(`${group.name}: pruned ${result.pruned.length} unused paths, ${(result.prunedBytes / MiB).toFixed(1)} MiB`);
+	const { debs, libDirs, skippedCommands, shadows, downloadedBytes, wired, pruned, prunedBytes } = result;
+	return {
+		commands: result.commands,
+		deb: { debs, libDirs, skippedCommands, shadows, downloadedBytes, ...(wired ? { wired } : {}), ...(pruned.length ? { pruned, prunedBytes } : {}) },
+	};
 }
 
 async function installOnce(group: GroupDef, desired: Desired, env: PayloadEnv, staging: string, cache: string): Promise<Manifest> {

@@ -70,7 +70,9 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   Never claim capture privileges from installing it (#7).
 - `vpn` and `routing` (slice 4) are deb payloads too. A tool that only knows
   compiled-in paths gets a `wrappers` rule in its group (env with `{root}`,
-  plus an install-time-checked `LD_PRELOAD` plugin set): strongSwan has no
+  and `{multiarch}` for triplet paths, expanded from the lock's dpkg arch,
+  never Bun's `process.arch`; plus an install-time-checked `LD_PRELOAD`
+  plugin set): strongSwan has no
   runtime plugin dir, so `pki`/`swanctl` preload the plugins that load
   against libstrongswan alone. Probes that cannot exit 0 (birdc without a
   daemon; nft/conntrack without netfilter netlink, e.g. under QEMU user mode)
@@ -81,6 +83,21 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   "Privileges by tool" table and each group's `privileges` (plus
   `CORE_PRIVILEGES`) in step when tools move.
   See `docs/research/2026-11-06/vpn-routing-payloads.md`.
+- `labs` (slice 5) is a deb payload too: QEMU and its firmware are no longer
+  in the image (the first apt layer dropped them, which also moved a few
+  libraries into the `capture`/`vpn` closures). Debian's QEMU is not
+  relocatable (data dirs compiled in); the `qemu-system-*` wrappers pass
+  leading `-L` for the payload's `share/qemu`, `share/seabios` and
+  `lib/ipxe/qemu`, plus `QEMU_MODULE_DIR`. The group `prune`s the secure-boot
+  AAVMF images (256 MiB) after extraction; the prune list is in the payload
+  id. In a deb group, `file` checks are paths inside the payload root.
+  quickchr stays in the image (`/opt/bun/bin` counts as an image bin dir)
+  and finds arm64 UEFI firmware via `qemu-system-aarch64 -L help`, which
+  ships in quickchr 0.5.6 (`@next`; tikoci/quickchr#254/#255). Older builds
+  fail with `MISSING_FIRMWARE` on arm64. Its smoke tests boot firmware, not
+  a CHR; CHR boots are the research probe
+  (`scripts/research-quickchr-runtime.ts`, `QUICKCHR_MODULE` for a branch
+  build). See `docs/research/2026-11-06/labs-qemu-payload.md`.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
   (including comments), regenerate the link's `yaml` query parameter from

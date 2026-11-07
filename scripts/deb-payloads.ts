@@ -27,8 +27,8 @@
 // extracted. A superseded version that left deb.debian.org is fetched from
 // snapshot.debian.org and checked the same way.
 import { createHash } from "node:crypto";
-import { chmodSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, relative } from "node:path";
+import { chmodSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, normalize, relative } from "node:path";
 
 export const DEB_LOCK_SCHEMA = 1;
 export const DEB_LOCK_FILE = "debs.lock.json";
@@ -408,7 +408,9 @@ function walk(dir: string, visit: (path: string, isDir: boolean) => void) {
 }
 
 const BIN_DIRS = ["usr/bin", "usr/sbin", "bin", "sbin"];
-const IMAGE_BIN_DIRS = ["usr/local/bin", "usr/local/sbin", ...BIN_DIRS];
+// opt/bun/bin: the image's Bun globals (quickchr, centrs), on PATH after the
+// payload shims; labs requires quickchr from there.
+const IMAGE_BIN_DIRS = ["usr/local/bin", "usr/local/sbin", ...BIN_DIRS, "opt/bun/bin"];
 
 /** The image's own executable of this name, if any: an image command always wins over a payload's. */
 export function imageCommand(imageRoot: string, name: string): string | null {
@@ -433,10 +435,12 @@ export interface WrapperRule {
 	commands: readonly string[];
 	/**
 	 * Defaults for these commands only: a variable the caller already set wins.
-	 * `{root}` is the payload's extracted root; everything else is literal.
+	 * `{root}` is the payload's extracted root and `{multiarch}` the lock's
+	 * Debian multiarch triplet (both here and in `args` and `preload`);
+	 * everything else is literal.
 	 */
 	env?: Readonly<Record<string, string>>;
-	/** Arguments placed before the caller's (`{root}` expands); for most tools a later repeat of an option wins, so the caller can still override. */
+	/** Arguments placed before the caller's (`{root}` and `{multiarch}` expand); for most tools a later repeat of an option wins, so the caller can still override. */
 	args?: readonly string[];
 	/**
 	 * LD_PRELOAD for these commands: `libraries` (relative to root), then every
@@ -623,6 +627,87 @@ export function layoutDebPayload(
 export interface DebInstallResult extends DebPayloadLayout {
 	debs: Record<string, { version: string; sha256: string; source: string }>;
 	downloadedBytes: number;
+	/** Paths (relative to root) removed after extraction, and the bytes they held. */
+	pruned: string[];
+	prunedBytes: number;
+}
+
+/** Bytes under a path, not following symlinks (a symlink counts as itself). */
+function treeBytes(path: string): number {
+	const st = lstatSync(path);
+	if (!st.isDirectory()) return st.size;
+	let sum = 0;
+	walk(path, (child, isDir) => {
+		if (!isDir) sum += lstatSync(child).size;
+	});
+	return sum;
+}
+
+/**
+ * Remove files a group never uses from an extracted root (labs: the
+ * secure-boot AAVMF images, 64 MiB each). Paths are relative to root and
+ * normalized; one that is absent is skipped (a later Debian build may drop
+ * it), one that would leave root is refused.
+ */
+export function pruneExtracted(root: string, paths: readonly string[]): { pruned: string[]; prunedBytes: number } {
+	const pruned: string[] = [];
+	let prunedBytes = 0;
+	for (const rel of paths) {
+		if (rel === "" || rel === "." || isAbsolute(rel) || normalize(rel) !== rel || rel === ".." || rel.startsWith("../")) {
+			throw new Error(`prune path ${JSON.stringify(rel)} must be a normalized path inside the payload root`);
+		}
+		const path = join(root, rel);
+		let bytes: number;
+		try {
+			bytes = treeBytes(path);
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") continue; // not in this build
+			throw error;
+		}
+		// A symlinked directory on the way (an absolute link in a package) must not lead the delete out of the payload.
+		const realRoot = realpathSync(root);
+		const parent = realpathSync(dirname(path));
+		if (parent !== realRoot && !parent.startsWith(`${realRoot}/`)) throw new Error(`prune path ${rel} resolves outside the payload root (${parent})`);
+		rmSync(path, { recursive: true, force: true });
+		prunedBytes += bytes;
+		pruned.push(rel);
+	}
+	return { pruned, prunedBytes };
+}
+
+/**
+ * Debian architecture to multiarch triplet (`dpkg-architecture
+ * -qDEB_HOST_MULTIARCH`), for the architectures Debian trixie releases.
+ */
+export const DEB_MULTIARCH: Readonly<Record<string, string>> = {
+	amd64: "x86_64-linux-gnu",
+	arm64: "aarch64-linux-gnu",
+	armel: "arm-linux-gnueabi",
+	armhf: "arm-linux-gnueabihf",
+	i386: "i386-linux-gnu",
+	ppc64el: "powerpc64le-linux-gnu",
+	riscv64: "riscv64-linux-gnu",
+	s390x: "s390x-linux-gnu",
+};
+
+/**
+ * Expand `{multiarch}` in wrapper rules for a lock's Debian architecture, so
+ * library paths follow the packages, not the architecture the installer runs as.
+ */
+export function expandMultiarch(rules: readonly WrapperRule[], arch: string): WrapperRule[] {
+	const uses = (text: string) => text.includes("{multiarch}");
+	const triplet = DEB_MULTIARCH[arch];
+	const sub = (text: string) => {
+		if (!uses(text)) return text;
+		if (!triplet) throw new Error(`no multiarch triplet is known for the Debian architecture ${JSON.stringify(arch)}`);
+		return text.replaceAll("{multiarch}", triplet);
+	};
+	return rules.map((rule) => ({
+		...rule,
+		...(rule.env ? { env: Object.fromEntries(Object.entries(rule.env).map(([name, value]) => [name, sub(value)])) } : {}),
+		...(rule.args ? { args: rule.args.map(sub) } : {}),
+		...(rule.preload ? { preload: { libraries: rule.preload.libraries.map(sub), pluginDir: sub(rule.preload.pluginDir) } } : {}),
+	}));
 }
 
 /** Fetch, verify and extract every pinned package into <staging>/root, then write wrappers. */
@@ -634,6 +719,7 @@ export async function installDebPayload(
 	io: DebIo,
 	signal?: AbortSignal,
 	rules: readonly WrapperRule[] = [],
+	prune: readonly string[] = [],
 ): Promise<DebInstallResult> {
 	const root = join(staging, "root");
 	mkdirSync(root, { recursive: true });
@@ -647,7 +733,10 @@ export async function installDebPayload(
 		if (res.code !== 0) throw new Error(`dpkg-deb -x ${pkg.name} exited ${res.code}: ${res.err.trim()}`);
 		debs[pkg.name] = { version: pkg.version, sha256: pkg.sha256, source: source === "cache" ? "cache" : new URL(source).host };
 	}
-	return { ...layoutDebPayload(group, staging, io.imageRoot, rules, io.canPreload ?? preloadLoads), debs, downloadedBytes };
+	// Before the layout: a pruned file is never wrapped or put on a library path.
+	const { pruned, prunedBytes } = pruneExtracted(root, prune);
+	const expanded = expandMultiarch(rules, lock.arch);
+	return { ...layoutDebPayload(group, staging, io.imageRoot, expanded, io.canPreload ?? preloadLoads), debs, downloadedBytes, pruned, prunedBytes };
 }
 
 /** Read and schema-check a lock file. */
