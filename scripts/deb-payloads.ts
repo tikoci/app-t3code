@@ -653,7 +653,7 @@ export function pruneExtracted(root: string, paths: readonly string[]): { pruned
 	const pruned: string[] = [];
 	let prunedBytes = 0;
 	for (const rel of paths) {
-		if (rel === "" || isAbsolute(rel) || normalize(rel) !== rel || rel === ".." || rel.startsWith("../")) {
+		if (rel === "" || rel === "." || isAbsolute(rel) || normalize(rel) !== rel || rel === ".." || rel.startsWith("../")) {
 			throw new Error(`prune path ${JSON.stringify(rel)} must be a normalized path inside the payload root`);
 		}
 		const path = join(root, rel);

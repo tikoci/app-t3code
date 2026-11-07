@@ -1058,14 +1058,14 @@ done
 [ -n "$bios" ] || { echo "qemu: could not load PC BIOS 'bios-256k.bin'" >&2; exit 1; }
 echo "SeaBIOS from $bios"; echo "No bootable device."
 `;
-	const packages = (over: { secboot?: boolean; code?: boolean } = {}): FakePkg[] => [
+	const packages = (over: { secboot?: boolean; code?: boolean | "dir" } = {}): FakePkg[] => [
 		{ name: "qemu-fake", version: "1:10.0.13+ds-0+deb13u1", files: { "usr/bin/qemu-system-x86_64": qemu, "usr/bin/qemu-img": tool("qemu-img") } },
 		{
 			name: "efi-fake",
 			version: "2025.02-8+deb13u1",
 			files: {
 				"usr/share/seabios/bios-256k.bin": "bios",
-				...(over.code === false ? {} : { "usr/share/AAVMF/AAVMF_CODE.fd": "code" }),
+				...(over.code === false ? {} : over.code === "dir" ? { "usr/share/AAVMF/AAVMF_CODE.fd/README": "not firmware" } : { "usr/share/AAVMF/AAVMF_CODE.fd": "code" }),
 				"usr/share/AAVMF/AAVMF_VARS.fd": "vars",
 				...(over.secboot === false ? {} : { "usr/share/AAVMF/AAVMF_CODE.secboot.fd": "x".repeat(4096), "usr/share/AAVMF/AAVMF_CODE.ms.fd": "y".repeat(100) }),
 				"usr/share/qemu/firmware/50-edk2-aarch64-secure.json": "{}",
@@ -1108,8 +1108,9 @@ echo "SeaBIOS from $bios"; echo "No bootable device."
 		});
 		expect(status?.payload?.commandPaths["quickchr"]).toBe(join(tmp, "image", "opt", "bun", "bin", "quickchr"));
 		expect(existsSync(shim("quickchr"))).toBe(false);
-		// A required file that disappears takes the payload out on the next start.
+		// A required file replaced by a directory takes the payload out on the next start.
 		rmSync(join(root, "usr/share/AAVMF/AAVMF_CODE.fd"));
+		mkdirSync(join(root, "usr/share/AAVMF/AAVMF_CODE.fd"));
 		expect(activate([lab], ["lab"], env)).toEqual(["lab"]);
 		expect(existsSync(shim("qemu-system-x86_64"))).toBe(false);
 		expect(labState()?.state).not.toBe("ready");
@@ -1118,6 +1119,14 @@ echo "SeaBIOS from $bios"; echo "No bootable device."
 	test("a payload without a required firmware file never activates", async () => {
 		imageQuickchr();
 		publish(packages({ code: false }), "amd64", "lab");
+		const result = await installGroups([lab], ["lab"], env);
+		expect(result.results["lab"]?.state).toBe("failed");
+		expect(result.results["lab"]?.error).toContain("the payload lacks usr/share/AAVMF/AAVMF_CODE.fd");
+	});
+
+	test("a directory at a required file path does not satisfy the file check", async () => {
+		imageQuickchr();
+		publish(packages({ code: "dir" }), "amd64", "lab");
 		const result = await installGroups([lab], ["lab"], env);
 		expect(result.results["lab"]?.state).toBe("failed");
 		expect(result.results["lab"]?.error).toContain("the payload lacks usr/share/AAVMF/AAVMF_CODE.fd");
@@ -1140,7 +1149,7 @@ echo "SeaBIOS from $bios"; echo "No bootable device."
 		expect(none.id).toBe(plain.id);
 		const root = join(tmp, "prune-root");
 		mkdirSync(root, { recursive: true });
-		for (const bad of ["../etc/passwd", "/etc/passwd", "usr/../../x", "usr//share", "", "./usr"]) {
+		for (const bad of ["../etc/passwd", "/etc/passwd", "usr/../../x", "usr//share", "", ".", "./usr"]) {
 			expect(() => pruneExtracted(root, [bad])).toThrow("must be a normalized path inside the payload root");
 		}
 		expect(pruneExtracted(root, ["usr/missing"])).toEqual({ pruned: [], prunedBytes: 0 });

@@ -177,6 +177,15 @@ export function groupFiles(group: GroupDef): string[] {
 	return group.delivery === "deb" ? group.checks.filter((check) => check.kind === "file").map((check) => check.name) : [];
 }
 
+/** A file check passes on a regular file only (a symlink to one counts): a directory or device at a firmware path is not the firmware. */
+function isRegularFile(path: string): boolean {
+	try {
+		return statSync(path).isFile();
+	} catch {
+		return false;
+	}
+}
+
 const groupDir = (env: PayloadEnv, group: string) => join(env.root, "groups", group);
 const binDir = (env: PayloadEnv) => join(env.root, "bin");
 const currentLink = (env: PayloadEnv, group: string) => join(groupDir(env, group), "current");
@@ -333,7 +342,7 @@ export function verifyPayload(dir: string, group: GroupDef, expectedId?: string,
 	const missing = [
 		...linked.filter((bin) => !existsSync(join(dir, binRel(group, bin)))),
 		...groupBins(group).filter((bin) => !linked.includes(bin) && !(group.delivery === "deb" && imageRoot !== undefined && imageCommand(imageRoot, bin))),
-		...groupFiles(group).filter((file) => !existsSync(join(dir, "root", file))),
+		...groupFiles(group).filter((file) => !isRegularFile(join(dir, "root", file))),
 	];
 	return { ok: missing.length === 0, missing, manifest, ...(missing.length ? { error: "payload files missing" } : {}) };
 }
@@ -636,7 +645,7 @@ export function payloadInfo(group: GroupDef, env: PayloadEnv): PayloadInfo {
 	const filePaths = Object.fromEntries(
 		groupFiles(group).map((file) => {
 			const path = join(currentLink(env, group.name), "root", file);
-			return [file, active !== null && existsSync(path) ? path : null];
+			return [file, active !== null && isRegularFile(path) ? path : null];
 		}),
 	);
 	return {
@@ -772,7 +781,7 @@ async function buildDeb(group: GroupDef, desired: Desired, env: PayloadEnv, stag
 	// A required command the image itself provides is satisfied by the image.
 	const missing = groupBins(group).filter((bin) => !result.commands.includes(bin) && !imageCommand(env.imageRoot, bin));
 	if (missing.length) throw new Error(`neither the payload nor the image provides ${missing.join(", ")}`);
-	const absent = groupFiles(group).filter((file) => !existsSync(join(staging, "root", file)));
+	const absent = groupFiles(group).filter((file) => !isRegularFile(join(staging, "root", file)));
 	if (absent.length) throw new Error(`the payload lacks ${absent.join(", ")}`);
 	if (result.downloadedBytes) env.log(`${group.name}: downloaded ${(result.downloadedBytes / MiB).toFixed(1)} MiB in ${lock.packages.length} packages, all SHA256-verified`);
 	if (result.pruned.length) env.log(`${group.name}: pruned ${result.pruned.length} unused paths, ${(result.prunedBytes / MiB).toFixed(1)} MiB`);
