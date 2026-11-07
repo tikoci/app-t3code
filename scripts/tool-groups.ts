@@ -3,8 +3,11 @@
 // adds persistent npm payloads under the home (tool-payloads.ts), starting
 // with `dev`; slice 3 adds Debian-package payloads (deb-payloads.ts), starting
 // with `capture`; slice 4 moves `vpn` and `routing` onto them; slice 5 moves
-// `labs` (QEMU and its firmware) out of the image. The image copies these
-// files to /usr/local/lib/t3code/ and runs them with Bun.
+// `labs` (QEMU and its firmware) out of the image. The final slice retires
+// the baked `browser` and `agents-extra` placeholders (browser libraries and
+// provider CLIs are core, harness selection is issue #13) and makes the image
+// default an explicit list of the five groups. The image copies these files
+// to /usr/local/lib/t3code/ and runs them with Bun.
 //
 // Never throw on operator input: an unknown or malformed selection is a
 // warning, and T3 must always start.
@@ -20,16 +23,14 @@ export const RUNTIME_STATUS_PATH = "/tmp/t3code-tools/status.json";
 export const PAYLOAD_SPEC_DIR = join(import.meta.dir, "groups");
 
 /**
- * How a group's tools reach the container today.
- * - `image`: already baked into the image; selection does not gate them yet,
- *   so status probes the real files.
+ * How a group's tools reach the container.
  * - `npm`: a persistent payload under the home, installed in the background
  *   from a lockfile shipped in the image (tool-payloads.ts).
  * - `deb`: a persistent payload of Debian packages under the home, pinned
  *   from the image's apt metadata at build time (deb-payloads.ts).
  * - `none`: no installer exists in this image yet (later slices).
  */
-export type Delivery = "image" | "npm" | "deb" | "none";
+export type Delivery = "npm" | "deb" | "none";
 
 /**
  * `pending`: selected, waiting for the background installer. `installing`:
@@ -304,61 +305,38 @@ export const GROUPS: readonly GroupDef[] = [
 		approxBytes: 160 * 1024 * 1024,
 		note: "Persistent payload under the home, installed in the background on first selection and reused across container replacement. A project's own node_modules/.bin (bun run, npx) still wins.",
 	},
-	{
-		name: "browser",
-		summary: "Native libraries for T3's built-in browser (the browser downloads itself on first use)",
-		delivery: "image",
-		packages: [
-			"fontconfig",
-			"fonts-liberation",
-			"libasound2t64",
-			"libatk-bridge2.0-0t64",
-			"libatk1.0-0t64",
-			"libatspi2.0-0t64",
-			"libdbus-1-3",
-			"libexpat1",
-			"libgbm1",
-			"libglib2.0-0t64",
-			"libnss3",
-			"libx11-6",
-			"libxcb1",
-			"libxcomposite1",
-			"libxdamage1",
-			"libxext6",
-			"libxfixes3",
-			"libxkbcommon0",
-			"libxrandr2",
-		],
-		checks: [
-			...["libnss3.so", "libgbm.so.1", "libasound.so.2", "libatk-bridge-2.0.so.0", "libxkbcommon.so.0", "libXcomposite.so.1", "libXrandr.so.2"].map(
-				(name): Check => ({ kind: "library", name }),
-			),
-			...cmd("fc-list"),
-		],
-		privileges: "User namespaces for the browser sandbox, if the host allows them.",
-		note: "Still baked into the image. Checks the native libraries only, not T3's downloaded browser.",
-	},
-	{
-		name: "agents-extra",
-		summary: "Provider CLIs beyond the core provider",
-		delivery: "image",
-		packages: [],
-		npm: ["@openai/codex", "opencode-ai"],
-		checks: cmd("codex", "opencode", "muse"),
-		privileges: "None.",
-		note: "Still baked into the image. The core provider has not been chosen yet, so every baked provider is listed here. Claude Code installs into /data on first start and is not part of any group.",
-	},
 ];
 
 export const GROUP_NAMES: readonly string[] = GROUPS.map((group) => group.name);
 
-/** What the core must provide regardless of selection (presence probes). */
-export const CORE_CHECKS: readonly Check[] = cmd(
+/**
+ * The selection when T3CODE_TOOL_GROUPS is unset or empty, and the value the
+ * image ENV and the /app YAML ship. An explicit list rather than `all`, so a
+ * group added later never activates on an existing install by itself:
+ * operators remove names, or set `none` for core only.
+ */
+export const DEFAULT_TOOL_GROUPS = "capture labs vpn routing dev";
+
+/** Native libraries T3's built-in browser loads; the browser itself downloads on first use. */
+export const BROWSER_LIBRARIES = ["libnss3.so", "libgbm.so.1", "libasound.so.2", "libatk-bridge-2.0.so.0", "libxkbcommon.so.0", "libXcomposite.so.1", "libXrandr.so.2"] as const;
+
+/**
+ * What the core must provide regardless of selection (presence probes): T3,
+ * the language bootstraps (Node, Bun, Python with uv/uvx), sqlite3, the
+ * provider CLIs the image bakes (Claude Code installs into the home in the
+ * background and Muse is not bundled, so neither is a core check; see #13),
+ * the browser's native libraries, centrs and the core network tools.
+ */
+export const CORE_CHECKS: readonly Check[] = [
+	...cmd(
 	"t3",
 	"node",
 	"npm",
 	"bun",
 	"python3",
+	"uv",
+	"uvx",
+	"sqlite3",
 	"git",
 	"ssh",
 	"curl",
@@ -378,7 +356,12 @@ export const CORE_CHECKS: readonly Check[] = cmd(
 	"snmpget",
 	"radclient",
 	"mosquitto_pub",
-);
+	"codex",
+	"opencode",
+	"fc-list",
+	),
+	...BROWSER_LIBRARIES.map((name): Check => ({ kind: "library", name })),
+];
 
 /** What the core network tools need beyond installation (verified on the app image under Docker, 2026-11-06). */
 export const CORE_PRIVILEGES =
@@ -442,6 +425,8 @@ export interface Selection {
 	variable: string;
 	/** The raw value, or null when the variable is unset. */
 	raw: string | null;
+	/** True when an unset or empty value selected DEFAULT_TOOL_GROUPS. */
+	defaulted: boolean;
 	/** Selected group names in definition order. */
 	selected: string[];
 	unknown: string[];
@@ -451,12 +436,15 @@ export interface Selection {
 /**
  * Parse T3CODE_TOOL_GROUPS. Separators: whitespace, `+`, comma (RouterOS
  * `/app/set environment=` splits on commas, so docs use spaces). Names are
- * case-insensitive. Unset or empty means `none` (core only). `all` selects
- * every group. Unknown names are ignored with a warning.
+ * case-insensitive. Unset or empty means DEFAULT_TOOL_GROUPS (the image ENV
+ * sets the same value, so a dropped key falls back to it); `none` means core
+ * only; `all` selects every group, including any added later. Unknown names
+ * are ignored with a warning.
  */
 export function parseToolGroups(raw: string | undefined | null): Selection {
-	const selection: Selection = { variable: SELECTOR_ENV, raw: raw ?? null, selected: [], unknown: [], warnings: [] };
-	const tokens = (raw ?? "")
+	const defaulted = (raw ?? "").trim() === "";
+	const selection: Selection = { variable: SELECTOR_ENV, raw: raw ?? null, defaulted, selected: [], unknown: [], warnings: [] };
+	const tokens = (defaulted ? DEFAULT_TOOL_GROUPS : (raw as string))
 		.split(/[\s+,]+/)
 		.map((token) => token.trim().toLowerCase())
 		.filter(Boolean);
@@ -559,11 +547,7 @@ export function groupStatus(group: GroupDef, selected: boolean, probe: Probe, pa
 	const missing = checks.filter((check) => !check.ok).map((check) => check.name);
 	const present = missing.length === 0;
 	let state: GroupState = "not-selected";
-	if (selected) {
-		if (group.delivery === "none") state = "not-implemented";
-		else if (isPayloadGroup(group)) state = payload ? payloadState(payload) : "pending";
-		else state = present ? "ready" : "failed";
-	}
+	if (selected) state = group.delivery === "none" ? "not-implemented" : payload ? payloadState(payload) : "pending";
 	return {
 		name: group.name,
 		summary: group.summary,
@@ -618,7 +602,9 @@ export function buildStatus(
 		buildInventory: readBuildInventory(inventoryDir),
 		runtimeStatusPath: RUNTIME_STATUS_PATH,
 		notes: [
-			"npm and deb groups install in the background into the home and are reused across container replacement; image groups are baked in; not-implemented groups have no installer yet.",
+			"npm and deb groups install in the background into the home and are reused across container replacement; not-implemented groups have no installer yet.",
+			`Unset or empty ${SELECTOR_ENV} selects the default "${DEFAULT_TOOL_GROUPS}"; "none" is core only. Installing a group grants no privileges (see each group's privileges).`,
+			"Provider CLIs are not tool groups: codex and opencode are core checks; Claude Code installs into the home in the background; Muse is not bundled (issue #13).",
 			"A deb group's file checks are paths inside its payload root, reported through the group's current link.",
 			"Checks are presence probes (PATH, files, ldconfig), not functional tests or capability grants.",
 			"Change the selection with /app/set environment= (see README), never by reapplying the /app YAML.",
@@ -630,7 +616,7 @@ export type Status = ReturnType<typeof buildStatus>;
 
 export function formatStatus(status: Status): string {
 	const lines = [
-		`${SELECTOR_ENV}=${status.selector.raw === null ? "(unset)" : JSON.stringify(status.selector.raw)} -> ${status.selector.selected.length ? status.selector.selected.join(" ") : "none (core only)"}`,
+		`${SELECTOR_ENV}=${status.selector.raw === null ? "(unset)" : JSON.stringify(status.selector.raw)}${status.selector.defaulted ? " (default)" : ""} -> ${status.selector.selected.length ? status.selector.selected.join(" ") : "none (core only)"}`,
 		`core: ${status.core.state}${status.core.missing.length ? ` (missing: ${status.core.missing.join(", ")})` : ""}`,
 	];
 	for (const group of status.groups) {

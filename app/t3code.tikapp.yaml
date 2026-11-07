@@ -26,6 +26,10 @@ services:
       T3CODE_HOST: 0.0.0.0
       T3CODE_PORT: "3773"
       T3CODE_TELEMETRY_ENABLED: "false"
+      # Optional tool groups, installed into /data in the background after
+      # start. Remove names to skip them; "none" is core only. On an installed
+      # app change this with /app/set environment= (README), never yaml=.
+      T3CODE_TOOL_GROUPS: "capture labs vpn routing dev"
     volumes:
       # Keep this name and destination when upgrading: the whole home,
       # including .t3/userdata, projects, worktrees, and provider logins.

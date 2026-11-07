@@ -17,6 +17,7 @@
         T3CODE_HOST: 0.0.0.0
         T3CODE_PORT: "3773"
         T3CODE_TELEMETRY_ENABLED: "false"
+        T3CODE_TOOL_GROUPS: "capture labs vpn routing dev"
       volumes:
         - t3code-data:/data
       restart: unless-stopped

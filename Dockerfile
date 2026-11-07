@@ -3,9 +3,10 @@
 # Rebuilds the wodby/t3code approach from our own Dockerfile so the image we
 # ship on GHCR is one we control: Debian trixie-slim (glibc, which the T3 Code
 # release binaries need), per-arch t3 tarball from pingdotgg/t3code with
-# SHA256 verification, Codex + opencode + Muse Code and Bun/RouterOS tools
-# baked in, Claude Code installed to the volume on first boot (license
-# forbids redistribution).
+# SHA256 verification, Codex + opencode, uv/uvx and Bun/RouterOS tools baked
+# in, Claude Code installed to the volume on first boot (license forbids
+# redistribution). Muse Code is not bundled (users may install it into the
+# home; per-harness provisioning is issue #13).
 #
 # Build:
 #   docker buildx build --platform linux/amd64,linux/arm64 \
@@ -15,8 +16,12 @@
 
 ARG NODE_VER=24
 ARG BUN_VER=1.4.4
+ARG UV_VER=0.13.7
 
 FROM oven/bun:${BUN_VER}-slim AS bun
+
+# Astral's multi-arch distroless image carries only the static uv and uvx.
+FROM ghcr.io/astral-sh/uv:${UV_VER} AS uv
 
 FROM node:${NODE_VER}-trixie-slim AS runtime
 
@@ -33,13 +38,22 @@ ENV T3CODE_PORT=3773
 # RouterOS `/app/set environment=` replaces the whole env list, so anything
 # the /app YAML sets must also be an image default here (issue #5).
 ENV T3CODE_TELEMETRY_ENABLED=false
+# Optional tool groups (scripts/tool-groups.ts DEFAULT_TOOL_GROUPS): an
+# explicit list, so a group added later is never enabled silently. Operators
+# remove names, or set `none` for core only, with /app/set environment=.
+ENV T3CODE_TOOL_GROUPS="capture labs vpn routing dev"
+# uv uses the image's Python 3 and never fetches a managed Python by itself;
+# `uv python install` still works when asked for explicitly.
+ENV UV_PYTHON_DOWNLOADS=manual
 
 ENV SHELL=/bin/bash
 
 # Browser dependencies for T3 Code's built-in browser, which downloads itself
-# on first use. `t3 browser setup` cannot run at build time: it needs the
-# browser downloaded first and fails on build hosts that restrict user
-# namespaces. (Same set as upstream wodby/t3code.)
+# on first use. They are core, not an optional group: T3 starts its browser
+# itself, so the libraries stay where the system loader finds them.
+# `t3 browser setup` cannot run at build time: it needs the browser
+# downloaded first and fails on build hosts that restrict user namespaces.
+# (Same set as upstream wodby/t3code.)
 RUN echo 'Acquire::Retries "10";' > /etc/apt/apt.conf.d/80-retries && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -87,13 +101,11 @@ RUN ln -s bun /usr/local/bin/bunx && \
         "@tikoci/centrs@${CENTRS_VER}" && \
     rm -rf /root/.bun/install/cache
 
-# Meta's official installer verifies the platform binary's size and SHA256.
-# Ship that native binary directly: updates arrive with image replacements,
-# rather than a launcher trying to modify root-owned image files at runtime.
-RUN curl -fsSL --retry 3 https://dev.meta.ai/install.sh -o /tmp/install-muse.sh && \
-    MUSE_INSTALL_DIR=/opt/muse MUSE_LOGIN=0 MUSE_UPGRADE_MODE=1 bash /tmp/install-muse.sh && \
-    install -m 0755 "/opt/muse/muse-bin-$(cat /opt/muse/.muse-version)" /usr/local/bin/muse && \
-    rm -rf /opt/muse /tmp/install-muse.sh
+# Python bootstrap: uv for project environments, uvx for one-off Python CLIs.
+# Tools, caches and venvs land in the home (/data/.local, /data/.cache/uv), so
+# they survive image replacement; a uv the user installs in /data/.local/bin
+# wins on PATH.
+COPY --from=uv /uv /uvx /usr/local/bin/
 
 RUN usermod --home /data --shell /bin/bash node && \
     mkdir -p /data && \
@@ -129,9 +141,9 @@ RUN npm install -g --no-fund --no-audit \
     npm cache clean --force
 
 # Core network tools (issue #5 assignment, see README "Network tool
-# assignment"). Small user-space clients only; capture, VPN and routing peers
-# belong to optional groups. A separate late layer keeps the heavy layers
-# above cacheable when this list changes.
+# assignment") and the sqlite3 CLI. Small user-space clients only; capture,
+# VPN and routing peers belong to optional groups. A separate late layer keeps
+# the heavy layers above cacheable when this list changes.
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         bind9-dnsutils \
@@ -145,6 +157,7 @@ RUN apt-get update && \
         netcat-openbsd \
         snmp \
         socat \
+        sqlite3 \
         traceroute \
         whois && \
     apt-get clean && \
@@ -169,9 +182,10 @@ COPY scripts/groups /usr/local/lib/t3code/groups
 
 # Native tool groups (`capture`, `vpn`, `routing`, `labs`) install as
 # Debian-package payloads into the home at runtime, as node. QEMU and its
-# firmware are not in the image: `labs` brings them (quickchr stays above). Pin each group's dependency closure (whatever this
-# image lacks) by version, size and SHA256 from apt's verified indexes now, so
-# a rebuild picks up Debian security updates and the payload id follows them.
+# firmware are not in the image: `labs` brings them (quickchr stays above).
+# Pin each group's dependency closure (whatever this image lacks) by version,
+# size and SHA256 from apt's verified indexes now, so a rebuild picks up
+# Debian security updates and the payload id follows them.
 # Must stay after every apt layer: the closure is computed against them.
 # HOME=/root: Bun run as root would otherwise seed a root-owned /data/.bun.
 RUN apt-get update && \
