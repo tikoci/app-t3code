@@ -64,6 +64,17 @@ export const PAYLOAD_SCHEMA = 1;
 const MiB = 1024 * 1024;
 /** Free space kept for projects and VMs on top of a group's own budget. */
 export const DISK_RESERVE_BYTES = 256 * MiB;
+
+/** `t3code-tools install` from a terminal: three attempts within about 75 s. */
+export const INTERACTIVE_BACKOFF_MS: readonly number[] = [15_000, 60_000];
+
+/**
+ * `t3code-tools install --keep-trying` (the entrypoint's background run): a
+ * router often starts the container before its uplink or DNS is up, so keep
+ * retrying for about a day: 15 s, 1, 5, 15 and 30 min, then hourly. Verified
+ * .debs are kept between attempts, so a retry downloads only what is missing.
+ */
+export const KEEP_TRYING_BACKOFF_MS: readonly number[] = [15_000, 60_000, 5 * 60_000, 15 * 60_000, 30 * 60_000, ...Array<number>(23).fill(60 * 60_000)];
 const LOG_CAP_BYTES = 1 * MiB;
 
 /** Runtime an npm payload must match. */
@@ -107,14 +118,27 @@ export interface PayloadEnv {
 	log: (line: string) => void;
 	/** Free bytes available to the payload root. */
 	freeBytes: (path: string) => number;
-	/** Delays between attempts; attempts = backoff.length + 1. */
+	/**
+	 * Delays between retry rounds; attempts = backoff.length + 1. The lock is
+	 * released while waiting, so `t3code-tools install` (retry now) and
+	 * `prune` are never blocked by a back-off.
+	 */
 	backoffMs: readonly number[];
 	/** Per-attempt install timeout. */
 	installTimeoutMs: number;
 }
 
-export function defaultRoot(env: NodeJS.ProcessEnv = process.env): string {
-	return env["T3CODE_TOOLS_HOME"] || join(env["HOME"] || "/data", ".local/share/t3code-tools");
+/** The app's home: the image's `ENV HOME` and node's passwd home. */
+export const APP_HOME = "/data";
+
+/**
+ * The payload root: T3CODE_TOOLS_HOME, else under HOME. Root always uses the
+ * app's home: a root shell (RouterOS /container/shell, `docker exec -u 0`)
+ * may carry HOME=/root, and the payloads are the app's, not root's.
+ */
+export function defaultRoot(env: NodeJS.ProcessEnv = process.env, uid: number | undefined = process.getuid?.()): string {
+	const home = uid === 0 ? APP_HOME : env["HOME"] || APP_HOME;
+	return env["T3CODE_TOOLS_HOME"] || join(home, ".local/share/t3code-tools");
 }
 
 let cachedCompat: Compat | null | undefined;
@@ -149,7 +173,7 @@ export function defaultPayloadEnv(specDir: string, env: NodeJS.ProcessEnv = proc
 			const fs = statfsSync(path);
 			return Number(fs.bavail) * Number(fs.bsize);
 		},
-		backoffMs: [15_000, 60_000],
+		backoffMs: INTERACTIVE_BACKOFF_MS,
 		installTimeoutMs: 30 * 60_000,
 	};
 }
@@ -423,6 +447,8 @@ export interface StateRecord {
 	error?: string;
 	/** True when the error will not clear by retrying (e.g. low disk). */
 	permanent?: boolean;
+	/** When the waiting installer retries this group (state `installing` after a failed attempt). */
+	nextAttemptAt?: string;
 }
 
 export function readState(env: PayloadEnv): Record<string, StateRecord> {
@@ -454,6 +480,8 @@ export interface LockInfo extends ProcessId {
 	startedAt: string;
 	/** The payload child the holder is running, so a successor can stop it if the holder died first. */
 	child?: ProcessId & { processGroup?: boolean };
+	/** In install.wait only: when the waiting installer (which holds no lock) retries. */
+	waitingUntil?: string;
 }
 
 /** Start time of a process in clock ticks since boot, or null if it does not exist. */
@@ -496,8 +524,28 @@ function readLockInfo(path: string): LockInfo | null {
  * checked by pid + start time. Exclusion uses the kernel lock.
  */
 export function liveInstaller(env: PayloadEnv): LockInfo | null {
-	const info = readLockInfo(join(env.root, "install.lock"));
-	return info && isSameProcess(info) ? info : null;
+	const holder = readLockInfo(join(env.root, "install.lock"));
+	if (holder && isSameProcess(holder)) return holder;
+	const waiter = readLockInfo(waitPath(env));
+	return waiter && isSameProcess(waiter) ? waiter : null;
+}
+
+/**
+ * install.wait: the owner record of an installer waiting out a back-off. It
+ * is separate from install.lock, so whoever takes the lock meanwhile (a
+ * manual install, prune) never erases it; status still reports the retry.
+ */
+const waitPath = (env: PayloadEnv) => join(env.root, "install.wait");
+
+function writeWait(env: PayloadEnv, waitingUntil: string) {
+	const info: LockInfo = { pid: process.pid, startTicks: processStartTicks(process.pid), command: "install", startedAt: new Date().toISOString(), waitingUntil };
+	writeFileSync(`${waitPath(env)}.tmp-${process.pid}`, JSON.stringify(info));
+	renameSync(`${waitPath(env)}.tmp-${process.pid}`, waitPath(env));
+}
+
+/** Remove install.wait if this process wrote it (another waiter's record stays). */
+function clearWait(env: PayloadEnv) {
+	if (readLockInfo(waitPath(env))?.pid === process.pid) rmSync(waitPath(env), { force: true });
 }
 
 const LOCK_EX = 2;
@@ -879,9 +927,16 @@ export interface InstallResult {
 }
 
 /**
- * Background installer: sequentially install the desired payload of every
- * selected group that lacks one, with a disk budget and bounded retries, then
- * activate it. `onChange` runs after each state transition.
+ * Background installer: install the desired payload of every selected group
+ * that lacks one, with a disk budget, then activate it. Retries run in
+ * rounds: each round takes the lock, tries every group still missing once
+ * (so one failing group never holds up the others), and releases the lock
+ * for the back-off (recording install.wait). A later round that finds the
+ * lock busy (a prune, a manual install) uses no attempt: it waits as long
+ * again and retries, at most `attempts` times. At the end, results
+ * are reconciled with what is actually installed: a payload another run
+ * finished counts as ready, and a group still missing ends failed (never a
+ * left-over `installing`). `onChange` runs after each state transition.
  */
 export async function installGroups(
 	groups: readonly GroupDef[],
@@ -890,73 +945,162 @@ export async function installGroups(
 	onChange: () => void = () => {},
 ): Promise<InstallResult> {
 	const results: Record<string, StateRecord> = {};
+	const attempts = env.backoffMs.length + 1;
+	const tries: Record<string, number> = {};
+	const permanent = new Set<string>();
+	let locked = false;
+	let busy = 0;
+	try {
+		for (let round = 0; round < attempts; ) {
+			clearWait(env);
+			if (!(await acquireLock(env, "install"))) {
+				if (round === 0) {
+					env.log("another installer or prune is running; leaving it to finish");
+					return { locked: false, results };
+				}
+				// A busy round (a prune, a manual install) costs no attempt:
+				// wait as long again and retry, at most `attempts` times.
+				if (++busy > attempts) break;
+				env.log(`round ${round + 1}/${attempts}: another installer or prune holds the lock; trying again later`);
+				await env.sleep(env.backoffMs[round - 1] as number);
+				continue;
+			} else {
+				locked = true;
+				const retry: string[] = [];
+				let waitingUntil: string | undefined;
+				try {
+					// Interrupted installs of every group, selected or not.
+					for (const group of groups) cleanStaging(env, group.name);
+					const todo = activate(groups, selected, env).filter((name) => !permanent.has(name));
+					for (const name of todo) {
+						const group = groups.find((g) => g.name === name) as GroupDef;
+						const attempt = (tries[name] ?? 0) + 1;
+						tries[name] = attempt;
+						const outcome = await installRound(group, env, attempt, round === attempts - 1, (rec) => {
+							results[name] = rec;
+							writeState(env, name, rec);
+							onChange();
+						});
+						if (outcome === "permanent") permanent.add(name);
+						if (outcome === "retry") retry.push(name);
+					}
+					if (retry.length) {
+						waitingUntil = new Date(Date.now() + (env.backoffMs[round] as number)).toISOString();
+						for (const name of retry) {
+							const rec = { ...(results[name] as StateRecord), nextAttemptAt: waitingUntil };
+							results[name] = rec;
+							writeState(env, name, rec);
+						}
+						writeWait(env, waitingUntil);
+					}
+				} finally {
+					releaseLock(env);
+				}
+				if (!waitingUntil) break;
+				onChange();
+				env.log(`retrying ${retry.join(" ")} at ${waitingUntil}`);
+			}
+			if (round < attempts - 1) await env.sleep(env.backoffMs[round] as number);
+			round++;
+		}
+	} finally {
+		clearWait(env);
+	}
+	if (locked) await reconcile(groups, selected, env, results, onChange);
+	return { locked, results };
+}
+
+/**
+ * Final word on each group this run touched. Under the lock, a group that
+ * no longer needs installing is ready (whoever finished it); one still
+ * missing that this run left `installing` (lock busy at the end) is recorded
+ * failed. If the lock is busy, the holder owns the state file; results still
+ * report those groups failed, so the caller's exit code is honest.
+ */
+async function reconcile(groups: readonly GroupDef[], selected: readonly string[], env: PayloadEnv, results: Record<string, StateRecord>, onChange: () => void) {
+	const names = Object.keys(results).filter((name) => results[name]?.state !== "ready");
+	if (!names.length) return;
+	const now = () => new Date().toISOString();
+	const unfinished = (rec: StateRecord): StateRecord => {
+		const { nextAttemptAt: _drop, ...rest } = rec;
+		return { ...rest, state: "failed", updatedAt: now(), error: rec.error ?? "install did not finish" };
+	};
 	if (!(await acquireLock(env, "install"))) {
-		env.log("another installer or prune is running; leaving it to finish");
-		return { locked: false, results };
+		for (const name of names) {
+			const rec = results[name] as StateRecord;
+			if (rec.state === "installing") results[name] = unfinished(rec);
+		}
+		return;
 	}
 	try {
-		// Interrupted installs of every group, selected or not.
-		for (const group of groups) cleanStaging(env, group.name);
-		const todo = activate(groups, selected, env);
-		for (const name of todo) {
-			const group = groups.find((g) => g.name === name) as GroupDef;
-			const desired = desiredPayload(group, env);
-			const record = (state: StateRecord["state"], attempt: number, extra: Partial<StateRecord> = {}) => {
-				const rec: StateRecord = { state, payloadId: "id" in desired ? desired.id : "", attempt, updatedAt: new Date().toISOString(), ...extra };
-				results[name] = rec;
-				writeState(env, name, rec);
+		const missing = activate(groups, selected, env);
+		for (const name of names) {
+			const rec = results[name] as StateRecord;
+			if (!missing.includes(name)) {
+				results[name] = { state: "ready", payloadId: rec.payloadId, attempt: rec.attempt, updatedAt: now() };
+			} else if (rec.state === "installing") {
+				results[name] = unfinished(rec);
+				writeState(env, name, results[name] as StateRecord);
 				onChange();
-			};
-			if ("error" in desired) {
-				record("failed", 0, { error: desired.error, permanent: true });
-				env.log(`${name}: ${desired.error}`);
-				continue;
 			}
-			const dir = groupDir(env, name);
-			mkdirSync(dir, { recursive: true });
-			const staging = join(dir, `.staging-${desired.id}-${process.pid}`);
-			// Verified .debs survive an interrupted run (slow links); npm's cache does not.
-			const cache = group.delivery === "deb" ? join(dir, DEB_CACHE_DIR) : join(dir, `.staging-cache-${process.pid}`);
-			const budget = await installBudget(group, desired, cache);
-			const free = env.freeBytes(env.root);
-			if (free < budget) {
-				const error = `low disk: ${Math.floor(free / MiB)} MiB free, ${Math.ceil(budget / MiB)} MiB needed (payload, downloads and reserve)`;
-				record("failed", 0, { error, permanent: true });
-				env.log(`${name}: ${error}; not installing`);
-				continue;
-			}
-			const attempts = env.backoffMs.length + 1;
-			let ready = false;
-			for (let attempt = 1; attempt <= attempts; attempt++) {
-				record("installing", attempt);
-				env.log(`${name}: installing payload ${desired.id} (attempt ${attempt}/${attempts})`);
-				try {
-					const manifest = await installOnce(group, desired, env, staging, cache);
-					const target = join(dir, desired.id);
-					rmSync(target, { recursive: true, force: true });
-					renameSync(staging, target);
-					const previous = readLink(currentLink(env, name));
-					activate([group], [name], env);
-					pruneOld(env, name, [desired.id, previous]);
-					record("ready", attempt);
-					env.log(`${name}: ready in ${Math.round(manifest.durationMs / 1000)}s (${Object.values(manifest.versions).join("; ")})`);
-					ready = true;
-					break;
-				} catch (error) {
-					const message = error instanceof Error ? error.message : String(error);
-					rmSync(staging, { recursive: true, force: true });
-					const last = attempt === attempts;
-					record(last ? "failed" : "installing", attempt, { error: message });
-					env.log(`${name}: attempt ${attempt} failed: ${message}`);
-					if (!last) await env.sleep(env.backoffMs[attempt - 1] as number);
-				}
-			}
-			if (ready || group.delivery !== "deb") rmSync(cache, { recursive: true, force: true });
 		}
 	} finally {
 		releaseLock(env);
 	}
-	return { locked: true, results };
+}
+
+/** One attempt at one group, under the lock. */
+async function installRound(
+	group: GroupDef,
+	env: PayloadEnv,
+	attempt: number,
+	last: boolean,
+	record: (rec: StateRecord) => void,
+): Promise<"ready" | "retry" | "failed" | "permanent"> {
+	const name = group.name;
+	const desired = desiredPayload(group, env);
+	const rec = (state: StateRecord["state"], extra: Partial<StateRecord> = {}) =>
+		record({ state, payloadId: "id" in desired ? desired.id : "", attempt, updatedAt: new Date().toISOString(), ...extra });
+	if ("error" in desired) {
+		rec("failed", { error: desired.error, permanent: true });
+		env.log(`${name}: ${desired.error}`);
+		return "permanent";
+	}
+	const dir = groupDir(env, name);
+	mkdirSync(dir, { recursive: true });
+	const staging = join(dir, `.staging-${desired.id}-${process.pid}`);
+	// Verified .debs survive failed attempts and interrupted runs (slow links); npm's cache does not.
+	const cache = group.delivery === "deb" ? join(dir, DEB_CACHE_DIR) : join(dir, `.staging-cache-${process.pid}`);
+	const budget = await installBudget(group, desired, cache);
+	const free = env.freeBytes(env.root);
+	if (free < budget) {
+		const error = `low disk: ${Math.floor(free / MiB)} MiB free, ${Math.ceil(budget / MiB)} MiB needed (payload, downloads and reserve)`;
+		rec("failed", { error, permanent: true });
+		env.log(`${name}: ${error}; not installing`);
+		return "permanent";
+	}
+	rec("installing");
+	env.log(`${name}: installing payload ${desired.id} (attempt ${attempt})`);
+	try {
+		const manifest = await installOnce(group, desired, env, staging, cache);
+		const target = join(dir, desired.id);
+		rmSync(target, { recursive: true, force: true });
+		renameSync(staging, target);
+		const previous = readLink(currentLink(env, name));
+		activate([group], [name], env);
+		pruneOld(env, name, [desired.id, previous]);
+		rec("ready");
+		env.log(`${name}: ready in ${Math.round(manifest.durationMs / 1000)}s (${Object.values(manifest.versions).join("; ")})`);
+		rmSync(cache, { recursive: true, force: true });
+		return "ready";
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		rmSync(staging, { recursive: true, force: true });
+		if (group.delivery !== "deb") rmSync(cache, { recursive: true, force: true });
+		rec(last ? "failed" : "installing", { error: message });
+		env.log(`${name}: attempt ${attempt} failed${last ? " (giving up until the next start or a manual t3code-tools install)" : ""}: ${message}`);
+		return last ? "failed" : "retry";
+	}
 }
 
 /** Delete payloads no selected group is using, plus interrupted installs and kept downloads. */

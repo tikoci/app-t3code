@@ -33,6 +33,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: lint-test
+    outputs:
+      # The pushed manifest list: arm64 tests and promote retags exactly this,
+      # even if another run (say, a dispatch with another T3CODE_VER at the
+      # same commit) later moves :sha-<commit>.
+      digest: ${{ steps.image.outputs.digest }}
+      ver: ${{ steps.tags.outputs.ver }}
+      minor: ${{ steps.tags.outputs.minor }}
+      major: ${{ steps.tags.outputs.major }}
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-qemu-action@v3
@@ -64,15 +72,19 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"
-      # Starts T3 with T3CODE_TOOL_GROUPS=all (waits for the dev and capture
-      # payloads to install and runs the capture tools unprivileged), then with
-      # an unknown group, then offline with dev and then capture reselected.
+      # Starts T3 with T3CODE_TOOL_GROUPS=all (waits for every payload to
+      # install and runs the native group tools unprivileged), then with an
+      # unknown group, then offline: dev, the native groups, the image default
+      # (no --env) and none.
       - name: Test container replacement
         run: bun test test/container-replacement.test.ts
         env:
           APP_T3CODE_DOCKER_IMAGE: app-t3code:test
           APP_T3CODE_T3VER: ${{ steps.tags.outputs.ver }}
-      - name: Build (PR) or push (main / dispatch)
+      # Main / dispatch push only the candidate tag. The release tags (the
+      # /app YAML pins :0.1) move in `promote`, after the arm64 image has run
+      # natively; PRs build both arches without pushing.
+      - name: Build (PR) or push candidate (main / dispatch)
         id: image
         uses: docker/build-push-action@v6
         with:
@@ -80,11 +92,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           build-args: T3CODE_VER=${{ steps.tags.outputs.ver }}
-          tags: |
-            ghcr.io/tikoci/app-t3code:${{ steps.tags.outputs.ver }}
-            ghcr.io/tikoci/app-t3code:${{ steps.tags.outputs.minor }}
-            ghcr.io/tikoci/app-t3code:${{ steps.tags.outputs.major }}
-            ghcr.io/tikoci/app-t3code:latest
+          tags: ghcr.io/tikoci/app-t3code:sha-${{ github.sha }}
       - name: Export inventories from the cached image builds
         uses: docker/build-push-action@v6
         with:
@@ -117,3 +125,88 @@ jobs:
           path: image-inventory/
           if-no-files-found: error
           retention-days: 90
+
+  # The candidate's arm64 image on a native arm64 host: the same replacement
+  # test as amd64 above (payload locks, extraction, wrappers, version probes,
+  # flock), without QEMU user-mode. Not on PRs: it gates publication only.
+  arm64:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04-arm
+    needs: build
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.4"
+      - name: Pull the candidate by digest (arm64 variant)
+        run: |
+          test -n "${{ needs.build.outputs.digest }}" || { echo "::error::build pushed no digest"; exit 1; }
+          docker pull --platform linux/arm64 "ghcr.io/tikoci/app-t3code@${{ needs.build.outputs.digest }}"
+      - name: Test container replacement (native arm64)
+        run: bun test test/container-replacement.test.ts
+        env:
+          APP_T3CODE_DOCKER_IMAGE: ghcr.io/tikoci/app-t3code@${{ needs.build.outputs.digest }}
+          APP_T3CODE_T3VER: ${{ needs.build.outputs.ver }}
+      - name: Record runtime tool-group status with every group selected (arm64)
+        run: |
+          docker run --rm --network none --env T3CODE_TOOL_GROUPS=all \
+            --entrypoint t3code-tools "ghcr.io/tikoci/app-t3code@${{ needs.build.outputs.digest }}" status --json \
+            > tool-groups-runtime-linux_arm64.json
+          jq -e '(.selector.selected | length) == (.groups | length)' tool-groups-runtime-linux_arm64.json
+          jq -r '.groups[] | "\(.name)\t\(.state)"' tool-groups-runtime-linux_arm64.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tool-groups-runtime-arm64-${{ github.sha }}
+          path: tool-groups-runtime-linux_arm64.json
+          retention-days: 90
+
+  # Move the release tags onto the tested candidate, by digest (same
+  # manifest list, no rebuild). main only: a dispatch on another branch stops
+  # at the tested :sha-<commit> candidate (a pre-merge CHR test image).
+  # Serialized, but GitHub's concurrency queue is not FIFO, so each run also
+  # checks it is still main's head: an older run that finishes late skips
+  # instead of moving the tags back (the newer run promotes its own build).
+  promote:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [build, arm64]
+    concurrency:
+      group: promote-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check this commit is still main's head
+        id: head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          head="$(gh api "repos/$REPO/commits/main" --jq .sha)"
+          if [ "$head" = "$GITHUB_SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::main moved on to $head; not promoting $GITHUB_SHA over it"
+          fi
+      - name: Tag the candidate as the release
+        if: steps.head.outputs.current == 'true'
+        run: |
+          repo=ghcr.io/tikoci/app-t3code
+          test -n "${{ needs.build.outputs.digest }}" || { echo "::error::build pushed no digest"; exit 1; }
+          docker buildx imagetools create \
+            -t "$repo:${{ needs.build.outputs.ver }}" \
+            -t "$repo:${{ needs.build.outputs.minor }}" \
+            -t "$repo:${{ needs.build.outputs.major }}" \
+            -t "$repo:latest" \
+            "$repo@${{ needs.build.outputs.digest }}"
+          docker buildx imagetools inspect "$repo:${{ needs.build.outputs.minor }}"

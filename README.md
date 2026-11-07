@@ -38,7 +38,7 @@ app disk, so logins, the T3 database, and `~/projects` survive reboots.
 
 ### Preview or edit the YAML
 
-[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++HOME%3A+%2Fdata%0A++++++T3CODE_HOME%3A+%2Fdata%2F.t3%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++volumes%3A%0A++++++%23+Keep+this+name+and+destination+when+upgrading%3A+the+whole+home%2C%0A++++++%23+including+.t3%2Fuserdata%2C+projects%2C+worktrees%2C+and+provider+logins.%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
+[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++HOME%3A+%2Fdata%0A++++++T3CODE_HOME%3A+%2Fdata%2F.t3%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++++%23+Optional+tool+groups%2C+installed+into+%2Fdata+in+the+background+after%0A++++++%23+start.+Remove+names+to+skip+them%3B+%22none%22+is+core+only.+On+an+installed%0A++++++%23+app+change+this+with+%2Fapp%2Fset+environment%3D+%28README%29%2C+never+yaml%3D.%0A++++++T3CODE_TOOL_GROUPS%3A+%22capture+labs+vpn+routing+dev%22%0A++++volumes%3A%0A++++++%23+Keep+this+name+and+destination+when+upgrading%3A+the+whole+home%2C%0A++++++%23+including+.t3%2Fuserdata%2C+projects%2C+worktrees%2C+and+provider+logins.%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
 the single-app definition in our sister project, [tikoci/restraml](https://github.com/tikoci/restraml).
 The share link embeds the YAML as a snapshot; the downloads below track the
 current published files. Both YAML files include schema comments for editor validation.
@@ -84,10 +84,14 @@ Format the app disk as **ext4** or **btrfs**, then set its mount point in
 The disk can be any supported storage type with enough space for the image
 and persistent data. On CHR, attach a second virtual disk. The app then lives
 under `<disk>/apps/t3code/`.
-The image with bundled agent tools is approximately 1GB compressed and 4GB
-extracted; allow at least an 8GB app disk for installation, plus space for
-projects, browser downloads, and any quickchr lab disks. Builds need extra
-space for intermediate layers and loading the finished image.
+The image is about 0.8GB compressed and 3GB extracted (amd64 build,
+2026-11-07). The default tool groups add about 0.7GB in `/data` after the
+first start (see [Optional tool groups](#optional-tool-groups)), and up to
+about twice that after an image update that refreshes them, because the
+previous payloads are kept until `t3code-tools prune`. Allow at
+least an 8GB app disk, plus space for projects, browser downloads, and any
+quickchr lab disks. Builds need extra space for intermediate layers and
+loading the finished image.
 
 ### What survives an image replacement
 
@@ -206,26 +210,55 @@ pairing URL instead of a raw token.
 |---|---|---|
 | `T3CODE_HOST` / `T3CODE_PORT` | `0.0.0.0` / `3773` | server bind |
 | `T3CODE_TELEMETRY_ENABLED` | `false` (image default and YAML) | set `true` to opt back in |
-| `T3CODE_TOOL_GROUPS` | unset (core only) | optional tool groups; see [below](#optional-tool-groups) |
+| `T3CODE_TOOL_GROUPS` | `capture labs vpn routing dev` (image default and YAML) | optional tool groups; remove names to skip them, `none` for core only; see [below](#optional-tool-groups) |
+| `UV_PYTHON_DOWNLOADS` | `manual` (image default) | uv uses the image's Python 3 and downloads another only on `uv python install` |
 | `PUBLIC_URL` | unset | base URL baked into pairing links |
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, … | inherited | agents see container env |
 | `T3CODE_*` | passthrough | e.g. `T3CODE_SERVER_BROWSER_SANDBOX=0` |
 
-Codex, opencode, and [Meta Muse Code](https://dev.meta.ai/docs/muse-code) ship in the image;
-Claude Code installs itself to the persistent volume on first boot
-(its license forbids redistributing it, so it cannot be baked in).
-Muse uses the native binary downloaded and verified by Meta's official
-installer during the image build. Run `muse` to authenticate, or supply
-`META_API_KEY`; its default Linux configuration and history live under
-`/data`. Baked tools update when you replace the image.
+Provider CLIs in this image:
+
+| Provider | How it arrives | Updates |
+|---|---|---|
+| Codex (`codex`) | npm global in the image (`/usr/local`) | with each image replacement |
+| opencode (`opencode`) | npm global in the image (`/usr/local`) | with each image replacement |
+| Claude Code (`claude`) | downloaded in the background at the first start into `/data/.local/bin`, SHA256-checked against Anthropic's manifest (its license forbids redistributing it, so it cannot be baked in); skipped when a `claude` is already on PATH | not by image updates: it lives in the home |
+| [Meta Muse Code](https://dev.meta.ai/docs/muse-code) (`muse`) | **not bundled** since the final #5 slice (it added about 396 MiB to every image) | — |
+
+T3's own provider drivers are unchanged, including Muse's. To use Muse,
+run Meta's [installer](https://dev.meta.ai/docs/muse-code) from a T3
+terminal. Its default install directory is `$HOME/.local/bin`, which is
+`/data/.local/bin` here: first on PATH and kept across image replacement.
+Muse configuration, logins and history already in `/data` stay where they
+are; an image update removes only the binary the image used to carry. Run `muse` to authenticate, or supply `META_API_KEY`. Provider
+logins and sessions for every harness live in the home.
+
+Do not assume that upstream T3 Code installs the same provider set as this
+image. A per-harness selector (one explicit token per supported harness, a
+separate ENV control), late installation and rediscovery, authentication and
+active-session behavior are
+[issue #13](https://github.com/tikoci/app-t3code/issues/13); this image
+keeps the delivery above until then.
 
 ### Installed package inventory
 
 The image includes Debian command-line basics (`bash`, `awk`, `sed`, `grep`,
-`find`, `diff`, `tar`, `gzip`), Git/SSH, curl, jq, ripgrep, make, Python 3,
-and Node.js/npm in addition to the agent and RouterOS tools below. This is
-a selected toolset; `make` does not imply a C/C++ compiler, and Python does
-not currently include pip or working default virtual environments.
+`find`, `diff`, `tar`, `gzip`), Git/SSH, curl, jq, ripgrep, make, the
+`sqlite3` CLI, Python 3 with [uv](https://docs.astral.sh/uv/) and `uvx`, and
+Node.js/npm in addition to the agent and RouterOS tools below. This is a
+selected toolset; `make` does not imply a C/C++ compiler, and other language
+SDKs are out of scope. The native libraries for T3's built-in browser are
+core too (T3 downloads the browser itself on first use).
+
+Python has no pip or `python3 -m venv`; use uv instead. `uv venv` and
+`uv sync` create project environments with the image's Python, `uvx <tool>`
+runs a Python CLI in an isolated environment, and `uv tool install` puts its
+command in `/data/.local/bin`. uv's cache (`/data/.cache/uv`) and tool
+environments (`/data/.local/share/uv/tools`) are in the home, so they survive
+image replacement. `UV_PYTHON_DOWNLOADS=manual` keeps uv from fetching a
+managed Python unless you run `uv python install`. A venv built against one
+Python minor version may need recreating after an image update changes it.
+The image pins uv with the `UV_VER` build argument.
 
 Every image build records its installed Debian packages (including transitive
 dependencies), versions, architecture, installed sizes, selected executable
@@ -263,37 +296,86 @@ the core network tools and group assignment are in [Optional tool groups](#optio
 the same `/app` YAML. There are no profile tags or separate apps. Separate
 names with spaces, for example `"capture labs"`. The parser also accepts `+`
 and commas, but RouterOS splits `/app/set environment=` values on commas, so
-use spaces on a router. Names are case-insensitive. Unset, empty, or `none`
-means core only; `all` selects every group. An unknown name is logged as a
-warning and ignored. T3 always starts, whatever the selection says.
+use spaces on a router. Names are case-insensitive. An unknown name is
+logged as a warning and ignored. T3 always starts, whatever the selection
+says.
 
-The selection is parsed, logged, and reported to agents. `dev` (npm packages)
-and `capture`, `labs`, `vpn` and `routing` (Debian packages) are delivered as
-persistent payloads in the home (see
-[Persistent payloads](#persistent-payloads)). `browser` and `agents-extra`
-are still baked into the image, so their tools are present whether or not
-you select them.
+| Value | Selects |
+|---|---|
+| `capture labs vpn routing dev` | the default: every current group, as an explicit list (the image `ENV` and the YAML both set it) |
+| unset or empty | the same default (a key dropped by `/app/set environment=` falls back to it) |
+| a shorter list, e.g. `"capture labs"` | only those groups |
+| `none` | core only |
+| `all` | every group, **including groups added in later images** |
 
-QEMU is no longer in the image. If you use quickchr inside the app, select
-`labs` (see [Changing groups on RouterOS](#changing-groups-on-routeros)): the
-first start downloads about 33 MiB in the background, and later image
-updates reuse it.
+The default is a list rather than `all` so that a group added in a later
+image never starts downloading on an existing install by itself: you opt in
+by adding its name. Remove names to skip groups.
 
-| Group | Contents | In this image |
+All five groups are delivered as persistent payloads in the home (`dev` from
+npm, the others from Debian packages; see
+[Persistent payloads](#persistent-payloads)). They install one at a time in
+the background after T3 starts. With the default, the first start downloads
+about 120 MiB (about 75 MiB of `.deb` files plus the `dev` npm packages) and
+needs roughly 660 MiB more in `/data` once all five are installed (amd64
+measurements in the table below), plus 256 MiB of headroom while installing.
+After an image update that changes the package pins, the refreshed payloads
+install next to the previous ones, which are kept (an offline fallback)
+until `t3code-tools prune`: budget about twice that. On a fast
+link that takes a few minutes; at 1 Mbit/s plan for about 15 minutes. With
+too little space a group fails with a `low disk` error and T3 keeps
+running.
+
+> [!IMPORTANT]
+> **Upgrading from an image before the five-group default.** Older images
+> treated an unset `T3CODE_TOOL_GROUPS` as core only. After `/app/update` to
+> this image, an install that never set the key starts downloading all five
+> groups in the background. To keep core only, set `none` first (see
+> [Changing groups on RouterOS](#changing-groups-on-routeros)); the setting
+> survives `/app/update`. Never reapply the YAML to change it.
+>
+> The same update removes the bundled `muse` binary. Muse logins and history
+> in `/data` stay; install Muse into the home again to keep using it (see
+> [Environment and providers](#environment-and-providers)).
+
+`browser` and `agents-extra` are no longer groups. T3's browser libraries
+are core, and the provider CLIs are described in
+[Environment and providers](#environment-and-providers). A selection that
+still names them logs an unknown-group warning and otherwise works.
+
+| Group | Contents | Download → on disk (amd64, this image's locks) |
 |---|---|---|
-| `capture` | tcpdump, TShark (`dumpcap`, `capinfos`, `editcap`, `mergecap`, `text2pcap`), nfdump (`nfcapd`) | installs into `/data` when selected |
-| `labs` | quickchr, QEMU x86/ARM64 emulators, qemu-img, SeaBIOS and ARM64 UEFI firmware | QEMU and firmware install into `/data` when selected; quickchr is in the image |
-| `vpn` | WireGuard tools (`wg`, `wg-quick`), strongSwan (`pki`, `swanctl`, charon), OpenVPN, ike-scan; no tunnel or service starts by default | installs into `/data` when selected |
-| `routing` | BIRD 2 (`bird`, `birdc`), ndisc6, arping, arp-scan, nftables, conntrack, nmap | installs into `/data` when selected |
-| `dev` | TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks; project lockfiles win | installs into `/data` when selected |
-| `browser` | Native libraries for T3's built-in browser (the browser downloads itself on first use) | baked in |
-| `agents-extra` | Provider CLIs beyond the core provider (Codex, opencode, Muse today; core provider not chosen yet) | baked in |
+| `capture` | tcpdump, TShark (`dumpcap`, `capinfos`, `editcap`, `mergecap`, `text2pcap`), nfdump (`nfcapd`) | 31.1 MiB → 156 MiB (46 packages) |
+| `labs` | quickchr, QEMU x86/ARM64 emulators, qemu-img, SeaBIOS and ARM64 UEFI firmware | 32.7 MiB → about 309 MiB after pruning firmware (32 packages); quickchr is in the image |
+| `vpn` | WireGuard tools (`wg`, `wg-quick`), strongSwan (`pki`, `swanctl`, charon), OpenVPN, ike-scan; no tunnel or service starts by default | 3.6 MiB → 12 MiB (15 packages) |
+| `routing` | BIRD 2 (`bird`, `birdc`), ndisc6, arping, arp-scan, nftables, conntrack, nmap | 8.3 MiB → 33 MiB (21 packages) |
+| `dev` | TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks; project lockfiles win | npm packages → about 154 MiB |
 
-Installing a tool does not grant the privileges to use it. Live capture,
-raw-socket peers, tunnels and firewall changes need capabilities or devices
-that a RouterOS container may not have; see
-[Privileges by tool](#privileges-by-tool). Each group's `privileges` field
-(and `core.privileges`) in the status output says the same.
+Installing a tool does not grant the privileges to use it, and a group
+being `ready` means its files are installed and load, not that every
+operation is allowed. Live capture, raw-socket peers, tunnels and firewall
+changes need capabilities or devices that a RouterOS container may not have;
+see [Privileges by tool](#privileges-by-tool). Each group's `privileges`
+field (and `core.privileges`) in the status output says the same. Granting
+them is an operator deployment choice: nothing in this image changes RouterOS
+settings, starts a privileged helper, or ships an alternate YAML.
+
+At a glance, by what the operation needs beyond installation:
+
+| Needs | Core | `capture` | `labs` | `vpn` | `routing` | `dev` |
+|---|---|---|---|---|---|---|
+| Nothing | client tools, UDP traceroute, `ip`/`ethtool` queries | capture files, `dumpcap -D`, `nfcapd` ≥1024 | TCG guests, user networking, `qemu-img` | keys, certificates, `ike-scan --sport=0` | BIRD ≥1024, `nmap -sT`, ARP decode from files | everything |
+| `CAP_NET_RAW` | `traceroute -T`/`-I`, `radsniff` live, `mtr` (bounding set), `ping` without `ping_group_range` | live capture | — | — | ARP/ND probes, raw scans, OSPF | — |
+| `CAP_NET_ADMIN` | `ip`/`ethtool` changes | — | TAP (with `/dev/net/tun`) | WireGuard and OpenVPN tunnels (OpenVPN with `/dev/net/tun`) | `nft`, `conntrack`, kernel route sync | — |
+| `CAP_NET_BIND_SERVICE` (ports <1024, where restricted) | low-port listeners | — | — | `ike-scan` source port 500 | BGP on 179 | — |
+| A device | — | — | `/dev/kvm` for acceleration | `/dev/net/tun` for OpenVPN | — | — |
+| Root | — | — | — | `wg-quick`, charon | — | — |
+
+RouterOS 7.25 added a per-service privileged mode to app YAML. That is a
+deployment control; which effective capabilities the non-root app process
+then receives, and which devices and kernel features a given router
+provides, is unproven and tracked in
+[#7](https://github.com/tikoci/app-t3code/issues/7).
 
 #### Privileges by tool
 
@@ -338,8 +420,9 @@ run here as `node` with `CapEff 0` under Docker (habitat C): *works* or
 | `labs` | quickchr / QEMU with TCG and user networking, `qemu-img` | None | works (CHR 7.25.1 x86 and arm64 guests booted from the payload on amd64; ARM64 firmware discovery shipped in [quickchr 0.5.6](https://github.com/tikoci/quickchr/releases/tag/v0.5.6)) |
 | `labs` | KVM acceleration | `/dev/kvm` readable and writable by `node`, and host support | fails without the device under Docker ("Could not access KVM kernel module"); untested with one |
 | `labs` | TAP networking | `CAP_NET_ADMIN` and `/dev/net/tun` (or a TAP pre-created for `node`) | fails without the device under Docker (`could not open /dev/net/tun`); untested with one |
-| `browser` | T3's built-in browser sandbox | User namespaces, if the host allows them | expected |
-| `dev`, `agents-extra` | everything | None | works |
+| core | T3's built-in browser sandbox | User namespaces, if the host allows them | expected |
+| core | Provider CLIs (`codex`, `opencode`, `claude`) | None | expected |
+| `dev` | everything | None | works |
 
 Tools changed or moved because of privileges, not size:
 
@@ -376,10 +459,13 @@ files (`present`, `missing`). The states are:
 |---|---|
 | `not-selected` | Not in `T3CODE_TOOL_GROUPS` |
 | `pending` | Selected; waiting for the background installer |
-| `installing` | The background installer is working on it, including retry back-off |
+| `installing` | The background installer is working on it, including waiting to retry (`retrying at …` in `t3code-tools status`) |
 | `ready` | Selected, and every check passed |
 | `failed` | Selected, and checks failed for tools the image should provide, or the last install failed and nothing usable is active |
 | `not-implemented` | Selected, but this image has no way to provide the group yet (no group today) |
+
+The selector reports `defaulted: true` when an unset or empty value selected
+the default list.
 
 Checks are presence probes (PATH, files, `ldconfig`), not functional tests.
 Payload groups are checked at their own shims and manifest instead, so the
@@ -389,8 +475,9 @@ boot firmware only (SeaBIOS to "No bootable device", and a 16-byte aarch64
 program that powers the machine off). For a payload group, a file check is a
 path inside the payload, reported through `groups/<group>/current/root/…`.
 Core checks (`t3`, Node, Bun,
-Python, Git/SSH, centrs and the core network tools) are reported separately
-as `core.state`. At each start the entrypoint logs warnings and a summary to
+Python with uv/uvx, sqlite3, Git/SSH, centrs, the core network tools, the
+baked `codex` and `opencode`, and the browser's native libraries) are
+reported separately as `core.state`. At each start the entrypoint logs warnings and a summary to
 the container log and writes the same JSON to `/tmp/t3code-tools/status.json`.
 The output also points at the immutable build inventory in
 `/usr/share/t3code/inventory`.
@@ -398,9 +485,10 @@ The output also points at the immutable build inventory in
 #### Persistent payloads
 
 A payload group installs into the home volume, not the image, so it costs
-nothing until selected and survives image replacement and `auto-update`.
-`dev` is built from an npm lockfile; `capture`, `vpn` and `routing` from
-pinned Debian packages (see
+nothing in the image (it downloads only while selected) and survives image
+replacement and `auto-update`.
+`dev` is built from an npm lockfile; `capture`, `labs`, `vpn` and `routing`
+from pinned Debian packages (see
 [Debian-package payloads](#debian-package-payloads)). All share the same
 lifecycle:
 
@@ -433,9 +521,17 @@ lifecycle:
 - **Bounded.** Groups install one at a time under a lock
   (a kernel `flock` on `install.lock`, released automatically if the holder
   dies; the next run also stops an npm or dpkg-deb left behind by a killed
-  installer before reclaiming its files). Each group gets three
-  attempts with back-off (30 minute cap per attempt); with no network at all
-  npm needs about five minutes to give up. The installer needs room for the
+  installer before reclaiming its files). Retries run in rounds: each
+  round tries every group still missing once, so one failing group never
+  holds up the others, and the lock is released while waiting (a round
+  that finds it taken, say by a prune, waits and tries again without using
+  an attempt). The
+  entrypoint's background run (`install --keep-trying`) keeps retrying for
+  about a day (15 s, 1, 5, 15 and 30 minutes, then hourly), because a router
+  often starts the container before its uplink or DNS is up; verified
+  `.deb` files are kept between attempts. Each attempt is capped at 30
+  minutes. `t3code-tools install` from a terminal makes three attempts in
+  about 75 s. The installer needs room for the
   payload and its downloads (for `dev`, twice the payload size; for the
   Debian groups, the pinned `.deb` sizes not already verified in the cache,
   plus their unpacked sizes) plus 256 MiB,
@@ -445,13 +541,20 @@ lifecycle:
 - **Deselecting** a group removes its shims at the next start but keeps its
   payload, so selecting it again needs no download. `t3code-tools prune`
   deletes payloads that no selected group uses, and any kept `.deb`
-  downloads.
+  downloads. Switching to `none` therefore frees no space until you run
+  `t3code-tools prune` in a T3 terminal; prune touches only
+  `/data/.local/share/t3code-tools`.
 
 `t3code-tools status --json` reports `payload.desired`, `payload.active`,
 `stale`, `installed`, the verified `activeVersions` and the last installer
 result with its error. The installer log is
 `/data/.local/share/t3code-tools/install.log`. Run `t3code-tools install` in
-a terminal to retry a failed group now; otherwise the next start retries it.
+a terminal to retry now, including while the background installer waits;
+otherwise the next start retries a group that ran out of attempts.
+`t3code-tools help` is the command reference (commands, selection syntax,
+files, exit codes). `install`, `prune` and `init` run as the home's owner:
+started as root (for example from RouterOS `/container/shell`), they
+re-execute as `node` with `setpriv`, so no payload file becomes root-owned.
 
 The `dev` payload is about 154 MiB on amd64 (TypeScript 7.0.2, CSpell 10.4.0,
 markdownlint-cli2 0.24.0, Biome 2.6.5). Maintainers refresh the pins with
@@ -655,14 +758,20 @@ payloads under `/data` in the background, after T3 starts, and reuse
 compatible payloads across image replacements (write-ups:
 [capture](docs/research/2026-11-06/capture-native-bundle.md),
 [vpn and routing](docs/research/2026-11-06/vpn-routing-payloads.md),
-[labs](docs/research/2026-11-06/labs-qemu-payload.md)). Groups that are baked
-in today (`browser`, `agents-extra`) move out only after their persistent
-replacement is proven. See the
-[review brief](docs/research/2026-11-05/REVIEW.md) and
-[issue #5](https://github.com/tikoci/app-t3code/issues/5). Automatic
-upstream-release and security delivery is tracked in
-[issue #6](https://github.com/tikoci/app-t3code/issues/6). `uv`/`uvx` are
-approved Python bootstrap additions; neither is installed yet.
+[labs](docs/research/2026-11-06/labs-qemu-payload.md)). The image default
+selects all five by name. `browser` is not a group (its libraries stay in
+core, and T3's browser setup is unchanged), and provider CLIs are not a
+group either: per-harness selection is
+[issue #13](https://github.com/tikoci/app-t3code/issues/13). Still open
+under [issue #5](https://github.com/tikoci/app-t3code/issues/5): a full image
+build exercised on a CHR with Claude and Codex connected, and the labs
+matrix (native ARM64 hosts, nested RouterOS, transfer, snapshots and
+cleanup); see the
+[final-slice notes](docs/research/2026-11-07/final-tooling-slice.md).
+RouterOS privileges and devices are
+[issue #7](https://github.com/tikoci/app-t3code/issues/7); automatic
+upstream-release and security delivery is
+[issue #6](https://github.com/tikoci/app-t3code/issues/6).
 
 ### Bun and RouterOS tools for agents
 
@@ -678,7 +787,7 @@ They are available to agents and login shells without a first-run install:
 bun --version
 quickchr --help
 centrs explain '/ip/address print' --json
-muse --version
+uv --version
 ```
 
 QEMU can use software emulation inside a RouterOS container. KVM acceleration
@@ -712,6 +821,15 @@ Images track upstream **stable** T3 Code releases only — no nightlies
 
 - `ghcr.io/tikoci/app-t3code:0.1.6` — exact release
 - `ghcr.io/tikoci/app-t3code:0.1`, `:0`, `:latest` — stability aliases
+- `ghcr.io/tikoci/app-t3code:sha-<commit>` — the candidate CI pushes from
+  `main`; not for deployment
+
+A `main` push publishes only the candidate. Its arm64 image then runs the
+container replacement test natively on a GitHub arm64 runner (amd64 already
+ran it before the push), and only then does CI move the release tags onto the
+same manifest, by digest. A failed arm64 run leaves `:0.1` where it was,
+and a run that finishes after `main` has moved on skips promotion, so the
+tags never go back to an older build.
 
 The `/app` YAML references the `:0.1`-style stability tag, and
 `test/app-yaml.test.ts` fails the build if it drifts from
@@ -741,19 +859,23 @@ APP_T3CODE_ROS=stable APP_T3CODE_ARCH=arm64 APP_T3CODE_INTEGRATION=1 \
 ```
 
 The Docker replacement test removes the original container and starts a new
-one with only the same home volume. It installs the `dev`, `capture`, `labs`,
-`vpn` and `routing` payloads under `all`, runs each Debian group's tools as
+one with only the same home volume. Every container sets its selection
+explicitly, except one that checks the image default. It installs the `dev`,
+`capture`, `labs`, `vpn` and `routing` payloads under `all`, runs each Debian group's tools as
 the unprivileged user ([capture](test/capture-tools.sh),
 [labs](test/labs-tools.sh), [vpn](test/vpn-tools.sh),
 [routing](test/routing-tools.sh)), and relinks the payloads in later
-containers, including with no network. Against an emulated (QEMU user-mode)
+containers, including with no network, then relinks the image default
+offline and checks that `none` leaves only core. Against an emulated (QEMU user-mode)
 image, set `CAPTURE_TOOLS_QEMU_USER=1`, `ROUTING_TOOLS_QEMU_USER=1` and/or
 `LABS_TOOLS_QEMU_USER=1` for the test; they are forwarded to the scripts,
 which then skip only the checks emulation breaks (or makes too slow) before
 any permission check. It checks tool discovery in
 ordinary and login shells, a real T3 project record and environment identity, settings
 (including the restarted server's effective preference through read-only MCP),
-uncommitted worktree/project files, and a user-installed Bun CLI. CI runs
+uncommitted worktree/project files, a user-installed Bun CLI, provider
+configuration in the home, and that a user-installed `muse` in
+`/data/.local/bin` wins on PATH. CI runs
 this against the built x86 image before publishing, and builds both image
 architectures. It does not authenticate providers or run paid model requests.
 
@@ -769,9 +891,12 @@ the original agent's precise upgrade commands are unknown.
 Both helpers float on `next` on purpose: if a helper breaks, report it
 to [centrs](https://github.com/tikoci/centrs/issues) /
 [quickchr](https://github.com/tikoci/quickchr/issues) instead of
-working around it silently. CI (`ci.yml`) lints, tests, and builds
-both arches to GHCR; `integration.yml` runs the CHR matrix weekly,
-post-push on `app/` + `test/integration/`, and on demand.
+working around it silently. CI (`ci.yml`) lints, tests, builds both arches,
+runs the replacement test on amd64 (every build) and natively on arm64
+(`main` and dispatch only), then promotes the tags (see [Tags](#tags));
+`integration.yml` runs the CHR matrix weekly and on demand (against `:0.1`),
+and after each successful `main` publish (against that commit's
+`:sha-<commit>` candidate, via `APP_T3CODE_IMAGE`).
 
 The `pages.yml` workflow publishes only tracked `*.md`, `*.tikapp.yaml`, and
 `*.tikappstore.yaml` files, preserving their paths and contents. Automatic

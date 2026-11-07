@@ -13,6 +13,9 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   (the GHCR image pull alone is ~1GB on a free-license CHR).
 - `make build T3CODE_VER=<ver>` — local multi-arch build.
 - `make push T3CODE_VER=<ver>` — multi-arch push to GHCR (`:<ver>` + `:latest`).
+  CI never pushes release tags directly: `main` pushes `:sha-<commit>`, the
+  arm64 image runs the replacement test on `ubuntu-24.04-arm`, then
+  `promote` retags it. `integration.yml` follows via `workflow_run`.
 
 ## Conventions
 
@@ -51,6 +54,29 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   YAML `environment:` must also be a Dockerfile `ENV` default with the same
   value (a test enforces it), because an operator's `environment=` set
   drops the YAML values. Never document group changes as a YAML edit.
+- The shipped default is the explicit list
+  `T3CODE_TOOL_GROUPS="capture labs vpn routing dev"` (`DEFAULT_TOOL_GROUPS`,
+  mirrored in Dockerfile `ENV`, both YAML files and the README; a test ties
+  them). Unset/empty also mean that list; `none` is core only; `all` also
+  picks up future groups. A new group joins the default only deliberately
+  (update the constant, ENV, YAMLs, share link). Tests set selections
+  explicitly; don't pick product defaults for test convenience.
+- Not groups: `browser` (its native libraries are core, in the first apt
+  layer; T3 launches its own browser, so no relocation or launch hooks) and
+  provider CLIs. Codex/opencode are baked npm globals and core checks; Claude
+  installs into `/data/.local/bin` in the background; Muse is no longer
+  bundled (about 396 MiB) — users install it into the home, T3's Muse driver
+  is untouched. Per-harness selection/provisioning, late rediscovery,
+  auth/session work is issue #13: don't grow it here.
+- Core bootstrap: uv/uvx come from `ghcr.io/astral-sh/uv:${UV_VER}` (pinned
+  ARG), `UV_PYTHON_DOWNLOADS=manual`; `sqlite3` is in the late core apt
+  layer. No general SDK expansion beyond that.
+- `t3code-tools help` (`USAGE` in `scripts/tool-groups.ts`) is the command
+  reference; a test checks every command is in it, so update it with the
+  CLI. `install`/`prune`/`init` re-exec as the payload root's owner when
+  run as root (`/container/shell`), never leaving root-owned payloads.
+  The entrypoint runs `install --keep-trying` (rounds for about a day, lock
+  released between them); a terminal `install` stays at three attempts.
 - npm payload groups (`dev`) are installed by `scripts/tool-payloads.ts`
   from the lockfile in `scripts/groups/<group>/` into
   `/data/.local/share/t3code-tools`; startup only relinks (offline) and
@@ -117,8 +143,10 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   (`.running` is the string `"true"`, not a boolean).
 - CHR free license: 1 Mbps/interface upload cap; size all waits from TCG,
   not HVF. `bootSize: "8G"` is required — the image will not fit a stock
-  CHR disk. Use an 8G app disk: the image with agent tools extracts to
-  roughly 4GB, before projects and lab VMs. Extra RAM (`mem: 1024`) for
-  the pull + unpack.
+  CHR disk. Use an 8G app disk at minimum: the image extracts to roughly
+  3GB, and the default groups add about 0.7GB in `/data` (plus install
+  headroom; about twice that after a refreshing update, until
+  `t3code-tools prune`), before projects and lab VMs. Extra RAM (`mem: 1024`) for the
+  pull + unpack.
 - `centrs api <router> app -X PUT` is the structured write path
   (PUT = RouterOS create). `execute` is the fallback if validation rejects.

@@ -52,7 +52,7 @@ export async function collect() {
 			return { command: command as string, path: path || null };
 		});
 	const versions: Record<string, string> = {};
-	for (const command of ["node", "npm", "bun", "python3", "git", "jq", "rg", "t3", "codex", "muse"]) {
+	for (const command of ["node", "npm", "bun", "python3", "uv", "sqlite3", "git", "jq", "rg", "t3", "codex"]) {
 		versions[command] = run([command, "--version"]);
 	}
 	const npm = JSON.parse(run(["npm", "ls", "--global", "--prefix", "/usr/local", "--depth=0", "--json"]));
@@ -67,7 +67,7 @@ export async function collect() {
 		architecture: run(["dpkg", "--print-architecture"]),
 		path: process.env.PATH, packages, commands: paths, versions,
 		npmPackages: npm.dependencies, bunPackages,
-		notes: ["Image contents before entrypoint/first boot; Claude and browser downloads are excluded.",
+		notes: ["Image contents before entrypoint/first boot; Claude, browser downloads, tool-group payloads and user installs (such as Muse) are excluded.",
 			"Commands are curated executable PATH probes, not an exhaustive list or functional tests; shims can need downloads.",
 			"Installed-Size is dpkg metadata in KiB, not compressed image size.",
 			"npm/Bun list top-level global packages; this is not a complete dependency SBOM."] };

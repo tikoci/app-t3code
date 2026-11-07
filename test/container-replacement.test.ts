@@ -107,7 +107,9 @@ test.skipIf(!image)(
 		const run = (...args: string[]) => docker("exec", name, ...args);
 		// No other --env: like a RouterOS env-list replacement that drops the
 		// YAML defaults, so the image ENV defaults must carry correct operation.
-		const start = (groups: string, offline = false) =>
+		// Every start sets its selection explicitly, except `null`, which checks
+		// the image's own default.
+		const start = (groups: string | null, offline = false) =>
 			docker(
 				"run",
 				"--detach",
@@ -116,14 +118,13 @@ test.skipIf(!image)(
 				...(offline ? ["--network", "none"] : ["--publish", "127.0.0.1::3773"]),
 				"--volume",
 				`${volume}:/data`,
-				"--env",
-				`T3CODE_TOOL_GROUPS=${groups}`,
+				...(groups === null ? [] : ["--env", `T3CODE_TOOL_GROUPS=${groups}`]),
 				image as string,
 			);
 		/** The agent-facing status (live) and the runtime JSON the entrypoint wrote. */
 		const toolStatus = async () => {
 			type Status = {
-				selector: { selected: string[]; unknown: string[]; warnings: string[] };
+				selector: { raw: string | null; defaulted: boolean; selected: string[]; unknown: string[]; warnings: string[] };
 				core: { state: string; missing: string[] };
 				groups: {
 					name: string;
@@ -218,14 +219,16 @@ test.skipIf(!image)(
 				vpn: "ready",
 				routing: "ready",
 				dev: "ready",
-				browser: "ready",
-				"agents-extra": "ready",
 			});
+			// Muse is not bundled any more (#13); the baked providers are.
+			expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", "command -v muse"]).exitCode).not.toBe(0);
 			for (const shell of ["-c", "-lc"]) {
+				const shellStatus = JSON.parse(await run("bash", shell, "t3code-tools status --json"));
+				expect(shellStatus.core).toMatchObject({ state: "ready", missing: [] });
 				await run(
 					"bash",
 					shell,
-					`set -e; bun --version; bunx --version; quickchr --help; centrs explain '/ip/address print' --json; muse --version; qemu-system-x86_64 --version; qemu-system-aarch64 --version; qemu-img --version; ${devTools}`,
+					`set -e; bun --version; bunx --version; quickchr --help; centrs explain '/ip/address print' --json; uv --version; uvx --version; sqlite3 --version; codex --version; qemu-system-x86_64 --version; qemu-system-aarch64 --version; qemu-img --version; ${devTools}`,
 				);
 				for (const [group, ok] of Object.entries(nativeOk)) expect(await groupTools(group, shell)).toContain(ok);
 			}
@@ -244,6 +247,12 @@ printf 'worktree edit' > /data/.t3/worktrees/survivor/edit.txt
 printf 'managed project' > /data/.t3/projects/managed/README.md
 printf 'scratch edit' > /data/.t3/scratch/survivor/edit.txt
 printf 'synthetic credential fixture' > /data/.config/muse/persistence-fixture
+# A user-installed Muse in the home must survive replacement and win on PATH.
+mkdir -p /data/.local/bin
+printf '#!/bin/sh\\necho user-installed-muse' > /data/.local/bin/muse
+chmod +x /data/.local/bin/muse
+# A uv project environment on the image's Python, with the sqlite3 module.
+UV_NO_CACHE=1 uv venv --quiet /data/projects/survivor/.venv
 mkdir -p /data/.bun/tool-fixture
 printf '{"name":"persistence-tool-fixture","version":"1.0.0","bin":{"persistence-tool-fixture":"cli.sh"}}' > /data/.bun/tool-fixture/package.json
 printf '#!/bin/sh\\nprintf persistent-bun-tool' > /data/.bun/tool-fixture/cli.sh
@@ -348,6 +357,10 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			expect(await run("bash", "-lc", "persistence-tool-fixture")).toBe(
 				"persistent-bun-tool",
 			);
+			for (const shell of ["-c", "-lc"]) {
+				expect(await run("bash", shell, "command -v muse && muse")).toBe("/data/.local/bin/muse\nuser-installed-muse");
+			}
+			expect(await run("/data/projects/survivor/.venv/bin/python", "-c", "import sqlite3; print(sqlite3.sqlite_version)")).toMatch(/^3\.\d+/);
 
 			// Reselect dev in a third container with no network at all: the
 			// payload in the home is relinked at start, with no download.
@@ -378,6 +391,35 @@ t3 project add /data/projects/survivor --title 'Survivor'
 				expect(offline.payload?.active).toBe(first.payload?.active as string);
 				expect(offline.payload?.last?.updatedAt).toBe(first.payload?.last?.updatedAt as string);
 				expect(await groupTools(group, "-c")).toContain(nativeOk[group as keyof typeof nativeOk]);
+			}
+
+			// The image default (no --env at all) is the explicit five-group
+			// list: every payload relinks offline, nothing is reinstalled.
+			const firsts = { ...nativeFirst, dev: devFirst };
+			await docker("rm", "--force", name);
+			await start(null, true);
+			const { status: defaulted } = await settled("dev", 60_000);
+			expect(defaulted.selector).toMatchObject({ raw: "capture labs vpn routing dev", defaulted: false, selected: ["capture", "labs", "vpn", "routing", "dev"], warnings: [] });
+			for (const [group, first] of Object.entries(firsts)) {
+				const { group: again } = await settled(group, 60_000);
+				expect(again.state).toBe("ready");
+				expect(again.payload?.active).toBe(first.payload?.active as string);
+				expect(again.payload?.last?.updatedAt).toBe(first.payload?.last?.updatedAt as string);
+			}
+
+			// `none` is core only: every group deselected, payloads kept, core ready.
+			await docker("rm", "--force", name);
+			await start("none", true);
+			const { status: coreOnly } = await settled("dev", 60_000);
+			expect(coreOnly.selector.selected).toEqual([]);
+			expect(coreOnly.core).toMatchObject({ state: "ready", missing: [] });
+			for (const [group, first] of Object.entries(firsts)) {
+				const off = coreOnly.groups.find((g) => g.name === group);
+				expect(off?.state).toBe("not-selected");
+				expect(off?.payload?.installed).toEqual([first.payload?.active as string]);
+			}
+			for (const probe of ["tsc", "tshark", "qemu-system-x86_64", "pki", "bird"]) {
+				expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", `command -v ${probe}`]).exitCode).not.toBe(0);
 			}
 		} finally {
 			await docker("rm", "--force", name).catch(() => {});

@@ -23,9 +23,12 @@ fi
 # relink tool-group payloads already in the home (offline, fast) and write the
 # runtime status JSON. Bounded and never fatal: T3 must start whatever the
 # selection says. Missing payloads install in the background; T3 does not wait.
+# --keep-trying: routers often start containers before the uplink is up, so
+# the background run retries for about a day (`t3code-tools install` from a
+# terminal retries now).
 if [ -x /usr/local/bin/t3code-tools ]; then
 	timeout 20 /usr/local/bin/t3code-tools init || echo "t3code-tools: init failed; continuing" >&2
-	/usr/local/bin/t3code-tools install >/tmp/t3code-tools-install.log 2>&1 &
+	/usr/local/bin/t3code-tools install --keep-trying >/tmp/t3code-tools-install.log 2>&1 &
 fi
 
 # Claude Code cannot be baked into the image (license), so install it to the

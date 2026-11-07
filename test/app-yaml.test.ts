@@ -3,7 +3,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import YAML from "js-yaml";
 import {
+	BROWSER_LIBRARIES,
 	buildStatus,
+	CORE_CHECKS,
+	DEFAULT_TOOL_GROUPS,
+	formatStatus,
 	GROUP_NAMES,
 	GROUPS,
 	groupStatus,
@@ -218,12 +222,30 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 		}
 	});
 
-	test("unset, empty and none mean core only", () => {
-		for (const raw of [undefined, null, "", "  ", "none", "NONE"]) {
-			expect(parseToolGroups(raw).selected).toEqual([]);
-			expect(parseToolGroups(raw).warnings).toEqual([]);
+	test("unset and empty select the explicit default list; none means core only", () => {
+		for (const raw of [undefined, null, "", "  "]) {
+			const selection = parseToolGroups(raw);
+			expect(selection.selected).toEqual(["capture", "labs", "vpn", "routing", "dev"]);
+			expect(selection.defaulted).toBe(true);
+			expect(selection.warnings).toEqual([]);
 		}
 		expect(parseToolGroups(undefined).raw).toBeNull();
+		for (const raw of ["none", "NONE", " none "]) {
+			expect(parseToolGroups(raw).selected).toEqual([]);
+			expect(parseToolGroups(raw).defaulted).toBe(false);
+			expect(parseToolGroups(raw).warnings).toEqual([]);
+		}
+		// Operators shorten the list by removing names.
+		expect(parseToolGroups("capture vpn routing").selected).toEqual(["capture", "vpn", "routing"]);
+	});
+
+	test("the default is an explicit list of every current group, not `all`", () => {
+		expect(DEFAULT_TOOL_GROUPS).not.toContain("all");
+		expect(DEFAULT_TOOL_GROUPS.split(" ")).toEqual(["capture", "labs", "vpn", "routing", "dev"]);
+		// A new group must be added to the default deliberately (or left out of it).
+		expect([...GROUP_NAMES].sort()).toEqual(DEFAULT_TOOL_GROUPS.split(" ").sort());
+		expect(parseToolGroups(DEFAULT_TOOL_GROUPS).defaulted).toBe(false);
+		expect(parseToolGroups(DEFAULT_TOOL_GROUPS).selected).toEqual(parseToolGroups(undefined).selected);
 	});
 
 	test("all selects every group in definition order", () => {
@@ -250,11 +272,12 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 		expect(missing.buildInventory.present).toBe(false);
 		for (const group of missing.groups) {
 			expect(group.selected).toBe(true);
-			const expected: Record<string, string> = { image: "failed", npm: "pending", deb: "pending", none: "not-implemented" };
+			const expected: Record<string, string> = { npm: "pending", deb: "pending", none: "not-implemented" };
 			expect(group.state as string).toBe(expected[group.delivery] as string);
 		}
-		// An image group is ready when its probes pass (browser is still baked in).
-		const present = buildStatus("browser", everything, "/nonexistent", null);
+		// Core covers the browser libraries and provider CLIs now that they are not groups.
+		expect(missing.core.missing).toEqual(expect.arrayContaining(["uv", "uvx", "sqlite3", "codex", "opencode", "fc-list", ...BROWSER_LIBRARIES]));
+		const present = buildStatus("none", everything, "/nonexistent", null);
 		expect(present.core.state).toBe("ready");
 		expect(Object.fromEntries(present.groups.map((g) => [g.name, g.state]))).toEqual({
 			capture: "not-selected",
@@ -262,9 +285,11 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 			vpn: "not-selected",
 			routing: "not-selected",
 			dev: "not-selected",
-			browser: "ready",
-			"agents-extra": "not-selected",
 		});
+		const defaulted = buildStatus(undefined, everything, "/nonexistent", null);
+		expect(defaulted.selector.defaulted).toBe(true);
+		expect(defaulted.groups.map((g) => g.state)).toEqual(["pending", "pending", "pending", "pending", "pending"]);
+		expect(formatStatus(defaulted)).toStartWith("T3CODE_TOOL_GROUPS=(unset) (default) -> capture labs vpn routing dev\n");
 		// A group without an installer never claims ready, even if its tools happen to exist.
 		const labs = GROUPS.find((g) => g.name === "labs");
 		if (!labs) throw new Error("labs group missing");
@@ -293,13 +318,49 @@ describe("tool groups: docs and image contract", () => {
 		expect(Object.keys(asRecord(doc["services"]))).toEqual(["t3code"]);
 	});
 
-	test("YAML description does not advertise unimplemented group controls", () => {
+	test("YAML description stays a product description; the selection lives in environment", () => {
 		const descr = asRecord(loadYaml(YAML_PATH))["descr"] as string;
 		expect(descr).not.toContain("T3CODE_TOOL_GROUPS");
 		// "browser" and "dev" are ordinary words; the distinctive names and "group" are not.
 		for (const word of ["group", "capture", "labs", "vpn", "routing", "agents-extra"]) {
 			expect(descr.toLowerCase()).not.toContain(word);
 		}
+	});
+
+	test("YAML, store YAML, image ENV and README ship the same explicit default", () => {
+		const svc = asRecord(asRecord(asRecord(loadYaml(YAML_PATH))["services"])["t3code"]);
+		expect(asRecord(svc["environment"])["T3CODE_TOOL_GROUPS"]).toBe(DEFAULT_TOOL_GROUPS);
+		const store = (loadYaml(STORE_PATH) as Record<string, unknown>[]).find((d) => d["name"] === "t3code");
+		expect(asRecord(asRecord(asRecord(store?.["services"])["t3code"])["environment"])["T3CODE_TOOL_GROUPS"]).toBe(DEFAULT_TOOL_GROUPS);
+		expect(dockerfileEnv()["T3CODE_TOOL_GROUPS"]).toBe(DEFAULT_TOOL_GROUPS);
+		expect(README).toContain(`| \`T3CODE_TOOL_GROUPS\` | \`${DEFAULT_TOOL_GROUPS}\``);
+	});
+
+	test("browser and agents-extra are retired as groups; their contents stay core", () => {
+		expect(GROUP_NAMES).toEqual(["capture", "labs", "vpn", "routing", "dev"]);
+		for (const retired of ["browser", "agents-extra"]) {
+			expect(README).not.toContain(`| \`${retired}\` |`);
+			const selection = parseToolGroups(retired);
+			expect(selection.unknown).toEqual([retired]);
+		}
+		// T3's browser keeps its native libraries in the image's first apt layer.
+		for (const pkg of ["fontconfig", "fonts-liberation", "libasound2t64", "libatk-bridge2.0-0t64", "libgbm1", "libnss3", "libxkbcommon0", "libxrandr2"]) {
+			expect(DOCKERFILE).toMatch(new RegExp(`^\\s+${pkg.replace(/[.+]/g, "\\$&")} (?:\\\\|&&)`, "m"));
+		}
+		const coreLibraries = CORE_CHECKS.filter((c) => c.kind === "library").map((c) => c.name);
+		expect(coreLibraries).toEqual([...BROWSER_LIBRARIES]);
+	});
+
+	test("Muse is not bundled; uv, uvx and sqlite3 are core bootstrap tools", () => {
+		expect(DOCKERFILE).not.toContain("dev.meta.ai/install.sh");
+		expect(DOCKERFILE).not.toMatch(/\/usr\/local\/bin\/muse/);
+		expect(CORE_CHECKS.map((c) => c.name)).not.toContain("muse");
+		expect(DOCKERFILE).toMatch(/^FROM ghcr\.io\/astral-sh\/uv:\$\{UV_VER\} AS uv$/m);
+		expect(DOCKERFILE).toMatch(/^ARG UV_VER=\d+\.\d+\.\d+$/m);
+		expect(DOCKERFILE).toContain("COPY --from=uv /uv /uvx /usr/local/bin/");
+		expect(DOCKERFILE).toMatch(/^\s+sqlite3 \\$/m);
+		expect(dockerfileEnv()["UV_PYTHON_DOWNLOADS"]).toBe("manual");
+		for (const name of ["uv", "uvx", "sqlite3"]) expect(CORE_CHECKS.map((c) => c.name)).toContain(name);
 	});
 
 	test("every YAML env value is also an image ENV default (environment= replaces the list)", () => {
