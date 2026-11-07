@@ -74,15 +74,19 @@ project/settings/identity persistence), it now covers these cases:
 
 `bun run check` passes; `bun run test` gives 88 pass, 0 fail.
 
-### Found, not changed
+### Review follow-up: login-shell core readiness
 
-In a **login shell** as `node`, `t3code-tools status` reports
-`core: degraded (missing: ethtool)` on both `main` and this branch. Debian's
+In the initial full image (`c8e4732`), a **login shell** as `node` reported
+`core: degraded (missing: ethtool)`, as on `main`. Debian's
 `/etc/profile` drops `/usr/sbin` from a non-root PATH, and `ethtool` lives
 there. The server environment (the image PATH) keeps `/usr/sbin`, so the
 entrypoint, `docker exec` and the replacement test report `ready`. This
-predates this slice and needs a one-line profile fix or an absolute-path
-probe; it is left for review.
+predates this slice. The review follow-up restores the system sbin paths in
+`profile.sh`, after user-installed tools, and adds ordinary/login-shell core
+readiness assertions to the replacement test. Offline Docker smoke checks
+against the full image with the revised profile mounted verify both shells
+report core `ready`; this profile follow-up does not itself claim another
+full image build or replacement run.
 
 ## Not covered here (keep #5 open, or transfer explicitly)
 
@@ -103,6 +107,9 @@ probe; it is left for review.
 This is a handoff for the developer's Apple Silicon Mac (habitat B). Nothing
 below has been run. It needs provider credentials and possibly a registry
 push, which are the developer's decisions.
+The `quickchr start`, `quickchr snapshot` and `centrs transfer` examples
+were checked against the full image's offline CLI help; guest operations
+in this procedure remain unexecuted.
 
 **Prerequisites.**
 
@@ -114,12 +121,15 @@ push, which are the developer's decisions.
 - 30 GB or more free for CHR disks. The qcow2 files are sparse, but nested
   lab disks grow.
 - A Claude login (subscription or `ANTHROPIC_API_KEY`) and a Codex login
-  (ChatGPT or `OPENAI_API_KEY`). The run spends a few cents of model usage.
+  (ChatGPT or `OPENAI_API_KEY`). Model usage is subject to the chosen
+  provider's plan and billing.
 
 **Network.** The CHR pulls about 0.8 GB of image (compressed) and then
 about 120 MiB of default payloads. A free CHR license caps upload at
-1 Mbit/s per interface. If pulls or pairing stall, `--license-level p1`
-(trial) removes the cap.
+1 Mbit/s per interface. An eligible `p1` trial raises that limit to 1 Gbit/s;
+`--license-level p1` also needs a MikroTik account supplied through
+quickchr's license options or environment. The procedure does not assume
+that a trial is available or already activated.
 
 **Speed.** On Apple Silicon, quickchr falls back to TCG for ARM64 CHRs
 (tikoci/quickchr#97), and x86 CHRs are TCG too. Size waits for emulation:

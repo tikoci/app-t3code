@@ -223,6 +223,8 @@ test.skipIf(!image)(
 			// Muse is not bundled any more (#13); the baked providers are.
 			expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", "command -v muse"]).exitCode).not.toBe(0);
 			for (const shell of ["-c", "-lc"]) {
+				const shellStatus = JSON.parse(await run("bash", shell, "t3code-tools status --json"));
+				expect(shellStatus.core).toMatchObject({ state: "ready", missing: [] });
 				await run(
 					"bash",
 					shell,
