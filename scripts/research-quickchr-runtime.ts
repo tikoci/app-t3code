@@ -1,7 +1,10 @@
 // Run as node inside a disposable image container. Boots real x86 and ARM64
 // CHRs with the installed quickchr/QEMU, validates through centrs, then removes
 // the machines. Generated credentials are never written to this report.
+// QUICKCHR_MODULE (with QUICKCHR_PACKAGE_JSON) runs another quickchr build,
+// e.g. a branch checkout mounted into the container (slice 5: quickchr#254).
 const modulePath = process.env.QUICKCHR_MODULE ?? "@tikoci/quickchr";
+const packageJson = process.env.QUICKCHR_PACKAGE_JSON ?? "/opt/bun/install/global/node_modules/@tikoci/quickchr/package.json";
 const { QuickCHR }: typeof import("@tikoci/quickchr") = await import(modulePath);
 const findings = [];
 for (const arch of ["x86", "arm64"] as const) {
@@ -23,15 +26,17 @@ for (const arch of ["x86", "arm64"] as const) {
 			qcow2BootAndExtraDisk: true, managedLoginProvisioned: true, centrsRead: true });
 	} catch (error) {
 		// Do not print quickchr failure reports: they can include provisioning data.
+		// The error code (MISSING_FIRMWARE, BOOT_TIMEOUT…) names the failure without its details.
+		const code = (error as { code?: unknown } | null)?.code;
 		findings.push({ arch, elapsedMs: Date.now() - began, ready: false,
-			errorName: error instanceof Error ? error.name : "unknown" });
+			errorName: error instanceof Error ? error.name : "unknown", ...(typeof code === "string" ? { errorCode: code } : {}) });
 	} finally {
 		const machine = instance ?? QuickCHR.get(name);
 		if (machine) await machine.remove();
 	}
 }
 console.log(JSON.stringify({ generatedAt: new Date().toISOString(), quickchrVersion:
-	(await Bun.file("/opt/bun/install/global/node_modules/@tikoci/quickchr/package.json").json()).version,
+	(await Bun.file(packageJson).json()).version, quickchrModule: modulePath,
 	method: "Disposable image container, node user, TCG (no KVM exposed), real CHR 7.25.1, managed login, qcow2 boot resize and extra disk, read-only centrs resource query. Test-only storage reserve reduced to 512M for the constrained research host. No production router or image was changed.",
 	findings }, null, 2));
 if (findings.some((f) => !f.ready)) process.exitCode = 1;

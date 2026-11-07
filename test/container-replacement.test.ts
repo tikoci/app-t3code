@@ -170,26 +170,26 @@ test.skipIf(!image)(
 		};
 		const devTools = "cd /tmp; tsc --version; biome --version; cspell --version; markdownlint-cli2 --version";
 		// A deb payload's functional script, as node with no capabilities
-		// (test/capture-tools.sh, vpn-tools.sh, routing-tools.sh).
-		// Against an emulated (QEMU user-mode) image, set CAPTURE_TOOLS_QEMU_USER
-		// and/or ROUTING_TOOLS_QEMU_USER for this test: they are forwarded so the
-		// scripts skip only checks that emulation breaks before any permission
-		// check. Native runs keep every privilege check.
-		const qemuFlags = ["CAPTURE_TOOLS_QEMU_USER", "ROUTING_TOOLS_QEMU_USER"].filter((key) => process.env[key]).map((key) => `${key}=1 `).join("");
+		// (test/capture-tools.sh, vpn-tools.sh, routing-tools.sh, labs-tools.sh).
+		// Against an emulated (QEMU user-mode) image, set CAPTURE_TOOLS_QEMU_USER,
+		// ROUTING_TOOLS_QEMU_USER and/or LABS_TOOLS_QEMU_USER for this test: they
+		// are forwarded so the scripts skip only checks that emulation breaks (or
+		// makes too slow) before any permission check. Native runs keep every check.
+		const qemuFlags = ["CAPTURE_TOOLS_QEMU_USER", "ROUTING_TOOLS_QEMU_USER", "LABS_TOOLS_QEMU_USER"].filter((key) => process.env[key]).map((key) => `${key}=1 `).join("");
 		const groupTools = async (group: string, shell: string) => {
 			await docker("cp", new URL(`./${group}-tools.sh`, import.meta.url).pathname, `${name}:/tmp/${group}-tools.sh`);
 			return run("bash", shell, `${qemuFlags}bash /tmp/${group}-tools.sh`);
 		};
 		const captureTools = (shell: string) => groupTools("capture", shell);
-		const nativeOk = { capture: "capture ok: TShark (Wireshark) ", vpn: "vpn ok: wireguard-tools ", routing: "routing ok: BIRD version " };
+		const nativeOk = { capture: "capture ok: TShark (Wireshark) ", labs: "labs ok: QEMU emulator version ", vpn: "vpn ok: wireguard-tools ", routing: "routing ok: BIRD version " };
 		await docker("volume", "create", volume);
 		try {
 			// CI exercises every group so the reported states cover the full set.
 			await start("all");
 			await waitForServer(name);
 			expect(await run("printenv", "T3CODE_TELEMETRY_ENABLED")).toBe("false");
-			// T3 is already serving; the dev, capture, vpn and routing payloads
-			// install in the background, one after the other.
+			// T3 is already serving; the dev, capture, labs, vpn and routing
+			// payloads install in the background, one after the other.
 			const { group: devFirst } = await settled("dev", 180_000);
 			expect(devFirst.payload?.last?.error).toBeUndefined();
 			expect(devFirst.payload?.activeVersions?.["tsc"]).toStartWith("Version ");
@@ -197,6 +197,11 @@ test.skipIf(!image)(
 			expect(captureFirst.payload?.last?.error).toBeUndefined();
 			expect(captureFirst.payload?.activeVersions?.["tshark"]).toStartWith("TShark (Wireshark) ");
 			expect(captureFirst.payload?.active).toMatch(/^(amd64|arm64)-trixie-[0-9a-f]{16}$/);
+			// QEMU is not in the image any more: it comes from the labs payload.
+			const { group: labsFirst } = await settled("labs", 300_000);
+			expect(labsFirst.payload?.last?.error).toBeUndefined();
+			expect(labsFirst.payload?.activeVersions?.["qemu-system-aarch64"]).toStartWith("QEMU emulator version ");
+			expect(labsFirst.payload?.activeVersions?.["quickchr"]).toStartWith("quickchr ");
 			const { group: vpnFirst } = await settled("vpn", 180_000);
 			expect(vpnFirst.payload?.last?.error).toBeUndefined();
 			expect(vpnFirst.payload?.activeVersions?.["pki"]).toStartWith("strongSwan ");
@@ -278,6 +283,11 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			await waitForServer(name);
 			const partial = await toolStatus();
 			expect(partial.selector.selected).toEqual(["capture", "labs"]);
+			// labs relinked at start from the home, like capture: nothing reinstalled.
+			const labsAgain = partial.groups.find((group) => group.name === "labs");
+			expect(labsAgain?.state).toBe("ready");
+			expect(labsAgain?.payload?.active).toBe(labsFirst.payload?.active as string);
+			expect(labsAgain?.payload?.last?.updatedAt).toBe(labsFirst.payload?.last?.updatedAt as string);
 			expect(partial.selector.unknown).toEqual(["bogus"]);
 			expect(partial.groups.find((group) => group.name === "vpn")?.state).toBe("not-selected");
 			// Deselected: shims gone, payload kept for a later reselection.
@@ -349,8 +359,8 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			expect(devOffline.payload?.last?.updatedAt).toBe(devFirst.payload?.last?.updatedAt as string);
 			for (const shell of ["-c", "-lc"]) await run("bash", shell, `set -e; ${devTools}`);
 			// The native groups deselected: their shims are gone, their payloads stay on disk.
-			const nativeFirst = { capture: captureFirst, vpn: vpnFirst, routing: routingFirst };
-			const probes = { capture: "tshark", vpn: "pki", routing: "bird" };
+			const nativeFirst = { capture: captureFirst, labs: labsFirst, vpn: vpnFirst, routing: routingFirst };
+			const probes = { capture: "tshark", labs: "qemu-system-x86_64", vpn: "pki", routing: "bird" };
 			for (const [group, first] of Object.entries(nativeFirst)) {
 				const off = devOnly.groups.find((g) => g.name === group);
 				expect(off?.state).toBe("not-selected");
@@ -361,7 +371,7 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			// And they come back offline in a fourth container, still verified,
 			// with nothing reinstalled.
 			await docker("rm", "--force", name);
-			await start("capture vpn routing", true);
+			await start("capture labs vpn routing", true);
 			for (const [group, first] of Object.entries(nativeFirst)) {
 				const { group: offline } = await settled(group, 60_000);
 				expect(offline.state).toBe("ready");

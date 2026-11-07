@@ -2,8 +2,9 @@
 // report (`t3code-tools status`). Issue #5: slice 1 parses and reports; slice 2
 // adds persistent npm payloads under the home (tool-payloads.ts), starting
 // with `dev`; slice 3 adds Debian-package payloads (deb-payloads.ts), starting
-// with `capture`; slice 4 moves `vpn` and `routing` onto them. The image copies these files to /usr/local/lib/t3code/ and
-// runs them with Bun.
+// with `capture`; slice 4 moves `vpn` and `routing` onto them; slice 5 moves
+// `labs` (QEMU and its firmware) out of the image. The image copies these
+// files to /usr/local/lib/t3code/ and runs them with Bun.
 //
 // Never throw on operator input: an unknown or malformed selection is a
 // warning, and T3 must always start.
@@ -38,6 +39,7 @@ export type Delivery = "image" | "npm" | "deb" | "none";
  */
 export type GroupState = "not-selected" | "pending" | "installing" | "ready" | "failed" | "not-implemented";
 
+/** A presence probe. In a deb group, a `file` check is a path relative to the payload's extracted root. */
 export type Check = { kind: "command"; name: string } | { kind: "file"; name: string } | { kind: "library"; name: string };
 
 export interface GroupDef {
@@ -68,6 +70,12 @@ export interface GroupDef {
 	smoke?: readonly Smoke[];
 	/** deb groups: extra wrapper wiring for tools that only know compiled-in paths. */
 	wrappers?: readonly WrapperRule[];
+	/**
+	 * deb groups: paths (relative to the extracted root) removed before the
+	 * payload is laid out, for large files the group never uses. Part of the
+	 * payload id, like `wrappers`.
+	 */
+	prune?: readonly string[];
 	note?: string;
 }
 
@@ -105,6 +113,32 @@ protocol bgp routeros {
 export const ARP_REPLY_PCAP =
 	"1MOyoQIABAAAAAAAAAAAAP//AAABAAAAAAAAAAAAAAA8AAAAPAAAAAIAAAAAAUxeDBEiMwgGAAEIAAYEAAJMXgwRIjPAAAIBAgAAAAABwAACAgAAAAAAAAAAAAAAAAAAAAAAAA==";
 
+/**
+ * A 16-byte aarch64 program for `qemu-system-aarch64 -M virt -kernel`: PSCI
+ * SYSTEM_OFF over HVC (`mov w0, #0x84000008; hvc #0`), so with `-no-reboot`
+ * QEMU powers off and exits 0 at once. Without firmware, QEMU's own PSCI
+ * handles the call; a kernel that hangs instead fails the smoke test on
+ * its timeout.
+ */
+export const AARCH64_PSCI_OFF = Buffer.from([0x00, 0x01, 0x80, 0x52, 0x00, 0x80, 0xb0, 0x72, 0x02, 0x00, 0x00, 0xd4, 0x00, 0x00, 0x00, 0x14]).toString("base64");
+
+/** Debian multiarch triplet of this runtime (QEMU's module dir lives under it). */
+const MULTIARCH = process.arch === "arm64" ? "aarch64-linux-gnu" : "x86_64-linux-gnu";
+
+/** QEMU system emulators in Debian's qemu-system-x86 and qemu-system-arm, including their alias names (`kvm` links to qemu-system-x86_64). */
+export const QEMU_SYSTEM_COMMANDS = [
+	"kvm",
+	"qemu-system-x86_64",
+	"qemu-system-x86_64-microvm",
+	"qemu-system-amd64",
+	"qemu-system-i386",
+	"qemu-system-aarch64",
+	"qemu-system-arm64",
+	"qemu-system-arm",
+	"qemu-system-armel",
+	"qemu-system-armhf",
+] as const;
+
 const cmd = (...names: string[]): Check[] => names.map((name) => ({ kind: "command", name }));
 
 export const GROUPS: readonly GroupDef[] = [
@@ -127,15 +161,64 @@ export const GROUPS: readonly GroupDef[] = [
 	{
 		name: "labs",
 		summary: "quickchr with QEMU emulators, qemu-img and firmware (one readiness contract)",
-		delivery: "image",
+		delivery: "deb",
 		packages: ["qemu-system-x86", "qemu-system-arm", "qemu-efi-aarch64", "qemu-utils"],
 		checks: [
+			// quickchr is in the image (opt/bun/bin); QEMU comes from the payload.
 			...cmd("quickchr", "qemu-system-x86_64", "qemu-system-aarch64", "qemu-img"),
-			{ kind: "file", name: "/usr/share/qemu-efi-aarch64/QEMU_EFI.fd" },
-			{ kind: "file", name: "/usr/share/seabios/bios-256k.bin" },
+			// Relative to the payload root: the firmware quickchr and QEMU load.
+			{ kind: "file", name: "usr/share/AAVMF/AAVMF_CODE.fd" },
+			{ kind: "file", name: "usr/share/AAVMF/AAVMF_VARS.fd" },
+			{ kind: "file", name: "usr/share/seabios/bios-256k.bin" },
+			{ kind: "file", name: "usr/share/qemu/efi-virtio.rom" },
 		],
-		privileges: "None: TCG with user-mode networking. /dev/kvm (readable and writable by node): acceleration. CAP_NET_ADMIN plus /dev/net/tun: creating TAP devices (or a TAP pre-created for node).",
-		note: "Still baked into the image, so it is present whether or not it is selected. Readiness probes files only; status never boots a CHR.",
+		privileges: "None: TCG with user-mode networking, qemu-img. /dev/kvm (readable and writable by node): acceleration. CAP_NET_ADMIN plus /dev/net/tun: creating TAP devices (or a TAP pre-created for node).",
+		// Measured on amd64 (2026-11-06): 32.8 MiB of .debs, 566 MiB unpacked
+		// before pruning, about 310 MiB after. See labs-qemu-payload.md.
+		approxBytes: 320 * 1024 * 1024,
+		// Debian's QEMU looks for its BIOS, option ROMs and keymaps only in
+		// directories compiled into it. `-L` dirs are searched first (later
+		// -L from the caller come after them), so the wrapper puts the
+		// payload's copies in front; quickchr finds the UEFI images through
+		// `qemu-system-aarch64 -L help` (tikoci/quickchr#254). Display, USB
+		// and virtio-gpu modules load from QEMU_MODULE_DIR.
+		wrappers: [
+			{
+				commands: QEMU_SYSTEM_COMMANDS,
+				env: { QEMU_MODULE_DIR: `{root}/usr/lib/${MULTIARCH}/qemu` },
+				args: ["-L", "{root}/usr/share/qemu", "-L", "{root}/usr/share/seabios", "-L", "{root}/usr/lib/ipxe/qemu"],
+			},
+		],
+		// The secure-boot AAVMF variants (64 MiB each) and the descriptors that
+		// name them. quickchr boots CHR with AAVMF_CODE.fd (-> no-secboot) and
+		// AAVMF_VARS.fd only.
+		prune: [
+			"usr/share/AAVMF/AAVMF_CODE.secboot.fd",
+			"usr/share/AAVMF/AAVMF_CODE.secboot.strictnx.fd",
+			"usr/share/AAVMF/AAVMF_CODE.ms.fd",
+			"usr/share/AAVMF/AAVMF_CODE.snakeoil.fd",
+			"usr/share/AAVMF/AAVMF_VARS.ms.fd",
+			"usr/share/AAVMF/AAVMF_VARS.snakeoil.fd",
+			"usr/share/qemu/firmware/40-edk2-aarch64-secure-enrolled.json",
+			"usr/share/qemu/firmware/50-edk2-aarch64-secure.json",
+		],
+		smoke: [
+			// SeaBIOS from the payload (through the wrapper's -L) boots, finds
+			// nothing to boot and, with reboot-timeout=0 and -no-reboot, exits.
+			{
+				command: "qemu-system-x86_64",
+				args: ["-M", "pc", "-accel", "tcg", "-display", "none", "-nodefaults", "-no-reboot", "-boot", "reboot-timeout=0", "-chardev", "stdio,id=d", "-device", "isa-debugcon,iobase=0x402,chardev=d"],
+				expect: "No bootable device",
+			},
+			{
+				command: "qemu-system-aarch64",
+				args: ["-M", "virt", "-cpu", "cortex-a710", "-accel", "tcg", "-display", "none", "-nodefaults", "-no-reboot", "-kernel", "{input}"],
+				inputBase64: AARCH64_PSCI_OFF,
+				expect: "",
+			},
+			{ command: "qemu-img", args: ["create", "-f", "qcow2", "{input}", "16M"], expect: "Formatting" },
+		],
+		note: "Persistent payload of Debian packages under the home, like capture: QEMU with its firmware, behind wrappers that point it at the payload's data dirs. quickchr stays in the image and finds the payload's UEFI firmware through QEMU (tikoci/quickchr#254). Readiness boots firmware, not a CHR.",
 	},
 	{
 		name: "vpn",
@@ -471,7 +554,8 @@ export function groupStatus(group: GroupDef, selected: boolean, probe: Probe, pa
 	const checks =
 		isPayloadGroup(group) && payload
 			? group.checks.map((check) => {
-					const path = check.kind === "command" ? (payload.commandPaths?.[check.name] ?? null) : null;
+					const path =
+						check.kind === "command" ? (payload.commandPaths?.[check.name] ?? null) : check.kind === "file" ? (payload.filePaths?.[check.name] ?? null) : null;
 					return { kind: check.kind, name: check.name, ok: path !== null && existsSync(path), path };
 				})
 			: group.checks.map((check) => runCheck(check, probe));
@@ -538,6 +622,7 @@ export function buildStatus(
 		runtimeStatusPath: RUNTIME_STATUS_PATH,
 		notes: [
 			"npm and deb groups install in the background into the home and are reused across container replacement; image groups are baked in; not-implemented groups have no installer yet.",
+			"A deb group's file checks are paths inside its payload root, reported through the group's current link.",
 			"Checks are presence probes (PATH, files, ldconfig), not functional tests or capability grants.",
 			"Change the selection with /app/set environment= (see README), never by reapplying the /app YAML.",
 		],

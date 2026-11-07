@@ -268,16 +268,21 @@ means core only; `all` selects every group. An unknown name is logged as a
 warning and ignored. T3 always starts, whatever the selection says.
 
 The selection is parsed, logged, and reported to agents. `dev` (npm packages)
-and `capture`, `vpn` and `routing` (Debian packages) are delivered as
+and `capture`, `labs`, `vpn` and `routing` (Debian packages) are delivered as
 persistent payloads in the home (see
-[Persistent payloads](#persistent-payloads)). `labs`, `browser` and
-`agents-extra` are still baked into the image, so their tools are present
-whether or not you select them.
+[Persistent payloads](#persistent-payloads)). `browser` and `agents-extra`
+are still baked into the image, so their tools are present whether or not
+you select them.
+
+QEMU is no longer in the image. If you use quickchr inside the app, select
+`labs` (see [Changing groups on RouterOS](#changing-groups-on-routeros)): the
+first start downloads about 33 MiB in the background, and later image
+updates reuse it.
 
 | Group | Contents | In this image |
 |---|---|---|
 | `capture` | tcpdump, TShark (`dumpcap`, `capinfos`, `editcap`, `mergecap`, `text2pcap`), nfdump (`nfcapd`) | installs into `/data` when selected |
-| `labs` | quickchr, QEMU x86/ARM64 emulators, qemu-img, firmware | baked in |
+| `labs` | quickchr, QEMU x86/ARM64 emulators, qemu-img, SeaBIOS and ARM64 UEFI firmware | QEMU and firmware install into `/data` when selected; quickchr is in the image |
 | `vpn` | WireGuard tools (`wg`, `wg-quick`), strongSwan (`pki`, `swanctl`, charon), OpenVPN, ike-scan; no tunnel or service starts by default | installs into `/data` when selected |
 | `routing` | BIRD 2 (`bird`, `birdc`), ndisc6, arping, arp-scan, nftables, conntrack, nmap | installs into `/data` when selected |
 | `dev` | TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks; project lockfiles win | installs into `/data` when selected |
@@ -330,8 +335,9 @@ run here as `node` with `CapEff 0` under Docker (habitat C): *works* or
 | `routing` | `arp-scan --readpktfromfile` (decode a capture, with vendor names) | None | works |
 | `routing` | `rdisc6`, `ndisc6` | `CAP_NET_RAW` | expected |
 | `routing` | `nft` (even `nft -c`), `conntrack -L` | `CAP_NET_ADMIN` and netfilter netlink | refused |
-| `labs` | quickchr / QEMU with TCG and user networking | None | (earlier research) |
-| `labs` | KVM acceleration; TAP networking | `/dev/kvm` usable by `node`; `CAP_NET_ADMIN` and `/dev/net/tun` (or a TAP pre-created for `node`) | expected |
+| `labs` | quickchr / QEMU with TCG and user networking, `qemu-img` | None | works (CHR 7.25.1 x86 and arm64 booted from the payload; arm64 needs [quickchr#254](https://github.com/tikoci/quickchr/issues/254)) |
+| `labs` | KVM acceleration | `/dev/kvm` readable and writable by `node`, and host support | fails without the device under Docker ("Could not access KVM kernel module"); untested with one |
+| `labs` | TAP networking | `CAP_NET_ADMIN` and `/dev/net/tun` (or a TAP pre-created for `node`) | fails without the device under Docker (`could not open /dev/net/tun`); untested with one |
 | `browser` | T3's built-in browser sandbox | User namespaces, if the host allows them | expected |
 | `dev`, `agents-extra` | everything | None | works |
 
@@ -378,7 +384,11 @@ files (`present`, `missing`). The states are:
 Checks are presence probes (PATH, files, `ldconfig`), not functional tests.
 Payload groups are checked at their own shims and manifest instead, so the
 result does not depend on the caller's PATH.
-`labs` never boots a CHR to check readiness. Core checks (`t3`, Node, Bun,
+`labs` never boots a CHR to check readiness; its install-time smoke tests
+boot firmware only (SeaBIOS to "No bootable device", and a 16-byte aarch64
+program that powers the machine off). For a payload group, a file check is a
+path inside the payload, reported through `groups/<group>/current/root/…`.
+Core checks (`t3`, Node, Bun,
 Python, Git/SSH, centrs and the core network tools) are reported separately
 as `core.state`. At each start the entrypoint logs warnings and a summary to
 the container log and writes the same JSON to `/tmp/t3code-tools/status.json`.
@@ -453,8 +463,10 @@ markdownlint-cli2 0.24.0, Biome 2.6.5). Maintainers refresh the pins with
 42 MB more to pull on every image update, measured on amd64), so it is a
 payload too. `vpn` and `routing` are smaller, but use the same machinery
 rather than adding 13 MB to every image pull for routers that never select
-them ([write-up](docs/research/2026-11-06/vpn-routing-payloads.md)). Each
-installs as the app user with no root at runtime:
+them ([write-up](docs/research/2026-11-06/vpn-routing-payloads.md)). `labs`
+took 565 MiB of QEMU and firmware out of every image
+([write-up](docs/research/2026-11-06/labs-qemu-payload.md)). Each installs as
+the app user with no root at runtime:
 
 - **Pinned at image build.** The Dockerfile runs `t3code-tools deb-lock` after
   the last apt layer. It asks apt for the group's dependency closure that the
@@ -510,9 +522,23 @@ installs as the app user with no root at runtime:
   elsewhere or that need charon. `arp-scan` only looks for its vendor files
   in the current directory and at compiled-in paths, so its wrapper passes
   the payload's `--ouifile` and `--macfile` first; your own options come
-  later and win. A payload command never shadows a command of the
+  later and win. Debian's QEMU looks for its BIOS, option ROMs and keymaps
+  only in directories compiled into it (`/usr/share/qemu`,
+  `/usr/share/seabios`, `/usr/lib/ipxe/qemu`), so the wrappers of the
+  `qemu-system-*` emulators pass the payload's copies with `-L` first (QEMU
+  searches `-L` dirs in order, so a `-L` of your own comes after them) and
+  default `QEMU_MODULE_DIR` to the payload's module directory (display, USB
+  and virtio-gpu modules). quickchr finds the ARM64 UEFI images by asking
+  that QEMU for its data dirs (`qemu-system-aarch64 -L help`,
+  [quickchr#254](https://github.com/tikoci/quickchr/issues/254)). A group
+  can also prune files it never uses after extraction: `labs` drops the
+  secure-boot AAVMF variants (four 64 MiB images) and keeps the pair quickchr
+  boots (`AAVMF_CODE.fd`, `AAVMF_VARS.fd`). The prune list is part of the
+  payload id and recorded in the manifest under `deb.pruned`. A payload
+  command never shadows a command of the
   same name in the image, including one the image gains later. A required
-  command that the image already provides is checked and used from the image.
+  command that the image already provides (`quickchr` in `/opt/bun/bin`) is
+  checked and used from the image.
 - **Stale native payloads are checked.** While a refresh is pending after an
   image update, the previous payload stays linked only if every required
   command it still provides passes its version probe against the new image.
@@ -529,7 +555,12 @@ listing and the live-capture refusal could not be tested there. See the
 
 Measured on amd64 for the other two (same image): `vpn` is 14 packages, 3.5
 MiB to download and 11.4 MiB on disk; `routing` is 21 packages, 8.3 MiB and
-32.5 MiB.
+32.5 MiB. `labs` is 32 packages, 32.7 MiB to download, 564 MiB unpacked and
+309 MiB on disk after pruning 256 MiB of firmware, about 6 s to install on a
+fast link (computed: about 4.6 minutes at 1 Mbit/s). Removing QEMU from the
+image also moved a few libraries it used to supply into the `capture` and
+`vpn` closures, so homes with those payloads download them once more after
+that image update.
 
 Installing `capture` grants no capture privileges. Offline decoding
 (`tshark -r`, `tcpdump -r`, `capinfos`, `editcap`, `mergecap`, `text2pcap`),
@@ -607,8 +638,8 @@ and `mtr` on a `cap_net_raw` file capability; see
 btest, MNDP, MAC-Telnet and RoMON.
 
 `routing` is its own group rather than part of `labs`. `labs` is about
-565 MiB of QEMU and firmware with one readiness contract: quickchr can boot
-a CHR. The routing peers are a few MiB, and they are most useful without
+310 MiB of QEMU and firmware (a 33 MiB download) with one readiness
+contract: quickchr can boot a CHR. The routing peers are a few MiB, and they are most useful without
 QEMU, peering with the host router from a privileged container. Folding
 them into `labs` would make a small router download QEMU to get `bird`. It
 would also mix tools that need `CAP_NET_RAW`/`CAP_NET_ADMIN` into a group
@@ -617,13 +648,14 @@ same reason: they are Linux router tools that need `CAP_NET_ADMIN`.
 
 #### Roadmap
 
-`dev`, `capture`, `vpn` and `routing` already install as persistent payloads
-under `/data` in the background, after T3 starts, and reuse compatible
-payloads across image replacements (write-ups:
+`dev`, `capture`, `labs`, `vpn` and `routing` already install as persistent
+payloads under `/data` in the background, after T3 starts, and reuse
+compatible payloads across image replacements (write-ups:
 [capture](docs/research/2026-11-06/capture-native-bundle.md),
-[vpn and routing](docs/research/2026-11-06/vpn-routing-payloads.md)). Groups
-that are baked in today (`labs`, `browser`, `agents-extra`) move out only
-after their persistent replacement is proven. See the
+[vpn and routing](docs/research/2026-11-06/vpn-routing-payloads.md),
+[labs](docs/research/2026-11-06/labs-qemu-payload.md)). Groups that are baked
+in today (`browser`, `agents-extra`) move out only after their persistent
+replacement is proven. See the
 [review brief](docs/research/2026-11-05/REVIEW.md) and
 [issue #5](https://github.com/tikoci/app-t3code/issues/5). Automatic
 upstream-release and security delivery is tracked in
@@ -635,7 +667,7 @@ approved Python bootstrap additions; neither is installed yet.
 The image includes [Bun 1.4.4](https://bun.sh/docs/installation), `bunx`, and
 global installations of:
 
-- [`@tikoci/quickchr@next` — README](https://github.com/tikoci/quickchr/blob/main/README.md): create disposable RouterOS CHR labs. QEMU for x86 and ARM64, `qemu-img`, and ARM64 UEFI firmware are included.
+- [`@tikoci/quickchr@next` — README](https://github.com/tikoci/quickchr/blob/main/README.md): create disposable RouterOS CHR labs. QEMU for x86 and ARM64, `qemu-img`, and the firmware come with the `labs` group, not the image.
 - [`@tikoci/centrs@next` — README](https://github.com/tikoci/centrs/blob/main/README.md): inspect and drive RouterOS through validated commands and structured results.
 
 They are available to agents and login shells without a first-run install:
@@ -707,14 +739,16 @@ APP_T3CODE_ROS=stable APP_T3CODE_ARCH=arm64 APP_T3CODE_INTEGRATION=1 \
 ```
 
 The Docker replacement test removes the original container and starts a new
-one with only the same home volume. It installs the `dev`, `capture`, `vpn`
-and `routing` payloads under `all`, runs each Debian group's tools as the
-unprivileged user ([capture](test/capture-tools.sh),
-[vpn](test/vpn-tools.sh), [routing](test/routing-tools.sh)), and relinks the
-payloads in later containers, including with no network. Against an
-emulated (QEMU user-mode) image, set `CAPTURE_TOOLS_QEMU_USER=1` and/or
-`ROUTING_TOOLS_QEMU_USER=1` for the test; they are forwarded to the scripts,
-which then skip only the checks emulation breaks before any permission check. It checks tool discovery in
+one with only the same home volume. It installs the `dev`, `capture`, `labs`,
+`vpn` and `routing` payloads under `all`, runs each Debian group's tools as
+the unprivileged user ([capture](test/capture-tools.sh),
+[labs](test/labs-tools.sh), [vpn](test/vpn-tools.sh),
+[routing](test/routing-tools.sh)), and relinks the payloads in later
+containers, including with no network. Against an emulated (QEMU user-mode)
+image, set `CAPTURE_TOOLS_QEMU_USER=1`, `ROUTING_TOOLS_QEMU_USER=1` and/or
+`LABS_TOOLS_QEMU_USER=1` for the test; they are forwarded to the scripts,
+which then skip only the checks emulation breaks (or makes too slow) before
+any permission check. It checks tool discovery in
 ordinary and login shells, a real T3 project record and environment identity, settings
 (including the restarted server's effective preference through read-only MCP),
 uncommitted worktree/project files, and a user-installed Bun CLI. CI runs

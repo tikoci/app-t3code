@@ -53,10 +53,6 @@ RUN echo 'Acquire::Retries "10";' > /etc/apt/apt.conf.d/80-retries && \
         openssh-client \
         procps \
         python3 \
-        qemu-system-x86 \
-        qemu-system-arm \
-        qemu-efi-aarch64 \
-        qemu-utils \
         ripgrep \
         tini \
         unzip \
@@ -171,8 +167,9 @@ COPY profile.sh /etc/profile.d/t3code.sh
 COPY scripts/image-inventory.ts scripts/tool-groups.ts scripts/tool-payloads.ts scripts/deb-payloads.ts /usr/local/lib/t3code/
 COPY scripts/groups /usr/local/lib/t3code/groups
 
-# Native tool groups (`capture`, `vpn`, `routing`) install as Debian-package payloads into the
-# home at runtime, as node. Pin each group's dependency closure (whatever this
+# Native tool groups (`capture`, `vpn`, `routing`, `labs`) install as
+# Debian-package payloads into the home at runtime, as node. QEMU and its
+# firmware are not in the image: `labs` brings them (quickchr stays above). Pin each group's dependency closure (whatever this
 # image lacks) by version, size and SHA256 from apt's verified indexes now, so
 # a rebuild picks up Debian security updates and the payload id follows them.
 # Must stay after every apt layer: the closure is computed against them.

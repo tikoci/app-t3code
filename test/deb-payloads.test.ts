@@ -1,7 +1,7 @@
-/** Debian-package payloads (issue #5 slices 3-4: capture, vpn, routing), offline: fake dpkg-deb, fake .debs, fake mirror. */
+/** Debian-package payloads (issue #5 slices 3-5: capture, vpn, routing, labs), offline: fake dpkg-deb, fake .debs, fake mirror. */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -15,11 +15,23 @@ import {
 	layoutDebPayload,
 	parseStanzas,
 	preloadLoads,
+	pruneExtracted,
 	resolveDebLock,
 	wrapperScript,
 } from "../scripts/deb-payloads.ts";
-import { BIRD_BGP_CONF, buildStatus, type GroupDef, GROUPS, NETWORK_PACKAGE_ASSIGNMENT, type Probe, TZSP_DNS_PCAPNG } from "../scripts/tool-groups.ts";
-import { activate, desiredPayload, installGroups, type Manifest, type PayloadEnv, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
+import {
+	AARCH64_PSCI_OFF,
+	BIRD_BGP_CONF,
+	buildStatus,
+	type GroupDef,
+	GROUPS,
+	groupStatus,
+	NETWORK_PACKAGE_ASSIGNMENT,
+	type Probe,
+	QEMU_SYSTEM_COMMANDS,
+	TZSP_DNS_PCAPNG,
+} from "../scripts/tool-groups.ts";
+import { activate, desiredPayload, installGroups, type Manifest, type PayloadEnv, payloadInfo, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
 
 const capture = GROUPS.find((g) => g.name === "capture");
 if (!capture) throw new Error("capture group missing");
@@ -986,5 +998,160 @@ describe("vpn and routing group definitions", () => {
 		for (const group of [vpn, routing]) {
 			for (const pkg of group.packages) expect(NETWORK_PACKAGE_ASSIGNMENT[pkg]).toBe(group.name);
 		}
+	});
+});
+
+describe("labs: QEMU wrappers, pruned firmware, payload file checks, image Bun globals", () => {
+	// A QEMU-like payload: data dirs only through -L, a firmware dir with
+	// variants the group prunes, and quickchr from the image's Bun globals.
+	const lab: GroupDef = {
+		name: "lab",
+		summary: "test",
+		delivery: "deb",
+		packages: ["qemu-fake", "efi-fake"],
+		checks: [
+			{ kind: "command", name: "quickchr" },
+			{ kind: "command", name: "qemu-system-x86_64" },
+			{ kind: "file", name: "usr/share/AAVMF/AAVMF_CODE.fd" },
+			{ kind: "file", name: "usr/share/seabios/bios-256k.bin" },
+		],
+		privileges: "None.",
+		wrappers: [
+			{
+				commands: ["qemu-system-x86_64", "qemu-system-i386"],
+				env: { QEMU_MODULE_DIR: "{root}/usr/lib/x86_64-linux-gnu/qemu" },
+				args: ["-L", "{root}/usr/share/qemu", "-L", "{root}/usr/share/seabios"],
+			},
+		],
+		prune: ["usr/share/AAVMF/AAVMF_CODE.secboot.fd", "usr/share/AAVMF/AAVMF_CODE.ms.fd", "usr/share/qemu/firmware", "usr/share/not/in/this/build"],
+		smoke: [{ command: "qemu-system-x86_64", args: ["-M", "pc"], expect: "No bootable device" }],
+	};
+	// Fails like Debian's QEMU without -L: its BIOS is only found in a -L dir.
+	const qemu = `#!/bin/sh
+case "$1" in --version) echo "QEMU emulator version 10.0.13 (fake)"; exit 0 ;; esac
+bios=""
+while [ $# -gt 0 ]; do
+	case "$1" in -L) [ -e "$2/bios-256k.bin" ] && bios="$2/bios-256k.bin"; shift 2 ;; args) shift; echo "ARGS $*"; echo "MOD=$QEMU_MODULE_DIR"; exit 0 ;; *) shift ;; esac
+done
+[ -n "$bios" ] || { echo "qemu: could not load PC BIOS 'bios-256k.bin'" >&2; exit 1; }
+echo "SeaBIOS from $bios"; echo "No bootable device."
+`;
+	const packages = (over: { secboot?: boolean; code?: boolean } = {}): FakePkg[] => [
+		{ name: "qemu-fake", version: "1:10.0.13+ds-0+deb13u1", files: { "usr/bin/qemu-system-x86_64": qemu, "usr/bin/qemu-img": tool("qemu-img") } },
+		{
+			name: "efi-fake",
+			version: "2025.02-8+deb13u1",
+			files: {
+				"usr/share/seabios/bios-256k.bin": "bios",
+				...(over.code === false ? {} : { "usr/share/AAVMF/AAVMF_CODE.fd": "code" }),
+				"usr/share/AAVMF/AAVMF_VARS.fd": "vars",
+				...(over.secboot === false ? {} : { "usr/share/AAVMF/AAVMF_CODE.secboot.fd": "x".repeat(4096), "usr/share/AAVMF/AAVMF_CODE.ms.fd": "y".repeat(100) }),
+				"usr/share/qemu/firmware/50-edk2-aarch64-secure.json": "{}",
+				"usr/share/qemu/keymaps/en-us": "keys",
+			},
+		},
+	];
+	const imageQuickchr = () => {
+		mkdirSync(join(tmp, "image", "opt", "bun", "bin"), { recursive: true });
+		writeFileSync(join(tmp, "image", "opt", "bun", "bin", "quickchr"), '#!/bin/sh\necho "quickchr 0.5.6 (image)"\n');
+		chmodSync(join(tmp, "image", "opt", "bun", "bin", "quickchr"), 0o755);
+	};
+	const labState = () => groupStatus(lab, true, nothing, payloadInfo(lab, env));
+
+	test("installs: firmware pruned before layout, files checked in the payload, quickchr from the image's Bun globals", async () => {
+		imageQuickchr();
+		publish(packages(), "amd64", "lab");
+		const result = await installGroups([lab], ["lab"], env);
+		expect(result.results["lab"]).toMatchObject({ state: "ready", attempt: 1 });
+		const manifest = JSON.parse(readFileSync(join(env.root, "groups", "lab", "current", "manifest.json"), "utf8")) as Manifest;
+		const root = join(env.root, "groups", "lab", manifest.payloadId, "root");
+		// Absent prune paths are skipped; a directory goes with its contents.
+		expect(manifest.deb?.pruned).toEqual(["usr/share/AAVMF/AAVMF_CODE.secboot.fd", "usr/share/AAVMF/AAVMF_CODE.ms.fd", "usr/share/qemu/firmware"]);
+		expect(manifest.deb?.prunedBytes).toBe(4096 + 100 + 2);
+		expect(existsSync(join(root, "usr/share/AAVMF/AAVMF_CODE.secboot.fd"))).toBe(false);
+		expect(existsSync(join(root, "usr/share/qemu/keymaps/en-us"))).toBe(true);
+		expect(manifest.versions["quickchr"]).toBe("quickchr 0.5.6 (image)");
+		expect(manifest.deb?.wired).toEqual({ "qemu-system-x86_64": { env: ["QEMU_MODULE_DIR"], args: ["-L", "{root}/usr/share/qemu", "-L", "{root}/usr/share/seabios"], preload: [] } });
+		// The wrapper's -L dirs come first, then the caller's arguments.
+		const out = Bun.spawnSync([shim("qemu-system-x86_64"), "args", "-M", "virt"], { env: { PATH: "/usr/bin:/bin" } }).stdout.toString();
+		expect(out).toContain(`ARGS -M virt\nMOD=${root}/usr/lib/x86_64-linux-gnu/qemu\n`);
+		expect(Bun.spawnSync([shim("qemu-system-x86_64")], { env: { PATH: "/usr/bin:/bin" } }).stdout.toString()).toContain(`SeaBIOS from ${root}/usr/share/seabios/bios-256k.bin`);
+		// Status: file checks resolve through the current link; quickchr through the image.
+		const status = labState();
+		expect(status).toMatchObject({ state: "ready", present: true, missing: [] });
+		expect(status?.payload?.filePaths).toEqual({
+			"usr/share/AAVMF/AAVMF_CODE.fd": join(env.root, "groups", "lab", "current", "root", "usr/share/AAVMF/AAVMF_CODE.fd"),
+			"usr/share/seabios/bios-256k.bin": join(env.root, "groups", "lab", "current", "root", "usr/share/seabios/bios-256k.bin"),
+		});
+		expect(status?.payload?.commandPaths["quickchr"]).toBe(join(tmp, "image", "opt", "bun", "bin", "quickchr"));
+		expect(existsSync(shim("quickchr"))).toBe(false);
+		// A required file that disappears takes the payload out on the next start.
+		rmSync(join(root, "usr/share/AAVMF/AAVMF_CODE.fd"));
+		expect(activate([lab], ["lab"], env)).toEqual(["lab"]);
+		expect(existsSync(shim("qemu-system-x86_64"))).toBe(false);
+		expect(labState()?.state).not.toBe("ready");
+	});
+
+	test("a payload without a required firmware file never activates", async () => {
+		imageQuickchr();
+		publish(packages({ code: false }), "amd64", "lab");
+		const result = await installGroups([lab], ["lab"], env);
+		expect(result.results["lab"]?.state).toBe("failed");
+		expect(result.results["lab"]?.error).toContain("the payload lacks usr/share/AAVMF/AAVMF_CODE.fd");
+	});
+
+	test("without quickchr in the image the group is not ready", async () => {
+		publish(packages(), "amd64", "lab");
+		const result = await installGroups([lab], ["lab"], env);
+		expect(result.results["lab"]?.error).toContain("neither the payload nor the image provides quickchr");
+	});
+
+	test("the prune list is part of the payload id; prune paths must stay inside the root", () => {
+		publish(packages(), "amd64", "lab");
+		const before = desiredPayload(lab, env);
+		const changed = desiredPayload({ ...lab, prune: ["usr/share/AAVMF/AAVMF_CODE.secboot.fd"] }, env);
+		const none = desiredPayload({ ...lab, prune: [] }, env);
+		const plain = desiredPayload({ ...lab, prune: undefined }, env);
+		if ("error" in before || "error" in changed || "error" in none || "error" in plain) throw new Error("no desired payload");
+		expect(changed.id).not.toBe(before.id);
+		expect(none.id).toBe(plain.id);
+		const root = join(tmp, "prune-root");
+		mkdirSync(root, { recursive: true });
+		for (const bad of ["../etc/passwd", "/etc/passwd", "usr/../../x", "usr//share", "", "./usr"]) {
+			expect(() => pruneExtracted(root, [bad])).toThrow("must be a normalized path inside the payload root");
+		}
+		expect(pruneExtracted(root, ["usr/missing"])).toEqual({ pruned: [], prunedBytes: 0 });
+		// A directory link leading out of the payload is not followed for the delete.
+		const outside = join(tmp, "outside");
+		mkdirSync(outside, { recursive: true });
+		writeFileSync(join(outside, "keep"), "x");
+		symlinkSync(outside, join(root, "usr-link"));
+		expect(() => pruneExtracted(root, ["usr-link/keep"])).toThrow("resolves outside the payload root");
+		expect(existsSync(join(outside, "keep"))).toBe(true);
+		// The link itself may go: only its target is protected.
+		expect(pruneExtracted(root, ["usr-link"]).pruned).toEqual(["usr-link"]);
+		expect(existsSync(join(outside, "keep"))).toBe(true);
+	});
+
+	test("the real labs group: QEMU emulators get the -L dirs, unused firmware is pruned, smoke tests boot firmware", () => {
+		const labs = GROUPS.find((g) => g.name === "labs");
+		if (!labs) throw new Error("labs group missing");
+		expect(labs.delivery).toBe("deb");
+		const commands = labs.checks.filter((c) => c.kind === "command").map((c) => c.name);
+		const files = labs.checks.filter((c) => c.kind === "file").map((c) => c.name);
+		expect(commands).toEqual(["quickchr", "qemu-system-x86_64", "qemu-system-aarch64", "qemu-img"]);
+		// The pair quickchr picks on Debian, and the x86 BIOS and NIC ROM QEMU loads.
+		expect(files).toEqual(["usr/share/AAVMF/AAVMF_CODE.fd", "usr/share/AAVMF/AAVMF_VARS.fd", "usr/share/seabios/bios-256k.bin", "usr/share/qemu/efi-virtio.rom"]);
+		for (const file of files) expect(labs.prune).not.toContain(file);
+		expect(labs.prune).not.toContain("usr/share/AAVMF/AAVMF_CODE.no-secboot.fd");
+		const rule = labs.wrappers?.[0];
+		expect(rule?.commands).toEqual(QEMU_SYSTEM_COMMANDS);
+		expect(rule?.commands).not.toContain("qemu-img");
+		expect(rule?.args).toEqual(["-L", "{root}/usr/share/qemu", "-L", "{root}/usr/share/seabios", "-L", "{root}/usr/lib/ipxe/qemu"]);
+		expect(rule?.env?.["QEMU_MODULE_DIR"]).toMatch(/^\{root\}\/usr\/lib\/(x86_64|aarch64)-linux-gnu\/qemu$/);
+		for (const smoke of labs.smoke ?? []) expect(commands).toContain(smoke.command);
+		// mov w0, #0x84000008 (PSCI SYSTEM_OFF); hvc #0; b .
+		const words = Buffer.from(AARCH64_PSCI_OFF, "base64");
+		expect([0, 4, 8, 12].map((at) => words.readUInt32LE(at).toString(16))).toEqual(["52800100", "72b08000", "d4000002", "14000000"]);
 	});
 });

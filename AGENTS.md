@@ -81,6 +81,20 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   "Privileges by tool" table and each group's `privileges` (plus
   `CORE_PRIVILEGES`) in step when tools move.
   See `docs/research/2026-11-06/vpn-routing-payloads.md`.
+- `labs` (slice 5) is a deb payload too: QEMU and its firmware are no longer
+  in the image (the first apt layer dropped them, which also moved a few
+  libraries into the `capture`/`vpn` closures). Debian's QEMU is not
+  relocatable (data dirs compiled in); the `qemu-system-*` wrappers pass
+  leading `-L` for the payload's `share/qemu`, `share/seabios` and
+  `lib/ipxe/qemu`, plus `QEMU_MODULE_DIR`. The group `prune`s the secure-boot
+  AAVMF images (256 MiB) after extraction; the prune list is in the payload
+  id. In a deb group, `file` checks are paths inside the payload root.
+  quickchr stays in the image (`/opt/bun/bin` counts as an image bin dir)
+  and finds arm64 UEFI firmware via `qemu-system-aarch64 -L help`, which
+  needs tikoci/quickchr#254 (before it: `MISSING_FIRMWARE` on arm64, x86
+  fine). Its smoke tests boot firmware, not a CHR; CHR boots are the
+  research probe (`scripts/research-quickchr-runtime.ts`, `QUICKCHR_MODULE`
+  for a branch build). See `docs/research/2026-11-06/labs-qemu-payload.md`.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
   (including comments), regenerate the link's `yaml` query parameter from
