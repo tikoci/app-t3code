@@ -33,6 +33,12 @@ test ! -e "$root/usr/share/AAVMF/AAVMF_VARS.ms.fd"
 test "$(readlink "$root/usr/share/AAVMF/AAVMF_CODE.fd")" = AAVMF_CODE.no-secboot.fd
 test "$(stat -c %s "$root/usr/share/AAVMF/AAVMF_VARS.fd")" = 67108864
 
+# quickchr must discover the relocated firmware too. Presence and QEMU's
+# own boots can pass even with a quickchr build that still fails arm64 CHRs.
+quickchr doctor --json >doctor.json
+jq -e --arg code "$root/usr/share/AAVMF/AAVMF_CODE.fd" \
+	'.checks | any(.label == "UEFI firmware" and .status == "ok" and .detail == $code)' doctor.json >/dev/null
+
 # The BIOS and the virtio NIC's option ROM resolve through the -L dirs. QEMU
 # refuses to start when it cannot find a romfile, which the nonexistent one
 # shows; the default efi-virtio.rom must start cleanly.

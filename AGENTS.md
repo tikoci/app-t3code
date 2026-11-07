@@ -91,10 +91,11 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   id. In a deb group, `file` checks are paths inside the payload root.
   quickchr stays in the image (`/opt/bun/bin` counts as an image bin dir)
   and finds arm64 UEFI firmware via `qemu-system-aarch64 -L help`, which
-  needs tikoci/quickchr#254 (before it: `MISSING_FIRMWARE` on arm64, x86
-  fine). Its smoke tests boot firmware, not a CHR; CHR boots are the
-  research probe (`scripts/research-quickchr-runtime.ts`, `QUICKCHR_MODULE`
-  for a branch build). See `docs/research/2026-11-06/labs-qemu-payload.md`.
+  ships in quickchr 0.5.6 (`@next`; tikoci/quickchr#254/#255). Older builds
+  fail with `MISSING_FIRMWARE` on arm64. Its smoke tests boot firmware, not
+  a CHR; CHR boots are the research probe
+  (`scripts/research-quickchr-runtime.ts`, `QUICKCHR_MODULE` for a branch
+  build). See `docs/research/2026-11-06/labs-qemu-payload.md`.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
   (including comments), regenerate the link's `yaml` query parameter from

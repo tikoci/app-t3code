@@ -658,8 +658,9 @@ export function pruneExtracted(root: string, paths: readonly string[]): { pruned
 		let bytes: number;
 		try {
 			bytes = treeBytes(path);
-		} catch {
-			continue; // not in this build
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") continue; // not in this build
+			throw error;
 		}
 		// A symlinked directory on the way (an absolute link in a package) must not lead the delete out of the payload.
 		const realRoot = realpathSync(root);

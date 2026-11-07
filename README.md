@@ -335,7 +335,7 @@ run here as `node` with `CapEff 0` under Docker (habitat C): *works* or
 | `routing` | `arp-scan --readpktfromfile` (decode a capture, with vendor names) | None | works |
 | `routing` | `rdisc6`, `ndisc6` | `CAP_NET_RAW` | expected |
 | `routing` | `nft` (even `nft -c`), `conntrack -L` | `CAP_NET_ADMIN` and netfilter netlink | refused |
-| `labs` | quickchr / QEMU with TCG and user networking, `qemu-img` | None | works (CHR 7.25.1 x86 and arm64 booted from the payload; arm64 needs [quickchr#254](https://github.com/tikoci/quickchr/issues/254)) |
+| `labs` | quickchr / QEMU with TCG and user networking, `qemu-img` | None | works (CHR 7.25.1 x86 and arm64 guests booted from the payload on amd64; ARM64 firmware discovery shipped in [quickchr 0.5.6](https://github.com/tikoci/quickchr/releases/tag/v0.5.6)) |
 | `labs` | KVM acceleration | `/dev/kvm` readable and writable by `node`, and host support | fails without the device under Docker ("Could not access KVM kernel module"); untested with one |
 | `labs` | TAP networking | `CAP_NET_ADMIN` and `/dev/net/tun` (or a TAP pre-created for `node`) | fails without the device under Docker (`could not open /dev/net/tun`); untested with one |
 | `browser` | T3's built-in browser sandbox | User namespaces, if the host allows them | expected |
@@ -529,8 +529,10 @@ the app user with no root at runtime:
   searches `-L` dirs in order, so a `-L` of your own comes after them) and
   default `QEMU_MODULE_DIR` to the payload's module directory (display, USB
   and virtio-gpu modules). quickchr finds the ARM64 UEFI images by asking
-  that QEMU for its data dirs (`qemu-system-aarch64 -L help`,
-  [quickchr#254](https://github.com/tikoci/quickchr/issues/254)). A group
+  that QEMU for its data dirs (`qemu-system-aarch64 -L help`, shipped in
+  [quickchr 0.5.6](https://github.com/tikoci/quickchr/releases/tag/v0.5.6),
+  available on `@next`). Images built with older quickchr need rebuilding
+  to gain ARM64 guest support with this payload. A group
   can also prune files it never uses after extraction: `labs` drops the
   secure-boot AAVMF variants (four 64 MiB images) and keeps the pair quickchr
   boots (`AAVMF_CODE.fd`, `AAVMF_VARS.fd`). The prune list is part of the

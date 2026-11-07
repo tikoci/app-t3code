@@ -1121,6 +1121,10 @@ echo "SeaBIOS from $bios"; echo "No bootable device."
 			expect(() => pruneExtracted(root, [bad])).toThrow("must be a normalized path inside the payload root");
 		}
 		expect(pruneExtracted(root, ["usr/missing"])).toEqual({ pruned: [], prunedBytes: 0 });
+		// An unreadable or malformed tree is not an absent file: do not hide
+		// filesystem errors and report a successfully pruned payload.
+		symlinkSync("loop", join(root, "loop"));
+		expect(() => pruneExtracted(root, ["loop/file"])).toThrow("ELOOP");
 		// A directory link leading out of the payload is not followed for the delete.
 		const outside = join(tmp, "outside");
 		mkdirSync(outside, { recursive: true });

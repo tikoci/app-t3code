@@ -117,8 +117,25 @@ the payload id, not `current`. quickchr looks the path up at every launch, and
 the previous payload is kept after a refresh, so a running machine keeps its
 firmware.
 
-**Until quickchr#255 is published to `@next` and an image is rebuilt, arm64
-CHRs fail under `labs` with `MISSING_FIRMWARE`.** x86 works today.
+**Update, 2026-11-07:** quickchr#255 merged and shipped in
+[quickchr 0.5.6](https://github.com/tikoci/quickchr/releases/tag/v0.5.6), on
+both `latest` and `next`. Rebuild images that contain 0.5.5 to pick it up;
+the table above records the original pre-release comparison. The Docker
+replacement test now also checks that `quickchr doctor --json` discovers
+the payload's ARM64 UEFI firmware, so an old quickchr cannot pass only
+because QEMU's own smoke tests succeed.
+
+Codex/Sol re-ran the probe with the published 0.5.6 package and a fresh
+home ([transcript](labs-chr-boot-quickchr-0.5.6-amd64.txt)): x86 ready in
+80.1 s and arm64 ready in 75.4 s, with managed login, qcow2 boot resize,
+an extra disk and a centrs resource read. Both machines were removed.
+This used the amd64 overlay image plus the new quickchr package and prune
+error-handling fix, without a branch module override. It is not a native
+ARM64 host test. The replacement/offline-reuse test passed (112 expects,
+163.5 s); `labs-tools.sh` also passed with the new discovery assertion.
+`bun run check` and all 82 offline tests passed (762 expects). Pruning now
+skips only absent paths (`ENOENT`), propagating other filesystem errors;
+the regression check covers a symlink loop.
 
 ## The overlay test image
 
