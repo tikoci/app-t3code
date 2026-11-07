@@ -360,7 +360,17 @@ process.exit(r.locked ? 0 : 3);
 		const child = Bun.spawn(["bun", script, JSON.stringify({ ...env, compatValue: compat })], { stdout: "inherit", stderr: "inherit" });
 		const lock = join(env.root, "install.lock");
 		for (let i = 0; i < 200 && !existsSync(join(tmp, "npm-calls")); i++) await Bun.sleep(25);
-		expect(JSON.parse(readFileSync(lock, "utf8"))).toMatchObject({ pid: child.pid, command: "install" });
+		// The holder rewrites its record (truncate, then write) when it records
+		// npm's pid, which races npm writing npm-calls: retry an empty read.
+		let first: { pid?: number; command?: string } = {};
+		for (let i = 0; i < 200 && !first.pid; i++) {
+			try {
+				first = JSON.parse(readFileSync(lock, "utf8"));
+			} catch {
+				await Bun.sleep(10);
+			}
+		}
+		expect(first).toMatchObject({ pid: child.pid, command: "install" });
 		expect(devState()?.state).toBe("installing");
 
 		const second = await installGroups(npmGroups, ["dev"], env);
