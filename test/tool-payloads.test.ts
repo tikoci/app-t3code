@@ -3,8 +3,20 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildStatus, GROUPS, type Probe } from "../scripts/tool-groups.ts";
-import { activate, activateIfIdle, type Compat, installGroups, type PayloadEnv, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
+import { buildStatus, formatStatus, GROUPS, main, ownerMismatch, type Probe, USAGE } from "../scripts/tool-groups.ts";
+import {
+	activate,
+	activateIfIdle,
+	type Compat,
+	INTERACTIVE_BACKOFF_MS,
+	installGroups,
+	KEEP_TRYING_BACKOFF_MS,
+	liveInstaller,
+	type PayloadEnv,
+	processStartTicks,
+	prunePayloads,
+	readState,
+} from "../scripts/tool-payloads.ts";
 
 const SPEC = join(import.meta.dir, "..", "scripts", "groups");
 const dev = GROUPS.find((g) => g.name === "dev");
@@ -29,6 +41,8 @@ echo x >> "${dir}/npm-calls"
 # Hold the install open until the test releases it (lock tests).
 while [ -e "${dir}/hold" ]; do sleep 0.05; done
 prefix=""; while [ $# -gt 0 ]; do [ "$1" = "--prefix" ] && prefix="$2"; shift; done
+# Per-group failure: the staging dir sits in groups/<group>/.
+[ -e "${dir}/fail-$(basename "$(dirname "$prefix")")" ] && { echo "registry unreachable" >&2; exit 1; }
 mkdir -p "$prefix/node_modules/.bin"
 for b in tsc cspell markdownlint-cli2 biome; do
   printf '#!/bin/sh\\necho "%s fake 1.0"\\n' "$b" > "$prefix/node_modules/.bin/$b"
@@ -166,6 +180,60 @@ describe("npm payload groups", () => {
 		const status = devState();
 		expect(status?.state).toBe("failed");
 		expect(status?.payload?.last?.error).toContain("registry unreachable");
+	});
+
+	test("retries run in rounds: a failing group never blocks another, and the lock is free while waiting", async () => {
+		// A second npm group from the same spec, so two groups share a run.
+		cpSync(join(tmp, "spec", "dev"), join(tmp, "spec", "dev2"), { recursive: true });
+		const groups = [...npmGroups, { ...dev, name: "dev2" }];
+		writeFileSync(join(tmp, "fail-dev"), "");
+		const lock = join(env.root, "install.lock");
+		const waits: { lockFree: boolean; waiting: boolean; devState?: string; dev2Ready: boolean; text: string }[] = [];
+		env.sleep = async () => {
+			const status = buildStatus("dev", nothing, "/nonexistent", env);
+			waits.push({
+				lockFree: Bun.spawnSync(["flock", "-n", lock, "true"]).exitCode === 0,
+				waiting: Boolean(liveInstaller(env)?.waitingUntil),
+				devState: status.groups.find((g) => g.name === "dev")?.state,
+				dev2Ready: readState(env)["dev2"]?.state === "ready",
+				text: formatStatus(status),
+			});
+			rmSync(join(tmp, "fail-dev"));
+		};
+		const result = await installGroups(groups, ["dev", "dev2"], env);
+		expect(waits).toHaveLength(1);
+		expect(waits[0]).toMatchObject({ lockFree: true, waiting: true, devState: "installing", dev2Ready: true });
+		expect(waits[0]?.text).toContain("retrying at");
+		expect(waits[0]?.text).toContain("registry unreachable");
+		expect(result.results["dev"]).toMatchObject({ state: "ready", attempt: 2 });
+		expect(result.results["dev2"]).toMatchObject({ state: "ready", attempt: 1 });
+		expect(liveInstaller(env)).toBeNull();
+		// (Shims are not compared: the cloned group ships the same command names.)
+		expect(readState(env)["dev"]).toMatchObject({ state: "ready", attempt: 2 });
+	});
+
+	test("a manual install during the back-off does the work; the waiting installer then finds nothing to do", async () => {
+		writeFileSync(join(tmp, "fail"), "");
+		env.sleep = async () => {
+			rmSync(join(tmp, "fail"));
+			const manual = await installGroups(npmGroups, ["dev"], { ...env, sleep: async () => {} });
+			expect(manual).toMatchObject({ locked: true, results: { dev: { state: "ready" } } });
+		};
+		const background = await installGroups(npmGroups, ["dev"], env);
+		expect(background.results["dev"]).toMatchObject({ state: "installing", attempt: 1 });
+		expect(npmCalls()).toBe(2); // the failed first attempt, then the manual install
+		expect(devState()?.state).toBe("ready");
+		expect(liveInstaller(env)).toBeNull();
+	});
+
+	test("the background schedule keeps trying for about a day; a terminal install stays short", () => {
+		const hours = (a: readonly number[]) => a.reduce((x, y) => x + y, 0) / 3_600_000;
+		expect(INTERACTIVE_BACKOFF_MS).toEqual([15_000, 60_000]);
+		expect(hours(KEEP_TRYING_BACKOFF_MS)).toBeGreaterThan(20);
+		expect(hours(KEEP_TRYING_BACKOFF_MS)).toBeLessThan(30);
+		expect(Math.max(...KEEP_TRYING_BACKOFF_MS)).toBe(3_600_000);
+		const entrypoint = readFileSync(join(import.meta.dir, "..", "docker-entrypoint.sh"), "utf8");
+		expect(entrypoint).toContain("t3code-tools install --keep-trying >");
 	});
 
 	test("low disk fails without downloading or deleting anything", async () => {
@@ -395,5 +463,37 @@ await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 		expect(existsSync(join(env.root, "groups", "dev", "current"))).toBe(false);
 		expect(() => readlinkSync(join(env.root, "bin", "tsc"))).toThrow();
 		expect(devState()?.state).toBe("pending");
+	});
+});
+
+describe("t3code-tools command reference", () => {
+	test("help describes every command, and <command> --help prints it", async () => {
+		for (const command of ["status", "install", "prune", "init", "groups", "deb-lock"]) expect(USAGE).toMatch(new RegExp(`^  ${command}\\b`, "m"));
+		for (const name of GROUPS.map((g) => g.name)) expect(USAGE).toContain(name);
+		expect(USAGE).toContain("--keep-trying");
+		expect(USAGE).toContain("setpriv");
+		const out = process.stdout.write;
+		const err = process.stderr.write;
+		process.stdout.write = (() => true) as typeof process.stdout.write;
+		process.stderr.write = (() => true) as typeof process.stderr.write;
+		try {
+			expect(await main(["--help"])).toBe(0);
+			expect(await main(["help"])).toBe(0);
+			expect(await main(["status", "--help"])).toBe(0);
+			expect(await main(["install", "--help"])).toBe(0);
+			expect(await main(["bogus", "--help"])).toBe(2);
+			expect(await main(["install", "--bogus"])).toBe(2);
+		} finally {
+			process.stdout.write = out;
+			process.stderr.write = err;
+		}
+	});
+
+	test("commands that write the payload root know when they run as the wrong user", () => {
+		const uid = process.getuid?.() as number;
+		const root = join(tmp, "home", "not", "created", "yet");
+		expect(ownerMismatch(root, uid)).toBeNull();
+		expect(ownerMismatch(root, uid + 1)).toMatchObject({ uid, path: tmp });
+		expect(ownerMismatch(root, undefined)).toBeNull();
 	});
 });

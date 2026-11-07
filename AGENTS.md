@@ -13,6 +13,9 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   (the GHCR image pull alone is ~1GB on a free-license CHR).
 - `make build T3CODE_VER=<ver>` — local multi-arch build.
 - `make push T3CODE_VER=<ver>` — multi-arch push to GHCR (`:<ver>` + `:latest`).
+  CI never pushes release tags directly: `main` pushes `:sha-<commit>`, the
+  arm64 image runs the replacement test on `ubuntu-24.04-arm`, then
+  `promote` retags it. `integration.yml` follows via `workflow_run`.
 
 ## Conventions
 
@@ -68,6 +71,12 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 - Core bootstrap: uv/uvx come from `ghcr.io/astral-sh/uv:${UV_VER}` (pinned
   ARG), `UV_PYTHON_DOWNLOADS=manual`; `sqlite3` is in the late core apt
   layer. No general SDK expansion beyond that.
+- `t3code-tools help` (`USAGE` in `scripts/tool-groups.ts`) is the command
+  reference; a test checks every command is in it, so update it with the
+  CLI. `install`/`prune`/`init` re-exec as the payload root's owner when
+  run as root (`/container/shell`), never leaving root-owned payloads.
+  The entrypoint runs `install --keep-trying` (rounds for about a day, lock
+  released between them); a terminal `install` stays at three attempts.
 - npm payload groups (`dev`) are installed by `scripts/tool-payloads.ts`
   from the lockfile in `scripts/groups/<group>/` into
   `/data/.local/share/t3code-tools`; startup only relinks (offline) and
@@ -136,7 +145,8 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   not HVF. `bootSize: "8G"` is required — the image will not fit a stock
   CHR disk. Use an 8G app disk at minimum: the image extracts to roughly
   3GB, and the default groups add about 0.7GB in `/data` (plus install
-  headroom), before projects and lab VMs. Extra RAM (`mem: 1024`) for the
+  headroom; about twice that after a refreshing update, until
+  `t3code-tools prune`), before projects and lab VMs. Extra RAM (`mem: 1024`) for the
   pull + unpack.
 - `centrs api <router> app -X PUT` is the structured write path
   (PUT = RouterOS create). `execute` is the fallback if validation rejects.

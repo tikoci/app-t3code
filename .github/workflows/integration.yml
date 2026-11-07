@@ -1,9 +1,14 @@
 name: integration
 
 # Full CHR proof: boot a real CHR per arch, install the /app from GHCR, and
-# assert the T3 Code web UI answers. Slow (multi-GB downloads + a ~650MB
-# image pull on a free-license CHR) — manual, weekly, and post-push only.
-# PRs rely on ci.yml (lint + offline YAML contract + image build).
+# assert the T3 Code web UI answers. Slow (multi-GB downloads + a ~1GB
+# image pull on a free-license CHR) — manual, weekly, and after each
+# successful main publish. PRs rely on ci.yml (lint + offline YAML contract +
+# image build).
+#
+# The YAML pins :0.1, so this must run after ci.yml has promoted the new
+# image (workflow_run), not alongside it: a push trigger raced the ~14 minute
+# build and tested the previous image.
 
 on:
   workflow_dispatch:
@@ -18,17 +23,18 @@ on:
         default: "0.1.6"
   schedule:
     - cron: "37 4 * * 1"
-  push:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
     branches: [main]
-    paths:
-      - "app/**"
-      - "test/integration/**"
 
 permissions:
   contents: read
 
 jobs:
   chr:
+    # After ci.yml: only when it succeeded on a push (so promote ran).
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     strategy:
       fail-fast: false
       matrix:
@@ -41,6 +47,9 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The commit ci.yml published, so the YAML and test match the image.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"

@@ -86,7 +86,9 @@ and persistent data. On CHR, attach a second virtual disk. The app then lives
 under `<disk>/apps/t3code/`.
 The image is about 0.8GB compressed and 3GB extracted (amd64 build,
 2026-11-07). The default tool groups add about 0.7GB in `/data` after the
-first start (see [Optional tool groups](#optional-tool-groups)). Allow at
+first start (see [Optional tool groups](#optional-tool-groups)), and up to
+about twice that after an image update that refreshes them, because the
+previous payloads are kept until `t3code-tools prune`. Allow at
 least an 8GB app disk, plus space for projects, browser downloads, and any
 quickchr lab disks. Builds need extra space for intermediate layers and
 loading the finished image.
@@ -316,7 +318,10 @@ npm, the others from Debian packages; see
 the background after T3 starts. With the default, the first start downloads
 about 120 MiB (about 75 MiB of `.deb` files plus the `dev` npm packages) and
 needs roughly 660 MiB more in `/data` once all five are installed (amd64
-measurements in the table below), plus 256 MiB of headroom while installing. On a fast
+measurements in the table below), plus 256 MiB of headroom while installing.
+After an image update that changes the package pins, the refreshed payloads
+install next to the previous ones, which are kept (an offline fallback)
+until `t3code-tools prune`: budget about twice that. On a fast
 link that takes a few minutes; at 1 Mbit/s plan for about 15 minutes. With
 too little space a group fails with a `low disk` error and T3 keeps
 running.
@@ -328,6 +333,10 @@ running.
 > groups in the background. To keep core only, set `none` first (see
 > [Changing groups on RouterOS](#changing-groups-on-routeros)); the setting
 > survives `/app/update`. Never reapply the YAML to change it.
+>
+> The same update removes the bundled `muse` binary. Muse logins and history
+> in `/data` stay; install Muse into the home again to keep using it (see
+> [Environment and providers](#environment-and-providers)).
 
 `browser` and `agents-extra` are no longer groups. T3's browser libraries
 are core, and the provider CLIs are described in
@@ -450,7 +459,7 @@ files (`present`, `missing`). The states are:
 |---|---|
 | `not-selected` | Not in `T3CODE_TOOL_GROUPS` |
 | `pending` | Selected; waiting for the background installer |
-| `installing` | The background installer is working on it, including retry back-off |
+| `installing` | The background installer is working on it, including waiting to retry (`retrying at …` in `t3code-tools status`) |
 | `ready` | Selected, and every check passed |
 | `failed` | Selected, and checks failed for tools the image should provide, or the last install failed and nothing usable is active |
 | `not-implemented` | Selected, but this image has no way to provide the group yet (no group today) |
@@ -512,9 +521,15 @@ lifecycle:
 - **Bounded.** Groups install one at a time under a lock
   (a kernel `flock` on `install.lock`, released automatically if the holder
   dies; the next run also stops an npm or dpkg-deb left behind by a killed
-  installer before reclaiming its files). Each group gets three
-  attempts with back-off (30 minute cap per attempt); with no network at all
-  npm needs about five minutes to give up. The installer needs room for the
+  installer before reclaiming its files). Retries run in rounds: each
+  round tries every group still missing once, so one failing group never
+  holds up the others, and the lock is released while waiting. The
+  entrypoint's background run (`install --keep-trying`) keeps retrying for
+  about a day (15 s, 1, 5, 15 and 30 minutes, then hourly), because a router
+  often starts the container before its uplink or DNS is up; verified
+  `.deb` files are kept between attempts. Each attempt is capped at 30
+  minutes. `t3code-tools install` from a terminal makes three attempts in
+  about 75 s. The installer needs room for the
   payload and its downloads (for `dev`, twice the payload size; for the
   Debian groups, the pinned `.deb` sizes not already verified in the cache,
   plus their unpacked sizes) plus 256 MiB,
@@ -532,7 +547,12 @@ lifecycle:
 `stale`, `installed`, the verified `activeVersions` and the last installer
 result with its error. The installer log is
 `/data/.local/share/t3code-tools/install.log`. Run `t3code-tools install` in
-a terminal to retry a failed group now; otherwise the next start retries it.
+a terminal to retry now, including while the background installer waits;
+otherwise the next start retries a group that ran out of attempts.
+`t3code-tools help` is the command reference (commands, selection syntax,
+files, exit codes). `install`, `prune` and `init` run as the home's owner:
+started as root (for example from RouterOS `/container/shell`), they
+re-execute as `node` with `setpriv`, so no payload file becomes root-owned.
 
 The `dev` payload is about 154 MiB on amd64 (TypeScript 7.0.2, CSpell 10.4.0,
 markdownlint-cli2 0.24.0, Biome 2.6.5). Maintainers refresh the pins with
@@ -799,6 +819,13 @@ Images track upstream **stable** T3 Code releases only — no nightlies
 
 - `ghcr.io/tikoci/app-t3code:0.1.6` — exact release
 - `ghcr.io/tikoci/app-t3code:0.1`, `:0`, `:latest` — stability aliases
+- `ghcr.io/tikoci/app-t3code:sha-<commit>` — the candidate CI pushes from
+  `main`; not for deployment
+
+A `main` push publishes only the candidate. Its arm64 image then runs the
+container replacement test natively on a GitHub arm64 runner (amd64 already
+ran it before the push), and only then does CI move the release tags onto the
+same manifest. A failed arm64 run leaves `:0.1` where it was.
 
 The `/app` YAML references the `:0.1`-style stability tag, and
 `test/app-yaml.test.ts` fails the build if it drifts from
@@ -860,9 +887,11 @@ the original agent's precise upgrade commands are unknown.
 Both helpers float on `next` on purpose: if a helper breaks, report it
 to [centrs](https://github.com/tikoci/centrs/issues) /
 [quickchr](https://github.com/tikoci/quickchr/issues) instead of
-working around it silently. CI (`ci.yml`) lints, tests, and builds
-both arches to GHCR; `integration.yml` runs the CHR matrix weekly,
-post-push on `app/` + `test/integration/`, and on demand.
+working around it silently. CI (`ci.yml`) lints, tests, builds both arches,
+runs the replacement test on amd64 (every build) and natively on arm64
+(`main` and dispatch only), then promotes the tags (see [Tags](#tags));
+`integration.yml` runs the CHR matrix weekly, after each successful `main`
+publish, and on demand.
 
 The `pages.yml` workflow publishes only tracked `*.md`, `*.tikapp.yaml`, and
 `*.tikappstore.yaml` files, preserving their paths and contents. Automatic

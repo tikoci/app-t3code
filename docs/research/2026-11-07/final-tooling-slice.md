@@ -104,8 +104,21 @@ full image build or replacement run.
 
 ## Recommended next run: full build plus a local CHR on the Mac
 
-This is a handoff for the developer's Apple Silicon Mac (habitat B). Nothing
-below has been run. It needs provider credentials and possibly a registry
+This is a handoff for the developer's Mac (habitat B). Nothing below has
+been run.
+
+**Revision (2026-11-07, PR #14 review).** The developer's Mac is Intel, so
+it cannot provide native ARM64 evidence: Docker there is amd64, and an ARM64
+CHR is TCG (a worst-case timing point, still useful). Native ARM64 moved to
+CI instead: `ci.yml` now pushes only `:sha-<commit>` from `main` (or a
+dispatched branch), runs `test/container-replacement.test.ts` on that
+candidate's arm64 image on a GitHub `ubuntu-24.04-arm` runner, and only then
+(`main` only) moves `:0.1`/`:0`/`:latest`. Steps 1–2 below are therefore
+covered by that job; on the Mac, run them for amd64 only if you want local
+numbers. For step 3, dispatch `ci.yml` on the branch: it stops at the
+tested `:sha-<commit>` candidate and never promotes. Real ARM64 RouterOS
+hardware (RDS2216) remains separate evidence; bigdude is 32-bit `arm`, which
+this image does not build. It needs provider credentials and possibly a registry
 push, which are the developer's decisions.
 The `quickchr start`, `quickchr snapshot` and `centrs transfer` examples
 were checked against the full image's offline CLI help; guest operations
@@ -132,7 +145,8 @@ quickchr's license options or environment. The procedure does not assume
 that a trial is available or already activated.
 
 **Speed.** On Apple Silicon, quickchr falls back to TCG for ARM64 CHRs
-(tikoci/quickchr#97), and x86 CHRs are TCG too. Size waits for emulation:
+(tikoci/quickchr#97), and x86 CHRs are TCG too. On an Intel Mac, x86 CHRs
+can use HVF; ARM64 CHRs are TCG. Size waits for emulation:
 boot and image unpack can take tens of minutes.
 
 1. **Offline checks and a native ARM64 build.** On the PR branch, run:
@@ -171,10 +185,10 @@ boot and image unpack can take tens of minutes.
 
    - (a) after merge, use the CI-published `ghcr.io/tikoci/app-t3code:0.1`.
      This matches production best.
-   - (b) before merge, push a **non-production** tag (for example
-     `ghcr.io/tikoci/app-t3code:pr-<n>`; never `:0.1`, `:0` or `:latest`)
-     and install a throwaway copy of the YAML whose only change is `image:`.
-     Do not dispatch `ci.yml` on the branch: it pushes the release tags.
+   - (b) before merge, dispatch `ci.yml` on the branch: it pushes
+     `ghcr.io/tikoci/app-t3code:sha-<commit>`, runs the native arm64
+     replacement test on it and never promotes off `main`. Install a
+     throwaway copy of the YAML whose only change is `image:`.
 
 4. **CHR with the app.** Follow the README's verified install flow. With
    quickchr, use `--device-mode-enable container`,
