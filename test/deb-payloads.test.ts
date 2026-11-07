@@ -8,6 +8,7 @@ import {
 	DEB_CACHE_DIR,
 	DEB_LOCK_FILE,
 	type DebCompat,
+	expandMultiarch,
 	type DebLock,
 	osReleaseDistro,
 	parseAptSimulation,
@@ -886,6 +887,27 @@ esac
 		expect(() => layoutDebPayload("t", staging, join(tmp, "image"), [{ commands: ["show"], env: { "BAD-NAME": "x" } }])).toThrow("not a shell variable name");
 	});
 
+	test("{multiarch} expands from the lock's Debian architecture in env, args and preload; unknown arches fail only rules that use it", () => {
+		const rule = {
+			commands: ["qemu"],
+			env: { MOD: "{root}/usr/lib/{multiarch}/qemu", KEEP: "{root}/etc" },
+			args: ["-L", "{root}/usr/lib/{multiarch}/x"],
+			preload: { libraries: ["usr/lib/{multiarch}/libbase.so.0"], pluginDir: "usr/lib/{multiarch}/plugins" },
+		};
+		expect(expandMultiarch([rule], "arm64")).toEqual([
+			{
+				commands: ["qemu"],
+				env: { MOD: "{root}/usr/lib/aarch64-linux-gnu/qemu", KEEP: "{root}/etc" },
+				args: ["-L", "{root}/usr/lib/aarch64-linux-gnu/x"],
+				preload: { libraries: ["usr/lib/aarch64-linux-gnu/libbase.so.0"], pluginDir: "usr/lib/aarch64-linux-gnu/plugins" },
+			},
+		]);
+		expect(expandMultiarch([rule], "amd64")[0]?.env?.["MOD"]).toBe("{root}/usr/lib/x86_64-linux-gnu/qemu");
+		expect(() => expandMultiarch([rule], "mips64el")).toThrow('no multiarch triplet is known for the Debian architecture "mips64el"');
+		const plain = { commands: ["pki"], env: { CONF: "{root}/etc/x.conf" } };
+		expect(expandMultiarch([plain], "mips64el")).toEqual([plain]);
+	});
+
 	test("a rule whose commands get no wrapper is never resolved; merged preload sets are checked together", () => {
 		const staging = join(tmp, "rules");
 		for (const [path, content] of Object.entries({
@@ -1019,7 +1041,7 @@ describe("labs: QEMU wrappers, pruned firmware, payload file checks, image Bun g
 		wrappers: [
 			{
 				commands: ["qemu-system-x86_64", "qemu-system-i386"],
-				env: { QEMU_MODULE_DIR: "{root}/usr/lib/x86_64-linux-gnu/qemu" },
+				env: { QEMU_MODULE_DIR: "{root}/usr/lib/{multiarch}/qemu" },
 				args: ["-L", "{root}/usr/share/qemu", "-L", "{root}/usr/share/seabios"],
 			},
 		],
@@ -1072,7 +1094,8 @@ echo "SeaBIOS from $bios"; echo "No bootable device."
 		expect(existsSync(join(root, "usr/share/qemu/keymaps/en-us"))).toBe(true);
 		expect(manifest.versions["quickchr"]).toBe("quickchr 0.5.6 (image)");
 		expect(manifest.deb?.wired).toEqual({ "qemu-system-x86_64": { env: ["QEMU_MODULE_DIR"], args: ["-L", "{root}/usr/share/qemu", "-L", "{root}/usr/share/seabios"], preload: [] } });
-		// The wrapper's -L dirs come first, then the caller's arguments.
+		// The wrapper's -L dirs come first, then the caller's arguments;
+		// {multiarch} follows the amd64 lock.
 		const out = Bun.spawnSync([shim("qemu-system-x86_64"), "args", "-M", "virt"], { env: { PATH: "/usr/bin:/bin" } }).stdout.toString();
 		expect(out).toContain(`ARGS -M virt\nMOD=${root}/usr/lib/x86_64-linux-gnu/qemu\n`);
 		expect(Bun.spawnSync([shim("qemu-system-x86_64")], { env: { PATH: "/usr/bin:/bin" } }).stdout.toString()).toContain(`SeaBIOS from ${root}/usr/share/seabios/bios-256k.bin`);
@@ -1152,7 +1175,8 @@ echo "SeaBIOS from $bios"; echo "No bootable device."
 		expect(rule?.commands).toEqual(QEMU_SYSTEM_COMMANDS);
 		expect(rule?.commands).not.toContain("qemu-img");
 		expect(rule?.args).toEqual(["-L", "{root}/usr/share/qemu", "-L", "{root}/usr/share/seabios", "-L", "{root}/usr/lib/ipxe/qemu"]);
-		expect(rule?.env?.["QEMU_MODULE_DIR"]).toMatch(/^\{root\}\/usr\/lib\/(x86_64|aarch64)-linux-gnu\/qemu$/);
+		// The triplet comes from the lock's Debian architecture at install time, not from the runtime.
+		expect(rule?.env?.["QEMU_MODULE_DIR"]).toBe("{root}/usr/lib/{multiarch}/qemu");
 		for (const smoke of labs.smoke ?? []) expect(commands).toContain(smoke.command);
 		// mov w0, #0x84000008 (PSCI SYSTEM_OFF); hvc #0; b .
 		const words = Buffer.from(AARCH64_PSCI_OFF, "base64");

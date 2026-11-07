@@ -122,9 +122,6 @@ export const ARP_REPLY_PCAP =
  */
 export const AARCH64_PSCI_OFF = Buffer.from([0x00, 0x01, 0x80, 0x52, 0x00, 0x80, 0xb0, 0x72, 0x02, 0x00, 0x00, 0xd4, 0x00, 0x00, 0x00, 0x14]).toString("base64");
 
-/** Debian multiarch triplet of this runtime (QEMU's module dir lives under it). */
-const MULTIARCH = process.arch === "arm64" ? "aarch64-linux-gnu" : "x86_64-linux-gnu";
-
 /** QEMU system emulators in Debian's qemu-system-x86 and qemu-system-arm, including their alias names (`kvm` links to qemu-system-x86_64). */
 export const QEMU_SYSTEM_COMMANDS = [
 	"kvm",
@@ -185,7 +182,7 @@ export const GROUPS: readonly GroupDef[] = [
 		wrappers: [
 			{
 				commands: QEMU_SYSTEM_COMMANDS,
-				env: { QEMU_MODULE_DIR: `{root}/usr/lib/${MULTIARCH}/qemu` },
+				env: { QEMU_MODULE_DIR: "{root}/usr/lib/{multiarch}/qemu" },
 				args: ["-L", "{root}/usr/share/qemu", "-L", "{root}/usr/share/seabios", "-L", "{root}/usr/lib/ipxe/qemu"],
 			},
 		],

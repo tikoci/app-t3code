@@ -70,7 +70,9 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   Never claim capture privileges from installing it (#7).
 - `vpn` and `routing` (slice 4) are deb payloads too. A tool that only knows
   compiled-in paths gets a `wrappers` rule in its group (env with `{root}`,
-  plus an install-time-checked `LD_PRELOAD` plugin set): strongSwan has no
+  and `{multiarch}` for triplet paths, expanded from the lock's dpkg arch,
+  never Bun's `process.arch`; plus an install-time-checked `LD_PRELOAD`
+  plugin set): strongSwan has no
   runtime plugin dir, so `pki`/`swanctl` preload the plugins that load
   against libstrongswan alone. Probes that cannot exit 0 (birdc without a
   daemon; nft/conntrack without netfilter netlink, e.g. under QEMU user mode)

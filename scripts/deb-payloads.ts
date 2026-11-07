@@ -435,10 +435,12 @@ export interface WrapperRule {
 	commands: readonly string[];
 	/**
 	 * Defaults for these commands only: a variable the caller already set wins.
-	 * `{root}` is the payload's extracted root; everything else is literal.
+	 * `{root}` is the payload's extracted root and `{multiarch}` the lock's
+	 * Debian multiarch triplet (both here and in `args` and `preload`);
+	 * everything else is literal.
 	 */
 	env?: Readonly<Record<string, string>>;
-	/** Arguments placed before the caller's (`{root}` expands); for most tools a later repeat of an option wins, so the caller can still override. */
+	/** Arguments placed before the caller's (`{root}` and `{multiarch}` expand); for most tools a later repeat of an option wins, so the caller can still override. */
 	args?: readonly string[];
 	/**
 	 * LD_PRELOAD for these commands: `libraries` (relative to root), then every
@@ -673,6 +675,41 @@ export function pruneExtracted(root: string, paths: readonly string[]): { pruned
 	return { pruned, prunedBytes };
 }
 
+/**
+ * Debian architecture to multiarch triplet (`dpkg-architecture
+ * -qDEB_HOST_MULTIARCH`), for the architectures Debian trixie releases.
+ */
+export const DEB_MULTIARCH: Readonly<Record<string, string>> = {
+	amd64: "x86_64-linux-gnu",
+	arm64: "aarch64-linux-gnu",
+	armel: "arm-linux-gnueabi",
+	armhf: "arm-linux-gnueabihf",
+	i386: "i386-linux-gnu",
+	ppc64el: "powerpc64le-linux-gnu",
+	riscv64: "riscv64-linux-gnu",
+	s390x: "s390x-linux-gnu",
+};
+
+/**
+ * Expand `{multiarch}` in wrapper rules for a lock's Debian architecture, so
+ * library paths follow the packages, not the architecture the installer runs as.
+ */
+export function expandMultiarch(rules: readonly WrapperRule[], arch: string): WrapperRule[] {
+	const uses = (text: string) => text.includes("{multiarch}");
+	const triplet = DEB_MULTIARCH[arch];
+	const sub = (text: string) => {
+		if (!uses(text)) return text;
+		if (!triplet) throw new Error(`no multiarch triplet is known for the Debian architecture ${JSON.stringify(arch)}`);
+		return text.replaceAll("{multiarch}", triplet);
+	};
+	return rules.map((rule) => ({
+		...rule,
+		...(rule.env ? { env: Object.fromEntries(Object.entries(rule.env).map(([name, value]) => [name, sub(value)])) } : {}),
+		...(rule.args ? { args: rule.args.map(sub) } : {}),
+		...(rule.preload ? { preload: { libraries: rule.preload.libraries.map(sub), pluginDir: sub(rule.preload.pluginDir) } } : {}),
+	}));
+}
+
 /** Fetch, verify and extract every pinned package into <staging>/root, then write wrappers. */
 export async function installDebPayload(
 	group: string,
@@ -698,7 +735,8 @@ export async function installDebPayload(
 	}
 	// Before the layout: a pruned file is never wrapped or put on a library path.
 	const { pruned, prunedBytes } = pruneExtracted(root, prune);
-	return { ...layoutDebPayload(group, staging, io.imageRoot, rules, io.canPreload ?? preloadLoads), debs, downloadedBytes, pruned, prunedBytes };
+	const expanded = expandMultiarch(rules, lock.arch);
+	return { ...layoutDebPayload(group, staging, io.imageRoot, expanded, io.canPreload ?? preloadLoads), debs, downloadedBytes, pruned, prunedBytes };
 }
 
 /** Read and schema-check a lock file. */
