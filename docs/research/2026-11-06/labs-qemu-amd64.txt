@@ -1,0 +1,78 @@
+# 2026-11-07T02:57:47Z base=app-t3code:pr10-review host=x86_64 docker=29.9.2
+== closure of qemu-system-x86 qemu-system-arm qemu-efi-aarch64 qemu-utils that the image lacks: 32 packages
+download 32.7 MiB, installed 564.3 MiB (apt metadata)
+== who: node, CapEff: 0000000000000000, /dev/kvm: absent
+== image paths after the purge
+ls: cannot access '/usr/share/qemu': No such file or directory
+ls: cannot access '/usr/share/seabios': No such file or directory
+ls: cannot access '/usr/share/AAVMF': No such file or directory
+ls: cannot access '/usr/lib/ipxe/qemu': No such file or directory
+== payload: 565 MiB unpacked; AAVMF 385 MiB
+lrwxrwxrwx 24 AAVMF_CODE.fd -> AAVMF_CODE.no-secboot.fd
+lrwxrwxrwx 21 AAVMF_CODE.ms.fd -> AAVMF_CODE.secboot.fd
+-rw-r--r-- 67108864 AAVMF_CODE.no-secboot.fd  
+-rw-r--r-- 67108864 AAVMF_CODE.secboot.fd  
+-rw-r--r-- 67108864 AAVMF_CODE.secboot.strictnx.fd  
+lrwxrwxrwx 21 AAVMF_CODE.snakeoil.fd -> AAVMF_CODE.secboot.fd
+-rw-r--r-- 67108864 AAVMF_VARS.fd  
+-rw-r--r-- 67108864 AAVMF_VARS.ms.fd  
+-rw-r--r-- 67108864 AAVMF_VARS.snakeoil.fd  
+== absolute or dangling symlinks in the payload
+(end)
+== library dirs
+usr/lib/x86_64-linux-gnu
+usr/lib/x86_64-linux-gnu/rsocket
+usr/lib/x86_64-linux-gnu/vdeplug
+== binaries
+kvm qemu-img qemu-io qemu-nbd qemu-pr-helper qemu-storage-daemon qemu-system-aarch64 qemu-system-amd64 qemu-system-arm qemu-system-arm64 qemu-system-armel qemu-system-armhf qemu-system-i386 qemu-system-x86_64 qemu-system-x86_64-microvm qemu-vmsr-helper 
+== compiled-in data dirs
+/usr/lib/ipxe/qemu
+/usr/lib/qemu/qemu
+/usr/share/qemu
+/usr/share/seabios
+== -L help, raw binary
+/usr/share/qemu
+/usr/share/seabios
+/usr/lib/ipxe/qemu
+== -L help, with three leading -L
+/tmp/p/root/usr/share/qemu
+/tmp/p/root/usr/share/seabios
+/tmp/p/root/usr/lib/ipxe/qemu
+/usr/share/qemu
+/usr/share/seabios
+/usr/lib/ipxe/qemu
+== --version after leading -L
+QEMU emulator version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)
+== x86 SeaBIOS boot without -L
+qemu: could not load PC BIOS 'bios-256k.bin'
+exit 1
+== x86 SeaBIOS boot with -L (the labs smoke test)
+SeaBIOS (version 1.16.3-debian-1.16.3-2)
+SeaBIOS (version 1.16.3-debian-1.16.3-2)
+No bootable device.  Retrying in 0 seconds.
+exit 0 in 157 ms
+== x86 with a virtio NIC (iPXE runs: why the smoke test has no NIC)
+exit 0 in 9866 ms
+== a missing romfile stops QEMU; the default one loads
+qemu-system-x86_64: -device virtio-net-pci,netdev=n,romfile=t3code-nonexistent.rom: failed to find romfile "t3code-nonexistent.rom"
+default efi-virtio.rom: exit 0
+== aarch64 PSCI SYSTEM_OFF kernel (the labs smoke test)
+exit 0 in 43 ms
+== aarch64 control: 16 zero bytes hang until the timeout
+exit 124 (124 = timeout)
+== aarch64 UEFI from the payload's AAVMF pair (20 s)
+UEFI firmware (version 2025.02-8+deb13u1 built at 18:06:17 on Nov  8 2025)
+== QEMU modules: what QEMU_MODULE_DIR adds
+audio-alsa.so audio-oss.so chardev-baum.so hw-display-virtio-gpu-pci.so hw-display-virtio-gpu.so hw-display-virtio-vga.so hw-s390x-virtio-gpu-ccw.so hw-uefi-vars.so hw-usb-host.so hw-usb-redirect.so hw-usb-smartcard.so ui-curses.so 
+accel without: tcg kvm 
+display without: none  Some display backends support suboptions, which can be set with 
+display with: none curses  
+== qemu-img
+Formatting '/tmp/d.qcow2', fmt=qcow2 cluster_size=65536 extended_l2=off compression_type=zlib size=16777216 lazy_refcounts=off refcount_bits=16
+exit 0
+== KVM and TAP as node
+qemu-system-x86_64: -accel kvm: Could not access KVM kernel module: No such file or directory
+qemu-system-x86_64: -netdev tap,id=t,ifname=t3labs0,script=no,downscript=no: could not open /dev/net/tun: No such file or directory
+== kvm (Debian's alias for qemu-system-x86_64 -enable-kvm)
+lrwxrwxrwx 18 /tmp/p/root/usr/bin/kvm -> qemu-system-x86_64
+QEMU emulator version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)

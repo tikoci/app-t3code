@@ -1,0 +1,56 @@
+# Codex/Sol review verification, 2026-11-07, amd64 Docker host.
+# app-t3code:pr12-sol-review derives from app-t3code:slice5 (the overlay),
+# with published @tikoci/quickchr@next (0.5.6) installed under /opt/bun and
+# the prune error-handling fix copied to /usr/local/lib/t3code.
+# Fresh anonymous /data; node user; no KVM or added capabilities.
+# Command: T3CODE_TOOL_GROUPS=labs QUICKCHR_STORAGE_RESERVE=512M
+#   bash -c "t3code-tools install; cd /tmp; bun /review-scripts/research-quickchr-runtime.ts"
+# Container and its anonymous home removed on exit; both machines removed by the probe.
+# Exit: 0. No branch quickchr module override.
+
+t3code-tools: labs: installing payload amd64-trixie-5063eb9effff8cd0 (attempt 1/3)
+t3code-tools: labs: downloaded 32.7 MiB in 32 packages, all SHA256-verified
+t3code-tools: labs: pruned 8 unused paths, 256.0 MiB
+t3code-tools: labs: ready in 8s (quickchr 0.5.6; QEMU emulator version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1); QEMU emulator version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1); qemu-img version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1))
+Downloading CHR 7.25.1 (x86)...
+  https://download.mikrotik.com/routeros/7.25.1/chr-7.25.1.img.zip
+  Transferring 43.3 MB (budget 408s)
+  Saved (43.3 MB of 43.3 MB in 4.6s (9.335 MB/s, budget 408s))
+Extracting: chr-7.25.1.img.zip
+  quickchr account created (user: quickchr)
+  Password saved to OS credential store (via Bun.secrets)
+Downloading CHR 7.25.1 (arm64)...
+  https://download.mikrotik.com/routeros/7.25.1/chr-7.25.1-arm64.img.zip
+  Transferring 18.4 MB (budget 190s)
+  Saved (18.4 MB of 18.4 MB in 3.3s (5.507 MB/s, budget 190s))
+Extracting: chr-7.25.1-arm64.img.zip
+  quickchr account created (user: quickchr)
+  Password saved to OS credential store (via Bun.secrets)
+{
+  "generatedAt": "2026-11-07T11:37:42.227Z",
+  "quickchrVersion": "0.5.6",
+  "quickchrModule": "@tikoci/quickchr",
+  "method": "Disposable image container, node user, TCG (no KVM exposed), real CHR 7.25.1, managed login, qcow2 boot resize and extra disk, read-only centrs resource query. Test-only storage reserve reduced to 512M for the constrained research host. No production router or image was changed.",
+  "findings": [
+    {
+      "arch": "x86",
+      "elapsedMs": 80120,
+      "ready": true,
+      "version": "7.25.1",
+      "reportedArchitecture": "x86_64",
+      "qcow2BootAndExtraDisk": true,
+      "managedLoginProvisioned": true,
+      "centrsRead": true
+    },
+    {
+      "arch": "arm64",
+      "elapsedMs": 75385,
+      "ready": true,
+      "version": "7.25.1",
+      "reportedArchitecture": "arm64",
+      "qcow2BootAndExtraDisk": true,
+      "managedLoginProvisioned": true,
+      "centrsRead": true
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+# CHR boots from the labs payload (habitat C, orca, amd64 host, Docker, no /dev/kvm).
+# Runner: the s5home volume holds an installed labs payload (t3code-tools install,
+# T3CODE_TOOL_GROUPS=labs, image app-t3code:slice5); each run is a disposable container as node:
+#   docker run --rm -v s5home:/data -v $PWD/scripts:/w:ro [-v <quickchr checkout>:/qc:ro -e QUICKCHR_MODULE=/qc/src/index.ts -e QUICKCHR_PACKAGE_JSON=/qc/package.json] \
+#     -e T3CODE_TOOL_GROUPS=labs -e QUICKCHR_STORAGE_RESERVE=512M --entrypoint bash app-t3code:slice5 -c 't3code-tools init; cd /tmp && bun /w/research-quickchr-runtime.ts'
+# B ran quickchr branch feat/efi-firmware-qemu-datadirs at ac236c4 (tikoci/quickchr#255; package.json still says 0.5.5).
+
+=== A: image quickchr (@next at build time) 2026-11-07T02:52:46Z
+t3code-tools: groups labs=ready; core ready
+node
+CapEff:	0000000000000000
+ls: cannot access '/dev/kvm': No such file or directory
+ls: cannot access '/usr/share/AAVMF': No such file or directory
+ls: cannot access '/usr/share/qemu': No such file or directory
+/data/.local/share/t3code-tools/bin/qemu-system-aarch64
+/opt/bun/bin/quickchr
+Downloading CHR 7.25.1 (x86)...
+  https://download.mikrotik.com/routeros/7.25.1/chr-7.25.1.img.zip
+  Transferring 43.3 MB (budget 408s)
+  Saved (43.3 MB of 43.3 MB in 5.3s (8.139 MB/s, budget 408s))
+Extracting: chr-7.25.1.img.zip
+  quickchr account created (user: quickchr)
+  Password saved to OS credential store (via Bun.secrets)
+{
+  "generatedAt": "2026-11-07T02:53:57.906Z",
+  "quickchrVersion": "0.5.5",
+  "quickchrModule": "@tikoci/quickchr",
+  "method": "Disposable image container, node user, TCG (no KVM exposed), real CHR 7.25.1, managed login, qcow2 boot resize and extra disk, read-only centrs resource query. Test-only storage reserve reduced to 512M for the constrained research host. No production router or image was changed.",
+  "findings": [
+    {
+      "arch": "x86",
+      "elapsedMs": 69751,
+      "ready": true,
+      "version": "7.25.1",
+      "reportedArchitecture": "x86_64",
+      "qcow2BootAndExtraDisk": true,
+      "managedLoginProvisioned": true,
+      "centrsRead": true
+    },
+    {
+      "arch": "arm64",
+      "elapsedMs": 3,
+      "ready": false,
+      "errorName": "QuickCHRError",
+      "errorCode": "MISSING_FIRMWARE"
+    }
+  ]
+}
+=== exit 1
+=== B: quickchr branch feat/efi-firmware-qemu-datadirs (tikoci/quickchr#255) 2026-11-07T02:53:58Z
+t3code-tools: groups labs=ready; core ready
+node
+CapEff:	0000000000000000
+ls: cannot access '/dev/kvm': No such file or directory
+ls: cannot access '/usr/share/AAVMF': No such file or directory
+ls: cannot access '/usr/share/qemu': No such file or directory
+/data/.local/share/t3code-tools/bin/qemu-system-aarch64
+/opt/bun/bin/quickchr
+  Using cached image: chr-7.25.1
+  quickchr account created (user: quickchr)
+  Password saved to OS credential store (via Bun.secrets)
+Downloading CHR 7.25.1 (arm64)...
+  https://download.mikrotik.com/routeros/7.25.1/chr-7.25.1-arm64.img.zip
+  Transferring 18.4 MB (budget 190s)
+  Saved (18.4 MB of 18.4 MB in 3.3s (5.491 MB/s, budget 190s))
+Extracting: chr-7.25.1-arm64.img.zip
+  quickchr account created (user: quickchr)
+  Password saved to OS credential store (via Bun.secrets)
+{
+  "generatedAt": "2026-11-07T02:56:19.031Z",
+  "quickchrVersion": "0.5.5",
+  "quickchrModule": "/qc/src/index.ts",
+  "method": "Disposable image container, node user, TCG (no KVM exposed), real CHR 7.25.1, managed login, qcow2 boot resize and extra disk, read-only centrs resource query. Test-only storage reserve reduced to 512M for the constrained research host. No production router or image was changed.",
+  "findings": [
+    {
+      "arch": "x86",
+      "elapsedMs": 60003,
+      "ready": true,
+      "version": "7.25.1",
+      "reportedArchitecture": "x86_64",
+      "qcow2BootAndExtraDisk": true,
+      "managedLoginProvisioned": true,
+      "centrsRead": true
+    },
+    {
+      "arch": "arm64",
+      "elapsedMs": 79693,
+      "ready": true,
+      "version": "7.25.1",
+      "reportedArchitecture": "arm64",
+      "qcow2BootAndExtraDisk": true,
+      "managedLoginProvisioned": true,
+      "centrsRead": true
+    }
+  ]
+}
+=== exit 0
