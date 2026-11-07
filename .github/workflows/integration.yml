@@ -50,6 +50,7 @@ jobs:
         with:
           # The commit ci.yml published, so the YAML and test match the image.
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"
@@ -73,3 +74,6 @@ jobs:
           APP_T3CODE_ARCH: ${{ matrix.arch }}
           APP_T3CODE_T3VER: ${{ github.event.inputs.t3code_ver || '0.1.6' }}
           APP_T3CODE_NAME: app-t3code-ci-${{ matrix.arch }}
+          # After a publish: that commit's candidate, not :0.1 (a newer
+          # promotion may have moved it). Weekly/manual runs test :0.1.
+          APP_T3CODE_IMAGE: ${{ github.event_name == 'workflow_run' && format('ghcr.io/tikoci/app-t3code:sha-{0}', github.event.workflow_run.head_sha) || '' }}

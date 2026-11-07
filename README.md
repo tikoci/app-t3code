@@ -825,7 +825,7 @@ Images track upstream **stable** T3 Code releases only — no nightlies
 A `main` push publishes only the candidate. Its arm64 image then runs the
 container replacement test natively on a GitHub arm64 runner (amd64 already
 ran it before the push), and only then does CI move the release tags onto the
-same manifest. A failed arm64 run leaves `:0.1` where it was.
+same manifest, by digest. A failed arm64 run leaves `:0.1` where it was.
 
 The `/app` YAML references the `:0.1`-style stability tag, and
 `test/app-yaml.test.ts` fails the build if it drifts from
@@ -890,8 +890,9 @@ to [centrs](https://github.com/tikoci/centrs/issues) /
 working around it silently. CI (`ci.yml`) lints, tests, builds both arches,
 runs the replacement test on amd64 (every build) and natively on arm64
 (`main` and dispatch only), then promotes the tags (see [Tags](#tags));
-`integration.yml` runs the CHR matrix weekly, after each successful `main`
-publish, and on demand.
+`integration.yml` runs the CHR matrix weekly and on demand (against `:0.1`),
+and after each successful `main` publish (against that commit's
+`:sha-<commit>` candidate, via `APP_T3CODE_IMAGE`).
 
 The `pages.yml` workflow publishes only tracked `*.md`, `*.tikapp.yaml`, and
 `*.tikappstore.yaml` files, preserving their paths and contents. Automatic

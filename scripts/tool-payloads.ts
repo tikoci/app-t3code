@@ -128,8 +128,17 @@ export interface PayloadEnv {
 	installTimeoutMs: number;
 }
 
-export function defaultRoot(env: NodeJS.ProcessEnv = process.env): string {
-	return env["T3CODE_TOOLS_HOME"] || join(env["HOME"] || "/data", ".local/share/t3code-tools");
+/** The app's home: the image's `ENV HOME` and node's passwd home. */
+export const APP_HOME = "/data";
+
+/**
+ * The payload root: T3CODE_TOOLS_HOME, else under HOME. Root always uses the
+ * app's home: a root shell (RouterOS /container/shell, `docker exec -u 0`)
+ * may carry HOME=/root, and the payloads are the app's, not root's.
+ */
+export function defaultRoot(env: NodeJS.ProcessEnv = process.env, uid: number | undefined = process.getuid?.()): string {
+	const home = uid === 0 ? APP_HOME : env["HOME"] || APP_HOME;
+	return env["T3CODE_TOOLS_HOME"] || join(home, ".local/share/t3code-tools");
 }
 
 let cachedCompat: Compat | null | undefined;
@@ -471,10 +480,7 @@ export interface LockInfo extends ProcessId {
 	startedAt: string;
 	/** The payload child the holder is running, so a successor can stop it if the holder died first. */
 	child?: ProcessId & { processGroup?: boolean };
-	/**
-	 * Set by an installer that released the lock to wait out a back-off: it
-	 * is alive and will retry then, but holds no lock (anyone may take it).
-	 */
+	/** In install.wait only: when the waiting installer (which holds no lock) retries. */
 	waitingUntil?: string;
 }
 
@@ -518,8 +524,28 @@ function readLockInfo(path: string): LockInfo | null {
  * checked by pid + start time. Exclusion uses the kernel lock.
  */
 export function liveInstaller(env: PayloadEnv): LockInfo | null {
-	const info = readLockInfo(join(env.root, "install.lock"));
-	return info && isSameProcess(info) ? info : null;
+	const holder = readLockInfo(join(env.root, "install.lock"));
+	if (holder && isSameProcess(holder)) return holder;
+	const waiter = readLockInfo(waitPath(env));
+	return waiter && isSameProcess(waiter) ? waiter : null;
+}
+
+/**
+ * install.wait: the owner record of an installer waiting out a back-off. It
+ * is separate from install.lock, so whoever takes the lock meanwhile (a
+ * manual install, prune) never erases it; status still reports the retry.
+ */
+const waitPath = (env: PayloadEnv) => join(env.root, "install.wait");
+
+function writeWait(env: PayloadEnv, waitingUntil: string) {
+	const info: LockInfo = { pid: process.pid, startTicks: processStartTicks(process.pid), command: "install", startedAt: new Date().toISOString(), waitingUntil };
+	writeFileSync(`${waitPath(env)}.tmp-${process.pid}`, JSON.stringify(info));
+	renameSync(`${waitPath(env)}.tmp-${process.pid}`, waitPath(env));
+}
+
+/** Remove install.wait if this process wrote it (another waiter's record stays). */
+function clearWait(env: PayloadEnv) {
+	if (readLockInfo(waitPath(env))?.pid === process.pid) rmSync(waitPath(env), { force: true });
 }
 
 const LOCK_EX = 2;
@@ -588,22 +614,11 @@ function setLockChild(env: PayloadEnv, child: number | null, processGroup = fals
 	writeLockInfo(fd, info);
 }
 
-/**
- * Drop the lock. `waitingUntil` leaves an owner record saying this process
- * is alive and retries then (status reports its groups as installing); a
- * process that takes the lock meanwhile overwrites it.
- */
-function releaseLock(env: PayloadEnv, waitingUntil?: string) {
+function releaseLock(env: PayloadEnv) {
 	const fd = heldLocks.get(env.root);
 	if (fd === undefined) return;
 	heldLocks.delete(env.root);
-	const info = readLockInfo(join(env.root, "install.lock"));
-	if (waitingUntil && info) {
-		delete info.child;
-		writeLockInfo(fd, { ...info, waitingUntil });
-	} else {
-		ftruncateSync(fd, 0);
-	}
+	ftruncateSync(fd, 0);
 	closeSync(fd); // closing the last fd drops the flock
 }
 
@@ -916,8 +931,11 @@ export interface InstallResult {
  * that lacks one, with a disk budget, then activate it. Retries run in
  * rounds: each round takes the lock, tries every group still missing once
  * (so one failing group never holds up the others), and releases the lock
- * for the back-off. A round that finds the lock busy is skipped: the holder
- * is doing the same work. `onChange` runs after each state transition.
+ * for the back-off (recording install.wait). A round that finds the lock
+ * busy is skipped: the holder is doing the same work. At the end, results
+ * are reconciled with what is actually installed: a payload another run
+ * finished counts as ready, and a group still missing ends failed (never a
+ * left-over `installing`). `onChange` runs after each state transition.
  */
 export async function installGroups(
 	groups: readonly GroupDef[],
@@ -930,51 +948,97 @@ export async function installGroups(
 	const tries: Record<string, number> = {};
 	const permanent = new Set<string>();
 	let locked = false;
-	for (let round = 0; round < attempts; round++) {
-		if (!(await acquireLock(env, "install"))) {
-			if (round === 0) {
-				env.log("another installer or prune is running; leaving it to finish");
-				return { locked: false, results };
-			}
-			env.log(`round ${round + 1}/${attempts}: another installer or prune holds the lock; it is doing this work`);
-		} else {
-			locked = true;
-			const retry: string[] = [];
-			let waitingUntil: string | undefined;
-			try {
-				// Interrupted installs of every group, selected or not.
-				for (const group of groups) cleanStaging(env, group.name);
-				const todo = activate(groups, selected, env).filter((name) => !permanent.has(name));
-				for (const name of todo) {
-					const group = groups.find((g) => g.name === name) as GroupDef;
-					const attempt = (tries[name] ?? 0) + 1;
-					tries[name] = attempt;
-					const outcome = await installRound(group, env, attempt, round === attempts - 1, (rec) => {
-						results[name] = rec;
-						writeState(env, name, rec);
-						onChange();
-					});
-					if (outcome === "permanent") permanent.add(name);
-					if (outcome === "retry") retry.push(name);
+	try {
+		for (let round = 0; round < attempts; round++) {
+			clearWait(env);
+			if (!(await acquireLock(env, "install"))) {
+				if (round === 0) {
+					env.log("another installer or prune is running; leaving it to finish");
+					return { locked: false, results };
 				}
-				if (retry.length) {
-					waitingUntil = new Date(Date.now() + (env.backoffMs[round] as number)).toISOString();
-					for (const name of retry) {
-						const rec = { ...(results[name] as StateRecord), nextAttemptAt: waitingUntil };
-						results[name] = rec;
-						writeState(env, name, rec);
+				env.log(`round ${round + 1}/${attempts}: another installer or prune holds the lock; it is doing this work`);
+			} else {
+				locked = true;
+				const retry: string[] = [];
+				let waitingUntil: string | undefined;
+				try {
+					// Interrupted installs of every group, selected or not.
+					for (const group of groups) cleanStaging(env, group.name);
+					const todo = activate(groups, selected, env).filter((name) => !permanent.has(name));
+					for (const name of todo) {
+						const group = groups.find((g) => g.name === name) as GroupDef;
+						const attempt = (tries[name] ?? 0) + 1;
+						tries[name] = attempt;
+						const outcome = await installRound(group, env, attempt, round === attempts - 1, (rec) => {
+							results[name] = rec;
+							writeState(env, name, rec);
+							onChange();
+						});
+						if (outcome === "permanent") permanent.add(name);
+						if (outcome === "retry") retry.push(name);
 					}
+					if (retry.length) {
+						waitingUntil = new Date(Date.now() + (env.backoffMs[round] as number)).toISOString();
+						for (const name of retry) {
+							const rec = { ...(results[name] as StateRecord), nextAttemptAt: waitingUntil };
+							results[name] = rec;
+							writeState(env, name, rec);
+						}
+						writeWait(env, waitingUntil);
+					}
+				} finally {
+					releaseLock(env);
 				}
-			} finally {
-				releaseLock(env, waitingUntil);
+				if (!waitingUntil) break;
+				onChange();
+				env.log(`retrying ${retry.join(" ")} at ${waitingUntil}`);
 			}
-			if (!waitingUntil) break;
-			onChange();
-			env.log(`retrying ${retry.join(" ")} at ${waitingUntil}`);
+			if (round < attempts - 1) await env.sleep(env.backoffMs[round] as number);
 		}
-		if (round < attempts - 1) await env.sleep(env.backoffMs[round] as number);
+	} finally {
+		clearWait(env);
 	}
+	if (locked) await reconcile(groups, selected, env, results, onChange);
 	return { locked, results };
+}
+
+/**
+ * Final word on each group this run touched. Under the lock, a group that
+ * no longer needs installing is ready (whoever finished it); one still
+ * missing that this run left `installing` (lock busy at the end) is recorded
+ * failed. If the lock is busy, the holder owns the state file; results still
+ * report those groups failed, so the caller's exit code is honest.
+ */
+async function reconcile(groups: readonly GroupDef[], selected: readonly string[], env: PayloadEnv, results: Record<string, StateRecord>, onChange: () => void) {
+	const names = Object.keys(results).filter((name) => results[name]?.state !== "ready");
+	if (!names.length) return;
+	const now = () => new Date().toISOString();
+	const unfinished = (rec: StateRecord): StateRecord => {
+		const { nextAttemptAt: _drop, ...rest } = rec;
+		return { ...rest, state: "failed", updatedAt: now(), error: rec.error ?? "install did not finish" };
+	};
+	if (!(await acquireLock(env, "install"))) {
+		for (const name of names) {
+			const rec = results[name] as StateRecord;
+			if (rec.state === "installing") results[name] = unfinished(rec);
+		}
+		return;
+	}
+	try {
+		const missing = activate(groups, selected, env);
+		for (const name of names) {
+			const rec = results[name] as StateRecord;
+			if (!missing.includes(name)) {
+				results[name] = { state: "ready", payloadId: rec.payloadId, attempt: rec.attempt, updatedAt: now() };
+			} else if (rec.state === "installing") {
+				results[name] = unfinished(rec);
+				writeState(env, name, results[name] as StateRecord);
+				onChange();
+			}
+		}
+	} finally {
+		releaseLock(env);
+	}
 }
 
 /** One attempt at one group, under the lock. */

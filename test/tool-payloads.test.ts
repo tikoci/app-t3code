@@ -8,6 +8,7 @@ import {
 	activate,
 	activateIfIdle,
 	type Compat,
+	defaultRoot,
 	INTERACTIVE_BACKOFF_MS,
 	installGroups,
 	KEEP_TRYING_BACKOFF_MS,
@@ -220,10 +221,58 @@ describe("npm payload groups", () => {
 			expect(manual).toMatchObject({ locked: true, results: { dev: { state: "ready" } } });
 		};
 		const background = await installGroups(npmGroups, ["dev"], env);
-		expect(background.results["dev"]).toMatchObject({ state: "installing", attempt: 1 });
+		// Reconciled with what is installed, not left at its own last attempt.
+		expect(background.results["dev"]).toMatchObject({ state: "ready", attempt: 1 });
 		expect(npmCalls()).toBe(2); // the failed first attempt, then the manual install
 		expect(devState()?.state).toBe("ready");
 		expect(liveInstaller(env)).toBeNull();
+	});
+
+	test("prune during the back-off keeps the waiting installer's retry visible", async () => {
+		writeFileSync(join(tmp, "fail"), "");
+		const seen: string[] = [];
+		env.sleep = async () => {
+			await prunePayloads(npmGroups, ["dev"], env);
+			seen.push(formatStatus(buildStatus("dev", nothing, "/nonexistent", env)));
+			rmSync(join(tmp, "fail"));
+		};
+		await installGroups(npmGroups, ["dev"], env);
+		expect(seen[0]).toMatch(/dev +installing/);
+		expect(seen[0]).toContain("retrying at");
+		expect(existsSync(join(env.root, "install.wait"))).toBe(false);
+	});
+
+	test("a busy lock at the end reports failed, never a left-over installing", async () => {
+		writeFileSync(join(tmp, "fail"), "");
+		env.backoffMs = [0];
+		const lock = join(env.root, "install.lock");
+		let holder: ReturnType<typeof Bun.spawn> | undefined;
+		env.sleep = async () => {
+			holder = Bun.spawn(["flock", "-o", lock, "sleep", "30"]);
+			for (let i = 0; i < 100 && Bun.spawnSync(["flock", "-n", lock, "true"]).exitCode === 0; i++) await Bun.sleep(20);
+		};
+		try {
+			const result = await installGroups(npmGroups, ["dev"], env);
+			expect(result.results["dev"]).toMatchObject({ state: "failed", error: expect.stringContaining("registry unreachable") });
+			expect(npmCalls()).toBe(1);
+		} finally {
+			holder?.kill();
+		}
+	});
+
+	test("a group that failed on low disk counts as ready once another run installed it", async () => {
+		cpSync(join(tmp, "spec", "dev"), join(tmp, "spec", "dev2"), { recursive: true });
+		const groups = [...npmGroups, { ...dev, name: "dev2" }];
+		writeFileSync(join(tmp, "fail-dev2"), "");
+		let calls = 0;
+		const background = { ...env, freeBytes: () => (calls++ === 0 ? 50 * 1024 * 1024 : 10 * 1024 ** 3) };
+		background.sleep = async () => {
+			await installGroups(npmGroups, ["dev"], { ...env, sleep: async () => {} });
+			rmSync(join(tmp, "fail-dev2"));
+		};
+		const result = await installGroups(groups, ["dev", "dev2"], background);
+		expect(result.results["dev"]).toMatchObject({ state: "ready" });
+		expect(result.results["dev2"]).toMatchObject({ state: "ready", attempt: 2 });
 	});
 
 	test("the background schedule keeps trying for about a day; a terminal install stays short", () => {
@@ -491,9 +540,22 @@ describe("t3code-tools command reference", () => {
 
 	test("commands that write the payload root know when they run as the wrong user", () => {
 		const uid = process.getuid?.() as number;
-		const root = join(tmp, "home", "not", "created", "yet");
-		expect(ownerMismatch(root, uid)).toBeNull();
-		expect(ownerMismatch(root, uid + 1)).toMatchObject({ uid, path: tmp });
-		expect(ownerMismatch(root, undefined)).toBeNull();
+		expect(ownerMismatch(join(tmp, "home", "not", "created", "yet"), uid)).toBeNull();
+		expect(ownerMismatch(tmp, undefined)).toBeNull();
+		// An existing root owned by someone else.
+		expect(ownerMismatch(tmp, uid + 1)).toMatchObject({ uid, path: tmp });
+		if (uid !== 0) {
+			// A missing root under a shared parent this user can write (e.g. /tmp): fine.
+			expect(ownerMismatch(join(tmpdir(), `t3code-tools-missing-${process.pid}`), uid)).toBeNull();
+			// A missing root under a parent it cannot write: the parent's owner must run it.
+			expect(ownerMismatch("/proc/t3code-tools-missing/root", uid)).toMatchObject({ uid: 0, path: "/proc" });
+		}
+	});
+
+	test("root resolves the app's payload root, not its own HOME; T3CODE_TOOLS_HOME still wins", () => {
+		expect(defaultRoot({ HOME: "/root" }, 0)).toBe("/data/.local/share/t3code-tools");
+		expect(defaultRoot({ HOME: "/root", T3CODE_TOOLS_HOME: "/srv/tools" }, 0)).toBe("/srv/tools");
+		expect(defaultRoot({ HOME: "/home/x" }, 1000)).toBe("/home/x/.local/share/t3code-tools");
+		expect(defaultRoot({}, 1000)).toBe("/data/.local/share/t3code-tools");
 	});
 });

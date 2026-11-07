@@ -11,10 +11,11 @@
 //
 // Never throw on operator input: an unknown or malformed selection is a
 // warning, and T3 must always start.
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { accessSync, constants, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DEB_LOCK_FILE, resolveDebLock, type WrapperRule } from "./deb-payloads.ts";
 import {
+	APP_HOME,
 	activateIfIdle,
 	DISK_RESERVE_BYTES,
 	defaultPayloadEnv,
@@ -651,6 +652,7 @@ export function formatStatus(status: Status): string {
 	return `${lines.join("\n")}\n`;
 }
 
+/** A back-off delay as 15s / 5m / 1h. */
 const fmtWait = (ms: number) => (ms < 60_000 ? `${ms / 1000}s` : ms < 3_600_000 ? `${ms / 60_000}m` : `${ms / 3_600_000}h`);
 const keepTryingHours = Math.round(KEEP_TRYING_BACKOFF_MS.reduce((a, b) => a + b, 0) / 3_600_000);
 
@@ -713,7 +715,9 @@ Files
 Users
   install, prune and init must run as the owner of the payload root (node in
   this image). Run as root (for example RouterOS /container/shell), they
-  re-execute as that owner with setpriv, so files never become root-owned.
+  re-execute as that owner with setpriv, so files never become root-owned;
+  root always means the app's payload root (${APP_HOME}), whatever its HOME.
+  A waiting background installer is recorded in install.wait.
 
 Exit codes: 0 ok, 1 a group failed or the lock is busy (prune), 2 usage,
 3 wrong user and cannot switch. Installing a group grants no privileges;
@@ -733,15 +737,29 @@ function existingAncestor(path: string): string {
 	return p;
 }
 
+function writable(path: string): boolean {
+	try {
+		accessSync(path, constants.W_OK);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 /**
  * Who should run a command that writes the payload root: null when this
- * process already owns it (or the platform has no uids), else the owner.
+ * process owns it (or the platform has no uids), else the owner. A root
+ * that does not exist yet belongs to whoever creates it: a non-root caller
+ * may create it under any parent it can write (a shared /tmp, say); root
+ * defers to the parent's owner, so the app's home never gains root-owned files.
  */
 export function ownerMismatch(root: string, uid: number | undefined = process.getuid?.()): { uid: number; gid: number; path: string } | null {
 	if (uid === undefined) return null;
 	const path = existingAncestor(root);
 	const st = statSync(path);
-	return st.uid === uid ? null : { uid: st.uid, gid: st.gid, path };
+	if (st.uid === uid) return null;
+	if (path !== root && uid !== 0 && writable(path)) return null;
+	return { uid: st.uid, gid: st.gid, path };
 }
 
 /**
@@ -757,9 +775,12 @@ function runAsOwner(command: string, argv: string[]): number | null {
 		process.stderr.write(`t3code-tools ${command}: ${owner.path} belongs to uid ${owner.uid}, this is uid ${uid}; run it as that user\n`);
 		return 3;
 	}
+	// Pin the payload root and home for the child: root's HOME (often /root)
+	// would otherwise point the app user's run somewhere else.
+	const env = { ...process.env, HOME: APP_HOME, T3CODE_TOOLS_HOME: defaultRoot() };
 	const proc = Bun.spawnSync(
 		["setpriv", `--reuid=${owner.uid}`, `--regid=${owner.gid}`, "--clear-groups", "--", process.execPath, import.meta.path, ...argv],
-		{ stdin: "inherit", stdout: "inherit", stderr: "inherit", env: process.env },
+		{ stdin: "inherit", stdout: "inherit", stderr: "inherit", env },
 	);
 	if (proc.exitCode === null || (proc.exitCode === 127 && !Bun.which("setpriv"))) {
 		process.stderr.write(`t3code-tools ${command}: running as root and cannot switch to uid ${owner.uid} (setpriv unavailable)\n`);
@@ -768,6 +789,7 @@ function runAsOwner(command: string, argv: string[]): number | null {
 	return proc.exitCode;
 }
 
+/** Write the runtime status JSON atomically; a failure is a warning, never fatal (T3 must start). */
 function writeRuntimeStatus(raw: string | undefined) {
 	try {
 		const status = buildStatus(raw);
@@ -781,6 +803,7 @@ function writeRuntimeStatus(raw: string | undefined) {
 	}
 }
 
+/** The t3code-tools CLI (see USAGE); returns the process exit code. */
 export async function main(argv: string[]): Promise<number> {
 	const [command = "status", ...rest] = argv;
 	const raw = process.env[SELECTOR_ENV];

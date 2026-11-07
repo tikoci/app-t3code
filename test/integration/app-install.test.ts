@@ -13,6 +13,9 @@
  *   APP_T3CODE_T3VER    expected T3 Code serverVersion (default: package.json version)
  *   APP_T3CODE_NAME     CHR machine name (default: per-arch fixed name)
  *   APP_T3CODE_KEEP=1   leave the CHR machine behind for inspection (default: removed)
+ *   APP_T3CODE_IMAGE    image to install instead of the YAML's `image:` (CI passes the
+ *                       commit's :sha-<commit> candidate, so a later promotion of :0.1
+ *                       cannot change what this run tests)
  *
  * RouterOS is driven through centrs (@tikoci/centrs@next) — quickchr boots
  * the VM, centrs talks to it. The only non-centrs HTTP call is the final
@@ -114,11 +117,19 @@ afterAll(async () => {
 	if (!SKIP) await cleanup();
 });
 
+/** The /app YAML with its single `image:` replaced (unchanged when image is empty). */
+function withImage(yaml: string, image: string | undefined): string {
+	if (!image) return yaml;
+	const lines = yaml.match(/^\s*image:\s*\S+\s*$/gm) ?? [];
+	if (lines.length !== 1) throw new Error(`expected one image: line in the app YAML, found ${lines.length}`);
+	return yaml.replace(/^(\s*image:\s*)\S+(\s*)$/m, `$1${image}$2`);
+}
+
 describe.skipIf(SKIP)("app-t3code on CHR", () => {
 	test(
 		"container installs, runs, and serves the T3 web UI",
 		async () => {
-			const yaml = readFileSync(YAML_PATH, "utf8");
+			const yaml = withImage(readFileSync(YAML_PATH, "utf8"), process.env["APP_T3CODE_IMAGE"]);
 
 			try {
 				// 1. Boot CHR with container device-mode at first boot
