@@ -166,9 +166,11 @@ jobs:
           retention-days: 90
 
   # Move the release tags onto the tested candidate, by digest (same
-  # manifest list, no rebuild). main only: a dispatch on another branch stops at the tested
-  # :sha-<commit> candidate (a pre-merge CHR test image). Serialized so an
-  # older run never lands after a newer one.
+  # manifest list, no rebuild). main only: a dispatch on another branch stops
+  # at the tested :sha-<commit> candidate (a pre-merge CHR test image).
+  # Serialized, but GitHub's concurrency queue is not FIFO, so each run also
+  # checks it is still main's head: an older run that finishes late skips
+  # instead of moving the tags back (the newer run promotes its own build).
   promote:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -183,7 +185,21 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check this commit is still main's head
+        id: head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          head="$(gh api "repos/$REPO/commits/main" --jq .sha)"
+          if [ "$head" = "$GITHUB_SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::main moved on to $head; not promoting $GITHUB_SHA over it"
+          fi
       - name: Tag the candidate as the release
+        if: steps.head.outputs.current == 'true'
         run: |
           repo=ghcr.io/tikoci/app-t3code
           test -n "${{ needs.build.outputs.digest }}" || { echo "::error::build pushed no digest"; exit 1; }

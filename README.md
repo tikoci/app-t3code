@@ -523,7 +523,9 @@ lifecycle:
   dies; the next run also stops an npm or dpkg-deb left behind by a killed
   installer before reclaiming its files). Retries run in rounds: each
   round tries every group still missing once, so one failing group never
-  holds up the others, and the lock is released while waiting. The
+  holds up the others, and the lock is released while waiting (a round
+  that finds it taken, say by a prune, waits and tries again without using
+  an attempt). The
   entrypoint's background run (`install --keep-trying`) keeps retrying for
   about a day (15 s, 1, 5, 15 and 30 minutes, then hourly), because a router
   often starts the container before its uplink or DNS is up; verified
@@ -825,7 +827,9 @@ Images track upstream **stable** T3 Code releases only — no nightlies
 A `main` push publishes only the candidate. Its arm64 image then runs the
 container replacement test natively on a GitHub arm64 runner (amd64 already
 ran it before the push), and only then does CI move the release tags onto the
-same manifest, by digest. A failed arm64 run leaves `:0.1` where it was.
+same manifest, by digest. A failed arm64 run leaves `:0.1` where it was,
+and a run that finishes after `main` has moved on skips promotion, so the
+tags never go back to an older build.
 
 The `/app` YAML references the `:0.1`-style stability tag, and
 `test/app-yaml.test.ts` fails the build if it drifts from

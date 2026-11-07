@@ -931,8 +931,9 @@ export interface InstallResult {
  * that lacks one, with a disk budget, then activate it. Retries run in
  * rounds: each round takes the lock, tries every group still missing once
  * (so one failing group never holds up the others), and releases the lock
- * for the back-off (recording install.wait). A round that finds the lock
- * busy is skipped: the holder is doing the same work. At the end, results
+ * for the back-off (recording install.wait). A later round that finds the
+ * lock busy (a prune, a manual install) uses no attempt: it waits as long
+ * again and retries, at most `attempts` times. At the end, results
  * are reconciled with what is actually installed: a payload another run
  * finished counts as ready, and a group still missing ends failed (never a
  * left-over `installing`). `onChange` runs after each state transition.
@@ -948,15 +949,21 @@ export async function installGroups(
 	const tries: Record<string, number> = {};
 	const permanent = new Set<string>();
 	let locked = false;
+	let busy = 0;
 	try {
-		for (let round = 0; round < attempts; round++) {
+		for (let round = 0; round < attempts; ) {
 			clearWait(env);
 			if (!(await acquireLock(env, "install"))) {
 				if (round === 0) {
 					env.log("another installer or prune is running; leaving it to finish");
 					return { locked: false, results };
 				}
-				env.log(`round ${round + 1}/${attempts}: another installer or prune holds the lock; it is doing this work`);
+				// A busy round (a prune, a manual install) costs no attempt:
+				// wait as long again and retry, at most `attempts` times.
+				if (++busy > attempts) break;
+				env.log(`round ${round + 1}/${attempts}: another installer or prune holds the lock; trying again later`);
+				await env.sleep(env.backoffMs[round - 1] as number);
+				continue;
 			} else {
 				locked = true;
 				const retry: string[] = [];
@@ -994,6 +1001,7 @@ export async function installGroups(
 				env.log(`retrying ${retry.join(" ")} at ${waitingUntil}`);
 			}
 			if (round < attempts - 1) await env.sleep(env.backoffMs[round] as number);
+			round++;
 		}
 	} finally {
 		clearWait(env);

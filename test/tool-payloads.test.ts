@@ -242,12 +242,15 @@ describe("npm payload groups", () => {
 		expect(existsSync(join(env.root, "install.wait"))).toBe(false);
 	});
 
-	test("a busy lock at the end reports failed, never a left-over installing", async () => {
+	test("a lock that stays busy reports failed, never a left-over installing", async () => {
 		writeFileSync(join(tmp, "fail"), "");
 		env.backoffMs = [0];
 		const lock = join(env.root, "install.lock");
 		let holder: ReturnType<typeof Bun.spawn> | undefined;
+		let sleeps = 0;
 		env.sleep = async () => {
+			sleeps++;
+			if (holder) return;
 			holder = Bun.spawn(["flock", "-o", lock, "sleep", "30"]);
 			for (let i = 0; i < 100 && Bun.spawnSync(["flock", "-n", lock, "true"]).exitCode === 0; i++) await Bun.sleep(20);
 		};
@@ -255,9 +258,31 @@ describe("npm payload groups", () => {
 			const result = await installGroups(npmGroups, ["dev"], env);
 			expect(result.results["dev"]).toMatchObject({ state: "failed", error: expect.stringContaining("registry unreachable") });
 			expect(npmCalls()).toBe(1);
+			expect(sleeps).toBe(3); // the back-off, then two bounded busy waits
 		} finally {
 			holder?.kill();
 		}
+	});
+
+	test("a round that finds the lock busy costs no attempt: the group still gets its retry", async () => {
+		writeFileSync(join(tmp, "fail"), "");
+		env.backoffMs = [0];
+		const lock = join(env.root, "install.lock");
+		let holder: ReturnType<typeof Bun.spawn> | undefined;
+		env.sleep = async () => {
+			if (!holder) {
+				// A prune takes the lock across the last round.
+				holder = Bun.spawn(["flock", "-o", lock, "sleep", "30"]);
+				for (let i = 0; i < 100 && Bun.spawnSync(["flock", "-n", lock, "true"]).exitCode === 0; i++) await Bun.sleep(20);
+				rmSync(join(tmp, "fail"));
+			} else {
+				holder.kill();
+				await holder.exited;
+			}
+		};
+		const result = await installGroups(npmGroups, ["dev"], env);
+		expect(result.results["dev"]).toMatchObject({ state: "ready", attempt: 2 });
+		expect(npmCalls()).toBe(2);
 	});
 
 	test("a group that failed on low disk counts as ready once another run installed it", async () => {
