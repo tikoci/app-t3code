@@ -228,7 +228,7 @@ test.skipIf(!image)(
 				await run(
 					"bash",
 					shell,
-					`set -e; bun --version; bunx --version; quickchr --help; centrs explain '/ip/address print' --json; uv --version; uvx --version; sqlite3 --version; codex --version; qemu-system-x86_64 --version; qemu-system-aarch64 --version; qemu-img --version; ${devTools}`,
+					`set -e; bun --version; bunx --version; quickchr --help; centrs explain '/ip/address print' --json; uv --version; uvx --version; sqlite3 --version; gh --version; codex --version; qemu-system-x86_64 --version; qemu-system-aarch64 --version; qemu-img --version; ${devTools}`,
 				);
 				for (const [group, ok] of Object.entries(nativeOk)) expect(await groupTools(group, shell)).toContain(ok);
 			}
@@ -236,7 +236,7 @@ test.skipIf(!image)(
 				"bash",
 				"-ec",
 				`
-mkdir -p /data/projects/survivor /data/.t3/projects/managed /data/.t3/scratch/survivor /data/.config/muse
+mkdir -p /data/projects/survivor /data/.t3/projects/managed /data/.t3/scratch/survivor /data/.config/muse /data/.config/gh
 cd /data/projects/survivor
 git init -b main
 git -c user.name=Test -c user.email=test@example.invalid commit --allow-empty -m initial
@@ -247,6 +247,9 @@ printf 'worktree edit' > /data/.t3/worktrees/survivor/edit.txt
 printf 'managed project' > /data/.t3/projects/managed/README.md
 printf 'scratch edit' > /data/.t3/scratch/survivor/edit.txt
 printf 'synthetic credential fixture' > /data/.config/muse/persistence-fixture
+# A file-backed gh login (no keyring in the container) in gh's default config dir.
+printf 'version: "1"\\n' > /data/.config/gh/config.yml
+printf 'github.com:\\n    users:\\n        persistence-fixture:\\n            oauth_token: gho_synthetic_persistence_fixture\\n    git_protocol: https\\n    user: persistence-fixture\\n    oauth_token: gho_synthetic_persistence_fixture\\n' > /data/.config/gh/hosts.yml
 # A user-installed Muse in the home must survive replacement and win on PATH.
 mkdir -p /data/.local/bin
 printf '#!/bin/sh\\necho user-installed-muse' > /data/.local/bin/muse
@@ -269,6 +272,8 @@ t3 project add /data/projects/survivor --title 'Survivor'
 				"Survivor",
 			);
 			expect(project).toContain("is already named Survivor");
+			// `gh auth token` reads the stored login without a network call.
+			expect(await run("gh", "auth", "token", "--hostname", "github.com")).toBe("gho_synthetic_persistence_fixture");
 			const identity = await run("cat", "/data/.t3/userdata/environment-id");
 			expect(identity.length).toBeGreaterThan(0);
 			// Stop before editing settings to avoid racing the live server's writer.
@@ -361,6 +366,7 @@ t3 project add /data/projects/survivor --title 'Survivor'
 				expect(await run("bash", shell, "command -v muse && muse")).toBe("/data/.local/bin/muse\nuser-installed-muse");
 			}
 			expect(await run("/data/projects/survivor/.venv/bin/python", "-c", "import sqlite3; print(sqlite3.sqlite_version)")).toMatch(/^3\.\d+/);
+			expect(await run("gh", "auth", "token", "--hostname", "github.com")).toBe("gho_synthetic_persistence_fixture");
 
 			// Reselect dev in a third container with no network at all: the
 			// payload in the home is relinked at start, with no download.

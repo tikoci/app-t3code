@@ -243,12 +243,23 @@ keeps the delivery above until then.
 ### Installed package inventory
 
 The image includes Debian command-line basics (`bash`, `awk`, `sed`, `grep`,
-`find`, `diff`, `tar`, `gzip`), Git/SSH, curl, jq, ripgrep, make, the
-`sqlite3` CLI, Python 3 with [uv](https://docs.astral.sh/uv/) and `uvx`, and
-Node.js/npm in addition to the agent and RouterOS tools below. This is a
-selected toolset; `make` does not imply a C/C++ compiler, and other language
-SDKs are out of scope. The native libraries for T3's built-in browser are
-core too (T3 downloads the browser itself on first use).
+`find`, `diff`, `tar`, `gzip`), Git/SSH, the GitHub CLI (`gh`), curl, jq,
+ripgrep, make, the `sqlite3` CLI, Python 3 with
+[uv](https://docs.astral.sh/uv/) and `uvx`, and Node.js/npm in addition to
+the agent and RouterOS tools below. This is a selected toolset; `make` does
+not imply a C/C++ compiler, and other language SDKs are out of scope. The
+native libraries for T3's built-in browser are core too (T3 downloads the
+browser itself on first use).
+
+`gh` enables T3's GitHub source-control provider. Log in once with
+`gh auth login` from a T3 terminal, or set `GH_TOKEN`. The container has no
+keyring, so `gh auth login` stores the token in a file under gh's default
+config directory, `/data/.config/gh`, which survives image replacement. If
+you set `GH_CONFIG_DIR`, keep it under `/data`, or the login is lost on the
+next update. T3's other providers
+(GitLab, Forgejo/Gitea, Azure DevOps, GitCafe) need CLIs this image does not
+bundle yet; see [issue #15](https://github.com/tikoci/app-t3code/issues/15).
+Plain `git` over HTTPS or SSH works with any forge.
 
 Python has no pip or `python3 -m venv`; use uv instead. `uv venv` and
 `uv sync` create project environments with the image's Python, `uvx <tool>`
@@ -475,7 +486,7 @@ boot firmware only (SeaBIOS to "No bootable device", and a 16-byte aarch64
 program that powers the machine off). For a payload group, a file check is a
 path inside the payload, reported through `groups/<group>/current/root/…`.
 Core checks (`t3`, Node, Bun,
-Python with uv/uvx, sqlite3, Git/SSH, centrs, the core network tools, the
+Python with uv/uvx, sqlite3, Git/SSH, `gh`, centrs, the core network tools, the
 baked `codex` and `opencode`, and the browser's native libraries) are
 reported separately as `core.state`. At each start the entrypoint logs warnings and a summary to
 the container log and writes the same JSON to `/tmp/t3code-tools/status.json`.

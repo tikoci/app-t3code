@@ -52,7 +52,7 @@ export async function collect() {
 			return { command: command as string, path: path || null };
 		});
 	const versions: Record<string, string> = {};
-	for (const command of ["node", "npm", "bun", "python3", "uv", "sqlite3", "git", "jq", "rg", "t3", "codex"]) {
+	for (const command of ["node", "npm", "bun", "python3", "uv", "sqlite3", "git", "gh", "jq", "rg", "t3", "codex"]) {
 		versions[command] = run([command, "--version"]);
 	}
 	const npm = JSON.parse(run(["npm", "ls", "--global", "--prefix", "/usr/local", "--depth=0", "--json"]));
