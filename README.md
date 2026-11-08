@@ -252,8 +252,11 @@ native libraries for T3's built-in browser are core too (T3 downloads the
 browser itself on first use).
 
 `gh` enables T3's GitHub source-control provider. Log in once with
-`gh auth login` from a T3 terminal (or set `GH_TOKEN`); the login is stored
-in `/data/.config/gh` and survives image replacement. T3's other providers
+`gh auth login` from a T3 terminal, or set `GH_TOKEN`. The container has no
+keyring, so `gh auth login` stores the token in a file under gh's default
+config directory, `/data/.config/gh`, which survives image replacement. If
+you set `GH_CONFIG_DIR`, keep it under `/data`, or the login is lost on the
+next update. T3's other providers
 (GitLab, Forgejo/Gitea, Azure DevOps, GitCafe) need CLIs this image does not
 bundle yet; see [issue #15](https://github.com/tikoci/app-t3code/issues/15).
 Plain `git` over HTTPS or SSH works with any forge.

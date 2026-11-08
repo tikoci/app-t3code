@@ -366,8 +366,11 @@ describe("tool groups: docs and image contract", () => {
 	test("gh is core: a pinned GitHub CLI release, checked against its checksums file", () => {
 		expect(DOCKERFILE).toMatch(/^ARG GH_VER=\d+\.\d+\.\d+$/m);
 		expect(DOCKERFILE).toContain('url="https://github.com/cli/cli/releases/download/v${GH_VER}"');
-		expect(DOCKERFILE).toMatch(/gh_\$\{GH_VER\}_checksums\.txt" \| sha256sum -c -/);
-		expect(DOCKERFILE).toContain("/usr/local/bin/gh");
+		// The archive the checksum line names is the one extracted and installed.
+		expect(DOCKERFILE).toContain('name="gh_${GH_VER}_linux_${TARGETARCH}"');
+		expect(DOCKERFILE).toContain('grep -E "[[:space:]]${name}\\.tar\\.gz$" "gh_${GH_VER}_checksums.txt" | sha256sum -c -');
+		expect(DOCKERFILE).toContain('tar -xzof "${name}.tar.gz"');
+		expect(DOCKERFILE).toContain('install -m 0755 "${name}/bin/gh" /usr/local/bin/gh');
 		expect(CORE_CHECKS.map((c) => c.name)).toContain("gh");
 	});
 
