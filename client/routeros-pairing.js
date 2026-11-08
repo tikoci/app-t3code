@@ -54,18 +54,19 @@
 				button.textContent = "Copy";
 			}, 1500);
 		};
-		// navigator.clipboard needs a secure context; plain-HTTP installs
-		// (use-https=no) fall back to selecting the text for a manual copy.
+		// Manual-copy fallback: select the command so Ctrl/Cmd+C copies it.
+		const select = () => {
+			const code = button.parentElement?.querySelector("code");
+			if (code) window.getSelection()?.selectAllChildren(code);
+			done("Selected");
+		};
+		// navigator.clipboard needs a secure context, so plain-HTTP installs
+		// (use-https=no) select instead; so does a denied clipboard write.
 		if (navigator.clipboard && window.isSecureContext) {
-			navigator.clipboard.writeText(COMMAND).then(
-				() => done("Copied"),
-				() => done("Select + copy"),
-			);
+			navigator.clipboard.writeText(COMMAND).then(() => done("Copied"), select);
 			return;
 		}
-		const code = button.parentElement?.querySelector("code");
-		if (code) window.getSelection()?.selectAllChildren(code);
-		done("Selected");
+		select();
 	}
 
 	function buildPanel() {
@@ -89,7 +90,9 @@
 			para(
 				"Paste the value after ",
 				el("code", "Token:"),
-				" into the Pairing token field above. A token expires after about five minutes; run the command again for a new one.",
+				" into the Pairing token field above, or open the ",
+				el("code", "Pair URL:"),
+				" link if it prints one. A token expires after about five minutes; run the command again for a new one.",
 			),
 			note("Renamed the app? Use its container name (", el("code", "/container/print"), ") in place of ", el("code", "app-t3code"), "."),
 		);
