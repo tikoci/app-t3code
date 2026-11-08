@@ -10,7 +10,9 @@ On `/container/stop` (and so on `/app/update`, `disabled=yes` and a
 in `/proc/1/status`. If the stop signal's bit is clear, it doesn't send it:
 it logs `*** signal 15 (Terminated) not caught, kill immediately` and sends
 SIGKILL at once. If the bit is set, it sends SIGTERM and waits up to
-`stop-time` (default `30s`; the app YAML's `stop_grace_period`).
+`/container` `stop-time` (`30s` on the app's container, which this app's
+YAML doesn't set). The `/app` YAML's `stop_grace_period` is documented as
+the graceful-shutdown timeout; that it maps to `stop-time` wasn't tested.
 
 | Container | PID 1 | `SigCgt` | On stop |
 | --- | --- | --- | --- |
@@ -50,7 +52,7 @@ bash 5.2):
   `( trap - INT QUIT; exec "$@" ) &`, which restores the defaults and is
   still one process. macOS's `/bin/bash` 3.2 keeps them ignored.
 - The traps go in before the child starts, and signals that arrive first
-  are passed on, in order, once the child exists.
+  are queued and passed on once the child exists.
 - A trapped signal interrupts `wait` with 128+n. `wait -p` (bash 5.1+) tells
   that apart from the child's exit: the variable stays unset, and waiting
   again returns the child's own status, even if it exited in between.
@@ -67,5 +69,5 @@ That reads like an error, but it's the clean path.
 This applies to any RouterOS container whose PID 1 is tini or a similar
 init, not only this one. Either make PID 1 something that installs a TERM
 handler (a shell `trap`, or the app itself when it never spawns children),
-or accept SIGKILL on every stop. `stop-time` and `stop_grace_period` do
-nothing for a PID 1 without a handler.
+or accept SIGKILL on every stop. `stop-time` does nothing for a PID 1
+without a handler, and neither, presumably, does `stop_grace_period`.

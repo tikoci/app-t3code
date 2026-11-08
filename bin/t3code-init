@@ -11,8 +11,9 @@
 # including orphans re-parented to PID 1, so it can do tini's job here.
 set -u
 
-# Traps go in before the child starts; signals that arrive first are passed
-# on, in order, as soon as there is a child to take them.
+# Traps go in before the child starts; signals that arrive first are queued
+# and passed on as soon as there is a child to take them. None is dropped;
+# order isn't kept (the kernel doesn't keep it for standard signals either).
 child=
 pending=()
 # shellcheck disable=SC2329 # called from the traps below

@@ -282,9 +282,11 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			expect(BigInt(`0x${sigCgt}`) & (1n << 14n)).toBe(1n << 14n);
 			// Stop before editing settings to avoid racing the live server's writer.
 			// T3 stops on the forwarded TERM (about 5 s on a CHR) within RouterOS's
-			// default stop-time of 30 s, not by docker's SIGKILL after it (137).
+			// stop-time of 30 s, and exits 130, its status after a signal-driven
+			// shutdown (anchor: a T3 release that changes it updates this). A
+			// SIGKILL after the timeout would be 137.
 			await docker("stop", "--time", "30", name);
-			expect(await docker("inspect", "--format", "{{.State.ExitCode}}", name)).not.toBe("137");
+			expect(await docker("inspect", "--format", "{{.State.ExitCode}}", name)).toBe("130");
 			await docker("rm", name);
 			await docker(
 				"run",
