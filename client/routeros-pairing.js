@@ -21,6 +21,8 @@
 #${PANEL_ID} .rph-cmd{display:flex;align-items:center;gap:8px;margin:8px 0;padding:4px 4px 4px 10px;border:1px solid color-mix(in srgb,currentColor 15%,transparent);border-radius:6px}
 #${PANEL_ID} code{font-family:ui-monospace,SF Mono,Menlo,Consolas,monospace;font-size:12px}
 #${PANEL_ID} .rph-cmd code{flex:1;min-width:0;overflow-wrap:break-word;user-select:all}
+#${PANEL_ID} p.rph-note{margin-top:8px;font-size:11px;line-height:16px;opacity:.6}
+#${PANEL_ID} p.rph-note code{font-size:11px}
 #${PANEL_ID} button{flex:none;height:26px;padding:0 10px;border:1px solid color-mix(in srgb,currentColor 20%,transparent);border-radius:6px;background:transparent;color:inherit;font:inherit;font-size:12px;cursor:pointer}
 #${PANEL_ID} button:hover{background:color-mix(in srgb,currentColor 8%,transparent)}`;
 
@@ -34,6 +36,14 @@
 	function para(...parts) {
 		const node = el("p");
 		node.append(...parts);
+		return node;
+	}
+
+	// A secondary, smaller line: most installs paste the README's /app/add
+	// as-is, so the default container name is right.
+	function note(...parts) {
+		const node = para(...parts);
+		node.className = "rph-note";
 		return node;
 	}
 
@@ -81,7 +91,7 @@
 				el("code", "Token:"),
 				" into the Pairing token field above. A token expires after about five minutes; run the command again for a new one.",
 			),
-			para("Renamed the app? Use its container name in place of ", el("code", "app-t3code"), " (see ", el("code", "/container/print"), ")."),
+			note("Renamed the app? Use its container name (", el("code", "/container/print"), ") in place of ", el("code", "app-t3code"), "."),
 		);
 		return panel;
 	}
