@@ -48,10 +48,15 @@ bash 5.2):
 - Without job control, bash starts a background job with SIGINT and SIGQUIT
   ignored, so a forwarded INT would have done nothing. The child starts as
   `( trap - INT QUIT; exec "$@" ) &`, which restores the defaults and is
-  still one process. macOS's `/bin/bash` 3.2 keeps them ignored, so those two
-  tests skip there.
-- The traps go in before the child starts, and a signal that arrives first
-  is passed on once the child exists.
+  still one process. macOS's `/bin/bash` 3.2 keeps them ignored.
+- The traps go in before the child starts, and signals that arrive first
+  are passed on, in order, once the child exists.
+- A trapped signal interrupts `wait` with 128+n. `wait -p` (bash 5.1+) tells
+  that apart from the child's exit: the variable stays unset, and waiting
+  again returns the child's own status, even if it exited in between.
+  That's checked under bash 5.2 (a child exiting 7 while the shell was in a
+  trap still came back as 7). macOS's `/bin/bash` 3.2 lacks `wait -p`, so
+  `test/init.test.ts` skips as a whole there.
 
 Exit 130 is T3's own status after a signal-driven shutdown. The init passes
 it through unchanged, so RouterOS logs `*** error: exited with status 130`.

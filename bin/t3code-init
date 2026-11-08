@@ -11,16 +11,16 @@
 # including orphans re-parented to PID 1, so it can do tini's job here.
 set -u
 
-# Traps go in before the child starts; a signal that arrives first is passed
-# on as soon as there is a child to take it.
+# Traps go in before the child starts; signals that arrive first are passed
+# on, in order, as soon as there is a child to take them.
 child=
-pending=
+pending=()
 # shellcheck disable=SC2329 # called from the traps below
 forward() {
 	if [ -n "$child" ]; then
 		kill -s "$1" "$child" 2>/dev/null
 	else
-		pending=$1
+		pending+=("$1")
 	fi
 }
 for sig in TERM INT HUP QUIT USR1 USR2 WINCH; do
@@ -37,14 +37,19 @@ done
 	exec "$@"
 ) <&0 &
 child=$!
-if [ -n "$pending" ]; then
-	kill -s "$pending" "$child" 2>/dev/null
-fi
+for sig in "${pending[@]}"; do
+	kill -s "$sig" "$child" 2>/dev/null
+done
 
-# A trapped signal interrupts `wait` with 128+n while the child still runs.
+# A trapped signal interrupts `wait` (128+n) without setting -p's variable;
+# waiting again returns the child's own status, even if it has exited since
+# (bash 5.1+). An interrupted wait unsets it, hence `:-` under set -u. 127
+# with no pid means bash no longer knows the child.
 while :; do
-	wait "$child"
+	done_pid=
+	wait -p done_pid "$child"
 	status=$?
-	kill -0 "$child" 2>/dev/null || break
+	[ -n "${done_pid:-}" ] && break
+	[ "$status" -eq 127 ] && break
 done
 exit "$status"
