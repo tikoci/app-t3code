@@ -192,8 +192,8 @@ describe("release sync", () => {
 		const pins: Array<[string, RegExp, number]> = [
 			["Dockerfile", /^ARG T3CODE_VER=(\S+)$/gm, 1],
 			["Makefile", /^T3CODE_VER \?= (\S+)$/gm, 1],
-			[".github/workflows/ci.yml", /(?:default: "|t3code_ver \|\| ')([\d.]+)/g, 2],
-			[".github/workflows/integration.yml", /(?:default: "|t3code_ver \|\| ')([\d.]+)/g, 2],
+			[".github/workflows/ci.yml", /(?:default: "|t3code_ver \|\| ')(\d[^"']*)["']/g, 2],
+			[".github/workflows/integration.yml", /(?:default: "|t3code_ver \|\| ')(\d[^"']*)["']/g, 2],
 			["README.md", /`ghcr\.io\/tikoci\/app-t3code:([\d.]+)` — exact release/g, 1],
 		];
 		for (const [file, pattern, count] of pins) {
