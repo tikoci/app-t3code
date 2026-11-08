@@ -20,7 +20,7 @@
 #${PANEL_ID} p{margin:4px 0;opacity:.8}
 #${PANEL_ID} .rph-cmd{margin:8px 0;padding:8px 10px;border:1px solid color-mix(in srgb,currentColor 15%,transparent);border-radius:6px}
 #${PANEL_ID} code{font-family:ui-monospace,SF Mono,Menlo,Consolas,monospace;font-size:12px}
-#${PANEL_ID} .rph-cmd code{overflow-wrap:anywhere;user-select:all}
+#${PANEL_ID} .rph-cmd code{overflow-wrap:anywhere;-webkit-user-select:all;user-select:all}
 #${PANEL_ID} p.rph-note{margin-top:8px;font-size:11px;line-height:16px;opacity:.6}
 #${PANEL_ID} p.rph-note code{font-size:11px}`;
 

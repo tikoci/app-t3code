@@ -38,7 +38,7 @@ devices). **Not used.**
 
 ## 2. What ships
 
-Follow-up to #27 (tracked on #30): the Copy/Selected button was removed
+Follow-up to the #18 panel (tracked on #30): the Copy/Selected button was removed
 because plain HTTP only selected the command without copying it. The command
 remains selectable for manual copying; no clipboard JavaScript is needed.
 
