@@ -11,9 +11,10 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   current PR (`bun run lint:fix` handles most).
 - `bun run test` — offline `/app` YAML contract and the npm and deb tool-payload
   lifecycles (always runs; fake npm, fake dpkg-deb and mirror).
-  It needs a Linux host: the lock tests spawn util-linux `flock`, so on macOS
-  about 28 of them fail or time out. Run it on Linux, or rely on CI's
-  `lint-test` job.
+  It needs a Linux host: the lock tests spawn util-linux `flock` and fail or
+  time out without it (macOS). Run it on Linux, or rely on CI's `lint-test`
+  job. `biome.json` turns off `noTemplateCurlyInString` only for the two test
+  files that assert literal shell `${...}` text.
 - `APP_T3CODE_INTEGRATION=1 bun test test/integration/` — full CHR
   boot + container install + web UI probe. Needs QEMU and network; slow
   (the GHCR image pull alone is ~1GB on a free-license CHR).

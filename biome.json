@@ -33,7 +33,8 @@
 	"overrides": [
 		{
 			"includes": [
-				"test/**/*.ts"
+				"test/app-yaml.test.ts",
+				"test/deb-payloads.test.ts"
 			],
 			"linter": {
 				"rules": {
