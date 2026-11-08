@@ -10,7 +10,7 @@
 #
 # Build:
 #   docker buildx build --platform linux/amd64,linux/arm64 \
-#     --build-arg T3CODE_VER=0.1.6 -t ghcr.io/tikoci/app-t3code:0.1 .
+#     --build-arg T3CODE_VER=0.1.7 -t ghcr.io/tikoci/app-t3code:0.1 .
 # Run (plain HTTP on 3773; terminate TLS in front for remote use):
 #   docker run -p 3773:3773 -v t3code:/data -e PUBLIC_URL=https://t3.example.com ghcr.io/tikoci/app-t3code:0.1
 
@@ -26,7 +26,7 @@ FROM ghcr.io/astral-sh/uv:${UV_VER} AS uv
 FROM node:${NODE_VER}-trixie-slim AS runtime
 
 ARG TARGETARCH
-ARG T3CODE_VER=0.1.6
+ARG T3CODE_VER=0.1.7
 ARG CODEX_VER=latest
 ARG OPENCODE_VER=latest
 ARG QUICKCHR_VER=next
@@ -114,7 +114,7 @@ RUN usermod --home /data --shell /bin/bash node && \
 
 RUN set -eu; \
     if [ -z "${T3CODE_VER}" ]; then \
-      echo "T3CODE_VER is required (example: 0.1.6)"; \
+      echo "T3CODE_VER is required (example: 0.1.7)"; \
       exit 1; \
     fi; \
     case "${TARGETARCH}" in \

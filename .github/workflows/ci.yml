@@ -9,14 +9,14 @@ on:
       t3code_ver:
         description: "Upstream T3 Code version (stable only, no nightlies)"
         required: false
-        default: "0.1.6"
+        default: "0.1.7"
 
 permissions:
   contents: read
   packages: write
 
 env:
-  T3CODE_VER: ${{ github.event.inputs.t3code_ver || '0.1.6' }}
+  T3CODE_VER: ${{ github.event.inputs.t3code_ver || '0.1.7' }}
 
 jobs:
   lint-test:
