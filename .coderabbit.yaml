@@ -6,8 +6,9 @@
 #   - one review per ready PR; no per-push incremental re-reviews
 #   - re-review on demand with an `@coderabbitai review` PR comment
 #   - a `skip-review` label skips automatic review (an agent review covers it)
-# CodeRabbit applies the base branch's copy of this file, so a change here
-# takes effect only for PRs opened after it merges to `main`.
+# Which copy applies is unsettled: CodeRabbit's docs say the feature branch's,
+# but tikoci/centrs PR #167 (OSS plan) reviewed with the base branch's. Don't
+# count on a change here applying to the PR that makes it.
 language: en-US
 tone_instructions: >
   Terse and actionable. No poems, jokes, or decorative filler. State the

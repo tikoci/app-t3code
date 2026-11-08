@@ -20,11 +20,11 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 ## Workflow
 
 - **The menu is the Roadmap issue**, pinned at the top of the Issues tab
-  (`gh issue list --label roadmap`).
-  It groups every open theme into Now / Next / Later, with a dependency graph.
-  Topics live there as one line until they are next or need cross-repo
-  work; only then do they get their own issue. When you open, close or
-  re-scope an issue, edit the Roadmap body in the same session
+  (`gh issue list --label roadmap`). It groups every open theme into
+  Now / Next / Later, with a dependency graph. Topics live there as one line
+  until they are next or need cross-repo work; only then do they get their
+  own issue. **Before ending a session that opened, closed or re-scoped an
+  issue, re-read the live Roadmap and update its lists and dependency graph**
   (`gh issue edit <n> --body-file`). Tracking lives in GitHub, not in
   committed files, so machines don't need sync commits.
 - **Labels:** `track` is a long-lived issue that collects one concern and
