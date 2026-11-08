@@ -1,6 +1,6 @@
 ---
 name: chr-app-lab
-description: Run app-t3code on a quickchr CHR. Covers preparing a fresh x86 or arm64 CHR for /app (device-mode, container package, ext4 app disk, license, LAN bridge); installing, enabling and upgrading the app without losing /data; an offline /data backup; running commands inside the container; and a before/after content manifest. Use for a CHR install or upgrade test (#3, #7), a fresh arm64 install, /app/update, or comparing a home's content across an upgrade.
+description: "Run app-t3code on a quickchr CHR. Covers preparing a fresh x86 or arm64 CHR for /app (device-mode, container package, ext4 app disk, license, LAN bridge); installing, enabling and upgrading the app without losing /data; an offline /data backup; running commands inside the container; and a before/after content manifest. Use for a CHR install or upgrade test (#3, #7), a fresh arm64 install, /app/update, or comparing a home's content across an upgrade."
 ---
 
 # app-t3code on a quickchr CHR

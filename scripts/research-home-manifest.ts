@@ -51,8 +51,22 @@ const LOGIN_PATHS = [
 
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 
+/** Fixed command strings from this file only; never interpolate discovered paths. */
 function sh(command: string): string {
 	const proc = Bun.spawnSync(["bash", "-c", command], { stdout: "pipe", stderr: "pipe" });
+	return proc.stdout.toString().trim();
+}
+
+/**
+ * Git by argv, no shell. `--no-optional-locks` keeps `status` from refreshing
+ * `.git/index`, and `diff` runs no external diff or textconv drivers.
+ */
+export function git(root: string, args: string[]): string {
+	const proc = Bun.spawnSync(["git", "--no-optional-locks", "-C", root, ...args], {
+		stdout: "pipe",
+		stderr: "pipe",
+		env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0" },
+	});
 	return proc.stdout.toString().trim();
 }
 
@@ -152,16 +166,15 @@ function repos(): Json {
 	}
 	return Object.fromEntries(
 		roots.sort().map((root) => {
-			const git = (args: string) => sh(`git -C '${root}' ${args}`);
-			const porcelain = git("status --porcelain=v1 --untracked-files=all");
+			const porcelain = git(root, ["status", "--porcelain=v1", "--untracked-files=all"]);
 			return [
 				root,
 				{
-					head: git("rev-parse HEAD"),
-					branch: git("rev-parse --abbrev-ref HEAD"),
+					head: git(root, ["rev-parse", "HEAD"]),
+					branch: git(root, ["rev-parse", "--abbrev-ref", "HEAD"]),
 					dirtyEntries: porcelain.split("\n").filter(Boolean).length,
 					statusSha: sha256(porcelain),
-					diffSha: sha256(git("diff HEAD")),
+					diffSha: sha256(git(root, ["diff", "--no-ext-diff", "--no-textconv", "HEAD"])),
 				},
 			];
 		}),
@@ -188,7 +201,8 @@ function toolsStatus(): Json {
 			),
 		};
 	} catch {
-		return { unparsed: raw.slice(0, 2000) };
+		// Never echo unparsed output: it is not known to be metadata.
+		return { unparsed: true, bytes: raw.length };
 	}
 }
 
@@ -198,7 +212,8 @@ function manifest(): Json {
 	try {
 		settingsKeys = keyPaths(JSON.parse(readFileSync(join(USERDATA, "settings.json"), "utf8"))).sort();
 	} catch (error) {
-		settingsKeys = `unreadable: ${error}`;
+		// A fixed category only: parser messages quote the input text.
+		settingsKeys = error instanceof SyntaxError ? "invalid-json" : "unreadable";
 	}
 	const commands = ["t3", "codex", "opencode", "claude", "gh", "muse", "bun", "quickchr", "centrs"];
 	return {
