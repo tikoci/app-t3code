@@ -5,6 +5,15 @@ RouterOS `/app` YAML. The image version is the upstream T3 Code version, so
 each entry names a date and the T3 version that shipped. Builds are
 identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
 
+## Unreleased — T3 Code 0.1.7
+
+- The pairing screen now says how to get a token on RouterOS: a "Running on
+  MikroTik RouterOS?" panel under the token field shows
+  `:put [/container/shell app-t3code cmd="t3-pairing-link" as-value]` with a
+  copy button. It's a small script the image adds to T3's web client; no
+  T3 code is changed. The container log prints the same command at start
+  (#18).
+
 ## 2026-11-08 — T3 Code 0.1.7
 
 - Workflow: pinned Roadmap issue, labels, the draft-PR review flow and this

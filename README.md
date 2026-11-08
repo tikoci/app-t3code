@@ -170,8 +170,19 @@ the hosted web/mobile T3 apps require it.
 
 ### Pairing with the web UI
 
-The browser needs a one-time token to connect to this container. Once the
-app is running, run this command in the **RouterOS terminal** to print both
+The browser needs a one-time token to connect to this container. The pairing
+screen shows how to get one: the image adds a short "Running on MikroTik
+RouterOS?" panel under T3's token field with this command, which prints a
+fresh token:
+
+```routeros
+:put [/container/shell app-t3code cmd="t3-pairing-link" as-value]
+```
+
+The container log has the same command at every start. If you renamed the
+app, use its container name (`/container/print`) in place of `app-t3code`.
+
+To get the browser URL as well, run this in the **RouterOS terminal** to print both
 the app's browser URL and a fresh token from `t3-pairing-link` inside the
 `app-t3code` container:
 
