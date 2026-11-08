@@ -57,8 +57,9 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   review-churn commits. The owner may ask for a final Copilot review on tricky
   or important PRs.
 - **`skip-review` label**: when the agent review is enough (docs, easy to
-  revert), label the PR `skip-review` and CodeRabbit won't review it. It can
-  merge once the agent approves and CI is green. Small doc fixes that are easy
+  revert), label the PR `skip-review` and CodeRabbit won't review it
+  automatically (`@coderabbitai review` still works). It can merge once the
+  agent approves and CI is green. Small doc fixes that are easy
   to revert may go straight to `main`.
 
 ### Versions and CHANGELOG
