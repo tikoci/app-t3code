@@ -135,16 +135,12 @@ RUN set -eu; \
 
 # RouterOS pairing help (#18): one <script> tag in the upstream client's
 # index.html loads client/routeros-pairing.js, which adds the RouterOS token
-# command under T3's pairing form. No other upstream file changes. The build
-# fails, rather than shipping a pairing screen without the help, when the
-# index.html shape or the form's #pairing-token id changes upstream.
-COPY client/routeros-pairing.js /opt/t3code/client/routeros-pairing.js
-RUN set -eu; \
-    index=/opt/t3code/client/index.html; \
-    [ "$(grep -c '</head>' "$index")" = 1 ] || { echo "pairing help: expected one </head> in $index"; exit 1; }; \
-    grep -lq 'pairing-token' /opt/t3code/client/assets/*.js || { echo "pairing help: #pairing-token not in the T3 web bundle; recheck PairingRouteSurface.tsx"; exit 1; }; \
-    sed -i 's#</head>#  <script defer src="/routeros-pairing.js"></script>\n  </head>#' "$index"; \
-    [ "$(grep -c 'src="/routeros-pairing.js"' "$index")" = 1 ]
+# command under T3's pairing form. No other upstream file changes. The script
+# fails the build, rather than shipping a pairing screen without the help,
+# when the index.html shape or the form's #pairing-token id changes upstream.
+COPY client/routeros-pairing.js scripts/install-pairing-help.sh /tmp/pairing-help/
+RUN sh /tmp/pairing-help/install-pairing-help.sh /opt/t3code/client /tmp/pairing-help/routeros-pairing.js && \
+    rm -rf /tmp/pairing-help
 
 # GitHub CLI: T3's GitHub source-control provider and agents' pull-request
 # work need `gh`. Release tarball checked against the release's checksums

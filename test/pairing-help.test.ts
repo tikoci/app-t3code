@@ -5,7 +5,8 @@
 // client (docs/research/2026-11-08/pairing-help.md); this test keeps the
 // pieces from drifting apart.
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const ROOT = join(import.meta.dir, "..");
@@ -34,11 +35,72 @@ describe("RouterOS pairing help", () => {
 		expect(() => new Function(helper)).not.toThrow();
 	});
 
-	test("the Dockerfile copies the helper and guards the index.html insertion", () => {
+	test("the Dockerfile installs the helper through the guarded script", () => {
 		const dockerfile = read("Dockerfile");
-		expect(dockerfile).toContain("COPY client/routeros-pairing.js /opt/t3code/client/routeros-pairing.js");
-		expect(dockerfile).toContain(`grep -c '</head>'`);
-		expect(dockerfile).toContain("grep -lq 'pairing-token' /opt/t3code/client/assets/*.js");
-		expect(dockerfile).toContain(`grep -c 'src="/routeros-pairing.js"'`);
+		expect(dockerfile).toContain("COPY client/routeros-pairing.js scripts/install-pairing-help.sh /tmp/pairing-help/");
+		expect(dockerfile).toContain(
+			"sh /tmp/pairing-help/install-pairing-help.sh /opt/t3code/client /tmp/pairing-help/routeros-pairing.js",
+		);
+	});
+});
+
+// The install script runs against fixture clients shaped like the release's.
+describe("install-pairing-help.sh", () => {
+	const TAG = '<script defer src="/routeros-pairing.js"></script>';
+	const INDEX = '<!doctype html>\n<html>\n  <head>\n    <title>T3 Code</title>\n  </head>\n  <body><div id="root"></div></body>\n</html>\n';
+	const BUNDLE = 'const x={id:"pairing-token"};';
+
+	function fixture(index: string, bundle: string | null) {
+		const client = mkdtempSync(join(tmpdir(), "pairing-help-"));
+		writeFileSync(join(client, "index.html"), index);
+		if (bundle !== null) {
+			mkdirSync(join(client, "assets"));
+			writeFileSync(join(client, "assets", "a-1.js"), "const unrelated=1;");
+			writeFileSync(join(client, "assets", "main-2.js"), bundle);
+		}
+		return client;
+	}
+
+	function install(client: string) {
+		const run = Bun.spawnSync(
+			["sh", join(ROOT, "scripts/install-pairing-help.sh"), client, join(ROOT, "client/routeros-pairing.js")],
+			{ stderr: "pipe" },
+		);
+		return { exitCode: run.exitCode, stderr: run.stderr.toString() };
+	}
+
+	test("inserts the tag once before </head> and copies the helper", () => {
+		const client = fixture(INDEX, BUNDLE);
+		expect(install(client).exitCode).toBe(0);
+		const index = readFileSync(join(client, "index.html"), "utf8");
+		expect(index.split(TAG).length - 1).toBe(1);
+		expect(index).toContain(`  ${TAG}\n  </head>`);
+		expect(readFileSync(join(client, "routeros-pairing.js"), "utf8")).toBe(helper);
+	});
+
+	test("fails on two </head> on one line (counts occurrences, not lines)", () => {
+		const client = fixture("<html><head></head></head><body></body></html>", BUNDLE);
+		const run = install(client);
+		expect(run.exitCode).not.toBe(0);
+		expect(run.stderr).toContain("exactly one </head>");
+		expect(existsSync(join(client, "routeros-pairing.js"))).toBe(false);
+	});
+
+	test("fails when the bundle no longer has #pairing-token", () => {
+		const run = install(fixture(INDEX, "const renamed=1;"));
+		expect(run.exitCode).not.toBe(0);
+		expect(run.stderr).toContain("#pairing-token");
+	});
+
+	test("fails when the client has no assets", () => {
+		expect(install(fixture(INDEX, null)).exitCode).not.toBe(0);
+	});
+
+	test("refuses an index that already loads the helper", () => {
+		const client = fixture(INDEX, BUNDLE);
+		expect(install(client).exitCode).toBe(0);
+		const run = install(client);
+		expect(run.exitCode).not.toBe(0);
+		expect(run.stderr).toContain("already loads");
 	});
 });

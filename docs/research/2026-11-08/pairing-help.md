@@ -27,8 +27,9 @@ The question in #18 was whether `organization`/`supportUrl` from
 - The policy summary is `ServerConfig.managedPolicy`
   (`packages/contracts/src/server.ts`), read in the web app through
   `useServerConfigs()` (`apps/web/src/state/managedPolicy.ts`). Server config
-  arrives only after authentication. Every use is in Settings, the composer and
-  update controls.
+  arrives only after authentication. Its consumers are all post-auth: Settings,
+  the composer, update controls, and the organization name in the
+  `WelcomeWizard` telemetry notice (pointed out in review).
 
 So a policy file would add `organization`/`supportUrl` text in Settings after
 pairing, and nothing before. It also brings the risks noted on #18 (a
@@ -40,9 +41,9 @@ devices). **Not used.**
 | Piece | Where | What it does |
 | --- | --- | --- |
 | Helper | `client/routeros-pairing.js` → `/opt/t3code/client/` | Watches the DOM (`MutationObserver`, batched per animation frame). When `#pairing-token` is on screen, adds its own `<section>` after the token form; removes it when the input goes away. Text nodes only, never HTML. Copy button uses the Clipboard API on HTTPS and selects the text on plain HTTP (`use-https=no`). |
-| Wiring | `Dockerfile`, right after the release archive is extracted | `COPY` plus one `sed` before `</head>`. The build **fails** if `index.html` doesn't have exactly one `</head>`, if no bundle asset contains `pairing-token`, or if the tag isn't inserted exactly once. A T3 bump that renames the input breaks the build instead of silently dropping the help. |
+| Wiring | `scripts/install-pairing-help.sh`, run by the `Dockerfile` right after the release archive is extracted | Copies the helper and inserts the tag before `</head>` with one `sed`. The build **fails** if `index.html` doesn't have exactly one `</head>` (counted as occurrences, not lines), already loads the helper, if no bundle asset contains `pairing-token`, or if the tag isn't inserted exactly once. A T3 bump that renames the input breaks the build instead of silently dropping the help. |
 | Log line | `docker-entrypoint.sh` | Prints the same command at every start, before `exec t3 serve`. |
-| Contract test | `test/pairing-help.test.ts` (in `bun run test`) | Same command in the helper, README and entrypoint; Dockerfile guards present; helper parses; no HTML sinks. |
+| Contract test | `test/pairing-help.test.ts` (in `bun run test`) | Same command in the helper, README and entrypoint; helper parses; no HTML sinks; the install script run against fixture clients (good, two `</head>` on one line, renamed anchor, no assets, already installed). |
 
 The command on screen is the short form, since the browser is already at the
 app's URL:
@@ -56,10 +57,12 @@ getting the URL too. The panel names `app-t3code` and tells a user with a
 renamed app to look it up with `/container/print`: the browser can't learn the
 RouterOS object names.
 
-Why the panel goes *after* the form, inside T3's card: React never touches a
-node it didn't create, so a foreign sibling is left alone; when React
-unmounts the card the panel goes with it, and the observer removes it on any
-other path. The 2026-11-06 research considered and rejected compiled-JS string
+Why the panel goes *after* the form, inside T3's card: React's updates to
+the form and its siblings use its own nodes as references, so a foreign
+sibling was left alone in testing (shown, kept through a rejected token, gone
+after pairing). When React removes or replaces an ancestor, the panel goes
+with it, and the observer removes it whenever `#pairing-token` is gone or
+re-adds it next to a new form. The 2026-11-06 research considered and rejected compiled-JS string
 patches (fragile) and a TSX rebuild (needs upstream's Node 26 + pnpm toolchain
 and ties the web build to `T3CODE_VER`). The helper is ~120 lines and touches
 one upstream file.
@@ -124,8 +127,9 @@ Pairing URL: http://172.17.0.2:3773/pair#token=<same token>
 App link: t3code://pair?pairingUrl=…
 ```
 
-The address is the container's own IP, which a router admin's browser can't
-reach through `/app`'s dst-nat. The token is live until used or expired.
+The address is the container's own IP. `/app` publishes the app through
+dst-nat on the router's address, so the container IP may not be reachable from
+the admin's LAN, depending on routing and firewall. The token is live until used or expired.
 If the `/app` container's output reaches RouterOS `/log`, any RouterOS user
 who can read the log can read that token while it's valid. That's a reason
 **not** to point users at the log for a token, and our log line names the

@@ -215,8 +215,8 @@ if you need a fresh one.
 > [!WARNING]
 > At every start, T3 Code itself prints a one-time pairing token and a pairing
 > URL to the container's output, next to a QR code. The URL uses the
-> container's internal address, so a browser on your LAN can't use it, but
-> the token is valid for about five minutes. Treat the container's output as
+> container's internal address, which may not be reachable from your LAN (use
+> the app URL instead), but the token is valid for about five minutes. Treat the container's output as
 > sensitive. If container logging sends it to RouterOS `/log`, anyone who can
 > read the log can pair a browser during that window. Get tokens with the
 > command above, not from the log. Whether `/app` forwards this output to
