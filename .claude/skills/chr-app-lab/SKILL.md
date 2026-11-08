@@ -120,19 +120,26 @@ centrs execute --quickchr <n> --yes '/app/set [find where name="t3code"] disable
 
 To restore: shut down, copy the clones back over the machine's disks, and
 start. That restores the whole router, which is the point. It also undoes
-anything else done since the backup. First clone the current disks the same
-way, so the restore can be undone too:
+anything else done since the backup. Save the current state first, the same
+way, so the restore can be undone too. `$B` is the backup to restore:
 
 ```sh
 quickchr shutdown <n> --timeout 150
-cp -c "$B"/boot.qcow2 "$B"/disk*.qcow2 "$M"/
+P=~/.local/share/quickchr/backups/<n>-$(date +%Y%m%d-%H%M%S)-pre-restore; mkdir -p -m 700 "$P"
+cp -c "$M"/machine.json "$M"/boot.qcow2 "$M"/disk*.qcow2 "$P"/   # current → safety copy
+cp -c "$B"/boot.qcow2 "$B"/disk*.qcow2 "$M"/                     # backup → machine
 quickchr start <n>
 centrs execute --quickchr <n> --yes '/app/set [find where name="t3code"] disabled=no'
 ```
 
-Tested 2026-11-08: the restored home's manifest matched the control, and
-`/app/update` from it worked again
-(`docs/research/2026-11-08/chr-persistence-closeout.md`).
+Tested 2026-11-08 with the disks only: the restored home's manifest
+matched the control, and `/app/update` from it worked again
+(`docs/research/2026-11-08/chr-persistence-closeout.md`). The `machine.json`
+in the backup is quickchr's settings for the VM. Between backup and restore
+on that run, only runtime fields differed (`status`, `pid`,
+`lastStartedAt`). If `quickchr set` changed the machine after the backup
+(packages, license, disks or ports), copy `"$B"/machine.json` back too,
+while the guest is shut down. That variant is untested.
 
 ## 6. Commands inside the container
 
@@ -150,12 +157,18 @@ centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="t3code-too
   container root, so `--force`, download and remove fail there; use a new
   name each time (tikoci/centrs#636). Files out: `cat` them through
   `/container/shell`.
-- Long commands (Bun under TCG, for example, which can take minutes) come
-  back from RouterOS as `action timed out … (13)` while the process keeps
-  going. Start them detached and poll for a done-file:
+- **About 60 s at most per command.** RouterOS runs the command to the end,
+  but if it took longer than about 60 s, the reply is `action timed out …
+  (13)` and the output is lost. That's a native-API `!trap`; over REST the
+  session closes. The process isn't killed. This is RouterOS's limit on
+  `/execute`, so a plain `:delay 65s` gets it too, and centrs's `--timeout`
+  doesn't change it. Measured on 7.25 x86: `sleep 59` returned and
+  `sleep 61` didn't. Write long output to a file, or start the command
+  detached and poll for a done-file:
   `setsid nohup sh -c "<cmd> > /tmp/out; echo \$? > /tmp/done" </dev/null
   >/dev/null 2>&1 &` in an uploaded script, then
-  `test -f /tmp/done && cat /tmp/done`.
+  `test -f /tmp/done && cat /tmp/done`. A REST call fails client-side after
+  centrs's default 10 s, and its `--timeout` caps at 60 s.
 - `/tmp` is on the container root, so `/app/update` replaces it. Nothing
   written there touches `/data`.
 

@@ -70,7 +70,8 @@ noise already known from the 0.1.7 run:
 | Item | x86 | arm64 |
 |---|---|---|
 | Environment ID | same | same |
-| Projects, threads, messages and all other T3 DB tables | identical row hashes | identical row hashes |
+| T3 DB row hashes (`HASHED_TABLES`, see below) | identical | identical |
+| Row counts of every other T3 DB table | identical | identical |
 | Settings, keybindings, secrets | identical | identical |
 | `gh` `hosts.yml`, `gh auth status` | unchanged, exit 0 | unchanged, exit 0 |
 | `gh api user` after the update | `Amm0Bot` | `Amm0Bot` |
@@ -78,6 +79,17 @@ noise already known from the 0.1.7 run:
 | Worktree: registration, branch, tracked diff, untracked contents | identical | identical |
 | Sentinel `sha256sum`, read directly after the update | matches | matches |
 | Tool groups and payload IDs | `ready`, unchanged | `ready`, unchanged |
+
+Row hashes cover the manifest's `HASHED_TABLES`:
+- projects
+- the v2 thread, message, run, turn-item and node projections
+- the v2 and legacy event logs
+- auth sessions
+- scheduled tasks
+- peer environment links
+
+The other tables are compared by row count only, along with the migration
+IDs.
 
 The **restore** reproduced the control state exactly, apart from the same
 restart noise, and the pairing-link count matched as well. The second
@@ -95,10 +107,20 @@ update path works end to end.
   By 16:04, about 13 minutes later, it was back to 4.6 GB and 25 directories.
   On arm64 it was 4.6 GB by the first post check, about 7 minutes in. Budget
   room for a second image during an update and for a while after it.
-- **Long `/container/shell` commands hit a RouterOS timeout.** Under TCG,
-  the manifest run returned `action timed out … (13)` from RouterOS while
-  Bun kept going and finished. For long work, start it detached (`setsid
-  nohup`) and poll for a done-file. This is now in the skill.
+- **RouterOS caps an API command's reply at about 60 s.** Under TCG, the
+  manifest run (about 2 minutes of Bun) came back from RouterOS as
+  `action timed out … (13)`, but its output file was complete. Measured
+  afterwards on x86 with `sleep N`:
+  - The command always runs to the end, and the error arrives when it
+    exits: `sleep 130` failed after 131 s. Only the reply is lost.
+  - The limit is between 59 s (returns) and 61 s (traps).
+  - Over native API it's a `!trap`; over REST the session closes at the
+    same point.
+  - A plain `:delay 65s` traps too, so it's RouterOS `/execute`, not
+    `/container/shell` and not centrs. centrs's `--timeout` doesn't move it.
+
+  For long work, redirect output to a file or start it detached and poll.
+  Both are in the skill.
 - After the restore, the re-pull took 488 s against 160 s for the first
   update, because GC had already dropped the new layers. It was a full
   download.

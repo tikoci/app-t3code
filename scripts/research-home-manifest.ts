@@ -14,7 +14,7 @@
  */
 import { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
-import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, readlinkSync } from "node:fs";
 import { join } from "node:path";
 
 const USERDATA = "/data/.t3/userdata";
@@ -76,6 +76,14 @@ function sha256(data: string | Uint8Array): string {
 
 function fileSha(path: string): string | null {
 	return existsSync(path) && lstatSync(path).isFile() ? sha256(readFileSync(path)) : null;
+}
+
+/** An untracked entry by type: a file's content hash, a symlink's target. */
+function entryId(path: string): string {
+	const s = lstatSync(path);
+	if (s.isSymbolicLink()) return `link:${readlinkSync(path)}`;
+	if (s.isFile()) return `file:${sha256(readFileSync(path))}`;
+	return `other:${s.mode.toString(8)}`;
 }
 
 function meta(path: string): Json {
@@ -176,11 +184,11 @@ function repos(): Json {
 					statusSha: sha256(porcelain),
 					diffSha: sha256(git(root, ["diff", "--no-ext-diff", "--no-textconv", "HEAD"])),
 					untrackedSha: sha256(
-						git(root, ["ls-files", "--others", "--exclude-standard"])
-							.split("\n")
+						git(root, ["ls-files", "-z", "--others", "--exclude-standard"])
+							.split("\0")
 							.filter(Boolean)
-							.map((f) => `${f}\0${fileSha(join(root, f))}`)
-							.join("\n"),
+							.map((f) => `${f}\0${entryId(join(root, f))}`)
+							.join("\0"),
 					),
 					worktrees: git(root, ["worktree", "list", "--porcelain"]),
 					stashSha: sha256(git(root, ["stash", "list", "--format=%H"])),
