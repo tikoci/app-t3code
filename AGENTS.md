@@ -49,6 +49,12 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 - **Sister projects:** when centrs, quickchr or T3 behaves badly, file the
   bug there (or hand it to an agent in that project) even if you work around
   it here, and link it from the issue.
+- **Tooling & skills feedback** (#24, pinned): anything smaller than a
+  reproduced bug goes there, one comment per problem. That covers a skill
+  that was missing or not loaded, a missing cross-ref, a confusing error, a
+  workaround you needed, or a doc that disagreed with behavior. The issue body
+  has the comment shape. Bugs filed in sister repos get a one-line link there
+  too.
 
 ### Branches, PRs, reviews
 
@@ -95,7 +101,12 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   but CI accepts any `T3CODE_VER` input). YAML references the `:0.1`
   stability tag; releases also push `:0`, full version, and `:latest`.
 - Skills that govern this repo: `routeros-app-yaml`, `routeros-container`,
-  `routeros-centrs`, `routeros-quickchr-cli`, `tikoci-crossref`.
+  `routeros-tikoci-centrs`, `routeros-tikoci-quickchr-cli`, `tikoci-crossref`.
+  The repo skill `.claude/skills/chr-app-lab/SKILL.md` is the hands-on recipe
+  for a quickchr CHR: preparing it for `/app`, install and `/app/update`, an
+  offline `/data` backup, commands inside the container, and the
+  before/after content manifest (`scripts/research-home-manifest.ts`). Agents
+  that don't load Claude skills can read it as a file.
 
 ## Gotchas
 
