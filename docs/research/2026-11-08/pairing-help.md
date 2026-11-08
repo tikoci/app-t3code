@@ -38,9 +38,13 @@ devices). **Not used.**
 
 ## 2. What ships
 
+Follow-up to #27 (tracked on #30): the Copy/Selected button was removed
+because plain HTTP only selected the command without copying it. The command
+remains selectable for manual copying; no clipboard JavaScript is needed.
+
 | Piece | Where | What it does |
 | --- | --- | --- |
-| Helper | `client/routeros-pairing.js` → `/opt/t3code/client/` | Watches the DOM (`MutationObserver`, batched per animation frame). When `#pairing-token` is on screen, adds its own `<section>` after the token form; removes it when the input goes away. Text nodes only, never HTML. Copy button uses the Clipboard API on HTTPS and selects the text on plain HTTP (`use-https=no`). |
+| Helper | `client/routeros-pairing.js` → `/opt/t3code/client/` | Watches the DOM (`MutationObserver`, batched per animation frame). When `#pairing-token` is on screen, adds its own `<section>` after the token form; removes it when the input goes away. Text nodes only, never HTML. The command is selectable text with no copy button. |
 | Wiring | `scripts/install-pairing-help.sh`, run by the `Dockerfile` right after the release archive is extracted | Copies the helper and inserts the tag before `</head>` (awk + `mv`, portable to macOS, where the tests also run it). The build **fails** if `index.html` doesn't have exactly one `</head>` (counted as occurrences, not lines), already loads the helper, if no bundle asset has the input's `` id:`pairing-token` `` prop (the unrelated `/api/auth/pairing-token` path doesn't count), or if the tag isn't inserted exactly once. A T3 bump that renames the input breaks the build instead of silently dropping the help. |
 | Log line | `docker-entrypoint.sh` | Prints the same command at every start, before `exec t3 serve`. |
 | Contract test | `test/pairing-help.test.ts` (in `bun run test`) | Same command in the helper, README and entrypoint; helper parses; no HTML sinks; the install script run against fixture clients (good, two `</head>` on one line, renamed anchor, no assets, already installed). |

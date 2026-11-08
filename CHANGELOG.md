@@ -7,6 +7,9 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
 
 ## Unreleased — T3 Code 0.1.7
 
+- Removed the pairing hint's Copy/Selected button, which only selected text
+  on plain HTTP. The RouterOS command stays visible and selectable for manual
+  copying (#30, follow-up to #18).
 - RouterOS now stops T3 gracefully. It used to SIGKILL the container on
   every stop, `/app/update` and `disabled=yes`, because PID 1 (`tini`) had
   no SIGTERM handler, and RouterOS checks for one. PID 1 is now a small
@@ -17,9 +20,9 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
 - The image no longer includes `tini`.
 - The pairing screen now says how to get a token on RouterOS: a "Running on
   MikroTik RouterOS?" panel under the token field shows
-  `:put [/container/shell app-t3code cmd="t3-pairing-link" as-value]` with a
-  copy button. It's a small script the image adds to T3's web client; no
-  T3 code is changed. The container log prints the same command at start
+  `:put [/container/shell app-t3code cmd="t3-pairing-link" as-value]`. It's a
+  small script the image adds to T3's web client; no T3 code is changed.
+  The container log prints the same command at start
   (#18).
 
 ## 2026-11-08 — T3 Code 0.1.7

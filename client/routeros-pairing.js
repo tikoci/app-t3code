@@ -18,13 +18,11 @@
 #${PANEL_ID}{margin-top:24px;padding:12px;border:1px solid color-mix(in srgb,currentColor 15%,transparent);border-radius:8px;font-size:13px;line-height:20px}
 #${PANEL_ID} h2{margin:0 0 4px;font-size:14px;font-weight:600}
 #${PANEL_ID} p{margin:4px 0;opacity:.8}
-#${PANEL_ID} .rph-cmd{display:flex;align-items:center;gap:8px;margin:8px 0;padding:4px 4px 4px 10px;border:1px solid color-mix(in srgb,currentColor 15%,transparent);border-radius:6px}
+#${PANEL_ID} .rph-cmd{margin:8px 0;padding:8px 10px;border:1px solid color-mix(in srgb,currentColor 15%,transparent);border-radius:6px}
 #${PANEL_ID} code{font-family:ui-monospace,SF Mono,Menlo,Consolas,monospace;font-size:12px}
-#${PANEL_ID} .rph-cmd code{flex:1;min-width:0;overflow-wrap:break-word;user-select:all}
+#${PANEL_ID} .rph-cmd code{overflow-wrap:anywhere;user-select:all}
 #${PANEL_ID} p.rph-note{margin-top:8px;font-size:11px;line-height:16px;opacity:.6}
-#${PANEL_ID} p.rph-note code{font-size:11px}
-#${PANEL_ID} button{flex:none;height:26px;padding:0 10px;border:1px solid color-mix(in srgb,currentColor 20%,transparent);border-radius:6px;background:transparent;color:inherit;font:inherit;font-size:12px;cursor:pointer}
-#${PANEL_ID} button:hover{background:color-mix(in srgb,currentColor 8%,transparent)}`;
+#${PANEL_ID} p.rph-note code{font-size:11px}`;
 
 	function el(tag, text) {
 		const node = document.createElement(tag);
@@ -47,28 +45,6 @@
 		return node;
 	}
 
-	function copy(button) {
-		const done = (label) => {
-			button.textContent = label;
-			setTimeout(() => {
-				button.textContent = "Copy";
-			}, 1500);
-		};
-		// Manual-copy fallback: select the command so Ctrl/Cmd+C copies it.
-		const select = () => {
-			const code = button.parentElement?.querySelector("code");
-			if (code) window.getSelection()?.selectAllChildren(code);
-			done("Selected");
-		};
-		// navigator.clipboard needs a secure context, so plain-HTTP installs
-		// (use-https=no) select instead; so does a denied clipboard write.
-		if (navigator.clipboard && window.isSecureContext) {
-			navigator.clipboard.writeText(COMMAND).then(() => done("Copied"), select);
-			return;
-		}
-		select();
-	}
-
 	function buildPanel() {
 		const panel = el("section");
 		panel.id = PANEL_ID;
@@ -81,10 +57,7 @@
 		);
 		const row = el("div");
 		row.className = "rph-cmd";
-		const button = el("button", "Copy");
-		button.type = "button";
-		button.addEventListener("click", () => copy(button));
-		row.append(el("code", COMMAND), button);
+		row.append(el("code", COMMAND));
 		panel.append(
 			row,
 			para(
