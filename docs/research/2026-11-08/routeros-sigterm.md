@@ -42,7 +42,7 @@ which was tini's other job:
   pattern the chr-app-lab skill uses) re-parents to PID 1 too, and was
   reaped.
 
-Two bash details the init handles (found in review, checked under the image's
+Three bash details the init handles (found in review, checked under the image's
 bash 5.2):
 
 - Without job control, bash starts a background job with SIGINT and SIGQUIT
