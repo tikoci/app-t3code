@@ -26,6 +26,7 @@ quickchr add --name <n> --arch arm64 --version 7.25.1 --cpu 2 --mem 2048 \
   --device-mode-enable container
 quickchr start <n>
 quickchr set <n> --license --level p-unlimited
+centrs execute --quickchr <n> --yes '/system/identity/set name=<n>'
 ```
 
 - `user` first: RouterOS DHCPs only ether1, and the host forwards ride on it.
@@ -38,6 +39,9 @@ quickchr set <n> --license --level p-unlimited
   `--level unlimited` is rejected by RouterOS; use `p-unlimited`
   (tikoci/quickchr#261). On a free license, the 1 Mbps cap makes the
   roughly 1 GB pull painful.
+- Every quickchr CHR is `CHR` until you set the identity. T3 takes its
+  environment name from the container hostname, which comes from that
+  identity, so two CHRs both show up as "CHR" in T3, WinBox and MNDP.
 - arm64 on an x86_64 host runs under TCG, so size waits from minutes, not
   seconds.
 
@@ -99,6 +103,12 @@ finished, poll `/container` until `image-id` changes and `running` is
 nothing is cached.
 
 ## 5. Offline /data backup
+
+The quickchr skills (`routeros-tikoci-quickchr-cli`,
+`routeros-tikoci-quickchr`) cover the general lifecycle, and
+`quickchr snapshot save|load` takes live snapshots. Its help says it works on
+the qcow2 *boot* disk. Whether it also covers the data disk that holds
+`/data` is untested (#24). The offline clone below covers everything.
 
 Stop the app first, so nothing writes during the copy. Note that RouterOS
 doesn't stop it gracefully: it SIGKILLs at once, because PID 1 (`tini`)
@@ -163,7 +173,9 @@ centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="t3code-too
   session closes. The process isn't killed. This is RouterOS's limit on
   `/execute`, so a plain `:delay 65s` gets it too, and centrs's `--timeout`
   doesn't change it. Measured on 7.25 x86: `sleep 59` returned and
-  `sleep 61` didn't. Write long output to a file, or start the command
+  `sleep 61` didn't. A pure `/container/shell` call (`centrs api --via
+  native-api -X POST container/shell -f number=app-t3code -f cmd=…`)
+  traps at a fixed ~60 s instead, while the command keeps running. Write long output to a file, or start the command
   detached and poll for a done-file:
   `setsid nohup sh -c "<cmd> > /tmp/out; echo \$? > /tmp/done" </dev/null
   >/dev/null 2>&1 &` in an uploaded script, then
