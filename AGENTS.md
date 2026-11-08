@@ -9,6 +9,10 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   repo stays at **zero errors and zero warnings**; CI fails on either. If
   you run into one, even one that was already there, you own fixing it in your
   current PR (`bun run lint:fix` handles most).
+- `make lint-shell` — hadolint on the `Dockerfile` and ShellCheck on the
+  shipped and test shell scripts (`.hadolint.yaml` lists the ignores and why).
+  Needs `hadolint` and `shellcheck` on PATH; CI installs pinned,
+  checksum-verified copies.
 - `bun run test` — offline `/app` YAML contract and the npm and deb tool-payload
   lifecycles (always runs; fake npm, fake dpkg-deb and mirror).
   It needs a Linux host: the lock tests spawn util-linux `flock` and fail or
@@ -209,6 +213,15 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   the full file contents and verify decoding it reproduces the file exactly.
   URL-based loading is requested in https://github.com/tikoci/restraml/issues/123;
   once supported, prefer a link that loads the published YAML URL.
+- RouterOS sends a container's stop signal only if PID 1 has a handler for
+  it (`SigCgt` in `/proc/1/status`); otherwise it logs `signal 15
+  (Terminated) not caught, kill immediately` and SIGKILLs. tini blocks
+  signals instead of catching them, so it always got SIGKILL. PID 1 is
+  `bin/t3code-init` (bash: traps and forwards signals, reaps orphans, passes
+  the child's status through). Don't put tini, or any init that only
+  blocks and waits for signals, back in front of it. T3's normal signal exit
+  is 130, which RouterOS logs as `error: exited with status 130`. See
+  `docs/research/2026-11-08/routeros-sigterm.md` (#25).
 - `deviceMode: { enable: ["container"] }` must be set at first boot;
   guest-side `/system/device-mode/update container=yes` never completes.
 - `installPackage("container")` reboots the guest; poll, don't assume.

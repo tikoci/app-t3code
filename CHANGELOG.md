@@ -7,6 +7,14 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
 
 ## Unreleased — T3 Code 0.1.7
 
+- RouterOS now stops T3 gracefully. It used to SIGKILL the container on
+  every stop, `/app/update` and `disabled=yes`, because PID 1 (`tini`) had
+  no SIGTERM handler, and RouterOS checks for one. PID 1 is now a small
+  bash init, `t3code-init`, that catches TERM and passes it on. T3 finishes
+  its shutdown in about 5 s, well within RouterOS's 30 s `stop-time`. The
+  container log then shows `exited with status 130`, which is T3's normal
+  exit after a signal, not a failure (#25).
+- The image no longer includes `tini`.
 - The pairing screen now says how to get a token on RouterOS: a "Running on
   MikroTik RouterOS?" panel under the token field shows
   `:put [/container/shell app-t3code cmd="t3-pairing-link" as-value]` with a

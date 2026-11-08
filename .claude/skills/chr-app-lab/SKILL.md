@@ -110,10 +110,13 @@ The quickchr skills (`routeros-tikoci-quickchr-cli`,
 the qcow2 *boot* disk. Whether it also covers the data disk that holds
 `/data` is untested (#24). The offline clone below covers everything.
 
-Stop the app first, so nothing writes during the copy. Note that RouterOS
-doesn't stop it gracefully: it SIGKILLs at once, because PID 1 (`tini`)
-installs no SIGTERM handler (#25). SQLite's WAL is crash-safe, and the clone
-carries `statev2.sqlite` with its `-wal` and `-shm`. Then shut down the guest
+Stop the app first, so nothing writes during the copy. Images from #25 on
+stop gracefully: PID 1 (`t3code-init`) catches TERM and forwards it, and T3
+exits in about 5 s (RouterOS logs `exited with status 130`, T3's normal
+signal exit). Older images (PID 1 `tini`) are SIGKILLed at once
+(`signal 15 (Terminated) not caught, kill immediately`). Either way the clone
+is safe: SQLite's WAL is crash-safe, and the clone carries `statev2.sqlite`
+with its `-wal` and `-shm`. Then shut down the guest
 and clone its disks on the host (on APFS, `cp -c` takes no time or space):
 
 ```sh

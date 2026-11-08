@@ -276,8 +276,17 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			expect(await run("gh", "auth", "token", "--hostname", "github.com")).toBe("gho_synthetic_persistence_fixture");
 			const identity = await run("cat", "/data/.t3/userdata/environment-id");
 			expect(identity.length).toBeGreaterThan(0);
+			// RouterOS SIGKILLs a container at once unless PID 1 has a TERM
+			// handler: SigCgt bit 14 (signal 15) in /proc/1/status (#25).
+			const sigCgt = (await run("grep", "SigCgt", "/proc/1/status")).split(/\s+/)[1] ?? "0";
+			expect(BigInt(`0x${sigCgt}`) & (1n << 14n)).toBe(1n << 14n);
 			// Stop before editing settings to avoid racing the live server's writer.
-			await docker("stop", name);
+			// T3 stops on the forwarded TERM (about 5 s on a CHR) within RouterOS's
+			// stop-time of 30 s, and exits 130, its status after a signal-driven
+			// shutdown (anchor: a T3 release that changes it updates this). A
+			// SIGKILL after the timeout would be 137.
+			await docker("stop", "--time", "30", name);
+			expect(await docker("inspect", "--format", "{{.State.ExitCode}}", name)).toBe("130");
 			await docker("rm", name);
 			await docker(
 				"run",

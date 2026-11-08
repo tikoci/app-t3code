@@ -28,6 +28,24 @@ jobs:
           bun-version: "1.4.4"
       - run: bun install
       - run: bun run check
+      - name: Install pinned hadolint and ShellCheck
+        env:
+          HADOLINT_VER: "2.15.1"
+          HADOLINT_SHA256: c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
+          SHELLCHECK_VER: "0.11.0"
+          SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          cd "$RUNNER_TEMP"
+          curl -fsSL --retry 3 -o bin/hadolint "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VER}/hadolint-linux-x86_64"
+          echo "${HADOLINT_SHA256}  bin/hadolint" | sha256sum -c -
+          chmod +x bin/hadolint
+          sc="shellcheck-v${SHELLCHECK_VER}.linux.x86_64.tar.xz"
+          curl -fsSL --retry 3 -O "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VER}/${sc}"
+          echo "${SHELLCHECK_SHA256}  ${sc}" | sha256sum -c -
+          tar -xJf "$sc" --strip-components=1 -C bin "shellcheck-v${SHELLCHECK_VER}/shellcheck"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - run: make lint-shell
       - run: bun run test
 
   build:
