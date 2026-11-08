@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# Same staged policy as tikoci/centrs and tikoci/quickchr, to conserve the
+# OSS plan's rate limit:
+#   - review only when a PR is marked ready for review (skip drafts)
+#   - one review per ready PR; no per-push incremental re-reviews
+#   - re-review on demand with an `@coderabbitai review` PR comment
+#   - a `skip-review` label skips automatic review (an agent review covers it)
+# CodeRabbit applies the base branch's copy of this file, so a change here
+# takes effect only for PRs opened after it merges to `main`.
+language: en-US
+tone_instructions: >
+  Terse and actionable. No poems, jokes, or decorative filler. State the
+  finding, the file/line, and the fix. Skip praise and preamble.
+reviews:
+  profile: assertive
+  review_details: true
+  enable_prompt_for_ai_agents: true
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: false
+    labels:
+      - "!skip-review"
+    ignore_usernames:
+      - dependabot[bot]
+  poem: false
+  in_progress_fortune: false

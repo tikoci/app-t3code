@@ -19,7 +19,8 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
 ## Workflow
 
-- **The menu is the pinned Roadmap issue** (`gh issue list --label roadmap`).
+- **The menu is the Roadmap issue**, pinned at the top of the Issues tab
+  (`gh issue list --label roadmap`).
   It groups every open theme into Now / Next / Later, with a dependency graph.
   Topics live there as one line until they are next or need cross-repo
   work; only then do they get their own issue. When you open, close or
@@ -46,11 +47,19 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
 - Branch from `main`, one PR per slice, squash merge. Merged branches are
   deleted automatically.
-- Substantive PRs open as **draft**. Another agent in T3 Code reviews the draft
-  (ideally on another provider), then the owner reviews it, then it is marked
-  ready. Marking it ready starts CodeRabbit; the OSS plan is rate-limited, so
-  aim for one pass and don't push review-churn commits. The owner may ask for
-  a final Copilot review. Docs-only or trivial PRs skip the agent review.
+- Substantive PRs open as **draft**. Another agent in T3 Code reviews the draft,
+  then the owner reviews it, then it is marked ready.
+- **The reviewer is a different model from the author.** Claude-authored work
+  is reviewed by Codex on `gpt-6.1-sol`. Work that sol authored is reviewed by
+  Claude Opus. The owner may swap them depending on credits and rate limits.
+- Marking a PR ready starts CodeRabbit (`.coderabbit.yaml`: no drafts, one
+  pass, no incremental re-reviews). The OSS plan is rate-limited, so don't push
+  review-churn commits. The owner may ask for a final Copilot review on tricky
+  or important PRs.
+- **`skip-review` label**: when the agent review is enough (docs, easy to
+  revert), label the PR `skip-review` and CodeRabbit won't review it. It can
+  merge once the agent approves and CI is green. Small doc fixes that are easy
+  to revert may go straight to `main`.
 
 ### Versions and CHANGELOG
 

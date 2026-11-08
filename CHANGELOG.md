@@ -8,7 +8,8 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
 ## Unreleased
 
 - Workflow: pinned Roadmap issue, labels, the draft-PR review flow and this
-  changelog.
+  changelog. `.coderabbit.yaml` reviews ready PRs once and skips PRs labeled
+  `skip-review`.
 
 ## 2026-11-08 — T3 Code 0.1.6
 
