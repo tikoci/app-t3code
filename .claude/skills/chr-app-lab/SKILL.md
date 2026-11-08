@@ -91,6 +91,13 @@ centrs execute --quickchr <n> --yes '/app/update [find where name="t3code"]'
 `AGENTS.md`), never `yaml=`. Toggling `disabled=yes/no` is safe and restarts
 the container.
 
+The old image's layers stay on the app disk for several minutes after the
+new container starts (6.5 GB against 4.6 GB on x86), and then they're
+collected. Leave room for two images. To tell when the update has
+finished, poll `/container` until `image-id` changes and `running` is
+`"true"`. About 3 minutes on x86 and 6.5 on arm64 under TCG, longer when
+nothing is cached.
+
 ## 5. Offline /data backup
 
 Stop the app first, so nothing writes during the copy. Note that RouterOS
@@ -113,7 +120,26 @@ centrs execute --quickchr <n> --yes '/app/set [find where name="t3code"] disable
 
 To restore: shut down, copy the clones back over the machine's disks, and
 start. That restores the whole router, which is the point. It also undoes
-anything else done since the backup.
+anything else done since the backup. Save the current state first, the same
+way, so the restore can be undone too. `$B` is the backup to restore:
+
+```sh
+quickchr shutdown <n> --timeout 150
+P=~/.local/share/quickchr/backups/<n>-$(date +%Y%m%d-%H%M%S)-pre-restore; mkdir -p -m 700 "$P"
+cp -c "$M"/machine.json "$M"/boot.qcow2 "$M"/disk*.qcow2 "$P"/   # current → safety copy
+cp -c "$B"/boot.qcow2 "$B"/disk*.qcow2 "$M"/                     # backup → machine
+quickchr start <n>
+centrs execute --quickchr <n> --yes '/app/set [find where name="t3code"] disabled=no'
+```
+
+Tested 2026-11-08 with the disks only: the restored home's manifest
+matched the control, and `/app/update` from it worked again
+(`docs/research/2026-11-08/chr-persistence-closeout.md`). The `machine.json`
+in the backup is quickchr's settings for the VM. Between backup and restore
+on that run, only runtime fields differed (`status`, `pid`,
+`lastStartedAt`). If `quickchr set` changed the machine after the backup
+(packages, license, disks or ports), copy `"$B"/machine.json` back too,
+while the guest is shut down. That variant is untested.
 
 ## 6. Commands inside the container
 
@@ -131,10 +157,48 @@ centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="t3code-too
   container root, so `--force`, download and remove fail there; use a new
   name each time (tikoci/centrs#636). Files out: `cat` them through
   `/container/shell`.
+- **About 60 s at most per command.** RouterOS runs the command to the end,
+  but if it took longer than about 60 s, the reply is `action timed out …
+  (13)` and the output is lost. That's a native-API `!trap`; over REST the
+  session closes. The process isn't killed. This is RouterOS's limit on
+  `/execute`, so a plain `:delay 65s` gets it too, and centrs's `--timeout`
+  doesn't change it. Measured on 7.25 x86: `sleep 59` returned and
+  `sleep 61` didn't. Write long output to a file, or start the command
+  detached and poll for a done-file:
+  `setsid nohup sh -c "<cmd> > /tmp/out; echo \$? > /tmp/done" </dev/null
+  >/dev/null 2>&1 &` in an uploaded script, then
+  `test -f /tmp/done && cat /tmp/done`. A REST call fails client-side after
+  centrs's default 10 s, and its `--timeout` caps at 60 s.
 - `/tmp` is on the container root, so `/app/update` replaces it. Nothing
   written there touches `/data`.
 
-## 7. Content manifest (before and after)
+## 7. Log `gh` in without a TTY (device flow)
+
+`/container/shell` has no TTY, but `gh`'s device flow works anyway. It needs
+no token copied off the host. Start the flow detached and read the code back.
+Then give the owner the URL and code, and they approve it in a browser:
+
+```sh
+cat > ghlogin.sh <<'EOF'
+GH_BROWSER=true setsid nohup gh auth login --hostname github.com \
+  --git-protocol https --web -s repo,read:org,workflow \
+  </dev/null >/tmp/gh-login.log 2>&1 &
+sleep 20; cat /tmp/gh-login.log
+EOF
+centrs transfer --quickchr <n> upload ghlogin.sh pcie1/apps/t3code/t3code_root/tmp/ghlogin1.sh
+centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="sh /tmp/ghlogin1.sh"' --json | jq -r .data.ret
+```
+
+- Look for the line `First copy your one-time code: XXXX-XXXX`, then the
+  owner goes to <https://github.com/login/device>. Each code lasts about
+  15 minutes and works for one home only.
+- `setsid nohup` keeps `gh` polling after the shell returns. `GH_BROWSER=true`
+  turns the browser launch into a no-op. The clipboard warning is harmless.
+- The container has no keyring, so the token lands in
+  `/data/.config/gh/hosts.yml` (mode 600), on the `/data` volume.
+  `gh auth status` and `gh api user -q .login` confirm the login.
+
+## 8. Content manifest (before and after)
 
 `scripts/research-home-manifest.ts` prints a read-only, metadata-only JSON
 manifest of the home. It records:
@@ -142,7 +206,10 @@ manifest of the home. It records:
 - settings key paths
 - migration IDs, row counts and row hashes of the T3 DB (opened read-only)
 - the `t3code-tools` payload IDs
-- the presence of each provider and `gh` login, and git state of each repo
+- the presence of each provider and `gh` login
+- the git state of each repo under `/data/projects`, `/data/tikoci` and
+  `/data/.t3/{worktrees,scratch,projects}`: HEAD, status, the tracked
+  diff, untracked file contents, worktree list and stash
 
 Secret and login files appear only as metadata plus a hash for
 same/different. Run it in the container with the baked Bun:
@@ -153,6 +220,14 @@ centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="bun /tmp/m
 centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="cat /tmp/m-pre.json"' --json | jq -r .data.ret | tr -d '\r' > m-pre.json
 bun scripts/research-home-manifest.ts --compare m-pre.json m-post.json
 ```
+
+Under TCG, use the detached form from step 6. A run takes minutes.
+
+To test uncommitted work, plant fixtures before the backup. A checkout
+gets a staged edit, an unstaged edit, an untracked file and a stash. A
+worktree goes in T3's layout (`git worktree add -b t3/<name>
+/data/.t3/worktrees/<repo>/t3-<name>`) with an untracked file. Note each
+sentinel's `sha256sum` so you can check it directly afterwards, too.
 
 Take a **control** manifest after a plain restart, too. A start mints one
 startup pairing link and rewrites `~/.claude.json`, so those differences are
