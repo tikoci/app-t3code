@@ -46,15 +46,17 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 - **Closing an issue** takes a closeout comment that marks each acceptance item
   done, transferred (to an issue, by link) or dropped. Use `Closes #n` only
   in the PR that finishes it; slices use `Refs #n`.
-- **Sister projects:** when centrs, quickchr or T3 behaves badly, file the
-  bug there (or hand it to an agent in that project) even if you work around
-  it here, and link it from the issue.
-- **Tooling & skills feedback** (#24, pinned): anything smaller than a
-  reproduced bug goes there, one comment per problem. That covers a skill
-  that was missing or not loaded, a missing cross-ref, a confusing error, a
-  workaround you needed, or a doc that disagreed with behavior. The issue body
-  has the comment shape. Bugs filed in sister repos get a one-line link there
-  too.
+- **Sister projects:** a clear, reproduced bug in centrs, quickchr or T3 gets
+  filed there (or handed to an agent in that project) and linked from the
+  issue, even if you worked around it here.
+- **Tooling & skills feedback** (#24, pinned): the low-stakes way to *note* a
+  possible bug in another tikoci tool without switching tasks. When a tool call
+  fails or misses mid-task, work around it, leave one comment on #24 and get
+  back to the main work; triage happens later, here or in the tool's repo.
+  Those failures are still worth that later look. It also covers a skill that
+  was missing or not loaded, a missing cross-ref, a confusing error, or a doc
+  that disagreed with behavior. The issue body has the comment shape. Bugs
+  filed in sister repos get a one-line link there too.
 
 ### Branches, PRs, reviews
 

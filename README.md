@@ -170,8 +170,19 @@ the hosted web/mobile T3 apps require it.
 
 ### Pairing with the web UI
 
-The browser needs a one-time token to connect to this container. Once the
-app is running, run this command in the **RouterOS terminal** to print both
+The browser needs a one-time token to connect to this container. The pairing
+screen shows how to get one: the image adds a short "Running on MikroTik
+RouterOS?" panel under T3's token field with this command, which prints a
+fresh token:
+
+```routeros
+:put [/container/shell app-t3code cmd="t3-pairing-link" as-value]
+```
+
+The container log has the same command at every start. If you renamed the
+app, use its container name (`/container/print`) in place of `app-t3code`.
+
+To get the browser URL as well, run this in the **RouterOS terminal** to print both
 the app's browser URL and a fresh token from `t3-pairing-link` inside the
 `app-t3code` container:
 
@@ -200,6 +211,16 @@ if you need a fresh one.
 > `ui-url` reflects the app's `use-https` setting. With `use-https=yes`, it
 > reports the HTTPS URL (including the MikroTik hostname when using `/ip/cloud`).
 > With `use-https=no`, it reports an HTTP URL like the CHR example above.
+
+> [!WARNING]
+> At every start, T3 Code itself prints a one-time pairing token and a pairing
+> URL to the container's output, next to a QR code. The URL uses the
+> container's internal address, which may not be reachable from your LAN (use
+> the app URL instead), but the token is valid for about five minutes. Treat the container's output as
+> sensitive. If container logging sends it to RouterOS `/log`, anyone who can
+> read the log can pair a browser during that window. Get tokens with the
+> command above, not from the log. Whether `/app` forwards this output to
+> `/log` is not yet checked (#18).
 
 If `PUBLIC_URL` is set in the container, `t3-pairing-link` can print a full
 pairing URL instead of a raw token.

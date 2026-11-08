@@ -1,0 +1,189 @@
+{
+  "researchedAt": "2026-11-06",
+  "upstream": {
+    "repository": "pingdotgg/t3code",
+    "ref": "v0.1.6",
+    "commit": "2359643cffa6ba9ee84d6f2694b935de54a8013e"
+  },
+  "comparison": {
+    "ref": "v0.1.7",
+    "commit": "322f6544dfad0a3c8a0c8cbecf2c7f7874b14268",
+    "note": "Latest stable returned by GitHub releases/latest during research; not an instruction to upgrade.",
+    "files": [
+      {
+        "path": "apps/web/src/components/auth/PairingRouteSurface.tsx",
+        "blob": "8bedc8b2e711761ff52b7faafd3d8e09da54ab8f",
+        "sameAsBaseline": true
+      },
+      {
+        "path": "apps/server/src/config.ts",
+        "blob": "468cc89ad01e6ac1f7b2c83784962dbfcfbf4363",
+        "sameAsBaseline": true
+      },
+      {
+        "path": "apps/server/src/http.ts",
+        "blob": "d1f7ab740e241bb8094b5b0b467b77597732806a",
+        "sameAsBaseline": false
+      },
+      {
+        "path": "apps/server/src/provider/Drivers/ClaudeSkills.ts",
+        "blob": "2bcf9ca472f0ce27adb367f6b4c1809e1551fc2f",
+        "sameAsBaseline": false
+      },
+      {
+        "path": "scripts/build-cli-archive.ts",
+        "blob": "3c74b6714ddebf66e62fca620c16a52944c0e592",
+        "sameAsBaseline": true
+      }
+    ]
+  },
+  "local": {
+    "repositoryHead": "d8bf7208645faafcd1bf8fdda104e1dcc32a8bdc",
+    "note": "Working tree already contained unrelated implementation edits. Research adds only files under docs/research/2026-11-06.",
+    "image": "app-t3code:slice4",
+    "imageId": "sha256:746a51bded93aafb5db4f638412564989e1a583cf0814b77aa13595ceb51b914",
+    "platform": "linux/amd64"
+  },
+  "files": [
+    {
+      "path": "apps/server/src/provider/CodexProvider.ts",
+      "blob": "ed9e3d0cde6840cb404f3686192d12aba67950a2",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/provider/CodexProvider.ts"
+    },
+    {
+      "path": "apps/server/src/provider/Drivers/CodexDriver.ts",
+      "blob": "97ec4954ed840790429f990f90ff8d31c6867d97",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/provider/Drivers/CodexDriver.ts"
+    },
+    {
+      "path": "apps/server/src/provider/Drivers/CodexHomeLayout.ts",
+      "blob": "f6d2ba9d44cf5cb87de74314859b06af163889fb",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/provider/Drivers/CodexHomeLayout.ts"
+    },
+    {
+      "path": "apps/server/src/provider/Drivers/ClaudeSkills.ts",
+      "blob": "6aff76d250a76d5662efeecb164e81ef494b3018",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/provider/Drivers/ClaudeSkills.ts"
+    },
+    {
+      "path": "apps/server/src/provider/Drivers/ClaudeSkillDispatch.ts",
+      "blob": "6ce141eec733e242672669c6dbe9253101d1a919",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/provider/Drivers/ClaudeSkillDispatch.ts"
+    },
+    {
+      "path": "apps/server/src/provider/ClaudeProvider.ts",
+      "blob": "95f5c6709a4eaefadcef2ad12d92084e62fb4e99",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/provider/ClaudeProvider.ts"
+    },
+    {
+      "path": "apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.ts",
+      "blob": "a280bd8440a9abc6a99ef83b586c2efb6b3e6ca9",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.ts"
+    },
+    {
+      "path": "apps/server/src/orchestration-v2/Adapters/CodexAdapterV2.ts",
+      "blob": "821cf051c32353eaf3bc101e449da1a75bd19fba",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/orchestration-v2/Adapters/CodexAdapterV2.ts"
+    },
+    {
+      "path": "packages/provider-opencode/src/server/driver.ts",
+      "blob": "713bc3f05ad2795becbab27851f7b5f38483a769",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/packages/provider-opencode/src/server/driver.ts"
+    },
+    {
+      "path": "packages/provider-opencode/src/server/OpenCodeRuntime.ts",
+      "blob": "f18ab07bbe19f3172e90a5171389f52235d18aa2",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/packages/provider-opencode/src/server/OpenCodeRuntime.ts"
+    },
+    {
+      "path": "packages/provider-muse/src/server/driver.ts",
+      "blob": "390764c20bcd0a1d4900fad6e5952bf2b3f09ec5",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/packages/provider-muse/src/server/driver.ts"
+    },
+    {
+      "path": "packages/client-runtime/src/providerSkills.ts",
+      "blob": "63ded7a47dc5cbaefd1ffe023fd923d0966c000a",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/packages/client-runtime/src/providerSkills.ts"
+    },
+    {
+      "path": "docs/user/composer.md",
+      "blob": "db41f6cc013fe7a6d8cabea6a43121e865c48710",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/docs/user/composer.md"
+    },
+    {
+      "path": "docs/user/providers-claude.md",
+      "blob": "206d82ce323334cfb6bd04084e1ea67269dcb4be",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/docs/user/providers-claude.md"
+    },
+    {
+      "path": "apps/web/src/components/auth/PairingRouteSurface.tsx",
+      "blob": "8bedc8b2e711761ff52b7faafd3d8e09da54ab8f",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/web/src/components/auth/PairingRouteSurface.tsx"
+    },
+    {
+      "path": "apps/web/src/routes/pair.tsx",
+      "blob": "a71f44e3e2a720e96e2ba38223a2e1b7e4fa95e3",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/web/src/routes/pair.tsx"
+    },
+    {
+      "path": "apps/web/src/routes/__root.tsx",
+      "blob": "1207b5017100d7300d7a161e676531d145f45a75",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/web/src/routes/__root.tsx"
+    },
+    {
+      "path": "apps/server/src/cli/config.ts",
+      "blob": "f86fde0f597507eb822aa3f45ebe38892de2c1bc",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/cli/config.ts"
+    },
+    {
+      "path": "apps/server/src/config.ts",
+      "blob": "468cc89ad01e6ac1f7b2c83784962dbfcfbf4363",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/config.ts"
+    },
+    {
+      "path": "apps/server/src/http.ts",
+      "blob": "e792a233c6f062941c083adbc320ade07a79a1d1",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/src/http.ts"
+    },
+    {
+      "path": "packages/contracts/src/environmentHttp.ts",
+      "blob": "30c33deebd55cf491a20b9d89466d76368fe6453",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/packages/contracts/src/environmentHttp.ts"
+    },
+    {
+      "path": "apps/server/scripts/cli.ts",
+      "blob": "d111257779b368202d8ea4a5e0810299cd1d99cd",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/scripts/cli.ts"
+    },
+    {
+      "path": "scripts/build-cli-archive.ts",
+      "blob": "3c74b6714ddebf66e62fca620c16a52944c0e592",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/scripts/build-cli-archive.ts"
+    },
+    {
+      "path": "apps/server/vite.config.ts",
+      "blob": "cb77ab545c6bae3f23141261d595e0db32fb7ac0",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/server/vite.config.ts"
+    },
+    {
+      "path": "apps/web/vite.config.ts",
+      "blob": "da07814b29f6a1e9cecc9fe58eacef7999b77c32",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/apps/web/vite.config.ts"
+    },
+    {
+      "path": "package.json",
+      "blob": "c78b879301b9e92712d6b52abe9042d75ee49710",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/package.json"
+    },
+    {
+      "path": "LICENSE",
+      "blob": "55ee675bb1de9e580b69f3dd68684df2a4dffba7",
+      "url": "https://github.com/pingdotgg/t3code/blob/2359643cffa6ba9ee84d6f2694b935de54a8013e/LICENSE"
+    }
+  ],
+  "providerDocs": [
+    "https://learn.chatgpt.com/docs/build-skills",
+    "https://code.claude.com/docs/en/skills",
+    "https://opencode.ai/docs/skills/"
+  ]
+}

@@ -133,6 +133,15 @@ RUN set -eu; \
     rm -f "${archive}" SHA256SUMS; \
     ln -s /opt/t3code/t3 /usr/local/bin/t3
 
+# RouterOS pairing help (#18): one <script> tag in the upstream client's
+# index.html loads client/routeros-pairing.js, which adds the RouterOS token
+# command under T3's pairing form. No other upstream file changes. The script
+# fails the build, rather than shipping a pairing screen without the help,
+# when the index.html shape or the form's #pairing-token id changes upstream.
+COPY client/routeros-pairing.js scripts/install-pairing-help.sh /tmp/pairing-help/
+RUN sh /tmp/pairing-help/install-pairing-help.sh /opt/t3code/client /tmp/pairing-help/routeros-pairing.js && \
+    rm -rf /tmp/pairing-help
+
 # GitHub CLI: T3's GitHub source-control provider and agents' pull-request
 # work need `gh`. Release tarball checked against the release's checksums
 # file. Its login (`gh auth login`, or GH_TOKEN) lives in /data/.config/gh.

@@ -9,7 +9,8 @@
 		"includes": [
 			"test/**/*.ts",
 			"scripts/**/*.ts",
-			"*.ts"
+			"*.ts",
+			"client/**/*.js"
 		]
 	},
 	"formatter": {

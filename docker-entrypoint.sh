@@ -37,6 +37,11 @@ if ! command -v claude >/dev/null 2>&1 && [ -x /usr/local/bin/install-claude-cod
 	/usr/local/bin/install-claude-code >/tmp/install-claude-code.log 2>&1 &
 fi
 
+# Pairing hint for the container log (#18). T3 prints its own startup
+# pairingUrl too, but with a localhost address the router's browser can't use.
+# Keep this command in step with client/routeros-pairing.js (a test checks).
+echo 't3code: to pair a browser, open the app URL and run in a RouterOS terminal: :put [/container/shell app-t3code cmd="t3-pairing-link" as-value]'
+
 if [ -n "${DEBUG:-}" ]; then
 	set -x
 fi
