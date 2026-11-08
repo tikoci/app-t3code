@@ -175,6 +175,15 @@ function repos(): Json {
 					dirtyEntries: porcelain.split("\n").filter(Boolean).length,
 					statusSha: sha256(porcelain),
 					diffSha: sha256(git(root, ["diff", "--no-ext-diff", "--no-textconv", "HEAD"])),
+					untrackedSha: sha256(
+						git(root, ["ls-files", "--others", "--exclude-standard"])
+							.split("\n")
+							.filter(Boolean)
+							.map((f) => `${f}\0${fileSha(join(root, f))}`)
+							.join("\n"),
+					),
+					worktrees: git(root, ["worktree", "list", "--porcelain"]),
+					stashSha: sha256(git(root, ["stash", "list", "--format=%H"])),
 				},
 			];
 		}),
