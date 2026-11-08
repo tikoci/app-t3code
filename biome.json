@@ -1,12 +1,16 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.4.10/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["test/**/*.ts", "scripts/**/*.ts", "*.ts"]
+		"includes": [
+			"test/**/*.ts",
+			"scripts/**/*.ts",
+			"*.ts"
+		]
 	},
 	"formatter": {
 		"enabled": false
@@ -17,7 +21,7 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true,
+			"preset": "recommended",
 			"suspicious": {
 				"noConsole": "off"
 			},
@@ -25,5 +29,20 @@
 				"useLiteralKeys": "off"
 			}
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": [
+				"test/app-yaml.test.ts",
+				"test/deb-payloads.test.ts"
+			],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noTemplateCurlyInString": "off"
+					}
+				}
+			}
+		}
+	]
 }
