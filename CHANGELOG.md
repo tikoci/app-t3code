@@ -5,13 +5,18 @@ RouterOS `/app` YAML. The image version is the upstream T3 Code version, so
 each entry names a date and the T3 version that shipped. Builds are
 identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
 
-## Unreleased
+## 2026-11-08 — T3 Code 0.1.7
 
 - Workflow: pinned Roadmap issue, labels, the draft-PR review flow and this
   changelog. `.coderabbit.yaml` reviews ready PRs once and skips PRs labeled
   `skip-review`.
 - T3 Code 0.1.7 (upstream, 2026-11-04). Its database migrations 077–079
   run on first start; back up `/data` before `/app/update` as usual (#6).
+  On a test CHR, `/app/update` from 0.1.6 kept every project, thread,
+  setting, login and tool payload (#3).
+- Known issue: the background Claude Code install fails on new homes (its
+  download URL returns 404), so `claude` is missing until installed by hand
+  with Anthropic's installer (#13).
 
 ## 2026-11-08 — T3 Code 0.1.6
 
