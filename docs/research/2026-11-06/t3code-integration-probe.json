@@ -1,0 +1,174 @@
+{
+  "versions": {
+    "t3": "t3 v0.1.6",
+    "codex": "codex-cli 0.166.0",
+    "opencode": "1.19.5"
+  },
+  "fixtures": {
+    "research-home-root": "<fixture>/home/SKILL.md",
+    "research-t3-home": "<fixture>/home/.t3/skills/research-t3-home/SKILL.md",
+    "research-agents-user": "<fixture>/home/.agents/skills/research-agents-user/SKILL.md",
+    "research-codex-user": "<fixture>/home/.codex/skills/research-codex-user/SKILL.md",
+    "research-claude-user": "<fixture>/home/.claude/skills/research-claude-user/SKILL.md",
+    "research-opencode-user": "<fixture>/home/.config/opencode/skills/research-opencode-user/SKILL.md",
+    "research-repo": "<fixture>/workspace/.agents/skills/research-repo/SKILL.md",
+    "research-symlink-user": "<fixture>/image-skills/research-symlink-user/SKILL.md"
+  },
+  "codexSkills": {
+    "data": [
+      {
+        "cwd": "<fixture>/workspace",
+        "skills": [
+          {
+            "name": "research-repo",
+            "description": "Offline skill discovery fixture.",
+            "path": "<fixture>/workspace/.agents/skills/research-repo/SKILL.md",
+            "scope": "repo",
+            "enabled": true,
+            "pluginId": null
+          },
+          {
+            "name": "research-agents-user",
+            "description": "Offline skill discovery fixture.",
+            "path": "<fixture>/home/.agents/skills/research-agents-user/SKILL.md",
+            "scope": "user",
+            "enabled": true,
+            "pluginId": null
+          },
+          {
+            "name": "research-codex-user",
+            "description": "Offline skill discovery fixture.",
+            "path": "<fixture>/home/.codex/skills/research-codex-user/SKILL.md",
+            "scope": "user",
+            "enabled": true,
+            "pluginId": null
+          },
+          {
+            "name": "research-symlink-user",
+            "description": "Offline skill discovery fixture.",
+            "path": "<fixture>/image-skills/research-symlink-user/SKILL.md",
+            "scope": "user",
+            "enabled": true,
+            "pluginId": null
+          }
+        ],
+        "errors": [],
+        "otherSkillNames": [
+          "imagegen",
+          "openai-docs",
+          "review-agent",
+          "skill-creator",
+          "skill-installer"
+        ]
+      }
+    ]
+  },
+  "openCodeSkills": {
+    "exitCode": 0,
+    "skills": [
+      {
+        "name": "research-claude-user",
+        "description": "Offline skill discovery fixture.",
+        "location": "<fixture>/home/.claude/skills/research-claude-user/SKILL.md",
+        "content": "Report that this fixture was selected.\n"
+      },
+      {
+        "name": "research-symlink-user",
+        "description": "Offline skill discovery fixture.",
+        "location": "<fixture>/home/.agents/skills/research-symlink-user/SKILL.md",
+        "content": "Report that this fixture was selected.\n"
+      },
+      {
+        "name": "research-agents-user",
+        "description": "Offline skill discovery fixture.",
+        "location": "<fixture>/home/.agents/skills/research-agents-user/SKILL.md",
+        "content": "Report that this fixture was selected.\n"
+      },
+      {
+        "name": "research-repo",
+        "description": "Offline skill discovery fixture.",
+        "location": "<fixture>/workspace/.agents/skills/research-repo/SKILL.md",
+        "content": "Report that this fixture was selected.\n"
+      },
+      {
+        "name": "research-opencode-user",
+        "description": "Offline skill discovery fixture.",
+        "location": "<fixture>/home/.config/opencode/skills/research-opencode-user/SKILL.md",
+        "content": "Report that this fixture was selected.\n"
+      }
+    ],
+    "otherSkillNames": [
+      "customize-opencode"
+    ]
+  },
+  "web": {
+    "clientRoot": "/opt/t3code/client",
+    "pairingTextFiles": [
+      "main-D6TScBsg.js"
+    ],
+    "manifestPresent": false,
+    "httpResults": [
+      {
+        "path": "/",
+        "status": 200,
+        "cacheControl": "no-cache",
+        "contentType": "text/html; charset=utf-8",
+        "csp": null,
+        "injectedScript": true,
+        "marker": false
+      },
+      {
+        "path": "/pair",
+        "status": 200,
+        "cacheControl": "no-cache",
+        "contentType": "text/html; charset=utf-8",
+        "csp": null,
+        "injectedScript": true,
+        "marker": false
+      },
+      {
+        "path": "/routeros-research.js",
+        "status": 200,
+        "cacheControl": "no-cache",
+        "contentType": "text/javascript",
+        "csp": null,
+        "injectedScript": false,
+        "marker": true
+      },
+      {
+        "path": "/api/auth/session",
+        "status": 200,
+        "cacheControl": null,
+        "contentType": "application/json",
+        "csp": null,
+        "injectedScript": false,
+        "marker": false,
+        "body": {
+          "authenticated": false,
+          "auth": {
+            "policy": "loopback-browser",
+            "bootstrapMethods": [
+              "one-time-token"
+            ],
+            "sessionMethods": [
+              "browser-session-cookie",
+              "bearer-access-token",
+              "dpop-access-token"
+            ],
+            "sessionCookieName": "t3_session_3773_afaa3c94c9ae",
+            "serverUpdateScope": "environment:maintain"
+          }
+        }
+      },
+      {
+        "path": "/assets/main-D6TScBsg.js",
+        "status": 200,
+        "cacheControl": "no-cache",
+        "contentType": "text/javascript",
+        "csp": null,
+        "injectedScript": false,
+        "marker": false
+      }
+    ]
+  }
+}
