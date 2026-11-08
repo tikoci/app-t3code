@@ -184,6 +184,32 @@ describe("release sync", () => {
 		const svc = asRecord(services["t3code"]);
 		expect(svc["image"]).toBe(`ghcr.io/tikoci/app-t3code:${minor}`);
 	});
+
+	test("every T3CODE_VER pin matches package.json version", () => {
+		const root = join(import.meta.dir, "..");
+		const read = (path: string) => readFileSync(join(root, path), "utf8");
+		const { version } = JSON.parse(read("package.json")) as { version: string };
+		// The `t3code_ver` dispatch input's own default, then its `|| '…'` fallback.
+		const inputDefault = /^ {6}t3code_ver:\n(?: {8}.*\n)*? {8}default: "([^"]*)"$/gm;
+		const fallback = /inputs\.t3code_ver \|\| '([^']*)'/g;
+		const pins: Array<[string, RegExp]> = [
+			["Dockerfile", /^ARG T3CODE_VER=(\S+)$/gm],
+			["Makefile", /^T3CODE_VER \?= (\S+)$/gm],
+			[".github/workflows/ci.yml", inputDefault],
+			[".github/workflows/ci.yml", fallback],
+			[".github/workflows/integration.yml", inputDefault],
+			[".github/workflows/integration.yml", fallback],
+			["README.md", /`ghcr\.io\/tikoci\/app-t3code:([^`]+)` — exact release/g],
+		];
+		for (const [file, pattern] of pins) {
+			const found = [...read(file).matchAll(pattern)].map((m) => m[1]);
+			expect({ file, pattern: pattern.source, found }).toEqual({
+				file,
+				pattern: pattern.source,
+				found: [version],
+			});
+		}
+	});
 });
 
 describe("t3code.tikappstore.yaml", () => {

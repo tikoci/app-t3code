@@ -10,6 +10,8 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
 - Workflow: pinned Roadmap issue, labels, the draft-PR review flow and this
   changelog. `.coderabbit.yaml` reviews ready PRs once and skips PRs labeled
   `skip-review`.
+- T3 Code 0.1.7 (upstream, 2026-11-04). Its database migrations 077–079
+  run on first start; back up `/data` before `/app/update` as usual (#6).
 
 ## 2026-11-08 — T3 Code 0.1.6
 
