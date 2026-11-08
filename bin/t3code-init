@@ -1,0 +1,50 @@
+#!/bin/bash
+# PID 1 of the image: runs its arguments as the one child, forwards signals to
+# it, reaps orphans and exits with the child's status.
+#
+# Why not tini (#25): RouterOS sends the stop signal only when PID 1 has a
+# handler installed for it. It reads SigCgt in /proc/1/status and, when the
+# bit is clear, logs "signal 15 (Terminated) not caught, kill immediately" and
+# sends SIGKILL instead. tini blocks signals and collects them with
+# sigtimedwait, so its SigCgt is 0 and RouterOS never stopped T3 gracefully.
+# bash's traps are real handlers, and bash reaps every child that exits,
+# including orphans re-parented to PID 1, so it can do tini's job here.
+set -u
+
+# Traps go in before the child starts; a signal that arrives first is passed
+# on as soon as there is a child to take it.
+child=
+pending=
+# shellcheck disable=SC2329 # called from the traps below
+forward() {
+	if [ -n "$child" ]; then
+		kill -s "$1" "$child" 2>/dev/null
+	else
+		pending=$1
+	fi
+}
+for sig in TERM INT HUP QUIT USR1 USR2 WINCH; do
+	# shellcheck disable=SC2064 # expand $sig now
+	trap "forward $sig" "$sig"
+done
+
+# Without job control, bash starts a background job with INT and QUIT ignored
+# and stdin on /dev/null. Undo both: a forwarded INT or QUIT must act, and
+# `docker run -it … bash` needs the terminal. The subshell execs, so the child
+# is still one process. (bash 5 resets INT/QUIT here; macOS's bash 3.2 can't.)
+(
+	trap - INT QUIT
+	exec "$@"
+) <&0 &
+child=$!
+if [ -n "$pending" ]; then
+	kill -s "$pending" "$child" 2>/dev/null
+fi
+
+# A trapped signal interrupts `wait` with 128+n while the child still runs.
+while :; do
+	wait "$child"
+	status=$?
+	kill -0 "$child" 2>/dev/null || break
+done
+exit "$status"

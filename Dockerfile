@@ -48,6 +48,9 @@ ENV T3CODE_TOOL_GROUPS="capture labs vpn routing dev"
 ENV UV_PYTHON_DOWNLOADS=manual
 
 ENV SHELL=/bin/bash
+# A failed download or checksum grep must fail its pipe, not only the last
+# command (hadolint DL4006).
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Browser dependencies for T3 Code's built-in browser, which downloads itself
 # on first use. They are core, not an optional group: T3 starts its browser
@@ -69,7 +72,6 @@ RUN echo 'Acquire::Retries "10";' > /etc/apt/apt.conf.d/80-retries && \
         procps \
         python3 \
         ripgrep \
-        tini \
         unzip \
         fontconfig \
         fonts-liberation \
@@ -112,6 +114,9 @@ RUN usermod --home /data --shell /bin/bash node && \
     mkdir -p /data && \
     chown node:node /data
 
+# Release downloads land in /tmp and are removed in the same layer.
+WORKDIR /tmp
+
 RUN set -eu; \
     if [ -z "${T3CODE_VER}" ]; then \
       echo "T3CODE_VER is required (example: 0.1.7)"; \
@@ -124,7 +129,6 @@ RUN set -eu; \
     esac; \
     archive="t3-${T3CODE_VER}-linux-${arch}.tar.gz"; \
     url="https://github.com/pingdotgg/t3code/releases/download/v${T3CODE_VER}"; \
-    cd /tmp; \
     curl -fsSL --retry 3 -O "${url}/${archive}"; \
     curl -fsSL --retry 3 -O "${url}/SHA256SUMS"; \
     grep -E "[[:space:]]*?${archive}$" SHA256SUMS | sha256sum -c -; \
@@ -153,13 +157,14 @@ RUN set -eu; \
     esac; \
     name="gh_${GH_VER}_linux_${TARGETARCH}"; \
     url="https://github.com/cli/cli/releases/download/v${GH_VER}"; \
-    cd /tmp; \
     curl -fsSL --retry 3 -O "${url}/${name}.tar.gz"; \
     curl -fsSL --retry 3 -O "${url}/gh_${GH_VER}_checksums.txt"; \
     grep -E "[[:space:]]${name}\.tar\.gz$" "gh_${GH_VER}_checksums.txt" | sha256sum -c -; \
     tar -xzof "${name}.tar.gz"; \
     install -m 0755 "${name}/bin/gh" /usr/local/bin/gh; \
     rm -rf "${name}" "${name}.tar.gz" "gh_${GH_VER}_checksums.txt"
+
+WORKDIR /
 
 # Agent CLIs baked into the image. Claude Code is intentionally absent here:
 # its license does not allow redistribution, so the entrypoint installs it to
@@ -239,8 +244,10 @@ VOLUME /data
 
 EXPOSE 3773
 
-# T3 Code runs many agent processes: tini reaps them and forwards signals.
-ENTRYPOINT ["/usr/bin/tini", "--", "/docker-entrypoint.sh"]
+# T3 Code runs many agent processes: t3code-init (bash) reaps them and
+# forwards signals. Not tini: RouterOS sends SIGTERM only to a PID 1 that has
+# a handler installed for it, and SIGKILLs tini at once (#25).
+ENTRYPOINT ["/usr/local/bin/t3code-init", "/docker-entrypoint.sh"]
 
 CMD ["t3", "serve"]
 

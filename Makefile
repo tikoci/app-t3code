@@ -2,10 +2,19 @@ T3CODE_VER ?= 0.1.7
 IMAGE ?= ghcr.io/tikoci/app-t3code
 PLATFORMS ?= linux/amd64,linux/arm64
 
-.PHONY: check test integration build push dev-lock
+.PHONY: check lint-shell test integration build push dev-lock
 
 check:
 	bun run check
+
+# The Dockerfile (hadolint, which also runs ShellCheck on its RUN steps) and
+# every shell script that ships in the image or runs in its tests. CI runs
+# this with pinned, checksum-verified hadolint and ShellCheck (ci.yml).
+SHELL_SCRIPTS = bin/* docker-entrypoint.sh profile.sh scripts/install-pairing-help.sh test/*.sh
+
+lint-shell:
+	hadolint Dockerfile
+	shellcheck $(SHELL_SCRIPTS)
 
 test:
 	bun run test

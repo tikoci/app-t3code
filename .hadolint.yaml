@@ -1,0 +1,11 @@
+# hadolint (pinned in .github/workflows/ci.yml) — the Dockerfile stays at zero
+# findings, info included. Each ignore says why.
+failure-threshold: info
+ignored:
+  # Core apt packages float on purpose, so a rebuild picks up Debian security
+  # updates. The tool-group payloads that need exact versions are pinned by
+  # `t3code-tools deb-lock` from apt's verified indexes instead.
+  - DL3008
+  # `USER node`: RouterOS reads it as the container's default-user and
+  # resolves it inside the image (uid 1000; /container/shell runs as it).
+  - DL3066
