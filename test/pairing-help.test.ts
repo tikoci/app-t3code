@@ -32,7 +32,7 @@ describe("RouterOS pairing help", () => {
 	});
 
 	test("the helper parses as a script", () => {
-		expect(() => new Function(helper)).not.toThrow();
+		expect(() => new Bun.Transpiler({ loader: "js" }).transformSync(helper)).not.toThrow();
 	});
 
 	test("the Dockerfile installs the helper through the guarded script", () => {
@@ -48,7 +48,7 @@ describe("RouterOS pairing help", () => {
 describe("install-pairing-help.sh", () => {
 	const TAG = '<script defer src="/routeros-pairing.js"></script>';
 	const INDEX = '<!doctype html>\n<html>\n  <head>\n    <title>T3 Code</title>\n  </head>\n  <body><div id="root"></div></body>\n</html>\n';
-	const BUNDLE = 'const x={id:"pairing-token"};';
+	const BUNDLE = "const x={htmlFor:`pairing-token`,id:`pairing-token`};";
 
 	function fixture(index: string, bundle: string | null) {
 		const client = mkdtempSync(join(tmpdir(), "pairing-help-"));
@@ -88,6 +88,12 @@ describe("install-pairing-help.sh", () => {
 
 	test("fails when the bundle no longer has #pairing-token", () => {
 		const run = install(fixture(INDEX, "const renamed=1;"));
+		expect(run.exitCode).not.toBe(0);
+		expect(run.stderr).toContain("#pairing-token");
+	});
+
+	test("fails when only the unrelated /api/auth/pairing-token path is left", () => {
+		const run = install(fixture(INDEX, 'fetch("/api/auth/pairing-token");'));
 		expect(run.exitCode).not.toBe(0);
 		expect(run.stderr).toContain("#pairing-token");
 	});
