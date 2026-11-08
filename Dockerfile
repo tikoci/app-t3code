@@ -3,8 +3,8 @@
 # Rebuilds the wodby/t3code approach from our own Dockerfile so the image we
 # ship on GHCR is one we control: Debian trixie-slim (glibc, which the T3 Code
 # release binaries need), per-arch t3 tarball from pingdotgg/t3code with
-# SHA256 verification, Codex + opencode, uv/uvx and Bun/RouterOS tools baked
-# in, Claude Code installed to the volume on first boot (license forbids
+# SHA256 verification, Codex + opencode, the GitHub CLI, uv/uvx and
+# Bun/RouterOS tools baked in, Claude Code installed to the volume on first boot (license forbids
 # redistribution). Muse Code is not bundled (users may install it into the
 # home; per-harness provisioning is issue #13).
 #
@@ -31,6 +31,7 @@ ARG CODEX_VER=latest
 ARG OPENCODE_VER=latest
 ARG QUICKCHR_VER=next
 ARG CENTRS_VER=next
+ARG GH_VER=2.103.3
 
 ENV T3CODE_VER="${T3CODE_VER}"
 ENV T3CODE_HOST=0.0.0.0
@@ -131,6 +132,25 @@ RUN set -eu; \
     tar -xzof "${archive}" --strip-components=1 -C /opt/t3code; \
     rm -f "${archive}" SHA256SUMS; \
     ln -s /opt/t3code/t3 /usr/local/bin/t3
+
+# GitHub CLI: T3's GitHub source-control provider and agents' pull-request
+# work need `gh`. Release tarball checked against the release's checksums
+# file. Its login (`gh auth login`, or GH_TOKEN) lives in /data/.config/gh.
+# Other forges' CLIs (glab, fj/tea, ...) are not bundled; see issue #15.
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      amd64|arm64) ;; \
+      *) echo "Unsupported architecture ${TARGETARCH}"; exit 1 ;; \
+    esac; \
+    name="gh_${GH_VER}_linux_${TARGETARCH}"; \
+    url="https://github.com/cli/cli/releases/download/v${GH_VER}"; \
+    cd /tmp; \
+    curl -fsSL --retry 3 -O "${url}/${name}.tar.gz"; \
+    curl -fsSL --retry 3 -O "${url}/gh_${GH_VER}_checksums.txt"; \
+    grep -E "[[:space:]]${name}\.tar\.gz$" "gh_${GH_VER}_checksums.txt" | sha256sum -c -; \
+    tar -xzof "${name}.tar.gz"; \
+    install -m 0755 "${name}/bin/gh" /usr/local/bin/gh; \
+    rm -rf "${name}" "${name}.tar.gz" "gh_${GH_VER}_checksums.txt"
 
 # Agent CLIs baked into the image. Claude Code is intentionally absent here:
 # its license does not allow redistribution, so the entrypoint installs it to

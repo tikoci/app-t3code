@@ -276,7 +276,7 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 			expect(group.state as string).toBe(expected[group.delivery] as string);
 		}
 		// Core covers the browser libraries and provider CLIs now that they are not groups.
-		expect(missing.core.missing).toEqual(expect.arrayContaining(["uv", "uvx", "sqlite3", "codex", "opencode", "fc-list", ...BROWSER_LIBRARIES]));
+		expect(missing.core.missing).toEqual(expect.arrayContaining(["uv", "uvx", "sqlite3", "gh", "codex", "opencode", "fc-list", ...BROWSER_LIBRARIES]));
 		const present = buildStatus("none", everything, "/nonexistent", null);
 		expect(present.core.state).toBe("ready");
 		expect(Object.fromEntries(present.groups.map((g) => [g.name, g.state]))).toEqual({
@@ -361,6 +361,14 @@ describe("tool groups: docs and image contract", () => {
 		expect(DOCKERFILE).toMatch(/^\s+sqlite3 \\$/m);
 		expect(dockerfileEnv()["UV_PYTHON_DOWNLOADS"]).toBe("manual");
 		for (const name of ["uv", "uvx", "sqlite3"]) expect(CORE_CHECKS.map((c) => c.name)).toContain(name);
+	});
+
+	test("gh is core: a pinned GitHub CLI release, checked against its checksums file", () => {
+		expect(DOCKERFILE).toMatch(/^ARG GH_VER=\d+\.\d+\.\d+$/m);
+		expect(DOCKERFILE).toContain('url="https://github.com/cli/cli/releases/download/v${GH_VER}"');
+		expect(DOCKERFILE).toMatch(/gh_\$\{GH_VER\}_checksums\.txt" \| sha256sum -c -/);
+		expect(DOCKERFILE).toContain("/usr/local/bin/gh");
+		expect(CORE_CHECKS.map((c) => c.name)).toContain("gh");
 	});
 
 	test("every YAML env value is also an image ENV default (environment= replaces the list)", () => {

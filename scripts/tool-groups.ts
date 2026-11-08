@@ -352,6 +352,7 @@ export const CORE_CHECKS: readonly Check[] = [
 	"uvx",
 	"sqlite3",
 	"git",
+	"gh",
 	"ssh",
 	"curl",
 	"jq",
