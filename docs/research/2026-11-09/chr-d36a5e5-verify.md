@@ -64,8 +64,25 @@ the status ("Checked just now"). After that, `/welcome` showed "Claude
 5 minutes after the first start, then Ready, with nothing for them to do.
 `/welcome` itself doesn't trigger a probe.
 
-The installer takes the **stable** channel (2.1.311), and T3 then offers an
-update (sidebar "Update 1 provider"), presumably to latest, which was 2.1.319.
+Checks didn't seem to run while no browser was connected: Settings →
+Providers read "Checked 26m ago" at 13:32, and the last check had been at
+13:06.
+
+### Claude update through T3
+
+The installer takes the **stable** channel (2.1.311), so T3 then offers an
+update (sidebar "Update 1 provider"). Its *Update now* runs
+`/data/.local/bin/claude update`. On x86 that went to 2.1.319 in about 35 s
+(13:32:29 → 13:33:07). It relinked `~/.local/bin/claude` and kept 2.1.311
+alongside. After a stop and start (exit 130):
+
+- `claude --version` was still 2.1.319.
+- `install-claude-code.log` got no new entry: the installer acts only when
+  `claude` is missing.
+- `t3code-tools status` showed every group `ready`.
+- Settings → Providers showed "v2.1.319 · Authenticated" with no update badge.
+
+So a user updating Claude from T3 doesn't conflict with the image.
 
 ### #18: who can read the pairing banner
 
