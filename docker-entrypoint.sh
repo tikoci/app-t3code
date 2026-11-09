@@ -3,6 +3,11 @@
 # Claude Code install in the background, then exec the server.
 set -eu
 
+# RouterOS starts containers with umask 0000 (Docker uses 0022), so everything
+# T3, its agents and terminals create in /data would be world-writable.
+# Measured on 7.25 / 7.25.1: settings.json 666, project dirs 777.
+umask 022
+
 mkdir -p "${HOME}/projects"
 cd "${HOME}"
 

@@ -217,10 +217,11 @@ if you need a fresh one.
 > URL to the container's output, next to a QR code. The URL uses the
 > container's internal address, which may not be reachable from your LAN (use
 > the app URL instead), but the token is valid for about five minutes. Treat the container's output as
-> sensitive. If container logging sends it to RouterOS `/log`, anyone who can
-> read the log can pair a browser during that window. Get tokens with the
-> command above, not from the log. Whether `/app` forwards this output to
-> `/log` is not yet checked (#18).
+> sensitive. `/app` leaves the container's `logging` off, so the output never
+> reaches RouterOS `/log`. It is kept in `/container/log`, though, and a
+> RouterOS user in the built-in `read` group can read that menu (CLI or REST)
+> and pair a browser during that window (measured on 7.25, #18). Get tokens
+> with the command above, not from the log.
 
 If `PUBLIC_URL` is set in the container, `t3-pairing-link` can print a full
 pairing URL instead of a raw token.
