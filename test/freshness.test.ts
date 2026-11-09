@@ -9,6 +9,7 @@ import {
 	checkShareLink,
 	checkUpstream,
 	compareVersions,
+	DRIVERS_PATH,
 	diffCatalog,
 	main,
 	parseBuiltInDrivers,
@@ -19,6 +20,7 @@ import {
 	shareLinks,
 	stableTagVersions,
 	stableVersion,
+	UPSTREAM_REPO,
 	versionArg,
 } from "../scripts/freshness.ts";
 import { HARNESSES } from "../scripts/harnesses.ts";
@@ -221,12 +223,16 @@ describe("newest stable (mocked GitHub)", () => {
 
 	/** Upstream with these tags; `releases` maps a tag to its release (absent = 404). */
 	function upstream(tags: string[], releases: Record<string, Partial<Release>>) {
+		// Matched on exact host and path, so a request anywhere else fails the test.
+		const api = `/repos/${UPSTREAM_REPO}`;
 		globalThis.fetch = (async (input: string | URL | Request) => {
-			const url = String(input);
-			if (url.endsWith("/git/matching-refs/tags/v")) return Response.json(tags.map((t) => ({ ref: `refs/tags/${t}` })));
-			const tag = url.match(/\/releases\/tags\/(v[^/]+)$/)?.[1];
-			if (tag) return releases[tag] ? Response.json(release(tag, releases[tag])) : new Response("", { status: 404 });
-			if (url.includes("raw.githubusercontent.com")) return new Response(DRIVERS_V017);
+			const url = new URL(input instanceof Request ? input.url : input);
+			if (url.hostname === "api.github.com") {
+				if (url.pathname === `${api}/git/matching-refs/tags/v`) return Response.json(tags.map((t) => ({ ref: `refs/tags/${t}` })));
+				const tag = url.pathname.startsWith(`${api}/releases/tags/`) ? url.pathname.slice(`${api}/releases/tags/`.length) : undefined;
+				if (tag) return releases[tag] ? Response.json(release(tag, releases[tag])) : new Response("", { status: 404 });
+			}
+			if (url.hostname === "raw.githubusercontent.com" && url.pathname.endsWith(`/${DRIVERS_PATH}`)) return new Response(DRIVERS_V017);
 			throw new Error(`unexpected ${url}`);
 		}) as typeof fetch;
 	}
