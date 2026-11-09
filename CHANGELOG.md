@@ -38,6 +38,12 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
   `/container/shell` bypass the entrypoint and still get 0000. Files
   created before this keep their modes; `chmod -R go-w /data` from a T3
   terminal fixes those.
+- `zstd` is in the image core. The background Claude Code install now
+  downloads Claude's compressed build (`claude.zst`, about 99 MiB instead of
+  280 MiB, measured with 2.1.311) and checks the decompressed binary against
+  Anthropic's manifest as before. It falls back to the uncompressed download
+  when the `.zst` is not available. The daily freshness check also confirms
+  that both platforms' `.zst` builds exist (#13).
 
 ## 2026-11-08 — T3 Code 0.1.7
 

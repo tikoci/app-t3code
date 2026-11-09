@@ -167,10 +167,11 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   (image, home or not-bundled); a T3 bump fails CI's freshness step until a
   new or removed driver is classified there (0.1.7 added Kiro).
 - Core bootstrap: uv/uvx come from `ghcr.io/astral-sh/uv:${UV_VER}` (pinned
-  ARG), `UV_PYTHON_DOWNLOADS=manual`; `sqlite3` is in the late core apt
-  layer; `gh` is GitHub's release tarball (`GH_VER` ARG, checksum-verified;
-  Debian trixie's is 2.46.0) because T3's GitHub provider and agent PR work
-  need it. Other forge CLIs (glab, fj/tea, az) and login UX are issue #15.
+  ARG), `UV_PYTHON_DOWNLOADS=manual`; `sqlite3` and `zstd` are in the late
+  core apt layer (`bin/install-claude-code` fetches Claude's `.zst` build
+  with zstd); `gh` is GitHub's release tarball (`GH_VER` ARG,
+  checksum-verified; Debian trixie's is 2.46.0) because T3's GitHub provider
+  and agent PR work need it. Other forge CLIs (glab, fj/tea, az) and login UX are issue #15.
   No general SDK expansion beyond that.
 - `t3code-tools help` (`USAGE` in `scripts/tool-groups.ts`) is the command
   reference; a test checks every command is in it, so update it with the

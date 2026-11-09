@@ -54,6 +54,25 @@ let ignoreRange = false; // answer a Range request with 200 and the whole file
 let stallAfter = 0; // the next binary download sends this many bytes, then stalls
 let requests: string[] = [];
 let headLength: "real" | "wrong" | "none" = "real"; // Content-Length on a HEAD for the binary
+let zst: "real" | "missing" | "forbidden" | "corrupt" = "real"; // <platform>/claude.zst: the binary compressed, a 404, a 403, or not zstd
+let unavailableFirst = 0; // answer the next N binary or .zst downloads with a 503
+// The zstd the installer may use. Most tests take the uncompressed route (no
+// zstd); the .zst tests point it at the host's real zstd.
+const NO_ZSTD = "zstd-not-installed";
+let zstdCommand = NO_ZSTD;
+
+/** The body, or the part a `bytes=N-` Range asks for (unless ignoreRange). */
+function ranged(req: Request, body: Uint8Array): Response {
+	const range = ignoreRange ? null : req.headers.get("range")?.match(/^bytes=(\d+)-$/);
+	if (range) {
+		const start = Number(range[1]);
+		if (start >= body.length) return new Response(null, { status: 416, headers: { "content-range": `bytes */${body.length}` } });
+		return new Response(body.slice(start), { status: 206, headers: { "content-range": `bytes ${start}-${body.length - 1}/${body.length}` } });
+	}
+	return new Response(body);
+}
+
+const compressed = () => (zst === "corrupt" ? new TextEncoder().encode("this is not zstd") : Bun.zstdCompressSync(new TextEncoder().encode(binary)));
 
 const server = Bun.serve({
 	port: 0,
@@ -66,6 +85,11 @@ const server = Bun.serve({
 		}
 		if (path === "/stable" || path === "/latest") return new Response(`${pointer}\n`);
 		if (path === `/${VERSION}/manifest.json`) return Response.json(manifest);
+		const isDownload = CLAUDE_PLATFORMS.some((p) => path === `/${VERSION}/${p}/claude` || path === `/${VERSION}/${p}/claude.zst`);
+		if (isDownload && req.method === "GET" && unavailableFirst > 0) {
+			unavailableFirst--;
+			return new Response("busy", { status: 503 });
+		}
 		if (CLAUDE_PLATFORMS.some((p) => path === `/${VERSION}/${p}/claude`)) {
 			const body = new TextEncoder().encode(binary);
 			if (req.method === "HEAD" && headLength === "wrong") return new Response(null, { headers: { "content-length": "7" } });
@@ -85,13 +109,14 @@ const server = Bun.serve({
 				stallAfter = 0;
 				return new Response(new ReadableStream({ start: (c) => c.enqueue(prefix) }));
 			}
-			const range = ignoreRange ? null : req.headers.get("range")?.match(/^bytes=(\d+)-$/);
-			if (range) {
-				const start = Number(range[1]);
-				if (start >= body.length) return new Response(null, { status: 416, headers: { "content-range": `bytes */${body.length}` } });
-				return new Response(body.slice(start), { status: 206, headers: { "content-range": `bytes ${start}-${body.length - 1}/${body.length}` } });
-			}
-			return new Response(body);
+			return ranged(req, body);
+		}
+		if (CLAUDE_PLATFORMS.some((p) => path === `/${VERSION}/${p}/claude.zst`)) {
+			if (zst === "missing") return new Response("not found", { status: 404 });
+			if (zst === "forbidden") return new Response("forbidden", { status: 403 });
+			const body = compressed();
+			if (req.method === "HEAD") return new Response(null, { headers: { "content-length": String(body.length) } });
+			return ranged(req, body);
 		}
 		return new Response("not found", { status: 404 });
 	},
@@ -114,6 +139,9 @@ beforeEach(() => {
 	ignoreRange = false;
 	stallAfter = 0;
 	headLength = "real";
+	zst = "real";
+	unavailableFirst = 0;
+	zstdCommand = NO_ZSTD;
 	requests = [];
 });
 afterEach(() => rmSync(home, { recursive: true, force: true }));
@@ -135,6 +163,7 @@ async function run(...args: string[]) {
 			CLAUDE_CODE_RELEASES_URL: `http://127.0.0.1:${server.port}`,
 			INSTALL_CLAUDE_CODE_BACKOFF: "0 0 0",
 			INSTALL_CLAUDE_CODE_STALL_SECONDS: "1",
+			INSTALL_CLAUDE_CODE_ZSTD: zstdCommand,
 		},
 		stdout: "pipe",
 		stderr: "pipe",
@@ -146,6 +175,8 @@ async function run(...args: string[]) {
 const staged = () => join(home, ".local/share/claude/versions", VERSION);
 const launcher = () => join(home, ".local/bin/claude");
 const downloads = () => requests.filter((r) => r.includes(`/${PLATFORM}/claude`));
+const partFile = () => join(home, ".claude/downloads", `claude-${VERSION}-${PLATFORM}.part`);
+const zstPart = () => join(home, ".claude/downloads", `claude-${VERSION}-${PLATFORM}.zst.part`);
 
 beforeAll(() => {
 	// The tests need `claude` to come only from the temp home.
@@ -233,6 +264,14 @@ describe("install-claude-code", () => {
 		expect(result.out).toContain("reusing the verified");
 		expect(downloads()).toEqual([]);
 		expect(readlinkSync(launcher())).toBe(staged());
+	});
+
+	test("a 503 is retried within the attempt, not treated as a missing file", async () => {
+		unavailableFirst = 1;
+		const { code, out } = await run();
+		expect(code, out).toBe(0);
+		expect(out).toContain("HTTP 503");
+		expect(downloads()).toEqual([`GET /${VERSION}/${PLATFORM}/claude`, `GET /${VERSION}/${PLATFORM}/claude`]);
 	});
 
 	test("a verified staged version that lost its execute bit is reused, made executable", async () => {
@@ -366,6 +405,128 @@ describe("install-claude-code", () => {
 	});
 });
 
+/** The image's route: zstd is core, so the installer fetches claude.zst first. */
+describe("install-claude-code with zstd", () => {
+	beforeEach(() => {
+		const real = Bun.which("zstd");
+		if (!real) throw new Error("these tests need the zstd CLI (the image and GitHub's Ubuntu runners have it)");
+		zstdCommand = real;
+	});
+
+	test("downloads the .zst only, decompresses and verifies it against the manifest, then installs", async () => {
+		const { code, out } = await run();
+		expect(code, out).toBe(0);
+		expect(requests).toEqual(["GET /stable", `GET /${VERSION}/manifest.json`, `GET /${VERSION}/${PLATFORM}/claude.zst`]);
+		expect(readFileSync(staged(), "utf8")).toBe(binary);
+		expect(readlinkSync(launcher())).toBe(staged());
+		expect(existsSync(zstPart())).toBe(false);
+		expect(existsSync(partFile())).toBe(false);
+		expect(out).toContain("compressed");
+		expect(out).toContain(`installed Claude Code ${VERSION}`);
+	});
+
+	test("no .zst upstream (an HTTP error): falls back to the uncompressed binary in the same attempt", async () => {
+		zst = "missing";
+		const { code, out } = await run();
+		expect(code, out).toBe(0);
+		expect(downloads()).toEqual([`GET /${VERSION}/${PLATFORM}/claude.zst`, `GET /${VERSION}/${PLATFORM}/claude`]);
+		expect(out).toContain("no compressed build");
+		expect(readFileSync(staged(), "utf8")).toBe(binary);
+	});
+
+	test("a 403 on the .zst also counts as missing (object stores answer 403 for absent keys)", async () => {
+		zst = "forbidden";
+		const { code, out } = await run();
+		expect(code, out).toBe(0);
+		expect(downloads()).toEqual([`GET /${VERSION}/${PLATFORM}/claude.zst`, `GET /${VERSION}/${PLATFORM}/claude`]);
+	});
+
+	test("a 503 on the .zst is retried; no fallback to the uncompressed download", async () => {
+		unavailableFirst = 1;
+		const { code, out } = await run();
+		expect(code, out).toBe(0);
+		expect(out).toContain("HTTP 503");
+		expect(downloads()).toEqual([`GET /${VERSION}/${PLATFORM}/claude.zst`, `GET /${VERSION}/${PLATFORM}/claude.zst`]);
+	});
+
+	test("a .zst partial survives an attempt that keeps getting 503s", async () => {
+		mkdirSync(join(home, ".claude/downloads"), { recursive: true });
+		writeFileSync(zstPart(), compressed().slice(0, 10));
+		unavailableFirst = 3;
+		const { code, out } = await run();
+		expect(code, out).toBe(1);
+		expect(out).toContain("a later attempt resumes it");
+		expect(statSync(zstPart()).size).toBe(10);
+		expect(downloads().every((r) => r.includes("claude.zst"))).toBe(true);
+	});
+
+	test("a .zst left after decompressing is removed once the binary is verified", async () => {
+		mkdirSync(join(home, ".claude/downloads"), { recursive: true });
+		writeFileSync(partFile(), binary);
+		writeFileSync(zstPart(), compressed());
+		const { code, out } = await run();
+		expect(code, out).toBe(0);
+		expect(downloads()).toEqual([]);
+		expect(existsSync(zstPart())).toBe(false);
+		expect(readFileSync(staged(), "utf8")).toBe(binary);
+	});
+
+	test("a .zst that does not decompress is discarded; the next attempt starts over", async () => {
+		zst = "corrupt";
+		let { code, out } = await run();
+		expect(code, out).toBe(1);
+		expect(out).toContain("did not decompress");
+		expect(existsSync(zstPart())).toBe(false);
+		expect(existsSync(partFile())).toBe(false);
+		expect(existsSync(staged())).toBe(false);
+
+		zst = "real";
+		requests = [];
+		({ code, out } = await run());
+		expect(code, out).toBe(0);
+		expect(downloads()).toEqual([`GET /${VERSION}/${PLATFORM}/claude.zst`]);
+	});
+
+	test("a decompressed binary that fails the manifest's checksum is discarded", async () => {
+		manifest = realManifest(fakeClaude("6.6.6"));
+		const { code, out } = await run();
+		expect(code, out).toBe(1);
+		expect(out).toContain("failed its size or SHA-256 check");
+		expect(existsSync(zstPart())).toBe(false);
+		expect(existsSync(partFile())).toBe(false);
+		expect(existsSync(staged())).toBe(false);
+	});
+
+	test("a partial .zst resumes where it stopped", async () => {
+		const full = compressed();
+		mkdirSync(join(home, ".claude/downloads"), { recursive: true });
+		writeFileSync(zstPart(), full.slice(0, 10));
+		const { code, out } = await run();
+		expect(code, out).toBe(0);
+		expect(downloads()).toEqual([`GET /${VERSION}/${PLATFORM}/claude.zst bytes=10-`]);
+		expect(out).toContain("resuming at 0 MiB");
+		expect(readFileSync(staged(), "utf8")).toBe(binary);
+	});
+
+	test("a complete .zst left by an interrupted run is used without downloading it again", async () => {
+		mkdirSync(join(home, ".claude/downloads"), { recursive: true });
+		writeFileSync(zstPart(), compressed());
+		const { code, out } = await run();
+		expect(code, out).toBe(0);
+		// curl's resume asks past the end; the server's 416 means "already complete".
+		expect(downloads()).toEqual([`GET /${VERSION}/${PLATFORM}/claude.zst bytes=${compressed().length}-`]);
+		expect(readFileSync(staged(), "utf8")).toBe(binary);
+	});
+
+	test("an uncompressed partial from an earlier run is resumed, not replaced by the .zst", async () => {
+		mkdirSync(join(home, ".claude/downloads"), { recursive: true });
+		writeFileSync(partFile(), binary.slice(0, 10));
+		const { code, out } = await run();
+		expect(code, out).toBe(0);
+		expect(downloads()).toEqual([`GET /${VERSION}/${PLATFORM}/claude bytes=10-`]);
+	});
+});
+
 describe("install-claude-code contract", () => {
 	test("the script downloads from the URL and platforms the freshness check verifies", async () => {
 		const script = readFileSync(SCRIPT, "utf8");
@@ -373,6 +534,8 @@ describe("install-claude-code contract", () => {
 		for (const platform of CLAUDE_PLATFORMS) expect(script).toContain(`platform=${platform}`);
 		expect(script).toContain(".platforms[$p].checksum");
 		expect(script).toContain(".platforms[$p].size");
+		expect(script).toContain(`url="\${RELEASES_URL}/\${version}/\${platform}/claude"`);
+		expect(script).toContain(`download "$zpart" "\${url}.zst"`);
 	});
 
 	test("the freshness parser accepts the real manifest shape and rejects the old one", async () => {
@@ -397,11 +560,23 @@ describe("install-claude-code contract", () => {
 	const base = () => `http://127.0.0.1:${server.port}`;
 	const heads = () => requests.filter((r) => r.startsWith("HEAD "));
 
-	test("freshness claude: the channel, its manifest, then a HEAD per Linux binary", async () => {
+	test("freshness claude: the channel, its manifest, then a HEAD per Linux binary and its .zst", async () => {
 		const report = await checkClaude("stable", base());
 		expect(report.ok, report.lines.join("\n")).toBe(true);
-		expect(report.lines).toEqual([`Claude Code stable ${VERSION}: manifest and linux-x64 + linux-arm64 binaries match bin/install-claude-code`]);
-		expect(requests).toEqual(["GET /stable", `GET /${VERSION}/manifest.json`, ...CLAUDE_PLATFORMS.map((p) => `HEAD /${VERSION}/${p}/claude`)]);
+		expect(report.lines).toEqual([`Claude Code stable ${VERSION}: manifest, linux-x64 + linux-arm64 binaries and .zst builds match bin/install-claude-code`]);
+		expect(requests).toEqual([
+			"GET /stable",
+			`GET /${VERSION}/manifest.json`,
+			...CLAUDE_PLATFORMS.flatMap((p) => [`HEAD /${VERSION}/${p}/claude`, `HEAD /${VERSION}/${p}/claude.zst`]),
+		]);
+	});
+
+	test("freshness claude: a missing .zst fails, naming the fallback", async () => {
+		zst = "missing";
+		const report = await checkClaude("stable", base());
+		expect(report.ok).toBe(false);
+		expect(report.lines[0]).toContain("linux-x64/claude.zst is missing (the installer falls back to the uncompressed binary)");
+		expect(report.lines[0]).toContain("linux-arm64/claude.zst is missing");
 	});
 
 	test("freshness claude: a binary whose length differs from the manifest fails", async () => {
@@ -417,7 +592,7 @@ describe("install-claude-code contract", () => {
 		const report = await checkClaude("stable", base());
 		expect(report.ok, report.lines.join("\n")).toBe(true);
 		expect(report.lines[1]).toContain("no Content-Length for linux-x64 + linux-arm64/claude; size not checked");
-		expect(heads()).toHaveLength(2);
+		expect(heads()).toHaveLength(4);
 	});
 
 	test("freshness claude: a pointer that is not a version, or the old manifest, fails before any HEAD", async () => {

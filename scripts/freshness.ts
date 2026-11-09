@@ -351,8 +351,10 @@ export async function checkUpstream(version = pinnedVersion()): Promise<Report> 
 
 /**
  * Claude Code's `channel` pointer names a version whose manifest has both
- * Linux platforms, and each binary answers with the manifest's size: what
- * bin/install-claude-code needs. HEAD only; nothing large is downloaded.
+ * Linux platforms, each binary answers with the manifest's size, and each has
+ * a `claude.zst` next to it (the installer's first choice; the manifest has
+ * no size for it): what bin/install-claude-code needs. HEAD only; nothing
+ * large is downloaded.
  * `base` is for tests (the installer tests' fake download server).
  */
 export async function checkClaude(channel: "stable" | "latest" = "stable", base = CLAUDE_RELEASES_URL): Promise<Report> {
@@ -375,11 +377,17 @@ export async function checkClaude(channel: "stable" | "latest" = "stable", base 
 		const header = (await fetchOk(url, { "Accept-Encoding": "identity" }, "HEAD")).headers.get("content-length");
 		if (header === null || !/^\d+$/.test(header)) unchecked.push(platform);
 		else if (Number(header) !== size) problems.push(`${platform}/claude is ${header} bytes, but the manifest says ${size}`);
+		try {
+			await fetchOk(`${url}.zst`, { "Accept-Encoding": "identity" }, "HEAD");
+		} catch (error) {
+			if (!(error instanceof NotFound)) throw error;
+			problems.push(`${platform}/claude.zst is missing (the installer falls back to the uncompressed binary)`);
+		}
 	}
 	if (problems.length) {
 		return { ok: false, lines: [`Claude Code ${channel} ${version}: ${manifestUrl} ${problems.join("; ")}; update bin/install-claude-code`] };
 	}
-	const lines = [`Claude Code ${channel} ${version}: manifest and ${CLAUDE_PLATFORMS.join(" + ")} binaries match bin/install-claude-code`];
+	const lines = [`Claude Code ${channel} ${version}: manifest, ${CLAUDE_PLATFORMS.join(" + ")} binaries and .zst builds match bin/install-claude-code`];
 	if (unchecked.length) lines.push(`  note: no Content-Length for ${unchecked.join(" + ")}/claude; size not checked (the installer still verifies size and SHA-256)`);
 	return { ok: true, lines };
 }

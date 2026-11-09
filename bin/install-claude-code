@@ -10,11 +10,18 @@
 # It follows Anthropic's install.sh (https://claude.ai/install.sh) with one
 # download instead of two: read the channel pointer, then
 # <ver>/manifest.json's .platforms[<platform>] {checksum, size}; download
-# <ver>/<platform>/claude (resumable), check its size and SHA-256, stage it as
-# versions/<ver>, then run `<it> install <ver>`. Claude's installer finds the
+# <ver>/<platform>/claude.zst (resumable, about a third of the size) and
+# decompress it with the image's zstd, check the binary's size and SHA-256,
+# stage it as versions/<ver>, then run `<it> install <ver>`. The manifest has
+# no entry for the .zst, so only the decompressed binary is verified, as
+# install.sh does. Without zstd, when there is no .zst (HTTP 403, 404 or
+# 410), or when an uncompressed partial is already there, it downloads
+# <ver>/<platform>/claude itself instead. Other errors (a 5xx, a dropped
+# connection) keep the .zst partial for a retry. Claude's installer finds the
 # staged version and only writes the launcher link and its own settings
 # (about 25 KiB of traffic, measured 2026-11-08 with 2.1.311).
-# scripts/freshness.ts `claude` checks this manifest contract daily.
+# scripts/freshness.ts `claude` checks this manifest contract, and that both
+# downloads exist, daily.
 #
 # A `claude` already on PATH (installed by hand, by T3's /welcome, or by an
 # earlier run) always wins: nothing is downloaded or replaced. A verified
@@ -28,7 +35,8 @@
 #
 # Test hooks: CLAUDE_CODE_RELEASES_URL (download base), INSTALL_CLAUDE_CODE_BACKOFF
 # (space-separated seconds between --keep-trying rounds),
-# INSTALL_CLAUDE_CODE_STALL_SECONDS (stall limit, default 120).
+# INSTALL_CLAUDE_CODE_STALL_SECONDS (stall limit, default 120),
+# INSTALL_CLAUDE_CODE_ZSTD (the zstd command, default zstd).
 set -euo pipefail
 
 RELEASES_URL="${CLAUDE_CODE_RELEASES_URL:-https://downloads.claude.ai/claude-code-releases}"
@@ -36,6 +44,7 @@ RELEASES_URL="${CLAUDE_CODE_RELEASES_URL:-https://downloads.claude.ai/claude-cod
 BACKOFF="${INSTALL_CLAUDE_CODE_BACKOFF:-15 60 300 900 1800 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600}"
 
 STALL_SECONDS="${INSTALL_CLAUDE_CODE_STALL_SECONDS:-120}"
+ZSTD="${INSTALL_CLAUDE_CODE_ZSTD:-zstd}"
 VERSION_RE='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
 
 usage() { echo "usage: install-claude-code [--keep-trying] [stable|latest|X.Y.Z]" >&2; exit 2; }
@@ -104,27 +113,67 @@ attempt() {
 	return "$status"
 }
 
-# Fetch the binary into $1 from $2, resuming a partial: up to three curl runs.
-# A server that refuses to resume (curl exit 33) restarts from zero.
+# Fetch $2 into $1, resuming a partial: up to three curl runs. A server that
+# refuses to resume (curl exit 33) restarts from zero. Returns 0; 22 when the
+# file is not there (HTTP 403, 404 or 410, not retried); or 1 for anything
+# else, a 5xx included, with the partial kept for the next attempt.
 download() {
-	local part="$1" url="$2" rc try
+	local part="$1" url="$2" rc http try
 	for try in 1 2 3; do
 		rc=0
-		curl -fsSL --connect-timeout 30 --speed-limit 1024 --speed-time "$STALL_SECONDS" --max-time 7200 \
-			--continue-at - -o "$part" "$url" || rc=$?
-		case "$rc" in
-		0) return 0 ;;
-		33)
+		http="$(curl -fsSL --connect-timeout 30 --speed-limit 1024 --speed-time "$STALL_SECONDS" --max-time 7200 \
+			--continue-at - -w '%{http_code}' -o "$part" "$url")" || rc=$?
+		case "$rc:$http" in
+		0:*) return 0 ;;
+		22:403 | 22:404 | 22:410) return 22 ;;
+		33:*)
 			log "the server refused to resume; downloading from the start"
 			rm -f "$part"
 			;;
 		*)
-			log "download stopped (curl exit ${rc}) at $(($(stat -c %s "$part" 2>/dev/null || echo 0) / 1048576)) MiB"
+			log "download stopped (curl exit ${rc}$([ "$rc" -eq 22 ] && echo ", HTTP ${http}")) at $(($(stat -c %s "$part" 2>/dev/null || echo 0) / 1048576)) MiB"
 			[ "$try" -lt 3 ] && sleep 1
 			;;
 		esac
 	done
 	return 1
+}
+
+# Fill $1 with the uncompressed Claude Code $2 (manifest size $3; $4 bytes
+# already there). The caller checks it against the manifest either way.
+fetch_binary() {
+	local part="$1" version="$2" size="$3" have="$4" rc=0
+	local url="${RELEASES_URL}/${version}/${platform}/claude"
+	if [ "$have" -eq 0 ] && command -v "$ZSTD" >/dev/null 2>&1; then
+		local zpart="${part%.part}.zst.part"
+		log "downloading Claude Code ${version} (${platform}, compressed$([ -s "$zpart" ] && echo ", resuming at $(($(stat -c %s "$zpart") / 1048576)) MiB"))"
+		download "$zpart" "${url}.zst" || rc=$?
+		case "$rc" in
+		0)
+			# A .zst that does not decompress is discarded: the next attempt starts over.
+			if "$ZSTD" -dqf "$zpart" -o "$part"; then
+				rm -f "$zpart"
+				return 0
+			fi
+			rm -f "$zpart" "$part"
+			log "the compressed download did not decompress; discarded"
+			return 1
+			;;
+		22)
+			rm -f "$zpart"
+			log "no compressed build upstream; downloading the uncompressed one"
+			;;
+		*)
+			log "download interrupted; a later attempt resumes it"
+			return 1
+			;;
+		esac
+	fi
+	log "downloading Claude Code ${version} (${platform}, $((size / 1048576)) MiB$([ "$have" -gt 0 ] && echo ", resuming at $((have / 1048576)) MiB"))"
+	if ! download "$part" "$url"; then
+		log "download interrupted; a later attempt resumes it"
+		return 1
+	fi
 }
 
 try_install() {
@@ -163,6 +212,8 @@ try_install() {
 	fi
 
 	local staged="${versions_dir}/${version}"
+	# fetch_binary's compressed download; removed once a verified binary exists.
+	local zpart="${downloads_dir}/claude-${version}-${platform}.zst.part"
 	# A verified file that cannot be made executable is replaced, not reused.
 	if [ -f "$staged" ] && [ "$(stat -c %s "$staged")" = "$size" ] && [ "$(sha256_of "$staged")" = "$checksum" ] &&
 		{ [ -x "$staged" ] || chmod 0755 "$staged" 2>/dev/null; }; then
@@ -176,12 +227,8 @@ try_install() {
 			rm -f "$part"
 			have=0
 		fi
-		if [ "$have" -ne "$size" ]; then
-			log "downloading Claude Code ${version} (${platform}, $((size / 1048576)) MiB$([ "$have" -gt 0 ] && echo ", resuming at $((have / 1048576)) MiB"))"
-			if ! download "$part" "${RELEASES_URL}/${version}/${platform}/claude"; then
-				log "download interrupted; a later attempt resumes it"
-				return 1
-			fi
+		if [ "$have" -ne "$size" ] && ! fetch_binary "$part" "$version" "$size" "$have"; then
+			return 1
 		fi
 		if [ "$(stat -c %s "$part")" != "$size" ] || [ "$(sha256_of "$part")" != "$checksum" ]; then
 			rm -f "$part"
@@ -190,7 +237,7 @@ try_install() {
 		fi
 		# T3's /welcome Install (Anthropic's install.sh) may have finished meanwhile.
 		if present; then
-			rm -f "$part"
+			rm -f "$part" "$zpart"
 			return 0
 		fi
 		# set -e is off inside a function called from a condition: check each step.
@@ -199,6 +246,8 @@ try_install() {
 			return 1
 		fi
 	fi
+	# A run stopped between decompressing and cleaning up leaves the .zst.
+	rm -f "$zpart"
 
 	present && return 0
 	log "setting up Claude Code ${version}"

@@ -336,7 +336,7 @@ export const BROWSER_LIBRARIES = ["libnss3.so", "libgbm.so.1", "libasound.so.2",
 
 /**
  * What the core must provide regardless of selection (presence probes): T3,
- * the language bootstraps (Node, Bun, Python with uv/uvx), sqlite3, the
+ * the language bootstraps (Node, Bun, Python with uv/uvx), sqlite3, zstd, the
  * provider CLIs the image bakes (Claude Code installs into the home in the
  * background and Muse is not bundled, so neither is a core check; see #13),
  * the browser's native libraries, centrs and the core network tools.
@@ -351,6 +351,7 @@ export const CORE_CHECKS: readonly Check[] = [
 	"uv",
 	"uvx",
 	"sqlite3",
+	"zstd",
 	"git",
 	"gh",
 	"ssh",

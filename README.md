@@ -239,7 +239,7 @@ Provider CLIs in this image:
 |---|---|---|
 | Codex (`codex`) | npm global in the image (`/usr/local`) | with each image replacement |
 | opencode (`opencode`) | npm global in the image (`/usr/local`) | with each image replacement |
-| Claude Code (`claude`) | downloaded in the background into the home while no `claude` is on PATH: the stable channel's native build, size- and SHA-256-checked against Anthropic's manifest, set up with Claude's own `install` (same layout as Anthropic's installer: `/data/.local/share/claude/versions/<ver>`, linked from `/data/.local/bin/claude`). Its license forbids redistributing it, so it cannot be baked in. Retries for about a day; log in `/data/.local/state/t3code/install-claude-code.log`. Run `install-claude-code` to retry now, or use **Install** on T3's welcome screen | not by image updates: it lives in the home |
+| Claude Code (`claude`) | downloaded in the background into the home while no `claude` is on PATH: the stable channel's native build, fetched as its `.zst` (about 99 MiB instead of 280 MiB) and size- and SHA-256-checked against Anthropic's manifest after decompressing, set up with Claude's own `install` (same layout as Anthropic's installer: `/data/.local/share/claude/versions/<ver>`, linked from `/data/.local/bin/claude`). Its license forbids redistributing it, so it cannot be baked in. Retries for about a day; log in `/data/.local/state/t3code/install-claude-code.log`. Run `install-claude-code` to retry now, or use **Install** on T3's welcome screen | not by image updates: it lives in the home |
 | [Meta Muse Code](https://dev.meta.ai/docs/muse-code) (`muse`) | **not bundled** since the final #5 slice (it added about 396 MiB to every image) | — |
 
 T3's own provider drivers are unchanged, including Muse's. To use Muse,
@@ -261,7 +261,7 @@ keeps the delivery above until then.
 
 The image includes Debian command-line basics (`bash`, `awk`, `sed`, `grep`,
 `find`, `diff`, `tar`, `gzip`), Git/SSH, the GitHub CLI (`gh`), curl, jq,
-ripgrep, make, the `sqlite3` CLI, Python 3 with
+ripgrep, make, the `sqlite3` CLI, zstd, Python 3 with
 [uv](https://docs.astral.sh/uv/) and `uvx`, and Node.js/npm in addition to
 the agent and RouterOS tools below. This is a selected toolset; `make` does
 not imply a C/C++ compiler, and other language SDKs are out of scope. The
@@ -503,7 +503,7 @@ boot firmware only (SeaBIOS to "No bootable device", and a 16-byte aarch64
 program that powers the machine off). For a payload group, a file check is a
 path inside the payload, reported through `groups/<group>/current/root/…`.
 Core checks (`t3`, Node, Bun,
-Python with uv/uvx, sqlite3, Git/SSH, `gh`, centrs, the core network tools, the
+Python with uv/uvx, sqlite3, zstd, Git/SSH, `gh`, centrs, the core network tools, the
 baked `codex` and `opencode`, and the browser's native libraries) are
 reported separately as `core.state`. At each start the entrypoint logs warnings and a summary to
 the container log and writes the same JSON to `/tmp/t3code-tools/status.json`.

@@ -228,7 +228,7 @@ test.skipIf(!image)(
 				await run(
 					"bash",
 					shell,
-					`set -e; bun --version; bunx --version; quickchr --help; centrs explain '/ip/address print' --json; uv --version; uvx --version; sqlite3 --version; gh --version; codex --version; qemu-system-x86_64 --version; qemu-system-aarch64 --version; qemu-img --version; ${devTools}`,
+					`set -e; bun --version; bunx --version; quickchr --help; centrs explain '/ip/address print' --json; uv --version; uvx --version; sqlite3 --version; zstd --version; gh --version; codex --version; qemu-system-x86_64 --version; qemu-system-aarch64 --version; qemu-img --version; ${devTools}`,
 				);
 				for (const [group, ok] of Object.entries(nativeOk)) expect(await groupTools(group, shell)).toContain(ok);
 			}
