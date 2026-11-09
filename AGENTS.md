@@ -29,9 +29,18 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   files that assert literal shell `${...}` text.
 - `make freshness` — drift checks (`scripts/freshness.ts`, needs network):
   the README share link, the pinned T3 release (stable, both Linux archives)
-  and its harness catalog, the newest stable T3, and the Claude Code
-  download contract `bin/install-claude-code` reads. CI runs `pinned` on every
+  and its harness catalog, the newest stable T3, the Claude Code
+  download contract `bin/install-claude-code` reads, and `tools`: every other
+  pinned download (`TOOL_PINS`: gh, uv, Bun, hadolint, ShellCheck,
+  actionlint) against its upstream's latest release. CI runs `pinned` on every
   PR; `freshness.yml` runs them all daily, and a red run there means bump.
+  While the scheduled run is red it keeps one open `freshness` issue with the
+  latest report (`scripts/freshness-issue.sh`) and closes it when green.
+- Workflow actions are pinned to a commit SHA with the release in a comment
+  (`uses: actions/checkout@<sha> # v6.1.0`). Dependabot (`.github/dependabot.yml`,
+  GitHub Actions only) moves both monthly in one grouped PR; pin new actions
+  the same way. Bun's version is in the Dockerfile (`BUN_VER`) and every
+  setup-bun step; `test/app-yaml.test.ts` keeps them equal.
 - `APP_T3CODE_INTEGRATION=1 bun test test/integration/` — full CHR
   boot + container install + web UI probe. Needs QEMU and network; slow
   (the GHCR image pull alone is ~1GB on a free-license CHR).

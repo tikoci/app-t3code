@@ -212,6 +212,19 @@ describe("release sync", () => {
 	});
 });
 
+describe("Bun pin", () => {
+	test("every workflow's setup-bun runs the image's BUN_VER", () => {
+		const root = join(import.meta.dir, "..");
+		const bunVer = readFileSync(join(root, "Dockerfile"), "utf8").match(/^ARG BUN_VER=(\S+)$/m)?.[1];
+		expect(bunVer).toBeDefined();
+		for (const wf of ["ci.yml", "freshness.yml", "integration.yml"]) {
+			const text = readFileSync(join(root, ".github/workflows", wf), "utf8");
+			const found = [...text.matchAll(/^ +bun-version: "([^"]+)"$/gm)].map((m) => m[1]);
+			expect({ wf, found: [...new Set(found)] }).toEqual({ wf, found: [bunVer] });
+		}
+	});
+});
+
 describe("t3code.tikappstore.yaml", () => {
 	test("is a YAML array carrying the same t3code document", () => {
 		const store = loadYaml(STORE_PATH);

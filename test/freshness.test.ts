@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
 	checkShareLink,
+	checkTools,
 	checkUpstream,
 	compareVersions,
 	DRIVERS_PATH,
@@ -20,6 +21,9 @@ import {
 	shareLinks,
 	stableTagVersions,
 	stableVersion,
+	TOOL_PINS,
+	toolPinReport,
+	toolPinVersion,
 	UPSTREAM_REPO,
 	versionArg,
 } from "../scripts/freshness.ts";
@@ -259,6 +263,51 @@ describe("newest stable (mocked GitHub)", () => {
 		upstream(["v0.1.7"], { "v0.1.7": {} });
 		expect((await checkUpstream("0.1.8-nightly.20261108.4380")).lines[0]).toContain("is not a stable X.Y.Z");
 		expect((await checkUpstream("0.1.8")).lines[0]).toContain("ahead of upstream's newest stable tag v0.1.7");
+	});
+});
+
+describe("tool pins", () => {
+	const realFetch = globalThis.fetch;
+	afterEach(() => {
+		globalThis.fetch = realFetch;
+	});
+
+	test("every pin is set by exactly one line of its file", () => {
+		for (const pin of TOOL_PINS) expect(toolPinVersion(pin, read(pin.file))).toMatch(/^\d+\.\d+\.\d+$/);
+	});
+
+	test("a second line setting a pin is an error, not a silent pick", () => {
+		const gh = TOOL_PINS.find((p) => p.name === "gh");
+		if (!gh) throw new Error("no gh pin");
+		expect(() => toolPinVersion(gh, "ARG GH_VER=2.1.0\nARG GH_VER=2.2.0\n")).toThrow("2 lines set the gh pin");
+		expect(() => toolPinVersion(gh, "")).toThrow("0 lines set the gh pin");
+	});
+
+	test("the latest tag must be the pin with the repo's tag prefix", () => {
+		const bun = TOOL_PINS.find((p) => p.name === "Bun");
+		if (!bun) throw new Error("no Bun pin");
+		expect(toolPinReport(bun, "1.4.4", "bun-v1.4.4").ok).toBe(true);
+		const stale = toolPinReport(bun, "1.4.4", "bun-v1.4.5");
+		expect(stale.ok).toBe(false);
+		expect(stale.lines[0]).toStartWith("Bun: oven-sh/bun's latest release is bun-v1.4.5; Dockerfile pins 1.4.4. Bump BUN_VER");
+	});
+
+	test("checkTools asks releases/latest for each repo and lists only the stale pins", async () => {
+		const asked: string[] = [];
+		globalThis.fetch = (async (input: string | URL | Request) => {
+			const url = new URL(input instanceof Request ? input.url : input);
+			const repo = url.pathname.match(/^\/repos\/(.+)\/releases\/latest$/)?.[1];
+			const pin = TOOL_PINS.find((p) => p.repo === repo);
+			if (url.hostname !== "api.github.com" || !pin) throw new Error(`unexpected ${url}`);
+			asked.push(pin.repo);
+			const pinned = toolPinVersion(pin, read(pin.file));
+			return Response.json({ tag_name: `${pin.tagPrefix}${pin.name === "uv" ? "9.9.9" : pinned}` });
+		}) as typeof fetch;
+		const report = await checkTools();
+		expect(asked).toEqual(TOOL_PINS.map((p) => p.repo));
+		expect(report.ok).toBe(false);
+		expect(report.lines).toHaveLength(1);
+		expect(report.lines[0]).toStartWith("uv: astral-sh/uv's latest release is 9.9.9;");
 	});
 });
 
