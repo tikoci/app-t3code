@@ -4,7 +4,7 @@
  * exercised.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -41,20 +41,80 @@ describe("entrypoint", () => {
 		expect(ENTRYPOINT).toContain("background providers /usr/local/bin/t3code-providers install --keep-trying");
 		expect(ENTRYPOINT).toContain("background tool-groups /usr/local/bin/t3code-tools install --keep-trying");
 	});
+});
 
-	// One persistent log directory for every background installer (#13).
-	test("background installs log into the home, appending across starts", async () => {
-		const stub = join(dir, "t3code-providers");
-		writeFileSync(stub, '#!/bin/sh\necho "providers $*"\n');
-		chmodSync(stub, 0o755);
-		const log = join(dir, "home", ".local", "state", "t3code", "providers.log");
+/**
+ * The entrypoint's `background` log helper, run for real: t3code-providers is
+ * a fake installer and t3code-tools a missing file. Every background
+ * installer logs into /data/.local/state/t3code (#13).
+ */
+describe("background install logs", () => {
+	let dir: string;
+	let entrypoint: string;
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "entrypoint-"));
+		const fake = join(dir, "fake-installer");
+		writeFileSync(fake, '#!/bin/sh\necho "fake installer ran: $*"\n');
+		chmodSync(fake, 0o755);
+		entrypoint = join(dir, "entrypoint.sh");
+		writeFileSync(entrypoint, ENTRYPOINT.replaceAll("/usr/local/bin/t3code-providers", fake).replaceAll("/usr/local/bin/t3code-tools", join(dir, "absent")));
+		mkdirSync(join(dir, "home"));
+	});
+	afterEach(() => {
+		chmodSync(dir, 0o755);
+		Bun.spawnSync(["chmod", "-R", "u+w", dir]);
+		rmSync(dir, { recursive: true, force: true });
+	});
+
+	async function start() {
+		const proc = Bun.spawn(["bash", entrypoint, "sh", "-c", "echo server started"], {
+			env: { HOME: join(dir, "home"), PATH: "/usr/bin:/bin" },
+			stdout: "pipe",
+			stderr: "pipe",
+		});
+		const [out, err, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
+		return { code, out, err };
+	}
+	const log = () => join(dir, "home/.local/state/t3code/providers.log");
+
+	test("each start appends to the persistent log", async () => {
 		for (let i = 0; i < 2; i++) {
-			const proc = Bun.spawn(["bash", entrypoint, "true"], { env: { HOME: join(dir, "home"), PATH: "/usr/bin:/bin" }, stdout: "pipe", stderr: "pipe" });
-			const [err, code] = await Promise.all([new Response(proc.stderr).text(), proc.exited]);
+			const { code, out, err } = await start();
 			expect(code, err).toBe(0);
-			for (let t = 0; t < 100 && !(existsSync(log) && readFileSync(log, "utf8").split("install").length > i + 1); t++) await Bun.sleep(20);
+			expect(out).toContain("server started");
 		}
-		const lines = readFileSync(log, "utf8").trim().split("\n");
-		expect(lines.filter((line) => line === "providers install --keep-trying").length).toBe(2);
+		for (let i = 0; i < 100 && (readFileSync(log(), "utf8").match(/fake installer ran/g) ?? []).length < 2; i++) await Bun.sleep(20);
+		expect(readFileSync(log(), "utf8").match(/fake installer ran: install --keep-trying/g)).toHaveLength(2);
+	});
+
+	test("a log over 1 MiB is rotated once", async () => {
+		mkdirSync(join(dir, "home/.local/state/t3code"), { recursive: true });
+		writeFileSync(log(), "x".repeat(1048577));
+		expect((await start()).code).toBe(0);
+		expect(statSync(`${log()}.1`).size).toBe(1048577);
+		for (let i = 0; i < 100 && !readFileSync(log(), "utf8").includes("fake installer ran"); i++) await Bun.sleep(20);
+		expect(readFileSync(log(), "utf8")).toStartWith("fake installer ran");
+	});
+
+	test.skipIf(process.getuid?.() === 0)("an unwritable state directory never stops the server", async () => {
+		mkdirSync(join(dir, "home/.local/state"), { recursive: true });
+		chmodSync(join(dir, "home/.local/state"), 0o555);
+		const { code, out, err } = await start();
+		expect(code, err).toBe(0);
+		expect(out).toContain("server started");
+		expect(err).toContain("cannot write");
+		// stderr closes only once the background installer has exited too.
+		expect(err).toContain("fake installer ran: install --keep-trying");
+	});
+
+	test.skipIf(process.getuid?.() === 0)("a read-only log falls back to the container log; the installer still runs", async () => {
+		mkdirSync(join(dir, "home/.local/state/t3code"), { recursive: true });
+		writeFileSync(log(), "earlier run\n", { mode: 0o444 });
+		const { code, out, err } = await start();
+		expect(code, err).toBe(0);
+		expect(out).toContain("server started");
+		expect(err).toContain("cannot write");
+		expect(err).toContain("fake installer ran: install --keep-trying");
+		expect(readFileSync(log(), "utf8")).toBe("earlier run\n");
 	});
 });
