@@ -14,7 +14,7 @@
 import { accessSync, constants, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DEB_LOCK_FILE, resolveDebLock, type WrapperRule } from "./deb-payloads.ts";
-import { buildProviderStatus, providerSummary, stateDir } from "./providers.ts";
+import { buildProviderStatus, PROVIDERS_ENV, providerSummary, stateDir } from "./providers.ts";
 import {
 	APP_HOME,
 	activateIfIdle,
@@ -602,6 +602,7 @@ export function buildStatus(
 	probe: Probe = systemProbe,
 	inventoryDir = BUILD_INVENTORY_DIR,
 	payloads: PayloadEnv | null = defaultPayloadEnv(PAYLOAD_SPEC_DIR),
+	providers: string | undefined | null = process.env[PROVIDERS_ENV],
 ) {
 	const selection = parseToolGroups(raw);
 	const core = CORE_CHECKS.map((check) => runCheck(check, probe));
@@ -615,13 +616,13 @@ export function buildStatus(
 			groupStatus(group, selection.selected.includes(group.name), probe, isPayloadGroup(group) && payloads ? payloadInfo(group, payloads) : undefined),
 		),
 		// Provider CLIs are not groups (T3CODE_PROVIDERS, #13); `t3code-providers status` has the detail.
-		providers: buildProviderStatus(process.env.T3CODE_PROVIDERS, probe.which).providers.map(({ token, selected, state, path }) => ({ token, selected, state, path })),
+		providers: buildProviderStatus(providers, probe.which).providers.map(({ token, selected, state, path }) => ({ token, selected, state, path })),
 		buildInventory: readBuildInventory(inventoryDir),
 		runtimeStatusPath: RUNTIME_STATUS_PATH,
 		notes: [
 			"npm and deb groups install in the background into the home and are reused across container replacement; not-implemented groups have no installer yet.",
 			`Unset or empty ${SELECTOR_ENV} selects the default "${DEFAULT_TOOL_GROUPS}"; "none" is core only. Installing a group grants no privileges (see each group's privileges).`,
-			"Provider CLIs are not tool groups: T3CODE_PROVIDERS installs them into the home in the background (t3code-providers status, issue #13).",
+			"Provider CLIs are not tool groups: T3CODE_PROVIDERS installs them into the home in the background (issue #13). The providers block is as of generatedAt; t3code-providers status is always live.",
 			"A deb group's file checks are paths inside its payload root, reported through the group's current link.",
 			"Checks are presence probes (PATH, files, ldconfig), not functional tests or capability grants.",
 			"Change the selection with /app/set environment= (see README), never by reapplying the /app YAML.",

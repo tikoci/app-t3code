@@ -16,7 +16,17 @@
 import { closeSync, ftruncateSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, writeFileSync, writeSync } from "node:fs";
 import { join } from "node:path";
 import { HARNESSES, type Harness, type Install } from "./harnesses.ts";
-import { APP_HOME, INTERACTIVE_BACKOFF_MS, isSameProcess, KEEP_TRYING_BACKOFF_MS, kernelFlock, LOCK_EX, LOCK_NB, processStartTicks } from "./tool-payloads.ts";
+import {
+	APP_HOME,
+	INTERACTIVE_BACKOFF_MS,
+	isSameProcess,
+	KEEP_TRYING_BACKOFF_MS,
+	kernelFlock,
+	LOCK_EX,
+	LOCK_NB,
+	type ProcessId,
+	processStartTicks,
+} from "./tool-payloads.ts";
 
 export const PROVIDERS_ENV = "T3CODE_PROVIDERS";
 /** The shipped default: an explicit list, so a provider added later is never enabled silently. */
@@ -99,6 +109,8 @@ export interface InstallerRecord {
 	startedAt: string;
 	/** Set while the installer waits between rounds (it holds no lock then). */
 	waitingUntil?: string;
+	/** The install step running now, in its own process group. */
+	child?: ProcessId & { processGroup?: boolean };
 }
 
 export interface ProviderState {
@@ -115,11 +127,12 @@ export function readProviderState(dir: string): ProviderState {
 	}
 }
 
+/** Only the lock holder writes the state. */
 function writeProviderState(dir: string, state: ProviderState) {
 	mkdirSync(dir, { recursive: true });
 	const path = join(dir, "providers.json");
-	writeFileSync(`${path}.tmp`, `${JSON.stringify(state, null, 2)}\n`);
-	renameSync(`${path}.tmp`, path);
+	writeFileSync(`${path}.${process.pid}.tmp`, `${JSON.stringify(state, null, 2)}\n`);
+	renameSync(`${path}.${process.pid}.tmp`, path);
 }
 
 // --- status ----------------------------------------------------------------
@@ -214,14 +227,27 @@ export function formatProviderStatus(status: ProvidersStatus): string {
 /** Longest one provider install may run before it is stopped and retried. */
 export const INSTALL_TIMEOUT_MS = 2 * 60 * 60_000;
 
+export type Child = ProcessId & { processGroup?: boolean };
+
 export interface InstallEnv {
 	dir: string;
 	which: Which;
 	backoffMs: readonly number[];
 	sleep: (ms: number) => Promise<void>;
 	log: (line: string) => void;
-	/** Runs one installer step; resolves to its exit code. */
-	run: (argv: string[], env: Record<string, string>) => Promise<number>;
+	/** Runs one installer step and reports its process; resolves to its exit code. */
+	run: (argv: string[], env: Record<string, string>, onSpawn: (child: Child) => void) => Promise<number>;
+}
+
+/** SIGKILL an install step and everything it started, if it is still the same process. */
+export function stopChild(child: Child): boolean {
+	if (!isSameProcess(child)) return false;
+	try {
+		process.kill(child.processGroup ? -child.pid : child.pid, "SIGKILL");
+	} catch {
+		return false;
+	}
+	return true;
 }
 
 export function defaultInstallEnv(keepTrying: boolean): InstallEnv {
@@ -231,9 +257,20 @@ export function defaultInstallEnv(keepTrying: boolean): InstallEnv {
 		backoffMs: keepTrying ? KEEP_TRYING_BACKOFF_MS : INTERACTIVE_BACKOFF_MS,
 		sleep: (ms) => Bun.sleep(ms),
 		log: (line) => console.log(`${new Date().toISOString()} t3code-providers: ${line}`),
-		run: async (argv, env) => {
-			const proc = Bun.spawn(argv, { env: { ...process.env, ...env }, stdin: "ignore", stdout: "inherit", stderr: "inherit", timeout: INSTALL_TIMEOUT_MS });
-			return await proc.exited;
+		run: async (argv, env, onSpawn) => {
+			// util-linux setsid (not a group leader, so it execs in place): the
+			// step gets its own process group, so a timeout, or the next
+			// installer after this one died, stops npm or a vendor script with
+			// everything it started.
+			const proc = Bun.spawn(["setsid", ...argv], { env: { ...process.env, ...env }, stdin: "ignore", stdout: "inherit", stderr: "inherit" });
+			const child = { pid: proc.pid, startTicks: processStartTicks(proc.pid), processGroup: true };
+			onSpawn(child);
+			const timer = setTimeout(() => stopChild(child), INSTALL_TIMEOUT_MS);
+			try {
+				return await proc.exited;
+			} finally {
+				clearTimeout(timer);
+			}
 		},
 	};
 }
@@ -267,10 +304,17 @@ function tryLock(dir: string): number | null {
 }
 
 /** Install one provider; returns an error message, or null once its CLI is on PATH. */
-async function installOne(provider: Provider, env: InstallEnv): Promise<string | null> {
+async function installOne(provider: Provider, env: InstallEnv, recordChild: (child: Child | null) => void): Promise<string | null> {
 	for (const step of installSteps(provider, env.dir)) {
 		env.log(`${provider.token}: ${step.argv.join(" ")}`);
-		const code = await env.run(step.argv, step.env);
+		let code: number;
+		try {
+			code = await env.run(step.argv, step.env, recordChild);
+		} catch (error) {
+			return `could not start ${step.argv[0]}: ${error instanceof Error ? error.message : String(error)}`;
+		} finally {
+			recordChild(null);
+		}
 		if (code !== 0) return `${step.argv[0]} exited ${code}`;
 	}
 	rmSync(join(env.dir, "downloads", `${provider.token}-install.sh`), { force: true });
@@ -282,13 +326,14 @@ async function installOne(provider: Provider, env: InstallEnv): Promise<string |
  * Install every selected provider whose CLI is missing, in rounds: one
  * attempt each per round, then the back-off. The lock is held only during a
  * round, so `t3code-providers install` from a terminal can run while the
- * background installer waits. Returns 0 when every selected CLI is present,
- * 1 on failure or when another installer holds the lock (interactive only).
+ * background installer waits; only the lock holder writes the state. An
+ * install step left running by an installer that died is stopped first.
+ * Returns 0 when every selected CLI is present, 1 on failure or when another
+ * installer holds the lock (interactive only).
  */
 export async function installProviders(selected: readonly string[], env: InstallEnv): Promise<number> {
 	const wanted = PROVIDERS.filter((p) => selected.includes(p.token) && p.install.kind !== "t3");
-	const startedAt = new Date().toISOString();
-	const me = { pid: process.pid, startTicks: processStartTicks(process.pid), startedAt };
+	const me: InstallerRecord = { pid: process.pid, startTicks: processStartTicks(process.pid), startedAt: new Date().toISOString() };
 	const keepTrying = env.backoffMs.length > INTERACTIVE_BACKOFF_MS.length;
 	for (let round = 0; ; round++) {
 		const fd = tryLock(env.dir);
@@ -302,23 +347,34 @@ export async function installProviders(selected: readonly string[], env: Install
 			missing = wanted;
 		} else {
 			try {
-				missing = wanted.filter((p) => p.cli && !env.which(p.cli));
 				const state = readProviderState(env.dir);
-				state.installer = me;
+				const orphan = state.installer?.child;
+				if (orphan && stopChild(orphan)) {
+					env.log(`stopping install step pid ${orphan.pid}, left running by an interrupted installer`);
+					for (let i = 0; i < 100 && isSameProcess(orphan); i++) await Bun.sleep(50);
+				}
+				state.installer = { ...me };
+				missing = wanted.filter((p) => p.cli && !env.which(p.cli));
 				for (const p of wanted.filter((p) => !missing.includes(p))) {
 					if (state.providers[p.token]?.state !== "ready") state.providers[p.token] = { state: "ready", at: new Date().toISOString() };
 				}
 				writeProviderState(env.dir, state);
+				const recordChild = (child: Child | null) => {
+					state.installer = child ? { ...me, child } : { ...me };
+					writeProviderState(env.dir, state);
+				};
 				for (const provider of missing) {
 					state.providers[provider.token] = { state: "installing", at: new Date().toISOString() };
 					writeProviderState(env.dir, state);
-					const error = await installOne(provider, env);
+					const error = await installOne(provider, env, recordChild);
 					state.providers[provider.token] = error ? { state: "failed", at: new Date().toISOString(), error } : { state: "ready", at: new Date().toISOString() };
 					env.log(`${provider.token}: ${error ? `failed: ${error}` : "ready"}`);
 					writeProviderState(env.dir, state);
 				}
 				missing = missing.filter((p) => state.providers[p.token]?.state !== "ready");
-				if (missing.length === 0 || round >= env.backoffMs.length) delete state.installer;
+				const wait = env.backoffMs[round];
+				if (missing.length && wait !== undefined) state.installer = { ...me, waitingUntil: new Date(Date.now() + wait).toISOString() };
+				else delete state.installer;
 				writeProviderState(env.dir, state);
 			} finally {
 				closeSync(fd);
@@ -330,9 +386,6 @@ export async function installProviders(selected: readonly string[], env: Install
 			env.log(`giving up for now on ${missing.map((p) => p.token).join(", ")}; the next container start retries (t3code-providers install retries now)`);
 			return 1;
 		}
-		const state = readProviderState(env.dir);
-		state.installer = { ...me, waitingUntil: new Date(Date.now() + wait).toISOString() };
-		writeProviderState(env.dir, state);
 		await env.sleep(wait);
 	}
 }

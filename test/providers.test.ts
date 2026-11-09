@@ -4,7 +4,7 @@
  * npm install of Codex in the image.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { closeSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync } from "node:fs";
+import { closeSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import YAML from "js-yaml";
@@ -22,7 +22,7 @@ import {
 	readProviderState,
 	USAGE,
 } from "../scripts/providers.ts";
-import { kernelFlock, LOCK_EX, LOCK_NB } from "../scripts/tool-payloads.ts";
+import { isSameProcess, kernelFlock, LOCK_EX, LOCK_NB, processStartTicks } from "../scripts/tool-payloads.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
@@ -200,6 +200,63 @@ describe("installer", () => {
 			closeSync(fd);
 		}
 		expect(await installProviders(["codex"], env)).toBe(0);
+	});
+
+	test("a background installer waits out a busy lock without touching the holder's record", async () => {
+		const holder = { pid: 4242, startTicks: "1", startedAt: "2026-11-09T00:00:00.000Z" };
+		writeFileSync(join(dir, "providers.json"), JSON.stringify({ installer: holder, providers: { codex: { state: "installing", at: holder.startedAt } } }));
+		const fd = openSync(join(dir, "providers.lock"), "a+");
+		const seen: unknown[] = [];
+		try {
+			expect(kernelFlock(fd, LOCK_EX | LOCK_NB)).toBe(true);
+			const background = { ...env, backoffMs: [1, 1, 1], sleep: async () => void seen.push(readProviderState(dir)) };
+			expect(await installProviders(["codex"], background)).toBe(1);
+		} finally {
+			closeSync(fd);
+		}
+		expect(ran).toEqual([]);
+		expect(seen).toHaveLength(3);
+		for (const state of seen) expect(state).toEqual({ installer: holder, providers: { codex: { state: "installing", at: holder.startedAt } } });
+	});
+
+	test("a step that cannot start fails that provider; the round goes on to the next", async () => {
+		env.run = async (argv) => {
+			ran.push(argv);
+			if (argv[0] === "npm") throw new Error("Executable not found in $PATH: \"npm\"");
+			onPath.add("claude");
+			return 0;
+		};
+		expect(await installProviders(["claude", "codex"], { ...env, backoffMs: [] })).toBe(1);
+		const state = readProviderState(dir);
+		expect(state.providers.codex).toMatchObject({ state: "failed", error: 'could not start npm: Executable not found in $PATH: "npm"' });
+		expect(state.providers.claude?.state).toBe("ready");
+		expect(state.installer).toBeUndefined();
+	});
+
+	test("an install step left running by an installer that died is stopped before the next install", async () => {
+		const orphan = Bun.spawn(["sleep", "60"]);
+		const child = { pid: orphan.pid, startTicks: processStartTicks(orphan.pid) };
+		writeFileSync(join(dir, "providers.json"), JSON.stringify({ installer: { pid: 999_999, startTicks: null, startedAt: "x", child }, providers: {} }));
+		const lines: string[] = [];
+		expect(await installProviders(["codex"], { ...env, log: (line) => lines.push(line) })).toBe(0);
+		await orphan.exited;
+		expect(orphan.signalCode).toBe("SIGKILL");
+		expect(isSameProcess(child)).toBe(false);
+		expect(lines[0]).toContain(`stopping install step pid ${orphan.pid}`);
+		expect(readProviderState(dir).installer).toBeUndefined();
+	});
+
+	test("the running step is recorded while it runs, then cleared", async () => {
+		env.run = async (argv, _env, onSpawn) => {
+			onSpawn({ pid: 4243, startTicks: "7", processGroup: true });
+			expect(readProviderState(dir).installer?.child).toEqual({ pid: 4243, startTicks: "7", processGroup: true });
+			onPath.add("codex");
+			ran.push(argv);
+			return 0;
+		};
+		expect(await installProviders(["codex"], env)).toBe(0);
+		expect(ran).toHaveLength(1);
+		expect(readProviderState(dir).installer).toBeUndefined();
 	});
 
 	test("status: selection, T3-managed providers, and CLIs found on PATH", () => {

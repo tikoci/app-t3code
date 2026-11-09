@@ -304,8 +304,9 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 		// Core covers the browser libraries; provider CLIs are T3CODE_PROVIDERS (#13), reported beside core.
 		expect(missing.core.missing).toEqual(expect.arrayContaining(["uv", "uvx", "sqlite3", "gh", "fc-list", ...BROWSER_LIBRARIES]));
 		expect(missing.core.missing).not.toContain("codex");
-		expect(missing.providers.find((p) => p.token === "codex")).toMatchObject({ selected: true, path: null });
-		expect(buildStatus("none", everything, "/nonexistent", null).providers.find((p) => p.token === "codex")?.path).toBe("/usr/bin/codex");
+		const codex = (status: ReturnType<typeof buildStatus>) => status.providers.find((p) => p.token === "codex");
+		expect(codex(buildStatus("all", nothing, "/nonexistent", null, "codex"))).toMatchObject({ selected: true, path: null });
+		expect(codex(buildStatus("none", everything, "/nonexistent", null, "none"))).toMatchObject({ selected: false, path: "/usr/bin/codex" });
 		const present = buildStatus("none", everything, "/nonexistent", null);
 		expect(present.core.state).toBe("ready");
 		expect(Object.fromEntries(present.groups.map((g) => [g.name, g.state]))).toEqual({
