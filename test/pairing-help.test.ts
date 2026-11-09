@@ -31,6 +31,16 @@ describe("RouterOS pairing help", () => {
 		expect(helper).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML|document\.write/);
 	});
 
+	// The command is copied by hand (no Copy button, #30), so it must stay
+	// selectable and reachable by Tab. The browser side of this is the probe's
+	// selection check (docs/research/2026-11-08/pairing-help-probe.mjs).
+	test("the command stays selectable and keyboard-reachable", () => {
+		expect(helper).toContain(".rph-cmd code{overflow-wrap:anywhere;-webkit-user-select:all;user-select:all}");
+		expect(helper).not.toMatch(/user-select:\s*(none|text|contain)/);
+		expect(helper).toContain("command.tabIndex = 0;");
+		expect(helper).toContain('command.addEventListener("focus", () => window.getSelection()?.selectAllChildren(command));');
+	});
+
 	test("the helper parses as a script", () => {
 		expect(() => new Bun.Transpiler({ loader: "js" }).transformSync(helper)).not.toThrow();
 	});
