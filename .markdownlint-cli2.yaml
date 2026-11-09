@@ -1,0 +1,17 @@
+# markdownlint-cli2: which files to lint. Rules live in .markdownlint.yaml
+# (also read by IDE extensions). Do not add a .markdownlintignore: cli2
+# silently ignores it.
+
+globs:
+  - "**/*.md"
+
+ignores:
+  - "**/node_modules/**"
+  - ".git/**"
+  - "scratch/**"
+  # LLM instruction files: a different audience, intentionally loose structure.
+  - "CLAUDE.md"
+  - "AGENTS.md"
+  - ".claude/**"
+  - ".github/copilot-instructions.md"
+  - ".github/instructions/**"

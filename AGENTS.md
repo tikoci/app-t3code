@@ -5,7 +5,10 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
 ## Commands
 
-- `bun run check` — biome (`--error-on-warnings`) + `tsc --noEmit`. The
+- `bun run check` — biome (`--error-on-warnings`) + `tsc --noEmit` +
+  markdownlint (`.markdownlint.yaml` holds the rules,
+  `.markdownlint-cli2.yaml` the globs; LLM instruction files such as this one
+  and `.claude/` are not linted). The
   repo stays at **zero errors and zero warnings**; CI fails on either. If
   you run into one, even one that was already there, you own fixing it in your
   current PR (`bun run lint:fix` handles most).
@@ -13,6 +16,9 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   shipped and test shell scripts (`.hadolint.yaml` lists the ignores and why).
   Needs `hadolint` and `shellcheck` on PATH; CI installs pinned,
   checksum-verified copies.
+- `make lint-actions` — actionlint on `.github/workflows/` (it also runs
+  ShellCheck on every `run:` script). Pinned in CI the same way.
+  `make lint` runs every lint gate CI runs.
 - `bun run test` — offline `/app` YAML contract, the npm and deb tool-payload
   lifecycles and the Claude installer (always runs; fake npm, fake dpkg-deb,
   mirror and Claude download server).
@@ -60,9 +66,10 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 - **Sister projects:** a clear, reproduced bug in centrs, quickchr or T3 gets
   filed there (or handed to an agent in that project) and linked from the
   issue, even if you worked around it here.
-- **Tooling & skills feedback** (#24, pinned): the low-stakes way to *note* a
+- **Tooling & skills feedback** (#29, pinned; it reconstructs #24, hidden
+  since the Amm0Bot suspension): the low-stakes way to *note* a
   possible bug in another tikoci tool without switching tasks. When a tool call
-  fails or misses mid-task, work around it, leave one comment on #24 and get
+  fails or misses mid-task, work around it, leave one comment on #29 and get
   back to the main work; triage happens later, here or in the tool's repo.
   Those failures are still worth that later look. It also covers a skill that
   was missing or not loaded, a missing cross-ref, a confusing error, or a doc
@@ -103,7 +110,11 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   `sha-<commit>` and by a dated `CHANGELOG.md` entry.
 - Every PR that changes the image, the YAML or user-visible behavior adds a
   line under `## Unreleased` in `CHANGELOG.md`. When its `main` build is
-  promoted, rename that heading to the date and the T3 version. Whether
+  promoted, rename that heading to the date and the T3 version, and name the
+  promoted `sha-<commit>`.
+- A change to what the container exposes (listeners, logs, tokens,
+  privileges) or installs at runtime also updates `SECURITY.md`. It follows
+  T3's security model; it documents behavior rather than adding a layer. Whether
   rebuilds of the same T3 version need their own tag (for example
   `0.1.6-r2`) is decided in #6.
 

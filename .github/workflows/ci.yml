@@ -58,12 +58,14 @@ jobs:
           bun-version: "1.4.4"
       - run: bun install
       - run: bun run check
-      - name: Install pinned hadolint and ShellCheck
+      - name: Install pinned hadolint, ShellCheck and actionlint
         env:
           HADOLINT_VER: "2.15.1"
           HADOLINT_SHA256: c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
           SHELLCHECK_VER: "0.11.0"
           SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+          ACTIONLINT_VER: "1.7.12"
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
         run: |
           mkdir -p "$RUNNER_TEMP/bin"
           cd "$RUNNER_TEMP"
@@ -74,8 +76,14 @@ jobs:
           curl -fsSL --retry 3 -O "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VER}/${sc}"
           echo "${SHELLCHECK_SHA256}  ${sc}" | sha256sum -c -
           tar -xJf "$sc" --strip-components=1 -C bin "shellcheck-v${SHELLCHECK_VER}/shellcheck"
+          al="actionlint_${ACTIONLINT_VER}_linux_amd64.tar.gz"
+          curl -fsSL --retry 3 -O "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VER}/${al}"
+          echo "${ACTIONLINT_SHA256}  ${al}" | sha256sum -c -
+          tar -xzf "$al" -C bin actionlint
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - run: make lint-shell
+      # Runs ShellCheck (installed above) on every `run:` script too.
+      - run: make lint-actions
       - run: bun run test
       # The T3CODE_VER this run builds (the pin, or a dispatch's input) is a
       # stable upstream release with both Linux archives, and its harness
@@ -116,9 +124,11 @@ jobs:
           VER="${T3CODE_VER}"
           MINOR="${VER%.*}"
           MAJOR="${MINOR%.*}"
-          echo "ver=$VER" >> "$GITHUB_OUTPUT"
-          echo "minor=$MINOR" >> "$GITHUB_OUTPUT"
-          echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
+          {
+            echo "ver=$VER"
+            echo "minor=$MINOR"
+            echo "major=$MAJOR"
+          } >> "$GITHUB_OUTPUT"
       - name: Load native image for replacement test
         uses: docker/build-push-action@v6
         with:

@@ -5,7 +5,19 @@ RouterOS `/app` YAML. The image version is the upstream T3 Code version, so
 each entry names a date and the T3 version that shipped. Builds are
 identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
 
-## Unreleased — T3 Code 0.1.7
+## Unreleased
+
+- Repository: `SECURITY.md` (private reporting, the trust boundaries, the
+  startup pairing token that RouterOS `read` users can see in
+  `/container/log`, and what installs at runtime). CI now also runs
+  actionlint on the workflows and markdownlint on the docs (`make lint`
+  runs every gate). No image change.
+
+## 2026-11-09 — T3 Code 0.1.7
+
+The newest promoted build is `sha-e9114d1` (`:0.1.7`, `:0.1`, `:0`,
+`:latest`). This entry collects every rebuild of T3 0.1.7 promoted since the
+previous entry, from `sha-c244a7e` (late 2026-11-08 UTC) on.
 
 - **Provider CLIs are now chosen with `T3CODE_PROVIDERS`** (#13), one token
   per provider in T3's main Add provider list: `claude codex cursor grok

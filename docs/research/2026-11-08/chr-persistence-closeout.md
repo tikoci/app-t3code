@@ -81,6 +81,7 @@ noise already known from the 0.1.7 run:
 | Tool groups and payload IDs | `ready`, unchanged | `ready`, unchanged |
 
 Row hashes cover the manifest's `HASHED_TABLES`:
+
 - projects
 - the v2 thread, message, run, turn-item and node projections
 - the v2 and legacy event logs

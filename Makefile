@@ -2,10 +2,15 @@ T3CODE_VER ?= 0.1.7
 IMAGE ?= ghcr.io/tikoci/app-t3code
 PLATFORMS ?= linux/amd64,linux/arm64
 
-.PHONY: check lint-shell test freshness share-link integration build push dev-lock
+.PHONY: check lint lint-shell lint-actions lint-md test freshness share-link integration build push dev-lock
 
 check:
 	bun run check
+
+# Every lint gate CI runs: biome + tsc + markdownlint (bun run check), then the
+# shell and workflow linters, which need hadolint, shellcheck and actionlint
+# on PATH.
+lint: check lint-shell lint-actions
 
 # The Dockerfile (hadolint, which also runs ShellCheck on its RUN steps) and
 # every shell script that ships in the image or runs in its tests. CI runs
@@ -15,6 +20,14 @@ SHELL_SCRIPTS = bin/* docker-entrypoint.sh profile.sh scripts/install-pairing-he
 lint-shell:
 	hadolint Dockerfile
 	shellcheck $(SHELL_SCRIPTS)
+
+# The workflows in .github/workflows. actionlint also runs ShellCheck on each
+# `run:` script when shellcheck is on PATH. CI pins it like hadolint.
+lint-actions:
+	actionlint
+
+lint-md:
+	bun run lint:md
 
 test:
 	bun run test

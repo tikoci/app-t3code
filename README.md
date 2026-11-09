@@ -216,7 +216,9 @@ if you need a fresh one.
 > T3 Code also prints a pairing token, URL and QR code to `/container/log` at
 > every start, including the first one after install. That token expires
 > after about five minutes, and the URL uses the container's internal
-> address, so use the app URL and the command above instead.
+> address, so use the app URL and the command above instead. A RouterOS
+> user in the `read` group can see that token too; see
+> [SECURITY.md](SECURITY.md#the-startup-pairing-token-in-containerlog).
 
 If `PUBLIC_URL` is set in the container, `t3-pairing-link` can print a full
 pairing URL instead of a raw token.
@@ -834,9 +836,9 @@ would also mix tools that need `CAP_NET_RAW`/`CAP_NET_ADMIN` into a group
 whose default mode (TCG, user networking) needs no privileges. `nftables` and `conntrack` join `routing` for the
 same reason: they are Linux router tools that need `CAP_NET_ADMIN`.
 
-#### Roadmap
+#### Group status and open work
 
-`dev`, `capture`, `labs`, `vpn` and `routing` already install as persistent
+`dev`, `capture`, `labs`, `vpn` and `routing` install as persistent
 payloads under `/data` in the background, after T3 starts, and reuse
 compatible payloads across image replacements (write-ups:
 [capture](docs/research/2026-11-06/capture-native-bundle.md),
@@ -845,17 +847,15 @@ compatible payloads across image replacements (write-ups:
 selects all five by name. `browser` is not a group (its libraries stay in
 core, and T3's browser setup is unchanged), and provider CLIs are not a
 group either: they have their own selector,
-[`T3CODE_PROVIDERS`](#providers-t3code_providers) (issue
-[#13](https://github.com/tikoci/app-t3code/issues/13)). Still open
-under [issue #5](https://github.com/tikoci/app-t3code/issues/5): a full image
-build exercised on a CHR with Claude and Codex connected, and the labs
-matrix (native ARM64 hosts, nested RouterOS, transfer, snapshots and
-cleanup); see the
-[final-slice notes](docs/research/2026-11-07/final-tooling-slice.md).
+[`T3CODE_PROVIDERS`](#providers-t3code_providers). The labs matrix (native
+ARM64 hosts, nested RouterOS, transfer, snapshots and cleanup) is still
+open; see the [final-slice notes](docs/research/2026-11-07/final-tooling-slice.md).
 RouterOS privileges and devices are
-[issue #7](https://github.com/tikoci/app-t3code/issues/7); automatic
+[issue #7](https://github.com/tikoci/app-t3code/issues/7), and automatic
 upstream-release and security delivery is
-[issue #6](https://github.com/tikoci/app-t3code/issues/6).
+[issue #6](https://github.com/tikoci/app-t3code/issues/6). The
+[Roadmap issue](https://github.com/tikoci/app-t3code/issues/30) lists all
+open work.
 
 ### Bun and RouterOS tools for agents
 
@@ -925,8 +925,10 @@ tag together.
 
 ```sh
 bun install
-bun run check          # biome + tsc --noEmit
-bun run test           # offline: /app YAML contract and the npm/deb payload lifecycles
+bun run check          # biome + tsc --noEmit + markdownlint
+make lint              # check, plus hadolint/ShellCheck and actionlint (need them on PATH)
+bun run test           # offline, Linux only: YAML contract, payloads, installers
+make freshness         # needs network: upstream T3, Claude download contract, share link
 APP_T3CODE_INTEGRATION=1 bun test test/integration/
 # Build the image, then prove the tools and container-replacement persistence:
 docker build -t app-t3code:test .
@@ -963,14 +965,14 @@ configuration in the home, and that a user-installed `muse` in
 this against the built x86 image before publishing, and builds both image
 architectures. It does not authenticate providers or run paid model requests.
 
-Manual CHR 7.25.1 checks also confirmed the `/data` mount, node UID 1000,
-T3 0.1.6's web endpoint, and project/environment identity through an in-place
-`/app update`. The unchanged registry digest retained the root filesystem;
-the Docker test proves full replacement. Separately, a fixture written
-through `/data` remained on the app disk after disable and container removal,
-but disappeared after assigning YAML, including a comment-only change with
-the original container still present. This is a reproduced destructive path;
-the original agent's precise upgrade commands are unknown.
+Hands-on CHR runs (install, `/app/update` with an offline `/data` backup,
+commands inside the container, before/after manifests of the home) follow
+[`.claude/skills/chr-app-lab`](.claude/skills/chr-app-lab/SKILL.md), and
+their results are in [`docs/research/`](docs/research/). They have
+confirmed that `/app/update` keeps `/data` (projects, threads, settings,
+logins, tool payloads and the environment ID). Assigning `/app/set yaml=`
+to an installed app does not: it wipes the app-owned volume, even for a
+comment-only change.
 
 Both helpers float on `next` on purpose: if a helper breaks, report it
 to [centrs](https://github.com/tikoci/centrs/issues) /
@@ -993,17 +995,25 @@ Verified install flow on CHR 7.25 (x86, free license):
 1. first-boot `deviceMode: { enable: ["container"] }` → `rose` mode
    (the guest-side `/system/device-mode/update` never completes);
 2. `installPackage("container")` (`/app` 404s without the package);
-3. `/disk/format <id> file-system=ext4` (7.25 has `ext4`, no `ext3`)
-   + `/app/settings/set disk=<mount-point>`;
+3. `/disk/format <id> file-system=ext4` (7.25 has `ext4`, no `ext3`),
+   then `/app/settings/set disk=<mount-point>`;
 4. `api … app -X PUT -f yaml=… -f use-https=no --yes`
    (colon-style `3773:3773:web:tcp` ports parse as `firewall-redirects`);
 5. `/app/set … disabled=no` (PUT leaves the app `disabled:true`);
 6. poll `/app` + `/container` (`.running` is the string `"true"`) +
    `GET /.well-known/t3/environment` → `serverVersion`.
 
-`routeros-app-yaml`, `routeros-container`, `routeros-centrs`,
-`routeros-quickchr-cli`, and `tikoci-crossref` skills govern this repo;
-`AGENTS.md` has the working notes.
+The `routeros-app-yaml`, `routeros-container`, `routeros-tikoci-centrs`,
+`routeros-tikoci-quickchr-cli` and `tikoci-crossref` skills govern this
+repo; `AGENTS.md` has the working notes.
+
+## Security and changes
+
+[SECURITY.md](SECURITY.md) covers how to report a vulnerability, the trust
+boundaries (RouterOS access implies container access), the startup pairing
+token in `/container/log`, and what installs at runtime.
+[CHANGELOG.md](CHANGELOG.md) lists the user-visible changes in each
+promoted build.
 
 ## License
 
