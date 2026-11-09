@@ -80,11 +80,18 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
 - Branch from `main`, one PR per slice, squash merge. Merged branches are
   deleted automatically.
-- A ruleset on `main` ("main: image changes need CI") requires the `ci`
-  jobs `lint-test` and `build` and blocks force-push and deletion. A docs-only
-  change skips `build`, which counts as passing, so it waits only on
-  `lint-test`. Admins bypass it; that is what lets small doc fixes go
-  straight to `main`. Don't rename those two jobs without updating the ruleset.
+- A ruleset on `main` ("main: PRs with resolved threads; image changes need
+  CI") requires a pull request (squash only, no approval needed, every
+  review thread resolved) and the `ci` jobs `lint-test` and `build`, and
+  blocks force-push and deletion. A docs-only change skips `build`, which
+  counts as passing, so it waits only on `lint-test`. Admins bypass it; that
+  is what lets small doc fixes go straight to `main`. Don't rename those two
+  jobs without updating the ruleset.
+- **CHANGELOG stamps** (renaming `## Unreleased` after a promotion, below)
+  are pre-approved for anyone with write access: a PR that changes only
+  `CHANGELOG.md`, labeled `skip-review`, merged by its author once
+  `lint-test` passes. Rulesets can't exempt a single file, so a PR is the
+  path for non-admins.
 - Substantive PRs open as **draft**. Another agent in T3 Code reviews the draft,
   then the owner reviews it, then it is marked ready.
 - CI on a draft runs `lint-test` only. The ~10 min image `build` runs when
@@ -124,9 +131,14 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   line under `## Unreleased` in `CHANGELOG.md`. When its `main` build is
   promoted, rename that heading `## <T3 version>-app.<N> — <date>` and
   start the entry with the promoted `sha-<commit>`. `N` exists only once the
-  merge's `ci` run starts, so the rename goes in the next PR or a docs-only
-  commit to `main` (`gh run list --workflow ci.yml --branch main` shows the
-  number).
+  merge's `ci` run starts, so the rename goes in the next PR or a CHANGELOG
+  stamp (see Branches). Take the name from the promoted image, which already
+  includes any re-run suffix:
+  `crane config ghcr.io/tikoci/app-t3code:0.1 | jq -r '.config.Labels["org.opencontainers.image.version"]'`.
+  Without crane, `gh run list --workflow ci.yml --branch main --event push --json number,attempt,headSha`
+  gives the run number and attempt (the run *number*, not its ID).
+- A re-run that rebuilds the image appends the attempt (`0.1.7-app.133.2`),
+  so a pushed `-app.` tag never moves.
 - A change to what the container exposes (listeners, logs, tokens,
   privileges) or installs at runtime also updates `SECURITY.md`. It follows
   T3's security model; it documents behavior rather than adding a layer.

@@ -907,8 +907,9 @@ Images track upstream **stable** T3 Code releases only — no nightlies
 - `ghcr.io/tikoci/app-t3code:0.1`, `:0`, `:latest` — stability aliases
 - `ghcr.io/tikoci/app-t3code:0.1.7-app.<N>` — one promoted build, never
   moved. `N` is the `ci` workflow's run number. PR and branch runs use
-  numbers too, so promoted builds skip some. Pin this to stay on a build;
-  `CHANGELOG.md` headings use the same name.
+  numbers too, so promoted builds skip some. A re-run that rebuilds appends
+  the attempt (`-app.<N>.2`). Pin this to stay on a build; `CHANGELOG.md`
+  headings use the same name.
 - `ghcr.io/tikoci/app-t3code:sha-<commit>` — the candidate CI pushes from
   `main`; not for deployment
 

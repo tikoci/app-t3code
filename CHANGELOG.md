@@ -13,8 +13,12 @@ number), which is also its image tag, and each entry names the promoted
   `ci` run number), that never moves, so a router can stay on one build.
   Every pushed image also carries that name in its
   `org.opencontainers.image.version` label, and the commit in
-  `org.opencontainers.image.revision`. `:0.1.7`, `:0.1`, `:0` and `:latest`
-  move as before.
+  `org.opencontainers.image.revision`. A re-run that rebuilds appends the
+  attempt (`-app.<N>.2`). `:0.1.7`, `:0.1`, `:0` and `:latest` move as
+  before.
+- Repository: the `main` ruleset now also requires a pull request with
+  every review thread resolved (no approval count). CHANGELOG-only PRs that
+  stamp a promoted build are pre-approved for write members (`AGENTS.md`).
 
 ## 2026-11-09 — T3 Code 0.1.7, `sha-b232556`
 

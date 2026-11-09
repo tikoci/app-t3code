@@ -129,7 +129,8 @@ in to T3's telemetry. Provider CLIs have their own telemetry settings.
   tag.
 - Workflow actions are pinned by tag, not yet by commit SHA (tracked on the
   [Roadmap](https://github.com/tikoci/app-t3code/issues/30)).
-- A ruleset on `main` blocks force-pushes and deletion and requires CI's
+- A ruleset on `main` blocks force-pushes and deletion, requires a pull
+  request with every review thread resolved, and requires CI's
   `lint-test` and `build` jobs. `build` skips changes that can't reach the
   image (docs, `.agents/`, `.claude/`), and GitHub counts a skipped job as
   passing, so the image build gates only image changes. Repository admins
