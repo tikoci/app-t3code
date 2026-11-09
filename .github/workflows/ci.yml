@@ -108,6 +108,7 @@ jobs:
       ver: ${{ steps.tags.outputs.ver }}
       minor: ${{ steps.tags.outputs.minor }}
       major: ${{ steps.tags.outputs.major }}
+      build: ${{ steps.tags.outputs.build }}
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-qemu-action@v3
@@ -118,6 +119,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # build: this run's identity, <T3 version>-app.<ci run number>. It
+      # goes into the OCI version label of every pushed candidate, and
+      # promote also tags it (immutable, unlike :0.1.7). Run numbers count
+      # PR and branch runs too, so promoted builds have gaps.
       - name: Derive stability tags
         id: tags
         run: |
@@ -128,6 +133,7 @@ jobs:
             echo "ver=$VER"
             echo "minor=$MINOR"
             echo "major=$MAJOR"
+            echo "build=$VER-app.$GITHUB_RUN_NUMBER"
           } >> "$GITHUB_OUTPUT"
       - name: Load native image for replacement test
         uses: docker/build-push-action@v6
@@ -162,6 +168,10 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           build-args: T3CODE_VER=${{ steps.tags.outputs.ver }}
           tags: ghcr.io/tikoci/app-t3code:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.tags.outputs.build }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
       - name: Export inventories from the cached image builds
         uses: docker/build-push-action@v6
         with:
@@ -273,6 +283,7 @@ jobs:
           repo=ghcr.io/tikoci/app-t3code
           test -n "${{ needs.build.outputs.digest }}" || { echo "::error::build pushed no digest"; exit 1; }
           docker buildx imagetools create \
+            -t "$repo:${{ needs.build.outputs.build }}" \
             -t "$repo:${{ needs.build.outputs.ver }}" \
             -t "$repo:${{ needs.build.outputs.minor }}" \
             -t "$repo:${{ needs.build.outputs.major }}" \

@@ -111,17 +111,25 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 ### Versions and CHANGELOG
 
 - The image version **is** the upstream T3 Code version (`T3CODE_VER`, see
-  README "Tags"). Our own changes don't get a semver. They are identified by
-  `sha-<commit>` and by a dated `CHANGELOG.md` entry.
+  README "Tags"), and `package.json` carries it unchanged (we don't publish
+  to npm). Our own changes don't get a semver. A promoted build is
+  `<T3 version>-app.<N>`, where `N` is the `ci` run number:
+  `promote` tags it (`:0.1.7-app.<N>`, never moved) and every pushed
+  image carries it in the `org.opencontainers.image.version` label. It is a
+  rolling build of one T3 release, not a prerelease or a release of ours.
+  `app` is chosen to sort below other semver prerelease labels (`beta`,
+  `next`, `rc`), so any label added later ranks above it, and the bare
+  `0.1.7` above all of them.
 - Every PR that changes the image, the YAML or user-visible behavior adds a
   line under `## Unreleased` in `CHANGELOG.md`. When its `main` build is
-  promoted, rename that heading to the date and the T3 version, and name the
-  promoted `sha-<commit>`.
+  promoted, rename that heading `## <T3 version>-app.<N> — <date>` and
+  start the entry with the promoted `sha-<commit>`. `N` exists only once the
+  merge's `ci` run starts, so the rename goes in the next PR or a docs-only
+  commit to `main` (`gh run list --workflow ci.yml --branch main` shows the
+  number).
 - A change to what the container exposes (listeners, logs, tokens,
   privileges) or installs at runtime also updates `SECURITY.md`. It follows
-  T3's security model; it documents behavior rather than adding a layer. Whether
-  rebuilds of the same T3 version need their own tag (for example
-  `0.1.6-r2`) is decided in #6.
+  T3's security model; it documents behavior rather than adding a layer.
 
 ## Conventions
 
