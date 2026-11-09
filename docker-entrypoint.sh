@@ -34,10 +34,20 @@ fi
 # Claude Code cannot be baked into the image (license), so install it to the
 # volume while no `claude` is on PATH. Runs in the background and retries for
 # about a day; the server does not wait. The log stays in the home so a
-# failure outlives an image replacement (#13).
+# failure outlives an image replacement (#13): each start appends (one
+# rotation at about 1 MiB). Logging problems never stop T3: an unwritable
+# log falls back to the container log.
 if ! command -v claude >/dev/null 2>&1 && [ -x /usr/local/bin/install-claude-code ]; then
-	mkdir -p "${HOME}/.local/state/t3code"
-	/usr/local/bin/install-claude-code --keep-trying >"${HOME}/.local/state/t3code/install-claude-code.log" 2>&1 &
+	claude_log="${HOME}/.local/state/t3code/install-claude-code.log"
+	if mkdir -p "${claude_log%/*}" 2>/dev/null && touch "$claude_log" 2>/dev/null; then
+		if [ "$(stat -c %s "$claude_log" 2>/dev/null || echo 0)" -gt 1048576 ]; then
+			mv -f "$claude_log" "${claude_log}.1" 2>/dev/null || true
+		fi
+	else
+		echo "t3code: cannot write ${claude_log}; the Claude install logs here instead" >&2
+		claude_log=/dev/stderr
+	fi
+	/usr/local/bin/install-claude-code --keep-trying >>"$claude_log" 2>&1 &
 fi
 
 # Pairing hint for the container log (#18). T3 prints its own startup

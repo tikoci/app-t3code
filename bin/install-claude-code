@@ -22,13 +22,21 @@
 # a day (routers often start containers before the uplink is up); without it,
 # one attempt. Exit 0 when installed or already present, 1 on failure.
 #
+# The binary download gives up on a stalled connection (under 1 KiB/s for two
+# minutes) and after two hours, then resumes; a server that refuses to resume
+# restarts it from zero.
+#
 # Test hooks: CLAUDE_CODE_RELEASES_URL (download base), INSTALL_CLAUDE_CODE_BACKOFF
-# (space-separated seconds between --keep-trying rounds).
+# (space-separated seconds between --keep-trying rounds),
+# INSTALL_CLAUDE_CODE_STALL_SECONDS (stall limit, default 120).
 set -euo pipefail
 
 RELEASES_URL="${CLAUDE_CODE_RELEASES_URL:-https://downloads.claude.ai/claude-code-releases}"
 # Same schedule as `t3code-tools install --keep-trying`: 15s, 1m, 5m, 15m, 30m, then hourly.
 BACKOFF="${INSTALL_CLAUDE_CODE_BACKOFF:-15 60 300 900 1800 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600}"
+
+STALL_SECONDS="${INSTALL_CLAUDE_CODE_STALL_SECONDS:-120}"
+VERSION_RE='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
 
 usage() { echo "usage: install-claude-code [--keep-trying] [stable|latest|X.Y.Z]" >&2; exit 2; }
 log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) install-claude-code: $*"; }
@@ -41,7 +49,7 @@ for arg in "$@"; do
 	stable | latest) target="$arg" ;;
 	-h | --help) usage ;;
 	*)
-		[[ "$arg" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || usage
+		[[ "$arg" =~ $VERSION_RE ]] || usage
 		target="$arg"
 		;;
 	esac
@@ -76,15 +84,46 @@ sha256_of() { sha256sum "$1" | cut -d' ' -f1; }
 # install-claude-code holds the lock (the entrypoint's background run and a
 # manual one). The lock is released between --keep-trying rounds.
 attempt() {
-	local status=0
-	exec 9>"$lock"
-	if flock -n 9; then
-		try_install || status=$?
-	else
-		status=2
+	local status=0 rc=0
+	# set -e is off in functions called from a condition: check every step.
+	if ! { exec 9>"$lock"; } 2>/dev/null; then
+		log "cannot open the lock file ${lock}"
+		return 1
 	fi
+	flock -n -E 75 9 || rc=$?
+	case "$rc" in
+	0) try_install || status=$? ;;
+	75) status=2 ;;
+	*)
+		log "cannot lock ${lock} (flock exit ${rc})"
+		status=1
+		;;
+	esac
 	exec 9>&-
 	return "$status"
+}
+
+# Fetch the binary into $1 from $2, resuming a partial: up to three curl runs.
+# A server that refuses to resume (curl exit 33) restarts from zero.
+download() {
+	local part="$1" url="$2" rc try
+	for try in 1 2 3; do
+		rc=0
+		curl -fsSL --connect-timeout 30 --speed-limit 1024 --speed-time "$STALL_SECONDS" --max-time 7200 \
+			--continue-at - -o "$part" "$url" || rc=$?
+		case "$rc" in
+		0) return 0 ;;
+		33)
+			log "the server refused to resume; downloading from the start"
+			rm -f "$part"
+			;;
+		*)
+			log "download stopped (curl exit ${rc}) at $(($(stat -c %s "$part" 2>/dev/null || echo 0) / 1048576)) MiB"
+			[ "$try" -lt 3 ] && sleep 1
+			;;
+		esac
+	done
+	return 1
 }
 
 try_install() {
@@ -97,7 +136,7 @@ try_install() {
 			return 1
 		}
 		# An HTML error page or a proxy notice must not reach the manifest URL.
-		if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+		if [[ ! "$version" =~ $VERSION_RE ]]; then
 			log "the ${target} channel returned '${version:0:60}', not a version"
 			return 1
 		fi
@@ -109,6 +148,12 @@ try_install() {
 		log "cannot read ${RELEASES_URL}/${version}/manifest.json"
 		return 1
 	}
+	local manifest_version
+	manifest_version="$(jq -r '.version // empty' <<<"$manifest" 2>/dev/null)" || manifest_version=""
+	if [ -n "$manifest_version" ] && [ "$manifest_version" != "$version" ]; then
+		log "${RELEASES_URL}/${version}/manifest.json says version ${manifest_version}, not ${version}"
+		return 1
+	fi
 	checksum="$(jq -r --arg p "$platform" '.platforms[$p].checksum // empty' <<<"$manifest" 2>/dev/null)" || checksum=""
 	size="$(jq -r --arg p "$platform" '.platforms[$p].size // empty' <<<"$manifest" 2>/dev/null)" || size=""
 	if [[ ! "$checksum" =~ ^[a-f0-9]{64}$ ]] || [[ ! "$size" =~ ^[1-9][0-9]*$ ]]; then
@@ -120,13 +165,20 @@ try_install() {
 	if [ -f "$staged" ] && [ "$(stat -c %s "$staged")" = "$size" ] && [ "$(sha256_of "$staged")" = "$checksum" ]; then
 		log "reusing the verified ${staged}"
 	else
-		local part="${downloads_dir}/claude-${version}-${platform}.part"
-		# A partial larger than the target is a different file: start over.
-		if [ -f "$part" ] && [ "$(stat -c %s "$part")" -gt "$size" ]; then rm -f "$part"; fi
-		log "downloading Claude Code ${version} (${platform}, $((size / 1048576)) MiB)"
-		if ! curl -fsSL --retry 3 --continue-at - -o "$part" "${RELEASES_URL}/${version}/${platform}/claude"; then
-			log "download interrupted; a later attempt resumes it"
-			return 1
+		local part="${downloads_dir}/claude-${version}-${platform}.part" have=0
+		[ -f "$part" ] && have="$(stat -c %s "$part")"
+		# A partial larger than the target, or a full-size one that fails the
+		# checksum, is a different file: start over. A complete one needs no request.
+		if [ "$have" -gt "$size" ] || { [ "$have" -eq "$size" ] && [ "$(sha256_of "$part")" != "$checksum" ]; }; then
+			rm -f "$part"
+			have=0
+		fi
+		if [ "$have" -ne "$size" ]; then
+			log "downloading Claude Code ${version} (${platform}, $((size / 1048576)) MiB$([ "$have" -gt 0 ] && echo ", resuming at $((have / 1048576)) MiB"))"
+			if ! download "$part" "${RELEASES_URL}/${version}/${platform}/claude"; then
+				log "download interrupted; a later attempt resumes it"
+				return 1
+			fi
 		fi
 		if [ "$(stat -c %s "$part")" != "$size" ] || [ "$(sha256_of "$part")" != "$checksum" ]; then
 			rm -f "$part"
@@ -153,12 +205,22 @@ try_install() {
 	fi
 	local installed
 	installed="$("${HOME}/.local/bin/claude" --version 2>/dev/null)" || installed=""
-	if [ "${installed%% *}" != "$version" ]; then
-		log "after setup, ${HOME}/.local/bin/claude reports '${installed}', not ${version}"
-		return 1
+	if [ "${installed%% *}" = "$version" ]; then
+		log "installed Claude Code ${version} at ${HOME}/.local/bin/claude"
+		return 0
 	fi
-	log "installed Claude Code ${version} at ${HOME}/.local/bin/claude"
+	# T3's /welcome Install (install.sh) can finish between the PATH check and
+	# setup; Claude's installer then keeps the launcher it wrote. Any working
+	# claude there is a success.
+	if [ -n "$installed" ]; then
+		log "another installer finished first: ${HOME}/.local/bin/claude is ${installed}; keeping it"
+		return 0
+	fi
+	log "after setup, ${HOME}/.local/bin/claude does not run"
+	return 1
 }
+
+if $keep_trying; then log "start: Claude Code ${target}, retrying for about a day"; else log "start: Claude Code ${target}"; fi
 
 busy() { log "another install-claude-code is running (log: ~/.local/state/t3code/install-claude-code.log)"; }
 
