@@ -212,16 +212,11 @@ if you need a fresh one.
 > reports the HTTPS URL (including the MikroTik hostname when using `/ip/cloud`).
 > With `use-https=no`, it reports an HTTP URL like the CHR example above.
 
-> [!WARNING]
-> At every start, T3 Code itself prints a one-time pairing token and a pairing
-> URL to the container's output, next to a QR code. The URL uses the
-> container's internal address, which may not be reachable from your LAN (use
-> the app URL instead), but the token is valid for about five minutes. Treat the container's output as
-> sensitive. `/app` leaves the container's `logging` off, so the output never
-> reaches RouterOS `/log`. It is kept in `/container/log`, though, and a
-> RouterOS user in the built-in `read` group can read that menu (CLI or REST)
-> and pair a browser during that window (measured on 7.25, #18). Get tokens
-> with the command above, not from the log.
+> [!NOTE]
+> T3 Code also prints a pairing token, URL and QR code to `/container/log` at
+> every start, including the first one after install. That token expires
+> after about five minutes, and the URL uses the container's internal
+> address, so use the app URL and the command above instead.
 
 If `PUBLIC_URL` is set in the container, `t3-pairing-link` can print a full
 pairing URL instead of a raw token.
