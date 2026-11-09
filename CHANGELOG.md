@@ -11,7 +11,10 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
   startup pairing token that RouterOS `read` users can see in
   `/container/log`, and what installs at runtime). CI now also runs
   actionlint on the workflows and markdownlint on the docs (`make lint`
-  runs every gate). No image change.
+  runs every gate). Repo skills moved to `.agents/skills/`
+  (`.claude/skills` is a symlink to it). Repository settings: secret
+  scanning with push protection, Dependabot security PRs, and a `main`
+  ruleset that requires CI's `lint-test` and `build`. No image change.
 
 ## 2026-11-09 — T3 Code 0.1.7
 

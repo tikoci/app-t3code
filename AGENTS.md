@@ -80,6 +80,11 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
 - Branch from `main`, one PR per slice, squash merge. Merged branches are
   deleted automatically.
+- A ruleset on `main` ("main: image changes need CI") requires the `ci`
+  jobs `lint-test` and `build` and blocks force-push and deletion. A docs-only
+  change skips `build`, which counts as passing, so it waits only on
+  `lint-test`. Admins bypass it; that is what lets small doc fixes go
+  straight to `main`. Don't rename those two jobs without updating the ruleset.
 - Substantive PRs open as **draft**. Another agent in T3 Code reviews the draft,
   then the owner reviews it, then it is marked ready.
 - CI on a draft runs `lint-test` only. The ~10 min image `build` runs when

@@ -119,6 +119,11 @@ in to T3's telemetry. Provider CLIs have their own telemetry settings.
   tag.
 - Workflow actions are pinned by tag, not yet by commit SHA (tracked on the
   [Roadmap](https://github.com/tikoci/app-t3code/issues/30)).
+- A ruleset on `main` blocks force-pushes and deletion and requires CI's
+  `lint-test` and `build` jobs. `build` skips changes that can't reach the
+  image (docs, `.agents/`, `.claude/`), and GitHub counts a skipped job as
+  passing, so the image build gates only image changes. Repository admins
+  can bypass it, for small doc fixes straight to `main`.
 - Daily freshness checks (`.github/workflows/freshness.yml`) flag a new
   upstream T3 release or a change in Claude Code's download contract.
 
@@ -129,7 +134,11 @@ live source of alerts and advisories. What runs today:
 
 - **CodeQL**: GitHub default setup, `default` query suite, for
   `javascript-typescript` and `actions`.
-- **Dependabot alerts**: enabled. Dependabot security update PRs are not.
+- **Dependabot**: alerts and security-update PRs, enabled. Security PRs on
+  `scripts/groups/dev/package-lock.json` change the `dev` payload id, so
+  every home re-downloads it on its next start, which is the intended
+  security refresh. Version-update PRs are not configured.
+- **Secret scanning** with **push protection**: enabled.
 - **Private vulnerability reporting**: enabled.
 
 ## Supported versions
