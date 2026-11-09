@@ -13,15 +13,18 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   shipped and test shell scripts (`.hadolint.yaml` lists the ignores and why).
   Needs `hadolint` and `shellcheck` on PATH; CI installs pinned,
   checksum-verified copies.
-- `bun run test` — offline `/app` YAML contract and the npm and deb tool-payload
-  lifecycles (always runs; fake npm, fake dpkg-deb and mirror).
+- `bun run test` — offline `/app` YAML contract, the npm and deb tool-payload
+  lifecycles and the Claude installer (always runs; fake npm, fake dpkg-deb,
+  mirror and Claude download server).
   It needs a Linux host: the lock tests spawn util-linux `flock` and fail or
   time out without it (macOS). Run it on Linux, or rely on CI's `lint-test`
-  job. `biome.json` turns off `noTemplateCurlyInString` only for the two test
+  job. As root (a container), the installer tests run it as `nobody` through
+  util-linux `setpriv`, because it refuses root. `biome.json` turns off `noTemplateCurlyInString` only for the two test
   files that assert literal shell `${...}` text.
 - `make freshness` — drift checks (`scripts/freshness.ts`, needs network):
   the README share link, the pinned T3 release (stable, both Linux archives)
-  and its harness catalog, and the newest stable T3. CI runs `pinned` on every
+  and its harness catalog, the newest stable T3, and the Claude Code
+  download contract `bin/install-claude-code` reads. CI runs `pinned` on every
   PR; `freshness.yml` runs them all daily, and a red run there means bump.
 - `APP_T3CODE_INTEGRATION=1 bun test test/integration/` — full CHR
   boot + container install + web UI probe. Needs QEMU and network; slow

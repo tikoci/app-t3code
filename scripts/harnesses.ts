@@ -23,7 +23,7 @@ export interface Harness {
 
 export const HARNESSES: Readonly<Record<string, Harness>> = {
 	CodexDriver: { cli: "codex", delivery: "image" },
-	ClaudeDriver: { cli: "claude", delivery: "home", note: "install-claude-code, in the background at first start" },
+	ClaudeDriver: { cli: "claude", delivery: "home", note: "install-claude-code (stable channel), in the background while no claude is on PATH" },
 	CursorDriver: { delivery: "not-bundled" },
 	GrokDriver: { delivery: "not-bundled" },
 	FxDriver: { delivery: "not-bundled" },

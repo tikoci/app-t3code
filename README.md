@@ -243,7 +243,7 @@ Provider CLIs in this image:
 |---|---|---|
 | Codex (`codex`) | npm global in the image (`/usr/local`) | with each image replacement |
 | opencode (`opencode`) | npm global in the image (`/usr/local`) | with each image replacement |
-| Claude Code (`claude`) | downloaded in the background at the first start into `/data/.local/bin`, SHA256-checked against Anthropic's manifest (its license forbids redistributing it, so it cannot be baked in); skipped when a `claude` is already on PATH | not by image updates: it lives in the home |
+| Claude Code (`claude`) | downloaded in the background into the home while no `claude` is on PATH: the stable channel's native build, size- and SHA-256-checked against Anthropic's manifest, set up with Claude's own `install` (same layout as Anthropic's installer: `/data/.local/share/claude/versions/<ver>`, linked from `/data/.local/bin/claude`). Its license forbids redistributing it, so it cannot be baked in. Retries for about a day; log in `/data/.local/state/t3code/install-claude-code.log`. Run `install-claude-code` to retry now, or use **Install** on T3's welcome screen | not by image updates: it lives in the home |
 | [Meta Muse Code](https://dev.meta.ai/docs/muse-code) (`muse`) | **not bundled** since the final #5 slice (it added about 396 MiB to every image) | — |
 
 T3's own provider drivers are unchanged, including Muse's. To use Muse,
