@@ -13,11 +13,12 @@
 // Never throw on operator input: an unknown token is a warning, and T3 must
 // always start. The image copies this file to /usr/local/lib/t3code/ and runs
 // it with Bun as `t3code-providers`.
-import { closeSync, ftruncateSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, writeFileSync, writeSync } from "node:fs";
+import { closeSync, ftruncateSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, statfsSync, writeFileSync, writeSync } from "node:fs";
 import { join } from "node:path";
 import { HARNESSES, type Harness, type Install } from "./harnesses.ts";
 import {
 	APP_HOME,
+	DISK_RESERVE_BYTES,
 	INTERACTIVE_BACKOFF_MS,
 	isSameProcess,
 	KEEP_TRYING_BACKOFF_MS,
@@ -48,9 +49,13 @@ const NOT_SELECTABLE = new Map(
 		.map((h) => [h.label.toLowerCase().replace(/\s+/g, "-"), h.label]),
 );
 
-/** Where installer state, the lock and the background logs live: persistent, in the home. */
-export function stateDir(env: NodeJS.ProcessEnv = process.env): string {
-	return join(env.HOME || APP_HOME, ".local", "state", "t3code");
+/**
+ * Where installer state, the lock and the background logs live: persistent,
+ * in the home. Root always means the app's home, as in defaultRoot: a root
+ * shell (/container/shell, `docker exec -u 0`) may carry HOME=/root.
+ */
+export function stateDir(env: NodeJS.ProcessEnv = process.env, uid: number | undefined = process.getuid?.()): string {
+	return join(uid === 0 ? APP_HOME : env.HOME || APP_HOME, ".local", "state", "t3code");
 }
 
 export interface ProviderSelection {
@@ -235,6 +240,8 @@ export interface InstallEnv {
 	backoffMs: readonly number[];
 	sleep: (ms: number) => Promise<void>;
 	log: (line: string) => void;
+	/** Free bytes on the volume holding `dir` (the home). */
+	freeBytes: (path: string) => number;
 	/** Runs one installer step and reports its process; resolves to its exit code. */
 	run: (argv: string[], env: Record<string, string>, onSpawn: (child: Child) => void) => Promise<number>;
 }
@@ -257,6 +264,10 @@ export function defaultInstallEnv(keepTrying: boolean): InstallEnv {
 		backoffMs: keepTrying ? KEEP_TRYING_BACKOFF_MS : INTERACTIVE_BACKOFF_MS,
 		sleep: (ms) => Bun.sleep(ms),
 		log: (line) => console.log(`${new Date().toISOString()} t3code-providers: ${line}`),
+		freeBytes: (path) => {
+			const fs = statfsSync(path);
+			return Number(fs.bavail) * Number(fs.bsize);
+		},
 		run: async (argv, env, onSpawn) => {
 			// util-linux setsid (not a group leader, so it execs in place): the
 			// step gets its own process group, so a timeout, or the next
@@ -303,8 +314,16 @@ function tryLock(dir: string): number | null {
 	return null;
 }
 
+/** Free space one install needs: twice its installed size (download, npm cache, staging) plus the tool-group reserve. */
+export function requiredBytes(provider: Provider): number {
+	return (provider.approxMiB ?? 0) * 2 * 1024 * 1024 + DISK_RESERVE_BYTES;
+}
+
 /** Install one provider; returns an error message, or null once its CLI is on PATH. */
 async function installOne(provider: Provider, env: InstallEnv, recordChild: (child: Child | null) => void): Promise<string | null> {
+	const need = requiredBytes(provider);
+	const free = env.freeBytes(env.dir);
+	if (free < need) return `low disk: needs about ${Math.ceil(need / 1048576)} MiB free in ${env.dir}, ${Math.floor(free / 1048576)} MiB free`;
 	for (const step of installSteps(provider, env.dir)) {
 		env.log(`${provider.token}: ${step.argv.join(" ")}`);
 		let code: number;
@@ -364,6 +383,12 @@ export async function installProviders(selected: readonly string[], env: Install
 					writeProviderState(env.dir, state);
 				};
 				for (const provider of missing) {
+					// A CLI that appeared during this round (T3's /welcome, a terminal) wins.
+					if (provider.cli && env.which(provider.cli)) {
+						state.providers[provider.token] = { state: "ready", at: new Date().toISOString() };
+						writeProviderState(env.dir, state);
+						continue;
+					}
 					state.providers[provider.token] = { state: "installing", at: new Date().toISOString() };
 					writeProviderState(env.dir, state);
 					const error = await installOne(provider, env, recordChild);

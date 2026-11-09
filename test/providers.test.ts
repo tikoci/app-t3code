@@ -20,6 +20,8 @@ import {
 	PROVIDERS,
 	parseProviders,
 	readProviderState,
+	requiredBytes,
+	stateDir,
 	USAGE,
 } from "../scripts/providers.ts";
 import { isSameProcess, kernelFlock, LOCK_EX, LOCK_NB, processStartTicks } from "../scripts/tool-payloads.ts";
@@ -135,6 +137,7 @@ describe("installer", () => {
 			backoffMs: [1, 1],
 			sleep: async () => {},
 			log: () => {},
+			freeBytes: () => 64 * 1024 ** 3,
 			run: async (argv) => {
 				ran.push(argv);
 				if (argv[0] === "npm") onPath.add(argv.at(-1) === "@openai/codex" ? "codex" : "opencode");
@@ -257,6 +260,34 @@ describe("installer", () => {
 		expect(await installProviders(["codex"], env)).toBe(0);
 		expect(ran).toHaveLength(1);
 		expect(readProviderState(dir).installer).toBeUndefined();
+	});
+
+	test("low disk fails that provider before anything runs; the next one still installs", async () => {
+		const codex = requiredBytes(provider("codex"));
+		expect(codex).toBe((437 * 2 + 256) * 1024 * 1024);
+		env.freeBytes = () => codex - 1;
+		expect(await installProviders(["claude", "codex"], { ...env, backoffMs: [] })).toBe(1);
+		expect(ran).toEqual([["install-claude-code"]]);
+		expect(readProviderState(dir).providers.codex?.error).toMatch(/^low disk: needs about 1130 MiB free in .*, 1129 MiB free$/);
+	});
+
+	test("a CLI that appears during the round (T3's /welcome, a terminal) is not installed over", async () => {
+		// Catalog order: codex installs first; claude shows up while it runs.
+		env.run = async (argv) => {
+			ran.push(argv);
+			onPath.add("codex");
+			onPath.add("claude");
+			return 0;
+		};
+		expect(await installProviders(["claude", "codex"], env)).toBe(0);
+		expect(ran).toEqual([["npm", "install", "--global", "--no-fund", "--no-audit", "@openai/codex"]]);
+		expect(readProviderState(dir).providers.claude?.state).toBe("ready");
+	});
+
+	test("root reads and writes the app's state, whatever its HOME", () => {
+		expect(stateDir({ HOME: "/root" }, 0)).toBe("/data/.local/state/t3code");
+		expect(stateDir({ HOME: "/tmp/home" }, 1000)).toBe("/tmp/home/.local/state/t3code");
+		expect(stateDir({}, 1000)).toBe("/data/.local/state/t3code");
 	});
 
 	test("status: selection, T3-managed providers, and CLIs found on PATH", () => {

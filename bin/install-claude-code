@@ -274,7 +274,7 @@ try_install() {
 
 if $keep_trying; then log "start: Claude Code ${target}, retrying for about a day"; else log "start: Claude Code ${target}"; fi
 
-busy() { log "another install-claude-code is running (log: ~/.local/state/t3code/install-claude-code.log)"; }
+busy() { log "another install-claude-code is running (log: ~/.local/state/t3code/providers.log)"; }
 
 status=0
 attempt || status=$?

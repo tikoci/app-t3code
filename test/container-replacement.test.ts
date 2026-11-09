@@ -108,8 +108,8 @@ test.skipIf(!image)(
 		// No other --env: like a RouterOS env-list replacement that drops the
 		// YAML defaults, so the image ENV defaults must carry correct operation.
 		// Every start sets its selection explicitly, except `null`, which checks
-		// the image's own default. Providers are just Codex (a real npm install
-		// into the home, #13), so the test never downloads Claude.
+		// the image's own group default. Every start pins providers to Codex (a
+		// real npm install into the home, #13), so the test never downloads Claude.
 		const start = (groups: string | null, offline = false) =>
 			docker(
 				"run",
@@ -119,7 +119,9 @@ test.skipIf(!image)(
 				...(offline ? ["--network", "none"] : ["--publish", "127.0.0.1::3773"]),
 				"--volume",
 				`${volume}:/data`,
-				...(groups === null ? [] : ["--env", `T3CODE_TOOL_GROUPS=${groups}`, "--env", "T3CODE_PROVIDERS=codex"]),
+				...(groups === null ? [] : ["--env", `T3CODE_TOOL_GROUPS=${groups}`]),
+				"--env",
+				"T3CODE_PROVIDERS=codex",
 				image as string,
 			);
 		/** The agent-facing status (live) and the runtime JSON the entrypoint wrote. */

@@ -45,8 +45,9 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
   Anthropic's installer: the stable channel's native build, checked against
   the manifest's size and SHA-256, set up by Claude's own `install`, in one
   resumable download. It retries for about a day when the network is not up
-  yet, and logs to `/data/.local/state/t3code/install-claude-code.log`
-  instead of the container's `/tmp`. A `claude` already on PATH, including
+  yet, and logs to `/data/.local/state/t3code/` instead of the container's
+  `/tmp` (`providers.log` since `T3CODE_PROVIDERS`; the first builds used
+  `install-claude-code.log`). A `claude` already on PATH, including
   one installed from T3's welcome screen, is never replaced (#13).
 - Files that T3, its agents and its terminals create in `/data` are no
   longer world-writable. RouterOS starts containers with umask 0000, so T3's

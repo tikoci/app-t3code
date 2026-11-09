@@ -279,6 +279,14 @@ How the installs behave:
   15 m, 30 m, then hourly). Run `t3code-providers install` in a terminal
   to retry now, and `t3code-providers status` to see each provider's state,
   where its CLI resolves and its last error.
+- **Disk.** Each install needs about twice its size free in `/data` (the
+  download or npm cache plus the install), plus 256 MiB. With less, that
+  provider fails with a `low disk` error, nothing is written, and the retry
+  schedule applies; T3 keeps running.
+- **Vendor installers.** `grok` and `muse` run the vendor's current
+  `install.sh` over HTTPS, the same command their docs give. Nothing is
+  pinned, so the vendor's own updater keeps working; the trust is the
+  vendor's endpoint, as it is for a user running that command.
 - **Logs.** All background installs log under `/data/.local/state/t3code/`:
   `providers.log` (the provider installs, including Claude's) and
   `tool-groups.log` (the tool groups). Each start appends; the logs rotate at
