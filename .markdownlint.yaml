@@ -1,0 +1,68 @@
+# markdownlint rules config (read by both markdownlint-cli2 and IDE extensions)
+# https://github.com/DavidAnson/markdownlint
+#
+# Copied from tikoci/routeros-skills (the tikoci baseline), plus MD010 below.
+
+# MD013 — line length: long lines are normal in technical docs and tables
+MD013: false
+
+# MD024 — duplicate headings: research notes repeat section headers ("Result",
+# "Method") and the changelog can repeat a date; intentional structure
+MD024: false
+
+# MD033 — inline HTML: allow elements GitHub renders in its Markdown flavor.
+# <kbd> is used for keyboard shortcuts; the others are semantic HTML GitHub supports.
+MD033:
+  allowed_elements:
+    - kbd
+    - mark
+    - details
+    - summary
+    - sub
+    - sup
+    - abbr
+    - dl
+    - dt
+    - dd
+    - figure
+    - figcaption
+    - br
+
+# MD036 — emphasis as heading: italic annotations ("note", asides) are intentional
+MD036: false
+
+# MD010 — hard tabs: still flagged in prose, but not in code blocks, which
+# quote tool output verbatim (tshark fields, /proc status lines)
+MD010:
+  code_blocks: false
+
+# MD028 — blank line in blockquote: GitHub renders these fine; used for separation
+MD028: false
+
+# MD001 — heading increment: docs sometimes jump heading levels for visual grouping
+MD001: false
+
+# MD060 — table column style: compact separators (---) are fine
+MD060: false
+
+# --- Signal rules explicitly enabled ---
+
+# MD040 — fenced code blocks must have a language tag (routeros, text, bash, ...)
+MD040: true
+
+# MD046 — fenced code blocks only (no indented code blocks)
+MD046:
+  style: fenced
+
+# MD048 — consistent fence style (backticks)
+MD048:
+  style: backtick
+
+# MD058 — blank lines around tables
+MD058: true
+
+# MD034 — no bare URLs (must be wrapped in <> or [text](url))
+MD034: true
+
+# MD042 — no empty links ([text]() or [text](#))
+MD042: true

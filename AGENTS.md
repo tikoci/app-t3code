@@ -5,7 +5,10 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
 ## Commands
 
-- `bun run check` — biome (`--error-on-warnings`) + `tsc --noEmit`. The
+- `bun run check` — biome (`--error-on-warnings`) + `tsc --noEmit` +
+  markdownlint (`.markdownlint.yaml` holds the rules,
+  `.markdownlint-cli2.yaml` the globs; LLM instruction files such as this one
+  and the skills in `.agents/` are not linted). The
   repo stays at **zero errors and zero warnings**; CI fails on either. If
   you run into one, even one that was already there, you own fixing it in your
   current PR (`bun run lint:fix` handles most).
@@ -13,6 +16,9 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   shipped and test shell scripts (`.hadolint.yaml` lists the ignores and why).
   Needs `hadolint` and `shellcheck` on PATH; CI installs pinned,
   checksum-verified copies.
+- `make lint-actions` — actionlint on `.github/workflows/` (it also runs
+  ShellCheck on every `run:` script). Pinned in CI the same way.
+  `make lint` runs every lint gate CI runs.
 - `bun run test` — offline `/app` YAML contract, the npm and deb tool-payload
   lifecycles and the Claude installer (always runs; fake npm, fake dpkg-deb,
   mirror and Claude download server).
@@ -60,9 +66,10 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 - **Sister projects:** a clear, reproduced bug in centrs, quickchr or T3 gets
   filed there (or handed to an agent in that project) and linked from the
   issue, even if you worked around it here.
-- **Tooling & skills feedback** (#24, pinned): the low-stakes way to *note* a
+- **Tooling & skills feedback** (#29, pinned; it reconstructs #24, hidden
+  since the Amm0Bot suspension): the low-stakes way to *note* a
   possible bug in another tikoci tool without switching tasks. When a tool call
-  fails or misses mid-task, work around it, leave one comment on #24 and get
+  fails or misses mid-task, work around it, leave one comment on #29 and get
   back to the main work; triage happens later, here or in the tool's repo.
   Those failures are still worth that later look. It also covers a skill that
   was missing or not loaded, a missing cross-ref, a confusing error, or a doc
@@ -73,11 +80,16 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
 - Branch from `main`, one PR per slice, squash merge. Merged branches are
   deleted automatically.
+- A ruleset on `main` ("main: image changes need CI") requires the `ci`
+  jobs `lint-test` and `build` and blocks force-push and deletion. A docs-only
+  change skips `build`, which counts as passing, so it waits only on
+  `lint-test`. Admins bypass it; that is what lets small doc fixes go
+  straight to `main`. Don't rename those two jobs without updating the ruleset.
 - Substantive PRs open as **draft**. Another agent in T3 Code reviews the draft,
   then the owner reviews it, then it is marked ready.
 - CI on a draft runs `lint-test` only. The ~10 min image `build` runs when
   the PR is marked ready, so don't wait on it while refining a draft. A
-  change that touches only docs (`*.md`, `docs/`, `.claude/`, `LICENSE`,
+  change that touches only docs (`*.md`, `docs/`, `.agents/`, `.claude/`, `LICENSE`,
   `.coderabbit.yaml`) never builds, on a PR or on `main`: nothing new would
   reach the image. To
   build a draft anyway (say, a pre-merge CHR test image),
@@ -103,7 +115,11 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   `sha-<commit>` and by a dated `CHANGELOG.md` entry.
 - Every PR that changes the image, the YAML or user-visible behavior adds a
   line under `## Unreleased` in `CHANGELOG.md`. When its `main` build is
-  promoted, rename that heading to the date and the T3 version. Whether
+  promoted, rename that heading to the date and the T3 version, and name the
+  promoted `sha-<commit>`.
+- A change to what the container exposes (listeners, logs, tokens,
+  privileges) or installs at runtime also updates `SECURITY.md`. It follows
+  T3's security model; it documents behavior rather than adding a layer. Whether
   rebuilds of the same T3 version need their own tag (for example
   `0.1.6-r2`) is decided in #6.
 
@@ -123,11 +139,13 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   stability tag; releases also push `:0`, full version, and `:latest`.
 - Skills that govern this repo: `routeros-app-yaml`, `routeros-container`,
   `routeros-tikoci-centrs`, `routeros-tikoci-quickchr-cli`, `tikoci-crossref`.
-  The repo skill `.claude/skills/chr-app-lab/SKILL.md` is the hands-on recipe
+  The repo skill `.agents/skills/chr-app-lab/SKILL.md` is the hands-on recipe
   for a quickchr CHR: preparing it for `/app`, install and `/app/update`, an
   offline `/data` backup, commands inside the container, and the
-  before/after content manifest (`scripts/research-home-manifest.ts`). Agents
-  that don't load Claude skills can read it as a file.
+  before/after content manifest (`scripts/research-home-manifest.ts`).
+  Repo skills live in `.agents/skills/` (the cross-agent location Codex and
+  OpenCode read); `.claude/skills` is a symlink to it for Claude Code. Add new
+  repo skills under `.agents/skills/` only.
 
 ## Gotchas
 

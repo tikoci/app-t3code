@@ -66,6 +66,7 @@ actual app image (see "Still open").
      :local keep ({}); :foreach e in=[/app/get $app environment] do={ :if ([:find $e $key] != 0) do={ :set keep ($keep, $e) } }
      /app/set $app environment=($keep, ($key . $val))
      ```
+
    - The append idiom (A) works but accumulates duplicate keys, and the
      last one wins. It is fine once, but messy as a documented procedure.
 5. **Corollary for the Morpheus incident:** any YAML assignment, including
