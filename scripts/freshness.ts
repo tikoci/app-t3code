@@ -353,11 +353,12 @@ export async function checkUpstream(version = pinnedVersion()): Promise<Report> 
  * Claude Code's `channel` pointer names a version whose manifest has both
  * Linux platforms, and each binary answers with the manifest's size: what
  * bin/install-claude-code needs. HEAD only; nothing large is downloaded.
+ * `base` is for tests (the installer tests' fake download server).
  */
-export async function checkClaude(channel: "stable" | "latest" = "stable"): Promise<Report> {
-	const version = (await (await fetchOk(`${CLAUDE_RELEASES_URL}/${channel}`)).text()).trim();
+export async function checkClaude(channel: "stable" | "latest" = "stable", base = CLAUDE_RELEASES_URL): Promise<Report> {
+	const version = (await (await fetchOk(`${base}/${channel}`)).text()).trim();
 	if (!CLAUDE_VERSION.test(version)) return { ok: false, lines: [`Claude Code ${channel} channel returned "${version.slice(0, 60)}", not a version`] };
-	const manifestUrl = `${CLAUDE_RELEASES_URL}/${version}/manifest.json`;
+	const manifestUrl = `${base}/${version}/manifest.json`;
 	// HTTP errors propagate as themselves; only a body that fails to parse is "not JSON".
 	const response = await fetchOk(manifestUrl);
 	let manifest: unknown;
@@ -369,7 +370,7 @@ export async function checkClaude(channel: "stable" | "latest" = "stable"): Prom
 	const { assets, problems } = claudeManifestAssets(manifest, version);
 	const unchecked: string[] = [];
 	for (const [platform, { size }] of Object.entries(assets)) {
-		const url = `${CLAUDE_RELEASES_URL}/${version}/${platform}/claude`;
+		const url = `${base}/${version}/${platform}/claude`;
 		// identity: a compressed representation would report its own length.
 		const header = (await fetchOk(url, { "Accept-Encoding": "identity" }, "HEAD")).headers.get("content-length");
 		if (header === null || !/^\d+$/.test(header)) unchecked.push(platform);

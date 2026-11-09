@@ -8,7 +8,7 @@ import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CLAUDE_PLATFORMS, CLAUDE_RELEASES_URL, claudeManifestAssets } from "../scripts/freshness.ts";
+import { CLAUDE_PLATFORMS, CLAUDE_RELEASES_URL, checkClaude, claudeManifestAssets } from "../scripts/freshness.ts";
 
 const SCRIPT = join(import.meta.dir, "..", "bin", "install-claude-code");
 const ENTRYPOINT_PATH = join(import.meta.dir, "..", "docker-entrypoint.sh");
@@ -53,6 +53,7 @@ let failFirst = 0;
 let ignoreRange = false; // answer a Range request with 200 and the whole file
 let stallAfter = 0; // the next binary download sends this many bytes, then stalls
 let requests: string[] = [];
+let headLength: "real" | "wrong" | "none" = "real"; // Content-Length on a HEAD for the binary
 
 const server = Bun.serve({
 	port: 0,
@@ -65,8 +66,20 @@ const server = Bun.serve({
 		}
 		if (path === "/stable" || path === "/latest") return new Response(`${pointer}\n`);
 		if (path === `/${VERSION}/manifest.json`) return Response.json(manifest);
-		if (path === `/${VERSION}/${PLATFORM}/claude`) {
+		if (CLAUDE_PLATFORMS.some((p) => path === `/${VERSION}/${p}/claude`)) {
 			const body = new TextEncoder().encode(binary);
+			if (req.method === "HEAD" && headLength === "wrong") return new Response(null, { headers: { "content-length": "7" } });
+			// A non-empty stream has no known length: Bun answers chunked, with no Content-Length.
+			if (req.method === "HEAD" && headLength === "none") {
+				return new Response(
+					new ReadableStream({
+						start: (c) => {
+							c.enqueue(body.slice(0, 1));
+							c.close();
+						},
+					}),
+				);
+			}
 			if (stallAfter > 0) {
 				const prefix = body.slice(0, stallAfter);
 				stallAfter = 0;
@@ -100,6 +113,7 @@ beforeEach(() => {
 	failFirst = 0;
 	ignoreRange = false;
 	stallAfter = 0;
+	headLength = "real";
 	requests = [];
 });
 afterEach(() => rmSync(home, { recursive: true, force: true }));
@@ -377,6 +391,47 @@ describe("install-claude-code contract", () => {
 		const badSize = realManifest() as { platforms: Record<string, { size: unknown }> };
 		badSize.platforms["linux-x64"] = { ...badSize.platforms["linux-x64"], size: "12 MiB" };
 		expect(claudeManifestAssets(badSize, VERSION).problems).toEqual(['has no .platforms["linux-x64"] {checksum, size}']);
+	});
+
+	// freshness.ts `claude`, against the same fake download server.
+	const base = () => `http://127.0.0.1:${server.port}`;
+	const heads = () => requests.filter((r) => r.startsWith("HEAD "));
+
+	test("freshness claude: the channel, its manifest, then a HEAD per Linux binary", async () => {
+		const report = await checkClaude("stable", base());
+		expect(report.ok, report.lines.join("\n")).toBe(true);
+		expect(report.lines).toEqual([`Claude Code stable ${VERSION}: manifest and linux-x64 + linux-arm64 binaries match bin/install-claude-code`]);
+		expect(requests).toEqual(["GET /stable", `GET /${VERSION}/manifest.json`, ...CLAUDE_PLATFORMS.map((p) => `HEAD /${VERSION}/${p}/claude`)]);
+	});
+
+	test("freshness claude: a binary whose length differs from the manifest fails", async () => {
+		headLength = "wrong";
+		const report = await checkClaude("stable", base());
+		expect(report.ok).toBe(false);
+		expect(report.lines[0]).toContain(`linux-x64/claude is 7 bytes, but the manifest says ${Buffer.byteLength(binary)}`);
+		expect(report.lines[0]).toContain("update bin/install-claude-code");
+	});
+
+	test("freshness claude: no Content-Length is a note, not a failure", async () => {
+		headLength = "none";
+		const report = await checkClaude("stable", base());
+		expect(report.ok, report.lines.join("\n")).toBe(true);
+		expect(report.lines[1]).toContain("no Content-Length for linux-x64 + linux-arm64/claude; size not checked");
+		expect(heads()).toHaveLength(2);
+	});
+
+	test("freshness claude: a pointer that is not a version, or the old manifest, fails before any HEAD", async () => {
+		pointer = "<html>maintenance</html>";
+		let report = await checkClaude("stable", base());
+		expect(report.ok).toBe(false);
+		expect(report.lines[0]).toContain("not a version");
+
+		pointer = VERSION;
+		manifest = { artifacts: [] };
+		report = await checkClaude("stable", base());
+		expect(report.ok).toBe(false);
+		expect(report.lines[0]).toContain("has no .platforms object");
+		expect(heads()).toEqual([]);
 	});
 
 	test("the entrypoint retries in the background and appends to a log in the home", async () => {
