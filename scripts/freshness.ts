@@ -138,7 +138,9 @@ export function claudeManifestAssets(manifest: unknown, version: string): { asse
 	if (typeof platforms !== "object" || platforms === null) return { assets, problems: [...problems, "has no .platforms object"] };
 	for (const platform of CLAUDE_PLATFORMS) {
 		const entry = (platforms as Record<string, { checksum?: unknown; size?: unknown } | undefined>)[platform];
-		const { checksum, size } = entry ?? {};
+		const { checksum, size: raw } = entry ?? {};
+		// The installer reads the size through `jq -r`, so "123" works as well as 123.
+		const size = typeof raw === "string" && /^[1-9]\d*$/.test(raw) ? Number(raw) : raw;
 		if (typeof checksum === "string" && /^[a-f0-9]{64}$/.test(checksum) && typeof size === "number" && Number.isSafeInteger(size) && size > 0) {
 			assets[platform] = { checksum, size };
 		} else {
@@ -356,23 +358,29 @@ export async function checkClaude(channel: "stable" | "latest" = "stable"): Prom
 	const version = (await (await fetchOk(`${CLAUDE_RELEASES_URL}/${channel}`)).text()).trim();
 	if (!CLAUDE_VERSION.test(version)) return { ok: false, lines: [`Claude Code ${channel} channel returned "${version.slice(0, 60)}", not a version`] };
 	const manifestUrl = `${CLAUDE_RELEASES_URL}/${version}/manifest.json`;
+	// HTTP errors propagate as themselves; only a body that fails to parse is "not JSON".
+	const response = await fetchOk(manifestUrl);
 	let manifest: unknown;
 	try {
-		manifest = await (await fetchOk(manifestUrl)).json();
+		manifest = await response.json();
 	} catch (error) {
-		if (error instanceof NotFound) throw error;
 		return { ok: false, lines: [`${manifestUrl} is not JSON: ${error instanceof Error ? error.message : String(error)}`] };
 	}
 	const { assets, problems } = claudeManifestAssets(manifest, version);
+	const unchecked: string[] = [];
 	for (const [platform, { size }] of Object.entries(assets)) {
 		const url = `${CLAUDE_RELEASES_URL}/${version}/${platform}/claude`;
-		const length = Number((await fetchOk(url, {}, "HEAD")).headers.get("content-length"));
-		if (length !== size) problems.push(`${platform}/claude is ${length} bytes, but the manifest says ${size}`);
+		// identity: a compressed representation would report its own length.
+		const header = (await fetchOk(url, { "Accept-Encoding": "identity" }, "HEAD")).headers.get("content-length");
+		if (header === null || !/^\d+$/.test(header)) unchecked.push(platform);
+		else if (Number(header) !== size) problems.push(`${platform}/claude is ${header} bytes, but the manifest says ${size}`);
 	}
 	if (problems.length) {
 		return { ok: false, lines: [`Claude Code ${channel} ${version}: ${manifestUrl} ${problems.join("; ")}; update bin/install-claude-code`] };
 	}
-	return { ok: true, lines: [`Claude Code ${channel} ${version}: manifest and ${CLAUDE_PLATFORMS.join(" + ")} binaries match bin/install-claude-code`] };
+	const lines = [`Claude Code ${channel} ${version}: manifest and ${CLAUDE_PLATFORMS.join(" + ")} binaries match bin/install-claude-code`];
+	if (unchecked.length) lines.push(`  note: no Content-Length for ${unchecked.join(" + ")}/claude; size not checked (the installer still verifies size and SHA-256)`);
+	return { ok: true, lines };
 }
 
 /** Print a report; in Actions a failure is also an error annotation. */

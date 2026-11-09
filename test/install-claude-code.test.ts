@@ -110,7 +110,11 @@ afterAll(() => server.stop(true));
  * Async: a synchronous spawn would block the fake server in this process.
  */
 async function run(...args: string[]) {
-	const proc = Bun.spawn(["bash", SCRIPT, ...args], {
+	// The installer refuses root. A root runner (a container) runs it as nobody,
+	// with util-linux setpriv, and hands it the temp home.
+	const asNobody = process.getuid?.() === 0 ? ["setpriv", "--reuid=65534", "--regid=65534", "--clear-groups"] : [];
+	if (asNobody.length) Bun.spawnSync(["chown", "-R", "65534:65534", home]);
+	const proc = Bun.spawn([...asNobody, "bash", SCRIPT, ...args], {
 		env: {
 			HOME: home,
 			PATH: `${home}/.local/bin:/usr/bin:/bin`,
@@ -217,6 +221,17 @@ describe("install-claude-code", () => {
 		expect(readlinkSync(launcher())).toBe(staged());
 	});
 
+	test("a verified staged version that lost its execute bit is reused, made executable", async () => {
+		mkdirSync(join(home, ".local/share/claude/versions"), { recursive: true });
+		writeFileSync(staged(), binary, { mode: 0o644 });
+		const { code, out } = await run();
+		expect(code, out).toBe(0);
+		expect(out).toContain("reusing the verified");
+		expect(downloads()).toEqual([]);
+		expect(statSync(staged()).mode & 0o111).toBe(0o111);
+		expect(readlinkSync(launcher())).toBe(staged());
+	});
+
 	test("a corrupt staged version is replaced by a fresh download", async () => {
 		mkdirSync(join(home, ".local/share/claude/versions"), { recursive: true });
 		writeFileSync(staged(), ""); // what an interrupted `claude install` leaves
@@ -261,6 +276,15 @@ describe("install-claude-code", () => {
 			const { code, out } = await run();
 			expect(code, out).toBe(1);
 			expect(out).toContain("another install-claude-code is running");
+			expect(requests).toEqual([]);
+
+			// A claude that T3's /welcome installed meanwhile is a success, lock or not.
+			mkdirSync(join(home, ".local/bin"), { recursive: true });
+			writeFileSync(launcher(), "#!/bin/sh\necho '2.1.319 (Claude Code)'\n", { mode: 0o755 });
+			const after = await run();
+			expect(after.code, after.out).toBe(0);
+			expect(after.out).toContain("already installed");
+			expect(after.out).not.toContain("another install-claude-code is running");
 			expect(requests).toEqual([]);
 		} finally {
 			holder.kill();
@@ -346,6 +370,13 @@ describe("install-claude-code contract", () => {
 		delete noArm.platforms["linux-arm64"];
 		expect(claudeManifestAssets(noArm, VERSION).problems).toEqual(['has no .platforms["linux-arm64"] {checksum, size}']);
 		expect(claudeManifestAssets({ ...realManifest(), version: "1.0.0" }, VERSION).problems).toEqual([`says version 1.0.0, not ${VERSION}`]);
+		// jq -r prints "123" and 123 alike, so the installer accepts both.
+		const stringSize = realManifest() as { platforms: Record<string, { size: unknown }> };
+		for (const p of CLAUDE_PLATFORMS) stringSize.platforms[p] = { ...stringSize.platforms[p], size: String(Buffer.byteLength(binary)) };
+		expect(claudeManifestAssets(stringSize, VERSION)).toEqual(good);
+		const badSize = realManifest() as { platforms: Record<string, { size: unknown }> };
+		badSize.platforms["linux-x64"] = { ...badSize.platforms["linux-x64"], size: "12 MiB" };
+		expect(claudeManifestAssets(badSize, VERSION).problems).toEqual(['has no .platforms["linux-x64"] {checksum, size}']);
 	});
 
 	test("the entrypoint retries in the background and appends to a log in the home", async () => {
@@ -414,5 +445,18 @@ describe("entrypoint and the Claude install log", () => {
 		expect(code, err).toBe(0);
 		expect(out).toContain("server started");
 		expect(err).toContain("cannot write");
+		// stderr closes only once the background installer has exited too.
+		expect(err).toContain("fake installer ran: --keep-trying");
+	});
+
+	test.skipIf(process.getuid?.() === 0)("a read-only log falls back to the container log; the installer still runs", async () => {
+		mkdirSync(join(dir, "home/.local/state/t3code"), { recursive: true });
+		writeFileSync(log(), "earlier run\n", { mode: 0o444 });
+		const { code, out, err } = await start();
+		expect(code, err).toBe(0);
+		expect(out).toContain("server started");
+		expect(err).toContain("cannot write");
+		expect(err).toContain("fake installer ran: --keep-trying");
+		expect(readFileSync(log(), "utf8")).toBe("earlier run\n");
 	});
 });

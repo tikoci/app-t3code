@@ -93,7 +93,8 @@ attempt() {
 	flock -n -E 75 9 || rc=$?
 	case "$rc" in
 	0) try_install || status=$? ;;
-	75) status=2 ;;
+	# Busy, but T3's /welcome Install may already have finished: that is success.
+	75) present || status=2 ;;
 	*)
 		log "cannot lock ${lock} (flock exit ${rc})"
 		status=1
@@ -162,7 +163,9 @@ try_install() {
 	fi
 
 	local staged="${versions_dir}/${version}"
-	if [ -f "$staged" ] && [ "$(stat -c %s "$staged")" = "$size" ] && [ "$(sha256_of "$staged")" = "$checksum" ]; then
+	# A verified file that cannot be made executable is replaced, not reused.
+	if [ -f "$staged" ] && [ "$(stat -c %s "$staged")" = "$size" ] && [ "$(sha256_of "$staged")" = "$checksum" ] &&
+		{ [ -x "$staged" ] || chmod 0755 "$staged" 2>/dev/null; }; then
 		log "reusing the verified ${staged}"
 	else
 		local part="${downloads_dir}/claude-${version}-${platform}.part" have=0

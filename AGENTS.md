@@ -18,7 +18,8 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   mirror and Claude download server).
   It needs a Linux host: the lock tests spawn util-linux `flock` and fail or
   time out without it (macOS). Run it on Linux, or rely on CI's `lint-test`
-  job. `biome.json` turns off `noTemplateCurlyInString` only for the two test
+  job. As root (a container), the installer tests run it as `nobody` through
+  util-linux `setpriv`, because it refuses root. `biome.json` turns off `noTemplateCurlyInString` only for the two test
   files that assert literal shell `${...}` text.
 - `make freshness` — drift checks (`scripts/freshness.ts`, needs network):
   the README share link, the pinned T3 release (stable, both Linux archives)
