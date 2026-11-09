@@ -31,6 +31,13 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
   yet, and logs to `/data/.local/state/t3code/install-claude-code.log`
   instead of the container's `/tmp`. A `claude` already on PATH, including
   one installed from T3's welcome screen, is never replaced (#13).
+- Files that T3, its agents and its terminals create in `/data` are no
+  longer world-writable. RouterOS starts containers with umask 0000, so T3's
+  settings, projects and logs came out as 666/777. The entrypoint now sets
+  umask 022 before starting T3. Commands run directly through RouterOS
+  `/container/shell` bypass the entrypoint and still get 0000. Files
+  created before this keep their modes; `chmod -R go-w /data` from a T3
+  terminal fixes those.
 
 ## 2026-11-08 — T3 Code 0.1.7
 

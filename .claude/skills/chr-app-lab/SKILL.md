@@ -113,7 +113,9 @@ the qcow2 *boot* disk. Whether it also covers the data disk that holds
 Stop the app first, so nothing writes during the copy. Images from #25 on
 stop gracefully: PID 1 (`t3code-init`) catches TERM and forwards it, and T3
 exits in about 5 s (RouterOS logs `exited with status 130`, T3's normal
-signal exit). Older images (PID 1 `tini`) are SIGKILLed at once
+signal exit). A stop that lands before T3 has set its handler (about 40 s
+after start on arm64 under TCG) logs `exited with status 143` instead: still
+TERM, not SIGKILL. Older images (PID 1 `tini`) are SIGKILLed at once
 (`signal 15 (Terminated) not caught, kill immediately`). Either way the clone
 is safe: SQLite's WAL is crash-safe, and the clone carries `statev2.sqlite`
 with its `-wal` and `-shm`. Then shut down the guest
