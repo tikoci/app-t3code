@@ -75,6 +75,11 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   deleted automatically.
 - Substantive PRs open as **draft**. Another agent in T3 Code reviews the draft,
   then the owner reviews it, then it is marked ready.
+- CI on a draft runs `lint-test` only. The ~10 min image `build` runs when
+  the PR is marked ready, so don't wait on it while refining a draft. To
+  build a draft anyway (say, a pre-merge CHR test image),
+  `gh workflow run ci.yml --ref <branch>` builds both arches, pushes
+  `:sha-<commit>` and runs the arm64 test (it never promotes off `main`).
 - **The reviewer is a different model from the author.** Claude-authored work
   is reviewed by Codex on `gpt-6.1-sol`. Work that sol authored is reviewed by
   Claude Opus. The owner may swap them depending on credits and rate limits.

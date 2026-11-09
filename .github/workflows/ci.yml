@@ -3,7 +3,11 @@ name: ci
 on:
   push:
     branches: [main]
+  # Drafts run lint-test only; marking a PR ready runs the image build. To
+  # build a draft anyway (a pre-merge CHR test image), dispatch this workflow
+  # on its branch: that pushes :sha-<commit> and runs arm64 too.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
       t3code_ver:
@@ -59,6 +63,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     needs: lint-test
     outputs:
