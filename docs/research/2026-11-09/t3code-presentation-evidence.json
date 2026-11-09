@@ -233,11 +233,37 @@
       "method": "Independent read-only inspection of the same pin plus Claude-visible tools/instructions; no app or HTML invocation"
     },
     "notTested": [
-      "Browser layout or file appearance",
+      "Native file-viewer behavior and agent selection of browser panel placement",
       "A real secret-card submission",
       "centrs credential handoff",
       "RouterOS/container presentation runtime"
-    ]
+    ],
+    "presentationDemonstration": {
+      "date": "2026-11-09",
+      "htmlReply": {
+        "method": "Full Markdown note converted with Bun.markdown.html; html_preview then html_render",
+        "previewWidth": 728,
+        "contentHeight": 2484,
+        "initialHeight": 2000,
+        "published": true
+      },
+      "nativeFileViewer": {
+        "method": "Absolute-path Markdown link in assistant reply",
+        "agentOpened": false,
+        "requiresUserClick": true,
+        "directOpenToolFound": false
+      },
+      "browserPreview": {
+        "method": "preview_status then preview_open with open:true",
+        "url": "https://github.com/tikoci/app-t3code/blob/cd183c1ee9c89e97bcf241f478d46ddefcfa722f/docs/research/2026-11-09/t3code-presentation-mcp-apps.md",
+        "hostReported": {
+          "available": true,
+          "visible": true,
+          "loading": false
+        },
+        "qualification": "Hosted GitHub document in browser preview, not native file viewer. Further scrolling/evaluation was rejected because human controlled the tab. Tab left open as requested."
+      }
+    }
   },
   "dependencies": [
     {

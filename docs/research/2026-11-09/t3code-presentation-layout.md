@@ -2,7 +2,8 @@
 
 Part of the [presentation inventory](t3code-presentation-menu.md), pinned to
 T3 v0.1.7. Findings below are from source and exposed tool contracts, not a
-recorded browser walkthrough.
+recorded browser walkthrough. The later demonstration below records limited
+runtime evidence separately.
 
 ## Distinguish the surfaces
 
@@ -11,13 +12,49 @@ recorded browser walkthrough.
 | `html_render` result | Embedded in the conversation above the final reply | HTML document, title and initial height | Expand/fullscreen and zoom |
 | MCP App | Embedded in the conversation as the tool result | Tool invocation; app controls its own contents | Interaction, approval prompts, fullscreen |
 | Browser preview | Preview workspace alongside chat | Open/show a tab, URL/port, profile, viewport, appearance | Workspace placement, maximize, mini-player/separate-window controls where available |
-| File/document preview | Existing file preview workspace | Produce and link the file | Open the link and use the viewer controls |
+| File/document preview | Existing file preview workspace | Produce and link the file; no exposed direct-open command found | Click the link to open the viewer and use its controls |
 | Thread details | Card alongside chat when space permits; popover otherwise | Existing project metadata/actions and thread state | Show/hide built-in items and card visibility |
 | Device preview | Existing preview/device workspace | Open a supported simulator/emulator | Preview layout controls |
 
 An HTML document opened as a file, an inline HTML reply, and a browser pointed
 at a URL may show identical content but have different ownership, lifetime,
 controls and backend connections.
+
+## For skills: which calls actually show something?
+
+| Intended action | Direct agent action available? | Mechanism |
+| --- | --- | --- |
+| Display ordinary Markdown in chat | Yes | Assistant message; no extra viewer |
+| Display HTML in chat | Yes | `html_preview`, then `html_render` |
+| Open/show a browser page | Yes | `preview_open({url, open: true})`; `preview_navigate` navigates a chosen tab |
+| Open the native Markdown/file viewer | No exposed command found | Absolute-path file link; the human activates it |
+| Place a browser in a chosen popout/right-side arrangement | No placement argument exposed | Human/client layout controls |
+| Display an MCP App | Conditional | Invoke an app-enabled tool through a supported provider; it appears in chat |
+| Display a supported mobile device | Yes | `device_open` |
+
+“Show the user X” in a skill should invoke a direct presentation action when
+that is what is intended. A sentence asking the user to click a file link
+must be identified as a navigation fallback. The native viewer's existence
+does not imply agents have an API for opening or focusing it.
+
+## Limited runtime demonstration, 2026-11-09
+
+1. Converted the full MCP Apps research Markdown note to self-contained HTML,
+   previewed it, then published it with `html_render`. That demonstrated the
+   HTML-in-chat path, not a special native Markdown viewer. Chat messages
+   themselves already render Markdown.
+2. Emitted an absolute-path link to the original `.md` file. This only offered
+   the human a way to open the native viewer; it did not change views automatically.
+3. Called `preview_open` for the [same note on GitHub][demo-file] with
+   `open: true`. The host returned `available: true`, `visible: true` and
+   the expected page title/URL. The user took browser control before further
+   agent scrolling/content inspection, so those actions stopped. This is a
+   browser tab displaying a hosted document, not T3's native file viewer.
+
+No native-file-viewer direct-open API was found when rechecking the available
+tools and the pinned server MCP toolkit. No unsupported internal UI calls or
+desktop automation were used to manufacture one. The requested browser tab
+was left open for the user.
 
 ## HTML in chat
 
@@ -120,3 +157,4 @@ does not create a custom status row in the card.
 [items]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/threadDetailsItems.ts
 [servers]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/ThreadServersPanel.tsx
 [settings]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/project-settings.md
+[demo-file]: https://github.com/tikoci/app-t3code/blob/cd183c1ee9c89e97bcf241f478d46ddefcfa722f/docs/research/2026-11-09/t3code-presentation-mcp-apps.md

@@ -27,9 +27,12 @@ rewriting the whole inventory.
 - Evidence levels: **contract** means an available tool schema; **source**
   means the pinned implementation/docs; **probe** means a small local function
   invocation. **Idea** means an avenue that has not been implemented or tried.
-- No browser demonstration, real credential submission, router operation, or
-  container-side presentation test was performed for this research. Source
-  support does not prove that a particular paired client has the feature enabled.
+- The initial inventory was source/contract research. A later demonstration
+  published this research note as inline HTML and used `preview_open` to open
+  its GitHub copy; the host reported the browser tab visible. Native file-viewer
+  opening was only a clickable link. No real credential submission, router
+  operation, or container-side presentation test was performed. Source support
+  does not prove that every paired client has a feature enabled.
 - No dedicated T3 presentation skill was listed in the author's session. T3's
   presentation guidance came from injected agent instructions and its MCP
   tools. Provider-native skills and plugins are separate inventories.
@@ -42,7 +45,7 @@ rewriting the whole inventory.
 | MCP App | Invoke an app-enabled MCP tool | Interactive result replaces that tool's ordinary call display in chat | Source; provider limitation explained in the dedicated note |
 | Shared browser | `preview_open` with a URL or environment port | Browser tab in the preview workspace; floating/separate-window options belong to client UI | Contract + source; agent does not select the layout through this tool |
 | Browser evidence | `preview_snapshot`, `preview_recording_start` / `stop` | Screenshot or recording file that can be embedded in chat | Contract; captures the chosen browser tab, not an arbitrary desktop |
-| File viewer | Create a file and include an absolute-path Markdown link | File/document preview, with format-specific controls | Source; text, tables, database, archives, media and document formats |
+| File viewer | Create a file and include an absolute-path Markdown link | File/document preview after the user activates the link | Source; no exposed agent command found to open this viewer directly |
 | Inline media | Markdown image syntax referencing an absolute file path | Image, video, or audio in the conversation | Injected runtime contract; create the media with appropriate tools first |
 | Rich Markdown | Assistant message text | Tables, code, math, Mermaid and collapsible details | Source; rendering does not imply RouterOS language intelligence |
 | Questions | Provider question tool | Choices/custom-answer cards in the conversation | Source; provider-specific question support varies |
@@ -66,6 +69,15 @@ are preserved in the evidence manifest.
 
 ## Explicit calls versus automatic interpretation
 
+- For a skill instruction such as **show the user X**, distinguish an action
+  that displays something immediately from a link that offers navigation.
+  `html_render` publishes into chat; `preview_open` with `open: true` opens and
+  shows a browser tab. `device_open` shows a supported device. These are direct
+  presentation actions, although browser/device layout is still client-controlled.
+- A native file link is a **user-click fallback**, not an agent-driven view
+  change. No tool for opening the native Markdown/file viewer or selecting its
+  tab was found in the exposed catalog or pinned MCP toolkit. Do not describe
+  emitting that link as having opened the viewer.
 - `html_render` explicitly publishes a visual. Printing HTML in a command's
   stdout or linking an HTML file does not make that same inline reply.
 - An MCP App appears because T3 recognizes app metadata/resources on a tool
