@@ -43,7 +43,7 @@ rewriting the whole inventory.
 | --- | --- | --- | --- |
 | HTML reply | `html_preview`, then `html_render` | Interactive document in the chat timeline; expand/zoom available | Contract + source; all providers according to upstream docs |
 | MCP App | Invoke an app-enabled MCP tool | Interactive result replaces that tool's ordinary call display in chat | Source; provider limitation explained in the dedicated note |
-| Shared browser | `preview_open` with a URL or environment port | Browser tab in the preview workspace; floating/separate-window options belong to client UI | Contract + source; agent does not select the layout through this tool |
+| Shared browser | `preview_open` with a URL or environment port | Browser surface; demonstrated as a floating control preview in this desktop | Contract + source + limited demo; visibility does not imply a right-side tab, and agent cannot select placement |
 | Browser evidence | `preview_snapshot`, `preview_recording_start` / `stop` | Screenshot or recording file that can be embedded in chat | Contract; captures the chosen browser tab, not an arbitrary desktop |
 | File viewer | Create a file and include an absolute-path Markdown link | File/document preview after the user activates the link | Source; no exposed agent command found to open this viewer directly |
 | Inline media | Markdown image syntax referencing an absolute file path | Image, video, or audio in the conversation | Injected runtime contract; create the media with appropriate tools first |
@@ -78,6 +78,10 @@ are preserved in the evidence manifest.
   change. No tool for opening the native Markdown/file viewer or selecting its
   tab was found in the exposed catalog or pinned MCP toolkit. Do not describe
   emitting that link as having opened the viewer.
+- Actual HTML files have the same opening/focus limitation. The browser
+  demonstration did not open the right-side file viewer. Its floating preview
+  was later closed successfully with `t3_preview_close`; that is a separate
+  browser lifecycle operation, not file-viewer control.
 - `html_render` explicitly publishes a visual. Printing HTML in a command's
   stdout or linking an HTML file does not make that same inline reply.
 - An MCP App appears because T3 recognizes app metadata/resources on a tool

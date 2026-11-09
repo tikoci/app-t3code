@@ -28,6 +28,7 @@ controls and backend connections.
 | Display HTML in chat | Yes | `html_preview`, then `html_render` |
 | Open/show a browser page | Yes | `preview_open({url, open: true})`; `preview_navigate` navigates a chosen tab |
 | Open the native Markdown/file viewer | No exposed command found | Absolute-path file link; the human activates it |
+| Make an HTML file the active right-side file-viewer tab | No exposed command found | Rendering support exists, but opening the viewer and selecting its tab are client UI actions |
 | Place a browser in a chosen popout/right-side arrangement | No placement argument exposed | Human/client layout controls |
 | Display an MCP App | Conditional | Invoke an app-enabled tool through a supported provider; it appears in chat |
 | Display a supported mobile device | Yes | `device_open` |
@@ -53,8 +54,24 @@ does not imply agents have an API for opening or focusing it.
 
 No native-file-viewer direct-open API was found when rechecking the available
 tools and the pinned server MCP toolkit. No unsupported internal UI calls or
-desktop automation were used to manufacture one. The requested browser tab
-was left open for the user.
+desktop automation were used to manufacture one. This includes both opening
+the right-side viewer itself and activating a particular file tab, whether
+the file contains Markdown or actual HTML.
+
+### User-observed floating preview and cleanup
+
+The user's subsequent screenshot showed the browser as a small floating
+preview with **Agent has control / Take control**, rather than the desired
+right-side file-viewer tab. The user reported that resizing worked, but
+moving it, converting it to a tab and dismissing it were not available or
+apparent in that client. These are observations of this demonstration, not
+a claim that every T3 client lacks those controls.
+
+The agent subsequently closed its browser preview successfully with
+`t3_preview_close`. This tool controls the browser preview; it does not open,
+close or focus the native file viewer. No native HTML-file tab was opened
+or activated by the agent during the demonstration. The user's screenshot
+is not included in the public research files.
 
 ## HTML in chat
 
@@ -83,9 +100,12 @@ The [panel shell][shell] has inline, sheet, sidebar and embedded modes;
 the [mini-player store][mini] separately tracks a floating browser/device
 preview and its position/size. The [preview menu][preview-menu] also includes
 an “Open separate preview window” action when supported by the host.
-These account for the small popout and right-side presentations the user has
-seen; the exact arrangement depends on the client, available space and UI state.
-They are not extra `html_render` destinations exposed to an agent.
+These establish layout variants in the pinned source, not a guarantee that
+all controls are available on the user's current browser-control overlay.
+The demonstrated client showed the floating preview described above. An
+`available: true` / `visible: true` tool response confirms visibility, not
+that the result occupies a right-side tab. These are not extra `html_render`
+destinations exposed to an agent.
 
 Browser automation has a separate ownership boundary: the agent may act on its
 own or unclaimed tab, while reading a human-driven tab has narrower behavior.

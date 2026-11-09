@@ -251,7 +251,9 @@
         "method": "Absolute-path Markdown link in assistant reply",
         "agentOpened": false,
         "requiresUserClick": true,
-        "directOpenToolFound": false
+        "directOpenToolFound": false,
+        "canOpenViewer": false,
+        "canActivateFileTab": false
       },
       "browserPreview": {
         "method": "preview_status then preview_open with open:true",
@@ -261,7 +263,17 @@
           "visible": true,
           "loading": false
         },
-        "qualification": "Hosted GitHub document in browser preview, not native file viewer. Further scrolling/evaluation was rejected because human controlled the tab. Tab left open as requested."
+        "qualification": "Hosted GitHub document in browser preview, not native file viewer. Earlier scrolling/evaluation was rejected during human control. Subsequent user screenshot showed a floating control preview; agent later closed it successfully.",
+        "userObserved": {
+          "surface": "Small floating preview with Agent has control / Take control",
+          "resizable": true,
+          "movementDockingAndDismissal": "User reported these controls unavailable or not apparent in this client; not a cross-client claim",
+          "screenshotPublished": false
+        },
+        "cleanup": {
+          "tool": "t3_preview_close",
+          "success": true
+        }
       }
     }
   },
@@ -434,6 +446,10 @@
     {
       "name": "mcp__t3_code__write_pull_request_guides",
       "description": "Write review guides for up to 20 PRs (the tour in the PR Guide tab). Returns once runs start. Each run takes minutes in a temporary checkout. A run for the same head is joined. Read with `read_pull_request_guide`. Fails while guides are off.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__write_pull_request_guides(args: { environmentId?: string; pullRequests: Array<{\n  host?: string;\n  // With `repository`, when no `url`.\n  number?: number;\n  repository?: string;\n  url?: string;\n}>; }): Promise<CallToolResult<{ guides: Array<{\n  detail: string | null;\n  host: string;\n  number: number;\n  // started: a run began. running: joined a run for this head. failed: see detail.\n  outcome: \"started\" | \"running\" | \"failed\";\n  repository: string;\n  url: string;\n  [key: string]: unknown;\n}>; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__t3_preview_close",
+      "description": "Close one preview tab this thread owns. Use it on a tab you opened for your own check when you finish.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__t3_preview_close(args: { tabId: string; }): Promise<CallToolResult>; };\n```"
     }
   ]
 }
