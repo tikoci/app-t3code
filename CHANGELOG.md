@@ -18,7 +18,8 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
 - The pairing screen now says how to get a token on RouterOS: a "Running on
   MikroTik RouterOS?" panel under the token field shows
   `:put [/container/shell app-t3code cmd="t3-pairing-link" as-value]` as
-  selectable text for manual copying, with no Copy/Selected button. It's a
+  selectable text for manual copying, with no Copy/Selected button. Tab
+  reaches the command and selects all of it for Ctrl/Cmd+C. It's a
   small script the image adds to T3's web client; no T3 code is changed.
   The container log prints the same command at start (#18, #30).
 

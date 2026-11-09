@@ -40,14 +40,17 @@ devices). **Not used.**
 
 Follow-up to the #18 panel (tracked on #30): the Copy/Selected button was removed
 because plain HTTP only selected the command without copying it. The command
-remains selectable for manual copying; no clipboard JavaScript is needed.
+remains selectable for manual copying; no clipboard JavaScript is needed. It
+is also focusable (`tabindex=0`): Tab reaches it, and focus selects all of it,
+so keyboard users copy it with Ctrl/Cmd+C without caret browsing (CodeRabbit
+review on #32).
 
 | Piece | Where | What it does |
 | --- | --- | --- |
-| Helper | `client/routeros-pairing.js` → `/opt/t3code/client/` | Watches the DOM (`MutationObserver`, batched per animation frame). When `#pairing-token` is on screen, adds its own `<section>` after the token form; removes it when the input goes away. Text nodes only, never HTML. The command is selectable text with no copy button. |
+| Helper | `client/routeros-pairing.js` → `/opt/t3code/client/` | Watches the DOM (`MutationObserver`, batched per animation frame). When `#pairing-token` is on screen, adds its own `<section>` after the token form; removes it when the input goes away. Text nodes only, never HTML. The command is selectable text with no copy button; Tab focuses it and focus selects it. |
 | Wiring | `scripts/install-pairing-help.sh`, run by the `Dockerfile` right after the release archive is extracted | Copies the helper and inserts the tag before `</head>` (awk + `mv`, portable to macOS, where the tests also run it). The build **fails** if `index.html` doesn't have exactly one `</head>` (counted as occurrences, not lines), already loads the helper, if no bundle asset has the input's `` id:`pairing-token` `` prop (the unrelated `/api/auth/pairing-token` path doesn't count), or if the tag isn't inserted exactly once. A T3 bump that renames the input breaks the build instead of silently dropping the help. |
 | Log line | `docker-entrypoint.sh` | Prints the same command at every start, before `exec t3 serve`. |
-| Contract test | `test/pairing-help.test.ts` (in `bun run test`) | Same command in the helper, README and entrypoint; helper parses; no HTML sinks; the install script run against fixture clients (good, two `</head>` on one line, renamed anchor, no assets, already installed). |
+| Contract test | `test/pairing-help.test.ts` (in `bun run test`) | Same command in the helper, README and entrypoint; helper parses; no HTML sinks; the command keeps `user-select:all`, `tabIndex = 0` and select-on-focus; the install script run against fixture clients (good, two `</head>` on one line, renamed anchor, no assets, already installed). |
 
 The command on screen is the short form, since the browser is already at the
 app's URL:
@@ -84,11 +87,17 @@ the tag inserted, `t3 serve` on `127.0.0.1:3799` with a throwaway home:
 - Headless Chromium screenshots of `/pair` in light and dark: the panel sits
   between the form and T3's "accepts one-time pairing tokens" note, using the
   card's colors (`currentColor`/`color-mix`, no theme hooks).
-- [pairing-help-probe.mjs](pairing-help-probe.mjs), driving the real page:
+- [pairing-help-probe.mjs](pairing-help-probe.mjs), driving the real page
+  (the three selection lines were added for #32 and rerun on 2026-11-08
+  against the same 0.1.7 archive; with the previous helper, which had no
+  `tabindex`, both Tab lines print `false`):
 
   ```text
   panel shown before pairing: true
   command: :put [/container/shell app-t3code cmd="t3-pairing-link" as-value]
+  Tab reaches the command: true
+  Tab selects the whole command: true
+  click selects the whole command: true
   panels after a rejected token (want 1): 1
   panels after pairing (want 0): 0
   path after pairing: /welcome
@@ -105,7 +114,8 @@ passed all three Dockerfile guards. A container from it (fresh volume,
   cmd="t3-pairing-link" as-value]`.
 - `/pair` HTML carries `<script defer src="/routeros-pairing.js"></script>`.
 - Probe with a token from `docker exec … t3-pairing-link` (the wrapper
-  RouterOS runs): the same five lines as above, ending on `/welcome`.
+  RouterOS runs): the five non-selection lines above, ending on `/welcome`
+  (this run predates the selection checks).
 
 ### One unexplained rejection
 

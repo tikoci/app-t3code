@@ -21,6 +21,7 @@
 #${PANEL_ID} .rph-cmd{margin:8px 0;padding:8px 10px;border:1px solid color-mix(in srgb,currentColor 15%,transparent);border-radius:6px}
 #${PANEL_ID} code{font-family:ui-monospace,SF Mono,Menlo,Consolas,monospace;font-size:12px}
 #${PANEL_ID} .rph-cmd code{overflow-wrap:anywhere;-webkit-user-select:all;user-select:all}
+#${PANEL_ID} .rph-cmd code:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}
 #${PANEL_ID} p.rph-note{margin-top:8px;font-size:11px;line-height:16px;opacity:.6}
 #${PANEL_ID} p.rph-note code{font-size:11px}`;
 
@@ -57,7 +58,12 @@
 		);
 		const row = el("div");
 		row.className = "rph-cmd";
-		row.append(el("code", COMMAND));
+		// Tab reaches the command and focus selects all of it, so keyboard
+		// users copy it with Ctrl/Cmd+C; no clipboard API (plain HTTP has none).
+		const command = el("code", COMMAND);
+		command.tabIndex = 0;
+		command.addEventListener("focus", () => window.getSelection()?.selectAllChildren(command));
+		row.append(command);
 		panel.append(
 			row,
 			para(

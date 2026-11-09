@@ -20,7 +20,25 @@ const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
 await page.goto(`${base}/pair`);
 await page.waitForSelector("#routeros-pairing-help", { timeout: 15000 });
 console.log("panel shown before pairing:", await page.isVisible("#routeros-pairing-help"));
-console.log("command:", await page.textContent("#routeros-pairing-help .rph-cmd code"));
+const command = await page.textContent("#routeros-pairing-help .rph-cmd code");
+console.log("command:", command);
+
+// Manual copy is the only copy path (#30): Tab from the token field must reach
+// the command and select all of it, and so must a click.
+const selection = () => page.evaluate(() => window.getSelection()?.toString() ?? "");
+const onCommand = () => page.evaluate(() => document.activeElement?.matches("#routeros-pairing-help .rph-cmd code") ?? false);
+await page.focus("#pairing-token");
+let tabs = 0;
+while (!(await onCommand()) && tabs < 20) {
+	await page.keyboard.press("Tab");
+	tabs++;
+}
+console.log("Tab reaches the command:", await onCommand());
+console.log("Tab selects the whole command:", (await selection()) === command);
+await page.evaluate(() => window.getSelection()?.removeAllRanges());
+await page.focus("#pairing-token");
+await page.click("#routeros-pairing-help .rph-cmd code");
+console.log("click selects the whole command:", (await selection()) === command);
 
 await page.fill("#pairing-token", "WRONGTOKEN12");
 await page.click("button[type=submit]");
