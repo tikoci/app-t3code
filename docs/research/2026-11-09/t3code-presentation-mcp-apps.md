@@ -25,6 +25,8 @@ resource and writes the captured app reference into the tool output.
 The [Claude adapter][claude] routes MCP servers through its SDK but lacks
 this T3 capture/callback path. This research does not claim that Claude or
 its SDK could never support MCP Apps; additional T3 adapter work is required.
+The [ACP adapter][acp] was also inspected; the absence of app callbacks in
+that adapter is included in the evidence manifest.
 
 The [server request service][requests] rejects callbacks when the runtime
 does not provide `mcpApps`. It is not enough for an arbitrary MCP result to
@@ -118,6 +120,7 @@ the MCP App tool/context bridge merely by being rendered.
 [adapter]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/packages/provider-core/src/server/ProviderAdapter.ts
 [codex]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/orchestration-v2/Adapters/CodexAdapterV2.ts
 [claude]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.ts
+[acp]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/packages/provider-acp/src/server/adapter.ts
 [requests]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/mcpApps/McpAppRequests.ts
 [timeline]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/TimelineAssistantRows.tsx
 [frame]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/McpAppFrame.tsx

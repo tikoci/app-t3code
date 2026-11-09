@@ -79,6 +79,14 @@ existing tools update known project/thread fields; they do not define new
 Thread details sections. A native router-status row would need an upstream
 extension point or a maintained frontend change.
 
+There is a narrower existing route: the built-in [Servers row][servers]
+lists discovered listening ports associated with the thread and opens them
+in preview. A local status page or proxy started by a project action is a
+possible experiment using that row; port discovery and naming would need
+verification. It would still be a server entry, not a custom router-status
+component. Side chats and automations likewise have predefined rows rather
+than app-defined sections.
+
 ## Project scripts are persistent command entry points
 
 `t3_project_update.scripts` defines named actions, commands, icons and optional
@@ -110,4 +118,5 @@ does not create a custom status row in the card.
 [details]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/ThreadDetailsCard.tsx
 [details-panel]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/ThreadDetailsPanel.tsx
 [items]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/threadDetailsItems.ts
+[servers]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/ThreadServersPanel.tsx
 [settings]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/project-settings.md

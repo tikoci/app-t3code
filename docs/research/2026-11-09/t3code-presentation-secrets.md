@@ -27,6 +27,11 @@ intended reference-mode flow; file delivery explicitly permits shell access.
 An agent printing or reading that file into model-visible output would defeat
 the latter mode's transcript protection.
 
+The concrete reference consumer identified at this pin is
+[`schedule_task` webhook-signature configuration][ref-consumer]. This is an
+example of a tool explicitly wired to redeem the reference; it is not a
+general-purpose secret resolver exposed to arbitrary CLIs.
+
 ## Storage, expiry and deletion
 
 The [server path derivation][paths] places secrets under the environment's
@@ -79,6 +84,11 @@ credential store or an encrypted vault.
   would change; resolve this limitation before promising arbitrary password
   fidelity. No real password was submitted for the probe.
 
+The whitespace behavior already has an open upstream report,
+[pingdotgg/t3code#31690][whitespace-issue]. Its reported UI reproduction uses
+a whitespace-only secret; this research additionally confirms surrounding
+whitespace removal in the client helper with a synthetic value.
+
 ## What this means for centrs
 
 The inspected local centrs package was `0.1.9-next.24`. Its documented inputs
@@ -124,3 +134,5 @@ centrs output for accidental disclosure.
 [paths]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/config.ts
 [store]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/auth/ServerSecretStore.ts
 [requests]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/secrets/SecretRequests.ts
+[ref-consumer]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/scheduledTasks/ScheduledTaskService.ts
+[whitespace-issue]: https://github.com/pingdotgg/t3code/issues/31690

@@ -18,8 +18,11 @@ baseline: T3 v0.1.7. No GUI rendering was exercised in this research.
 | ZIP/JAR/TAR/GZIP | Archive listing and text/image entry preview | Not every archive member can be rendered |
 | Images, audio, video, fonts | Media controls or font specimen | Additional ways to present generated evidence |
 
-The [format classifier][formats], [file panel][panel], [table viewer][table]
-and [binary viewer][binary] establish these routes.
+The [format classifier][formats], [file panel][panel],
+[delimited-table entry point][delimited], [table viewer][table] and
+[binary viewer][binary] establish these routes. Mermaid/font classification
+uses the `richDocuments` option, which defaults to enabled; callers can select
+a reduced format set.
 
 ## TOML: yes as source, not a special structured visualization
 
@@ -63,6 +66,12 @@ Highlights engine is preferred, with Shiki-related machinery also present in
 the rendering stack. Neither the presence of Shiki nor T3's external-editor
 picker connects the native preview to a RouterOS LSP.
 
+Dependency provenance: T3's [catalog][catalog] pins the inspected Pierre
+versions. Its [Pierre patch][pierre-patch] changes rendering/editor behavior
+but does not modify the filename resolver or language tables used by these
+probes. The probes ran those published package functions, not a complete
+patched T3 browser build.
+
 ## RouterOS semantic highlighting is a separate avenue
 
 The [lsp-routeros-ts README][lsp] describes semantic tokens sourced from a live
@@ -91,8 +100,11 @@ validation.
 [formats]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/packages/shared/src/filePreview.ts
 [panel]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/files/FilePreviewPanel.tsx
 [table]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/files/LargeTextViewer.tsx
+[delimited]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/files/DelimitedTablePreview.tsx
 [binary]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/files/BinaryViewer.tsx
 [source]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/files/ReadOnlySourcePreview.tsx
 [syntax]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/lib/syntaxHighlighting.ts
+[catalog]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/pnpm-workspace.yaml
+[pierre-patch]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/patches/%40pierre%252Fdiffs%401.6.1.patch
 [piano]: https://github.com/tikoci/lsp-routeros-ts/blob/1d0999f69e4f062c8a6cc08f9977f2ae84bc87c1/test-data/complex/piano.rsc
 [lsp]: https://github.com/tikoci/lsp-routeros-ts/blob/1d0999f69e4f062c8a6cc08f9977f2ae84bc87c1/README.md

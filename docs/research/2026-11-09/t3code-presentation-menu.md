@@ -41,6 +41,7 @@ rewriting the whole inventory.
 | HTML reply | `html_preview`, then `html_render` | Interactive document in the chat timeline; expand/zoom available | Contract + source; all providers according to upstream docs |
 | MCP App | Invoke an app-enabled MCP tool | Interactive result replaces that tool's ordinary call display in chat | Source; provider limitation explained in the dedicated note |
 | Shared browser | `preview_open` with a URL or environment port | Browser tab in the preview workspace; floating/separate-window options belong to client UI | Contract + source; agent does not select the layout through this tool |
+| Browser evidence | `preview_snapshot`, `preview_recording_start` / `stop` | Screenshot or recording file that can be embedded in chat | Contract; captures the chosen browser tab, not an arbitrary desktop |
 | File viewer | Create a file and include an absolute-path Markdown link | File/document preview, with format-specific controls | Source; text, tables, database, archives, media and document formats |
 | Inline media | Markdown image syntax referencing an absolute file path | Image, video, or audio in the conversation | Injected runtime contract; create the media with appropriate tools first |
 | Rich Markdown | Assistant message text | Tables, code, math, Mermaid and collapsible details | Source; rendering does not imply RouterOS language intelligence |
@@ -50,6 +51,7 @@ rewriting the whole inventory.
 | Project identity | `t3_project_update` | Title, icon, emoji, monogram, favicon | Contract; identity rather than a custom status widget |
 | Thread navigation | Returned native thread links; documented prompt links | Open a thread or populate a draft prompt for review | Source; prompt links do not execute the prompt |
 | Thread organization | Rename, pin, snooze, mark unread, settle | Sidebar title, grouping and attention state | Contract; not a general alert/card API |
+| Scheduled reports | `schedule_task` with a destination thread or new-thread behavior | Later findings appear in an ordinary conversation; automations have a built-in details row | Contract + source; relevant as a report delivery path, not a custom display surface |
 | Device display | `device_open`, `device_screenshot` | Device panel for configured iOS/Android hosts | Contract; no arbitrary CHR/QEMU display registration exposed |
 | PR presentation | Link/watch tools; `write_pull_request_guides` | PR badges, status, diffs, review-tour Guide tab | Contract + source; retained for completeness, lower priority here |
 | Activity and progress | Ordinary command/file/tool/plan events | Expandable activity log and live command output | Source; T3 chooses layout and grouping |
@@ -87,7 +89,7 @@ These are ideas, not accepted requirements or claims about existing centrs flags
 | centrs MCP App | Interactive RouterOS findings with callbacks and selected-context handoff | T3 provider support, session lifetime and read/write confirmation behavior |
 | TSV/SQLite/Mermaid outputs | Reuse native viewers with little presentation code | Snapshot schema, file sizes and refresh behavior |
 | RouterOS syntax presentation | Preserve RouterOS-specific token colors and diagnostics | Render existing token data into HTML, or add upstream native syntax/LSP support? |
-| Router context in Thread details | Keep the target router visible beside chat | Fixed internal component today; existing project actions versus a future upstream extension point |
+| Router context in Thread details | Keep the target router visible beside chat | Existing project actions and discovered local servers versus a future custom status-row extension point |
 | Private centrs credentials | Avoid putting passwords into prompts or container-wide persistent environment configuration | File delivery, process exposure, cleanup and credential persistence policies |
 | Images or ffmpeg-generated sequences | Alternative for static diagrams, text animation, timelapses or recorded interaction | Useful experiment outside RouterOS too; no such artifact generated here |
 
