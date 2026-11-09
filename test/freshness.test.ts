@@ -102,6 +102,17 @@ describe("harness catalog", () => {
 		expect(parseBuiltInDrivers(old + live)).toEqual(["CodexDriver", "NewDriver"]);
 	});
 
+	// A regex comment strip read `/*` inside a line comment as a block comment and
+	// lost NewDriver, which JavaScript keeps (Codex re-check of #33).
+	test("comment markers inside comments or strings can't hide a live driver", () => {
+		const tricky = DRIVERS_V017.replace("  AcpRegistryDriver,\n];", "  AcpRegistryDriver,\n  // To disable a driver, surround it with /*\n  NewDriver,\n  // */\n];");
+		expect(parseBuiltInDrivers(tricky)).toEqual([...Object.keys(HARNESSES), "NewDriver"]);
+		expect(diffCatalog(parseBuiltInDrivers(tricky))).toEqual({ added: ["NewDriver"], removed: [] });
+		const inString = "const note = '/* not a comment';\nexport const BUILT_IN_DRIVERS = [CodexDriver, NewDriver];\nconst end = '*/';\n";
+		expect(parseBuiltInDrivers(inString)).toEqual(["CodexDriver", "NewDriver"]);
+		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [CodexDriver, `x` as any];")).toThrow(/plain list/);
+	});
+
 	test("reports drivers added and removed upstream", () => {
 		// v0.1.6 had no Kiro; v0.1.7 added it. This check would have flagged the bump.
 		expect(diffCatalog(["CodexDriver", "ClaudeDriver"], ["CodexDriver", "ClaudeDriver"])).toEqual({ added: [], removed: [] });

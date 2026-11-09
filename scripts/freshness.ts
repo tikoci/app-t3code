@@ -52,8 +52,11 @@ export function renderShareLink(yaml: string): string {
  */
 export function parseBuiltInDrivers(source: string): string[] {
 	const update = "update parseBuiltInDrivers";
-	// Comments first, so a commented-out declaration can't stand in for the live one.
-	const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+	// Bun's TypeScript transpiler, not regexes, drops comments and types: a
+	// commented-out declaration can't stand in for the live one, and a `/*`
+	// inside a line comment or a string can't hide live code. Its printer also
+	// normalizes layout (no trailing commas, one `;` per statement).
+	const code = new Bun.Transpiler({ loader: "ts", trimUnusedImports: false }).transformSync(source);
 	const uses = code.match(/\bBUILT_IN_DRIVERS\b/g)?.length ?? 0;
 	if (uses === 0) throw new Error(`no BUILT_IN_DRIVERS in ${DRIVERS_PATH}; upstream moved it, so ${update}`);
 	if (uses > 1) throw new Error(`BUILT_IN_DRIVERS appears ${uses} times in ${DRIVERS_PATH}, not just its declaration; ${update}`);
