@@ -18,6 +18,7 @@
         T3CODE_PORT: "3773"
         T3CODE_TELEMETRY_ENABLED: "false"
         T3CODE_TOOL_GROUPS: "capture labs vpn routing dev"
+        T3CODE_PROVIDERS: "claude codex"
       volumes:
         - t3code-data:/data
       restart: unless-stopped

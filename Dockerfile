@@ -3,10 +3,9 @@
 # Rebuilds the wodby/t3code approach from our own Dockerfile so the image we
 # ship on GHCR is one we control: Debian trixie-slim (glibc, which the T3 Code
 # release binaries need), per-arch t3 tarball from pingdotgg/t3code with
-# SHA256 verification, Codex + opencode, the GitHub CLI, uv/uvx and
-# Bun/RouterOS tools baked in, Claude Code installed to the volume on first boot (license forbids
-# redistribution). Muse Code is not bundled (users may install it into the
-# home; per-harness provisioning is issue #13).
+# SHA256 verification, the GitHub CLI, uv/uvx and Bun/RouterOS tools baked
+# in. No provider CLI is baked: the T3CODE_PROVIDERS selection (#13) installs
+# Claude Code, Codex and the others into the volume in the background.
 #
 # Build:
 #   docker buildx build --platform linux/amd64,linux/arm64 \
@@ -27,8 +26,6 @@ FROM node:${NODE_VER}-trixie-slim AS runtime
 
 ARG TARGETARCH
 ARG T3CODE_VER=0.1.7
-ARG CODEX_VER=latest
-ARG OPENCODE_VER=latest
 ARG QUICKCHR_VER=next
 ARG CENTRS_VER=next
 ARG GH_VER=2.103.3
@@ -43,6 +40,10 @@ ENV T3CODE_TELEMETRY_ENABLED=false
 # explicit list, so a group added later is never enabled silently. Operators
 # remove names, or set `none` for core only, with /app/set environment=.
 ENV T3CODE_TOOL_GROUPS="capture labs vpn routing dev"
+# Provider CLIs to install into the home (scripts/providers.ts
+# DEFAULT_PROVIDERS): an explicit list, like the groups above. OpenCode, Pi,
+# Grok and Muse are opt-in; Cursor and Antigravity come with T3 itself.
+ENV T3CODE_PROVIDERS="claude codex"
 # uv uses the image's Python 3 and never fetches a managed Python by itself;
 # `uv python install` still works when asked for explicitly.
 ENV UV_PYTHON_DOWNLOADS=manual
@@ -166,14 +167,6 @@ RUN set -eu; \
 
 WORKDIR /
 
-# Agent CLIs baked into the image. Claude Code is intentionally absent here:
-# its license does not allow redistribution, so the entrypoint installs it to
-# the persistent volume on first start instead.
-RUN npm install -g --no-fund --no-audit \
-        "@openai/codex@${CODEX_VER}" \
-        "opencode-ai@${OPENCODE_VER}" && \
-    npm cache clean --force
-
 # Core network tools (issue #5 assignment, see README "Network tool
 # assignment"), the sqlite3 CLI and zstd (bin/install-claude-code downloads
 # Claude's .zst build: about 99 MiB instead of 280). Small user-space clients
@@ -213,7 +206,7 @@ ENV PATH="/data/.local/bin:/data/.bun/bin:/data/.local/share/t3code-tools/bin:/o
 COPY docker-entrypoint.sh /
 COPY bin /usr/local/bin
 COPY profile.sh /etc/profile.d/t3code.sh
-COPY scripts/image-inventory.ts scripts/tool-groups.ts scripts/tool-payloads.ts scripts/deb-payloads.ts /usr/local/lib/t3code/
+COPY scripts/image-inventory.ts scripts/tool-groups.ts scripts/tool-payloads.ts scripts/deb-payloads.ts scripts/providers.ts scripts/harnesses.ts /usr/local/lib/t3code/
 COPY scripts/groups /usr/local/lib/t3code/groups
 
 # Native tool groups (`capture`, `vpn`, `routing`, `labs`) install as

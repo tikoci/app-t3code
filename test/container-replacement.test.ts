@@ -108,7 +108,8 @@ test.skipIf(!image)(
 		// No other --env: like a RouterOS env-list replacement that drops the
 		// YAML defaults, so the image ENV defaults must carry correct operation.
 		// Every start sets its selection explicitly, except `null`, which checks
-		// the image's own default.
+		// the image's own default. Providers are just Codex (a real npm install
+		// into the home, #13), so the test never downloads Claude.
 		const start = (groups: string | null, offline = false) =>
 			docker(
 				"run",
@@ -118,7 +119,7 @@ test.skipIf(!image)(
 				...(offline ? ["--network", "none"] : ["--publish", "127.0.0.1::3773"]),
 				"--volume",
 				`${volume}:/data`,
-				...(groups === null ? [] : ["--env", `T3CODE_TOOL_GROUPS=${groups}`]),
+				...(groups === null ? [] : ["--env", `T3CODE_TOOL_GROUPS=${groups}`, "--env", "T3CODE_PROVIDERS=codex"]),
 				image as string,
 			);
 		/** The agent-facing status (live) and the runtime JSON the entrypoint wrote. */
@@ -220,7 +221,19 @@ test.skipIf(!image)(
 				routing: "ready",
 				dev: "ready",
 			});
-			// Muse is not bundled any more (#13); the baked providers are.
+			// No provider CLI is baked (#13): Codex installs into the home in the background.
+			type Providers = { providers: { token: string; state: string; path: string | null; last: { error?: string } | null }[] };
+			const codexReady = async (timeoutMs: number) => {
+				const deadline = Date.now() + timeoutMs;
+				for (;;) {
+					const codex = (JSON.parse(await run("t3code-providers", "status", "--json")) as Providers).providers.find((p) => p.token === "codex");
+					if (codex?.state === "ready" || Date.now() > deadline) return codex;
+					await Bun.sleep(2000);
+				}
+			};
+			expect(await codexReady(300_000)).toMatchObject({ state: "ready", path: "/data/.local/bin/codex" });
+			expect(await run("cat", "/data/.local/state/t3code/providers.log")).toContain("codex: ready");
+			expect(await run("realpath", "/data/.local/bin/codex")).toStartWith("/data/.local/lib/node_modules/@openai/codex/");
 			expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", "command -v muse"]).exitCode).not.toBe(0);
 			for (const shell of ["-c", "-lc"]) {
 				const shellStatus = JSON.parse(await run("bash", shell, "t3code-tools status --json"));
@@ -386,6 +399,9 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			expect(devOffline.payload?.active).toBe(devFirst.payload?.active as string);
 			expect(devOffline.payload?.last?.updatedAt).toBe(devFirst.payload?.last?.updatedAt as string);
 			for (const shell of ["-c", "-lc"]) await run("bash", shell, `set -e; ${devTools}`);
+			// Codex came back from the home with no network: nothing to reinstall.
+			expect(await codexReady(0)).toMatchObject({ state: "ready", path: "/data/.local/bin/codex" });
+			await run("codex", "--version");
 			// The native groups deselected: their shims are gone, their payloads stay on disk.
 			const nativeFirst = { capture: captureFirst, labs: labsFirst, vpn: vpnFirst, routing: routingFirst };
 			const probes = { capture: "tshark", labs: "qemu-system-x86_64", vpn: "pki", routing: "bird" };

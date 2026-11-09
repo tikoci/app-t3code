@@ -14,6 +14,7 @@
 import { accessSync, constants, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DEB_LOCK_FILE, resolveDebLock, type WrapperRule } from "./deb-payloads.ts";
+import { buildProviderStatus, providerSummary, stateDir } from "./providers.ts";
 import {
 	APP_HOME,
 	activateIfIdle,
@@ -336,10 +337,10 @@ export const BROWSER_LIBRARIES = ["libnss3.so", "libgbm.so.1", "libasound.so.2",
 
 /**
  * What the core must provide regardless of selection (presence probes): T3,
- * the language bootstraps (Node, Bun, Python with uv/uvx), sqlite3, zstd, the
- * provider CLIs the image bakes (Claude Code installs into the home in the
- * background and Muse is not bundled, so neither is a core check; see #13),
- * the browser's native libraries, centrs and the core network tools.
+ * the language bootstraps (Node, Bun, Python with uv/uvx), sqlite3, zstd,
+ * the browser's native libraries, centrs and the core network tools. Provider
+ * CLIs are not core: T3CODE_PROVIDERS installs them into the home
+ * (providers.ts, #13), and status reports them separately.
  */
 export const CORE_CHECKS: readonly Check[] = [
 	...cmd(
@@ -372,8 +373,6 @@ export const CORE_CHECKS: readonly Check[] = [
 	"snmpget",
 	"radclient",
 	"mosquitto_pub",
-	"codex",
-	"opencode",
 	"fc-list",
 	),
 	...BROWSER_LIBRARIES.map((name): Check => ({ kind: "library", name })),
@@ -615,12 +614,14 @@ export function buildStatus(
 		groups: GROUPS.map((group) =>
 			groupStatus(group, selection.selected.includes(group.name), probe, isPayloadGroup(group) && payloads ? payloadInfo(group, payloads) : undefined),
 		),
+		// Provider CLIs are not groups (T3CODE_PROVIDERS, #13); `t3code-providers status` has the detail.
+		providers: buildProviderStatus(process.env.T3CODE_PROVIDERS, probe.which).providers.map(({ token, selected, state, path }) => ({ token, selected, state, path })),
 		buildInventory: readBuildInventory(inventoryDir),
 		runtimeStatusPath: RUNTIME_STATUS_PATH,
 		notes: [
 			"npm and deb groups install in the background into the home and are reused across container replacement; not-implemented groups have no installer yet.",
 			`Unset or empty ${SELECTOR_ENV} selects the default "${DEFAULT_TOOL_GROUPS}"; "none" is core only. Installing a group grants no privileges (see each group's privileges).`,
-			"Provider CLIs are not tool groups: codex and opencode are core checks; Claude Code installs into the home in the background; Muse is not bundled (issue #13).",
+			"Provider CLIs are not tool groups: T3CODE_PROVIDERS installs them into the home in the background (t3code-providers status, issue #13).",
 			"A deb group's file checks are paths inside its payload root, reported through the group's current link.",
 			"Checks are presence probes (PATH, files, ldconfig), not functional tests or capability grants.",
 			"Change the selection with /app/set environment= (see README), never by reapplying the /app YAML.",
@@ -634,6 +635,7 @@ export function formatStatus(status: Status): string {
 	const lines = [
 		`${SELECTOR_ENV}=${status.selector.raw === null ? "(unset)" : JSON.stringify(status.selector.raw)}${status.selector.defaulted ? " (default)" : ""} -> ${status.selector.selected.length ? status.selector.selected.join(" ") : "none (core only)"}`,
 		`core: ${status.core.state}${status.core.missing.length ? ` (missing: ${status.core.missing.join(", ")})` : ""}`,
+		`providers: ${providerSummary(status.providers)} (t3code-providers status)`,
 	];
 	for (const group of status.groups) {
 		const extra = group.missing.length && group.state !== "not-selected" ? ` missing: ${group.missing.join(", ")}` : "";
@@ -709,7 +711,7 @@ Files
       shims on PATH, state.json, install.log, install.lock
   ${RUNTIME_STATUS_PATH}
       status JSON written by init and install
-  /tmp/t3code-tools-install.log
+  ${join(stateDir(), "tool-groups.log")}
       output of the entrypoint's background install
   ${BUILD_INVENTORY_DIR}
       build-time inventory (image contents, deb locks)

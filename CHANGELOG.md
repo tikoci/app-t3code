@@ -7,6 +7,23 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
 
 ## Unreleased — T3 Code 0.1.7
 
+- **Provider CLIs are now chosen with `T3CODE_PROVIDERS`** (#13), one token
+  per provider in T3's main Add provider list: `claude codex cursor grok
+  opencode antigravity pi muse`. The default is `claude codex`. Selected
+  CLIs install into `/data` in the background while they are missing from
+  PATH: npm into `/data/.local` for Codex, OpenCode and Pi, the vendor's
+  installer for Grok and Muse, and the existing Claude installer. T3's own
+  Update now keeps working on them. Cursor and Antigravity come with T3 and
+  install nothing. A CLI you installed yourself always wins, and deselecting
+  deletes nothing. `t3code-providers status` shows each provider's state.
+- **Codex and OpenCode are no longer baked into the image.** With the
+  default, Codex installs into the home on first start after the update.
+  OpenCode is opt-in now (about 409 MiB): add `opencode` to
+  `T3CODE_PROVIDERS` to keep it. Logins and sessions in `/data` are kept.
+- Background install logs moved to one directory in the home,
+  `/data/.local/state/t3code/`: `providers.log` (it replaces
+  `install-claude-code.log`) and `tool-groups.log` (it was
+  `/tmp/t3code-tools-install.log`, lost on every restart).
 - RouterOS now stops T3 gracefully. It used to SIGKILL the container on
   every stop, `/app/update` and `disabled=yes`, because PID 1 (`tini`) had
   no SIGTERM handler, and RouterOS checks for one. PID 1 is now a small

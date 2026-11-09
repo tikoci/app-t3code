@@ -38,7 +38,7 @@ app disk, so logins, the T3 database, and `~/projects` survive reboots.
 
 ### Preview or edit the YAML
 
-[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++HOME%3A+%2Fdata%0A++++++T3CODE_HOME%3A+%2Fdata%2F.t3%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++++%23+Optional+tool+groups%2C+installed+into+%2Fdata+in+the+background+after%0A++++++%23+start.+Remove+names+to+skip+them%3B+%22none%22+is+core+only.+On+an+installed%0A++++++%23+app+change+this+with+%2Fapp%2Fset+environment%3D+%28README%29%2C+never+yaml%3D.%0A++++++T3CODE_TOOL_GROUPS%3A+%22capture+labs+vpn+routing+dev%22%0A++++volumes%3A%0A++++++%23+Keep+this+name+and+destination+when+upgrading%3A+the+whole+home%2C%0A++++++%23+including+.t3%2Fuserdata%2C+projects%2C+worktrees%2C+and+provider+logins.%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
+[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++HOME%3A+%2Fdata%0A++++++T3CODE_HOME%3A+%2Fdata%2F.t3%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++++%23+Optional+tool+groups%2C+installed+into+%2Fdata+in+the+background+after%0A++++++%23+start.+Remove+names+to+skip+them%3B+%22none%22+is+core+only.+On+an+installed%0A++++++%23+app+change+this+with+%2Fapp%2Fset+environment%3D+%28README%29%2C+never+yaml%3D.%0A++++++T3CODE_TOOL_GROUPS%3A+%22capture+labs+vpn+routing+dev%22%0A++++++%23+Provider+CLIs+to+install+into+%2Fdata+in+the+background%3A+claude+codex%0A++++++%23+cursor+grok+opencode+antigravity+pi+muse%2C+or+%22none%22.+Same+rules.%0A++++++T3CODE_PROVIDERS%3A+%22claude+codex%22%0A++++volumes%3A%0A++++++%23+Keep+this+name+and+destination+when+upgrading%3A+the+whole+home%2C%0A++++++%23+including+.t3%2Fuserdata%2C+projects%2C+worktrees%2C+and+provider+logins.%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
 the single-app definition in our sister project, [tikoci/restraml](https://github.com/tikoci/restraml).
 The share link embeds the YAML as a snapshot; the downloads below track the
 current published files. Both YAML files include schema comments for editor validation.
@@ -228,34 +228,81 @@ pairing URL instead of a raw token.
 | `T3CODE_HOST` / `T3CODE_PORT` | `0.0.0.0` / `3773` | server bind |
 | `T3CODE_TELEMETRY_ENABLED` | `false` (image default and YAML) | set `true` to opt back in |
 | `T3CODE_TOOL_GROUPS` | `capture labs vpn routing dev` (image default and YAML) | optional tool groups; remove names to skip them, `none` for core only; see [below](#optional-tool-groups) |
+| `T3CODE_PROVIDERS` | `claude codex` (image default and YAML) | provider CLIs to install into the home; see [Providers](#providers-t3code_providers) |
 | `UV_PYTHON_DOWNLOADS` | `manual` (image default) | uv uses the image's Python 3 and downloads another only on `uv python install` |
 | `PUBLIC_URL` | unset | base URL baked into pairing links |
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, … | inherited | agents see container env |
 | `T3CODE_*` | passthrough | e.g. `T3CODE_SERVER_BROWSER_SANDBOX=0` |
 
-Provider CLIs in this image:
+#### Providers (`T3CODE_PROVIDERS`)
 
-| Provider | How it arrives | Updates |
-|---|---|---|
-| Codex (`codex`) | npm global in the image (`/usr/local`) | with each image replacement |
-| opencode (`opencode`) | npm global in the image (`/usr/local`) | with each image replacement |
-| Claude Code (`claude`) | downloaded in the background into the home while no `claude` is on PATH: the stable channel's native build, fetched as its `.zst` (about 99 MiB instead of 280 MiB) and size- and SHA-256-checked against Anthropic's manifest after decompressing, set up with Claude's own `install` (same layout as Anthropic's installer: `/data/.local/share/claude/versions/<ver>`, linked from `/data/.local/bin/claude`). Its license forbids redistributing it, so it cannot be baked in. Retries for about a day; log in `/data/.local/state/t3code/install-claude-code.log`. Run `install-claude-code` to retry now, or use **Install** on T3's welcome screen | not by image updates: it lives in the home |
-| [Meta Muse Code](https://dev.meta.ai/docs/muse-code) (`muse`) | **not bundled** since the final #5 slice (it added about 396 MiB to every image) | — |
+No provider CLI is baked into the image. `T3CODE_PROVIDERS` picks which ones
+install into the home, in the background after T3 starts, one explicit
+token per provider in T3's main **Add provider** list:
 
-T3's own provider drivers are unchanged, including Muse's. To use Muse,
-run Meta's [installer](https://dev.meta.ai/docs/muse-code) from a T3
-terminal. Its default install directory is `$HOME/.local/bin`, which is
-`/data/.local/bin` here: first on PATH and kept across image replacement.
-Muse configuration, logins and history already in `/data` stay where they
-are; an image update removes only the binary the image used to carry. Run `muse` to authenticate, or supply `META_API_KEY`. Provider
-logins and sessions for every harness live in the home.
+| Token | Provider | How it arrives | Size in `/data` (amd64) |
+|---|---|---|---|
+| `claude` | Claude Code (`claude`) | `install-claude-code`: the stable channel's native build, fetched as its `.zst` (about 99 MiB instead of 280 MiB) and size- and SHA-256-checked against Anthropic's manifest after decompressing, set up with Claude's own `install` (`/data/.local/share/claude/versions/<ver>`, linked from `/data/.local/bin/claude`). Its license forbids baking it into the image | about 280 MiB |
+| `codex` | Codex (`codex`) | `npm install -g @openai/codex` into `/data/.local` | about 437 MiB |
+| `opencode` | OpenCode (`opencode`) | `npm install -g opencode-ai` into `/data/.local` (npm installs both the regular and the `baseline` x64 build) | about 409 MiB |
+| `pi` | Pi (`pi`) | `npm install -g --ignore-scripts @earendil-works/pi-coding-agent` into `/data/.local` (T3's own install hint) | about 152 MiB |
+| `grok` | Grok (`grok`) | xAI's installer (`https://x.ai/cli/install.sh`): `/data/.grok`, linked as `grok` and `agent` from `/data/.local/bin`. The installer does not verify a checksum, and it adds its bin directory to `~/.bashrc` | about 192 MiB (arm64 164 MiB) |
+| `muse` | Muse Code (`muse`) | Meta's installer (`https://dev.meta.ai/install.sh`, with `MUSE_NO_MODIFY_PATH=1`): a launcher in `/data/.local/bin` | about 396 MiB |
+| `cursor` | Cursor | nothing to install: Cursor's SDK ships inside T3. Sign in from **Settings → Providers** | 0 |
+| `antigravity` | Antigravity | nothing installed by this image: T3 downloads its runtime into `/data/.t3/tools/antigravity-acp` when you install it from **Settings → Providers** | about 916 MiB, once T3 installs it |
 
-Do not assume that upstream T3 Code installs the same provider set as this
-image. A per-harness selector (one explicit token per supported harness, a
-separate ENV control), late installation and rediscovery, authentication and
-active-session behavior are
-[issue #13](https://github.com/tikoci/app-t3code/issues/13); this image
-keeps the delivery above until then.
+The default is **`claude codex`**, set in the image ENV and both YAML files.
+Add tokens to install more (`"claude codex opencode pi"`); `none` installs
+nothing. Like the tool groups, it is an explicit list with no `all`, so a
+provider T3 adds later never starts downloading by itself. Change it the
+same way as the groups: with `/app/set environment=`, never the YAML (see
+[Changing groups on RouterOS](#changing-groups-on-routeros), with
+`T3CODE_PROVIDERS=` as the key).
+
+How the installs behave:
+
+- **Only while missing.** A provider installs only while its CLI is not on
+  PATH. A CLI you installed yourself, or one T3's welcome screen installed,
+  always wins and is never replaced.
+- **T3 owns updates afterwards.** These are the same installs a user would
+  make, so T3's **Update now** recognizes them. For an npm install it runs
+  `npm install -g` against `/data/.local`; for the others it runs the CLI's
+  own updater (`claude update`, `grok update`).
+- **Deselecting deletes nothing.** Removing a token stops future installs.
+  The CLI, its login and its history stay in `/data`; delete them yourself
+  if you want the space back.
+- **Installing is not enabling.** Which providers T3 shows and uses is still
+  **Settings → Providers**. T3 re-checks providers every 5 minutes and
+  whenever Settings → Providers opens, so a CLI that finishes installing
+  after the welcome screen appeared shows up then.
+- **Retries.** The background run retries for about a day (15 s, 1 m, 5 m,
+  15 m, 30 m, then hourly). Run `t3code-providers install` in a terminal
+  to retry now, and `t3code-providers status` to see each provider's state,
+  where its CLI resolves and its last error.
+- **Logs.** All background installs log under `/data/.local/state/t3code/`:
+  `providers.log` (the provider installs, including Claude's) and
+  `tool-groups.log` (the tool groups). Each start appends; the logs rotate at
+  about 1 MiB and survive image replacement.
+
+Codex also has a second path in T3: **Continue with ChatGPT** downloads
+T3's own managed Codex into `/data/.t3/tools/codex`, separate from the
+`codex` CLI. **Use existing CLI** uses the CLI installed here.
+
+Other T3 drivers (Kiro, fx, and agents from the ACP registry, under
+**Show more** in T3) are not installed by this image. Install them yourself
+from a T3 terminal, into `/data/.local/bin` or another directory in the home,
+or [open an issue](https://github.com/tikoci/app-t3code/issues) to ask for a
+token. A token this image does not know is ignored with a warning in the
+container log. Provider logins, settings and sessions for every provider
+live in the home.
+
+> [!IMPORTANT]
+> **Upgrading from an image that baked Codex and OpenCode.** Earlier images
+> carried `codex` and `opencode` in `/usr/local`. After `/app/update`, the
+> default installs `claude` and `codex` into the home on first start (Codex
+> is a download of about 166 MiB, then about 437 MiB in `/data`). OpenCode is
+> no longer installed by default: add `opencode` to `T3CODE_PROVIDERS` to
+> keep it. Logins, settings and sessions in `/data` stay either way.
 
 ### Installed package inventory
 
@@ -363,8 +410,8 @@ running.
 > survives `/app/update`. Never reapply the YAML to change it.
 >
 > The same update removes the bundled `muse` binary. Muse logins and history
-> in `/data` stay; install Muse into the home again to keep using it (see
-> [Environment and providers](#environment-and-providers)).
+> in `/data` stay; add `muse` to `T3CODE_PROVIDERS` to install it into the
+> home again (see [Providers](#providers-t3code_providers)).
 
 `browser` and `agents-extra` are no longer groups. T3's browser libraries
 are core, and the provider CLIs are described in
@@ -449,7 +496,7 @@ run here as `node` with `CapEff 0` under Docker (habitat C): *works* or
 | `labs` | KVM acceleration | `/dev/kvm` readable and writable by `node`, and host support | fails without the device under Docker ("Could not access KVM kernel module"); untested with one |
 | `labs` | TAP networking | `CAP_NET_ADMIN` and `/dev/net/tun` (or a TAP pre-created for `node`) | fails without the device under Docker (`could not open /dev/net/tun`); untested with one |
 | core | T3's built-in browser sandbox | User namespaces, if the host allows them | expected |
-| core | Provider CLIs (`codex`, `opencode`, `claude`) | None | expected |
+| providers | Provider CLIs in the home (`claude`, `codex`, …) | None | expected |
 | `dev` | everything | None | works |
 
 Tools changed or moved because of privileges, not size:
@@ -503,9 +550,9 @@ boot firmware only (SeaBIOS to "No bootable device", and a 16-byte aarch64
 program that powers the machine off). For a payload group, a file check is a
 path inside the payload, reported through `groups/<group>/current/root/…`.
 Core checks (`t3`, Node, Bun,
-Python with uv/uvx, sqlite3, zstd, Git/SSH, `gh`, centrs, the core network tools, the
-baked `codex` and `opencode`, and the browser's native libraries) are
-reported separately as `core.state`. At each start the entrypoint logs warnings and a summary to
+Python with uv/uvx, sqlite3, zstd, Git/SSH, `gh`, centrs, the core network tools
+and the browser's native libraries) are reported separately as `core.state`,
+and each provider's state as `providers` (details: `t3code-providers status`). At each start the entrypoint logs warnings and a summary to
 the container log and writes the same JSON to `/tmp/t3code-tools/status.json`.
 The output also points at the immutable build inventory in
 `/usr/share/t3code/inventory`.
@@ -789,8 +836,9 @@ compatible payloads across image replacements (write-ups:
 [labs](docs/research/2026-11-06/labs-qemu-payload.md)). The image default
 selects all five by name. `browser` is not a group (its libraries stay in
 core, and T3's browser setup is unchanged), and provider CLIs are not a
-group either: per-harness selection is
-[issue #13](https://github.com/tikoci/app-t3code/issues/13). Still open
+group either: they have their own selector,
+[`T3CODE_PROVIDERS`](#providers-t3code_providers) (issue
+[#13](https://github.com/tikoci/app-t3code/issues/13)). Still open
 under [issue #5](https://github.com/tikoci/app-t3code/issues/5): a full image
 build exercised on a CHR with Claude and Codex connected, and the labs
 matrix (native ARM64 hosts, nested RouterOS, transfer, snapshots and
