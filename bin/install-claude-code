@@ -1,37 +1,179 @@
 #!/bin/bash
-# install-claude-code: fetch the stable Claude Code native binary for this
-# arch into the persistent volume (~/.local/bin). The image never ships it
-# (license forbids redistribution); first container start downloads it from
-# Anthropic. Re-runs are cheap: skipped when `claude` is already on PATH.
-set -eu
+# install-claude-code: install Claude Code's native build into the home
+# (~/.local/share/claude/versions/<ver>, linked from ~/.local/bin/claude), the
+# layout Anthropic's own installer produces. The image never ships Claude (its
+# license forbids redistribution), so the entrypoint runs this in the
+# background on every start until a `claude` is on PATH.
+#
+#   install-claude-code [--keep-trying] [stable|latest|X.Y.Z]   (default: stable)
+#
+# It follows Anthropic's install.sh (https://claude.ai/install.sh) with one
+# download instead of two: read the channel pointer, then
+# <ver>/manifest.json's .platforms[<platform>] {checksum, size}; download
+# <ver>/<platform>/claude (resumable), check its size and SHA-256, stage it as
+# versions/<ver>, then run `<it> install <ver>`. Claude's installer finds the
+# staged version and only writes the launcher link and its own settings
+# (about 25 KiB of traffic, measured 2026-11-08 with 2.1.311).
+# scripts/freshness.ts `claude` checks this manifest contract daily.
+#
+# A `claude` already on PATH (installed by hand, by T3's /welcome, or by an
+# earlier run) always wins: nothing is downloaded or replaced. A verified
+# binary left by an interrupted run is reused. --keep-trying retries for about
+# a day (routers often start containers before the uplink is up); without it,
+# one attempt. Exit 0 when installed or already present, 1 on failure.
+#
+# Test hooks: CLAUDE_CODE_RELEASES_URL (download base), INSTALL_CLAUDE_CODE_BACKOFF
+# (space-separated seconds between --keep-trying rounds).
+set -euo pipefail
 
-if command -v claude >/dev/null 2>&1; then
-	echo "claude already installed: $(command -v claude)"
-	exit 0
-fi
+RELEASES_URL="${CLAUDE_CODE_RELEASES_URL:-https://downloads.claude.ai/claude-code-releases}"
+# Same schedule as `t3code-tools install --keep-trying`: 15s, 1m, 5m, 15m, 30m, then hourly.
+BACKOFF="${INSTALL_CLAUDE_CODE_BACKOFF:-15 60 300 900 1800 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600}"
 
-case "$(uname -m)" in
-	x86_64) manifest_arch=linux-x64 ;;
-	aarch64) manifest_arch=linux-arm64 ;;
-	*) echo "Unsupported architecture $(uname -m)" >&2; exit 1 ;;
-esac
+usage() { echo "usage: install-claude-code [--keep-trying] [stable|latest|X.Y.Z]" >&2; exit 2; }
+log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) install-claude-code: $*"; }
 
-manifest_url="https://downloads.claude.ai/claude-code/stable/manifest.json"
-tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
+keep_trying=false
+target=stable
+for arg in "$@"; do
+	case "$arg" in
+	--keep-trying) keep_trying=true ;;
+	stable | latest) target="$arg" ;;
+	-h | --help) usage ;;
+	*)
+		[[ "$arg" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || usage
+		target="$arg"
+		;;
+	esac
+done
 
-curl -fsSL --retry 3 -o "$tmp/manifest.json" "$manifest_url"
-asset="$(jq -r --arg arch "$manifest_arch" '.artifacts[] | select(.arch == $arch) | "\(.url) \(.sha256)"' "$tmp/manifest.json" | head -n 1)"
-url="${asset%% *}"
-sha="${asset##* }"
-
-if [ -z "$url" ] || [ -z "$sha" ]; then
-	echo "No Claude Code stable asset for $manifest_arch" >&2
+if [ "$(id -u)" -eq 0 ]; then
+	echo "install-claude-code: run it as the app user (node), not root; it installs into that user's home" >&2
 	exit 1
 fi
 
-curl -fsSL --retry 3 -o "$tmp/claude.tar.gz" "$url"
-echo "$sha  $tmp/claude.tar.gz" | sha256sum -c -
-mkdir -p "${HOME}/.local/bin"
-tar -xzof "$tmp/claude.tar.gz" -C "${HOME}/.local/bin"
-echo "Installed claude to ${HOME}/.local/bin"
+case "$(uname -m)" in
+x86_64 | amd64) platform=linux-x64 ;;
+aarch64 | arm64) platform=linux-arm64 ;;
+*) echo "install-claude-code: unsupported architecture $(uname -m)" >&2; exit 1 ;;
+esac
+
+versions_dir="${HOME}/.local/share/claude/versions"
+downloads_dir="${HOME}/.claude/downloads"
+mkdir -p "$downloads_dir"
+
+lock="${downloads_dir}/.install-claude-code.lock"
+
+present() {
+	local found
+	found="$(command -v claude 2>/dev/null)" || return 1
+	log "claude already installed: ${found} ($(claude --version 2>/dev/null || echo 'version unknown'))"
+}
+
+sha256_of() { sha256sum "$1" | cut -d' ' -f1; }
+
+# One attempt under the lock: 0 installed or present, 1 failed, 2 another
+# install-claude-code holds the lock (the entrypoint's background run and a
+# manual one). The lock is released between --keep-trying rounds.
+attempt() {
+	local status=0
+	exec 9>"$lock"
+	if flock -n 9; then
+		try_install || status=$?
+	else
+		status=2
+	fi
+	exec 9>&-
+	return "$status"
+}
+
+try_install() {
+	present && return 0
+
+	local version manifest checksum size
+	if [ "$target" = stable ] || [ "$target" = latest ]; then
+		version="$(curl -fsSL --retry 3 --max-time 60 "${RELEASES_URL}/${target}" | tr -d '[:space:]')" || {
+			log "cannot read the ${target} channel at ${RELEASES_URL}/${target}"
+			return 1
+		}
+		# An HTML error page or a proxy notice must not reach the manifest URL.
+		if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+			log "the ${target} channel returned '${version:0:60}', not a version"
+			return 1
+		fi
+	else
+		version="$target"
+	fi
+
+	manifest="$(curl -fsSL --retry 3 --max-time 60 "${RELEASES_URL}/${version}/manifest.json")" || {
+		log "cannot read ${RELEASES_URL}/${version}/manifest.json"
+		return 1
+	}
+	checksum="$(jq -r --arg p "$platform" '.platforms[$p].checksum // empty' <<<"$manifest" 2>/dev/null)" || checksum=""
+	size="$(jq -r --arg p "$platform" '.platforms[$p].size // empty' <<<"$manifest" 2>/dev/null)" || size=""
+	if [[ ! "$checksum" =~ ^[a-f0-9]{64}$ ]] || [[ ! "$size" =~ ^[1-9][0-9]*$ ]]; then
+		log "Claude Code ${version} manifest has no ${platform} checksum and size (.platforms[\"${platform}\"]); the manifest format may have changed"
+		return 1
+	fi
+
+	local staged="${versions_dir}/${version}"
+	if [ -f "$staged" ] && [ "$(stat -c %s "$staged")" = "$size" ] && [ "$(sha256_of "$staged")" = "$checksum" ]; then
+		log "reusing the verified ${staged}"
+	else
+		local part="${downloads_dir}/claude-${version}-${platform}.part"
+		# A partial larger than the target is a different file: start over.
+		if [ -f "$part" ] && [ "$(stat -c %s "$part")" -gt "$size" ]; then rm -f "$part"; fi
+		log "downloading Claude Code ${version} (${platform}, $((size / 1048576)) MiB)"
+		if ! curl -fsSL --retry 3 --continue-at - -o "$part" "${RELEASES_URL}/${version}/${platform}/claude"; then
+			log "download interrupted; a later attempt resumes it"
+			return 1
+		fi
+		if [ "$(stat -c %s "$part")" != "$size" ] || [ "$(sha256_of "$part")" != "$checksum" ]; then
+			rm -f "$part"
+			log "Claude Code ${version} failed its size or SHA-256 check against the manifest; discarded"
+			return 1
+		fi
+		# T3's /welcome Install (Anthropic's install.sh) may have finished meanwhile.
+		if present; then
+			rm -f "$part"
+			return 0
+		fi
+		# set -e is off inside a function called from a condition: check each step.
+		if ! { chmod 0755 "$part" && mkdir -p "$versions_dir" && mv -f "$part" "$staged"; }; then
+			log "cannot stage ${staged}"
+			return 1
+		fi
+	fi
+
+	present && return 0
+	log "setting up Claude Code ${version}"
+	if ! "$staged" install "$version" </dev/null; then
+		log "Claude Code's own installer failed; the verified ${staged} is kept for the next attempt"
+		return 1
+	fi
+	local installed
+	installed="$("${HOME}/.local/bin/claude" --version 2>/dev/null)" || installed=""
+	if [ "${installed%% *}" != "$version" ]; then
+		log "after setup, ${HOME}/.local/bin/claude reports '${installed}', not ${version}"
+		return 1
+	fi
+	log "installed Claude Code ${version} at ${HOME}/.local/bin/claude"
+}
+
+busy() { log "another install-claude-code is running (log: ~/.local/state/t3code/install-claude-code.log)"; }
+
+status=0
+attempt || status=$?
+[ "$status" -eq 0 ] && exit 0
+[ "$status" -eq 2 ] && busy
+$keep_trying || exit 1
+for wait in $BACKOFF; do
+	log "retrying in ${wait}s"
+	sleep "$wait"
+	status=0
+	attempt || status=$?
+	[ "$status" -eq 0 ] && exit 0
+	[ "$status" -eq 2 ] && busy
+done
+log "giving up; run install-claude-code again, or install Claude from T3's /welcome"
+exit 1

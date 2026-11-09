@@ -20,7 +20,8 @@ test:
 	bun run test
 
 # Drift checks (scripts/freshness.ts): the README share link, T3CODE_VER's
-# release and its harness catalog, and the newest stable T3. Needs network;
+# release and its harness catalog, the newest stable T3, and Claude Code's
+# download channel and manifest (bin/install-claude-code). Needs network;
 # CI runs `pinned` on every PR and everything on a schedule (freshness.yml).
 freshness:
 	bun scripts/freshness.ts all --version $(T3CODE_VER)

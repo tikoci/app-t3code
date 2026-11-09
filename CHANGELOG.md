@@ -22,6 +22,15 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
   reaches the command and selects all of it for Ctrl/Cmd+C. It's a
   small script the image adds to T3's web client; no T3 code is changed.
   The container log prints the same command at start (#18, #30).
+- Claude Code installs on new homes again. The background installer read a
+  download URL that returns 404 and a manifest format Anthropic no longer
+  uses, so `claude` was missing until installed by hand. It now follows
+  Anthropic's installer: the stable channel's native build, checked against
+  the manifest's size and SHA-256, set up by Claude's own `install`, in one
+  resumable download. It retries for about a day when the network is not up
+  yet, and logs to `/data/.local/state/t3code/install-claude-code.log`
+  instead of the container's `/tmp`. A `claude` already on PATH, including
+  one installed from T3's welcome screen, is never replaced (#13).
 
 ## 2026-11-08 — T3 Code 0.1.7
 

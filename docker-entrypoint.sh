@@ -32,9 +32,12 @@ if [ -x /usr/local/bin/t3code-tools ]; then
 fi
 
 # Claude Code cannot be baked into the image (license), so install it to the
-# volume on first start. Runs in the background; the server does not wait.
+# volume while no `claude` is on PATH. Runs in the background and retries for
+# about a day; the server does not wait. The log stays in the home so a
+# failure outlives an image replacement (#13).
 if ! command -v claude >/dev/null 2>&1 && [ -x /usr/local/bin/install-claude-code ]; then
-	/usr/local/bin/install-claude-code >/tmp/install-claude-code.log 2>&1 &
+	mkdir -p "${HOME}/.local/state/t3code"
+	/usr/local/bin/install-claude-code --keep-trying >"${HOME}/.local/state/t3code/install-claude-code.log" 2>&1 &
 fi
 
 # Pairing hint for the container log (#18). T3 prints its own startup

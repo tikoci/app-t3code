@@ -1,8 +1,9 @@
 name: freshness
 
 # Drift against upstream that no commit here causes: a new stable T3 Code
-# release (and the harness catalog it would bring), plus everything `pinned`
-# and the share-link test check. A red run is the signal to bump; see
+# release (and the harness catalog it would bring), a change to Claude Code's
+# download channel or manifest (bin/install-claude-code), plus everything
+# `pinned` and the share-link test check. A red run is the signal to bump; see
 # scripts/freshness.ts and the "release sync" test for every pin.
 
 on:
@@ -23,7 +24,7 @@ jobs:
           bun-version: "1.4.4"
       # The harness-catalog parser reads upstream with TypeScript's parser (a devDependency).
       - run: bun install --frozen-lockfile
-      - name: Freshness (share link, pinned and newest T3 release)
+      - name: Freshness (share link, pinned and newest T3 release, Claude Code downloads)
         run: bun scripts/freshness.ts all
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

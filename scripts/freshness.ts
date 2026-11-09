@@ -4,6 +4,7 @@
 //   bun scripts/freshness.ts share-link [--write]   README share link vs app/t3code.tikapp.yaml (offline)
 //   bun scripts/freshness.ts pinned [--version X]   the pinned T3 release (CI on every PR)
 //   bun scripts/freshness.ts upstream [--version X] the newest stable T3 release (scheduled)
+//   bun scripts/freshness.ts claude                 Claude Code's download contract (scheduled)
 //
 // The version defaults to package.json's; CI passes the T3CODE_VER it builds,
 // which a workflow_dispatch can override.
@@ -11,8 +12,11 @@
 // release with both Linux archives, and that its harness catalog matches
 // scripts/harnesses.ts. `upstream` checks that no newer stable release exists,
 // and previews the newest release's harness catalog so a bump PR knows what it
-// has to classify. Network checks read GitHub; set GH_TOKEN or GITHUB_TOKEN to
-// avoid the anonymous API rate limit.
+// has to classify. `claude` checks that Anthropic's stable channel, manifest
+// and binaries still have the shape bin/install-claude-code reads (a 404 and a
+// changed manifest schema left every new home without Claude until #13).
+// Network checks read GitHub; set GH_TOKEN or GITHUB_TOKEN to avoid the
+// anonymous API rate limit.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -107,6 +111,43 @@ export function diffCatalog(upstream: readonly string[], ours: readonly string[]
 	};
 }
 
+// --- Claude Code downloads -------------------------------------------------
+
+/** Where bin/install-claude-code downloads Claude Code (a test ties the script to it). */
+export const CLAUDE_RELEASES_URL = "https://downloads.claude.ai/claude-code-releases";
+/** Manifest platforms bin/install-claude-code installs: one per image arch (glibc). */
+export const CLAUDE_PLATFORMS = ["linux-x64", "linux-arm64"] as const;
+const CLAUDE_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+
+export interface ClaudeAsset {
+	checksum: string;
+	size: number;
+}
+
+/**
+ * Read `<ver>/manifest.json` the way bin/install-claude-code does:
+ * `.platforms[<platform>]` with a 64-hex `checksum` and a positive `size`.
+ * Returns each platform's asset, or why the installer could not use it.
+ */
+export function claudeManifestAssets(manifest: unknown, version: string): { assets: Record<string, ClaudeAsset>; problems: string[] } {
+	const assets: Record<string, ClaudeAsset> = {};
+	const problems: string[] = [];
+	const m = (manifest ?? {}) as { version?: unknown; platforms?: unknown };
+	if (m.version !== undefined && m.version !== version) problems.push(`says version ${String(m.version)}, not ${version}`);
+	const platforms = m.platforms;
+	if (typeof platforms !== "object" || platforms === null) return { assets, problems: [...problems, "has no .platforms object"] };
+	for (const platform of CLAUDE_PLATFORMS) {
+		const entry = (platforms as Record<string, { checksum?: unknown; size?: unknown } | undefined>)[platform];
+		const { checksum, size } = entry ?? {};
+		if (typeof checksum === "string" && /^[a-f0-9]{64}$/.test(checksum) && typeof size === "number" && Number.isSafeInteger(size) && size > 0) {
+			assets[platform] = { checksum, size };
+		} else {
+			problems.push(`has no .platforms["${platform}"] {checksum, size}`);
+		}
+	}
+	return { assets, problems };
+}
+
 // --- releases ---------------------------------------------------------------
 
 export interface Release {
@@ -165,14 +206,14 @@ export function releaseProblems(release: Release, version: string): string[] {
 /** A 404 from GitHub: the tag, release or file does not exist (no retry). */
 export class NotFound extends Error {}
 
-/** GET with three tries and a 30 s timeout per try; a 404 throws NotFound at once. */
-async function fetchOk(url: string, headers: Record<string, string> = {}): Promise<Response> {
+/** GET (or HEAD) with three tries and a 30 s timeout per try; a 404 throws NotFound at once. */
+async function fetchOk(url: string, headers: Record<string, string> = {}, method: "GET" | "HEAD" = "GET"): Promise<Response> {
 	let last = "";
 	for (let attempt = 1; attempt <= 3; attempt++) {
 		if (attempt > 1) await Bun.sleep(2000 * attempt);
 		let res: Response;
 		try {
-			res = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
+			res = await fetch(url, { method, headers, signal: AbortSignal.timeout(30_000) });
 		} catch (error) {
 			last = String(error);
 			continue;
@@ -306,6 +347,34 @@ export async function checkUpstream(version = pinnedVersion()): Promise<Report> 
 	return { ok: true, lines: [`T3CODE_VER ${version} is the newest stable T3 Code`, ...notes] };
 }
 
+/**
+ * Claude Code's `channel` pointer names a version whose manifest has both
+ * Linux platforms, and each binary answers with the manifest's size: what
+ * bin/install-claude-code needs. HEAD only; nothing large is downloaded.
+ */
+export async function checkClaude(channel: "stable" | "latest" = "stable"): Promise<Report> {
+	const version = (await (await fetchOk(`${CLAUDE_RELEASES_URL}/${channel}`)).text()).trim();
+	if (!CLAUDE_VERSION.test(version)) return { ok: false, lines: [`Claude Code ${channel} channel returned "${version.slice(0, 60)}", not a version`] };
+	const manifestUrl = `${CLAUDE_RELEASES_URL}/${version}/manifest.json`;
+	let manifest: unknown;
+	try {
+		manifest = await (await fetchOk(manifestUrl)).json();
+	} catch (error) {
+		if (error instanceof NotFound) throw error;
+		return { ok: false, lines: [`${manifestUrl} is not JSON: ${error instanceof Error ? error.message : String(error)}`] };
+	}
+	const { assets, problems } = claudeManifestAssets(manifest, version);
+	for (const [platform, { size }] of Object.entries(assets)) {
+		const url = `${CLAUDE_RELEASES_URL}/${version}/${platform}/claude`;
+		const length = Number((await fetchOk(url, {}, "HEAD")).headers.get("content-length"));
+		if (length !== size) problems.push(`${platform}/claude is ${length} bytes, but the manifest says ${size}`);
+	}
+	if (problems.length) {
+		return { ok: false, lines: [`Claude Code ${channel} ${version}: ${manifestUrl} ${problems.join("; ")}; update bin/install-claude-code`] };
+	}
+	return { ok: true, lines: [`Claude Code ${channel} ${version}: manifest and ${CLAUDE_PLATFORMS.join(" + ")} binaries match bin/install-claude-code`] };
+}
+
 /** Print a report; in Actions a failure is also an error annotation. */
 function print(report: Report): void {
 	const annotate = process.env["GITHUB_ACTIONS"] === "true" && !report.ok;
@@ -334,7 +403,8 @@ const CHECKS: Record<string, (args: string[]) => Array<() => Report | Promise<Re
 	"share-link": (args) => [() => checkShareLink(args.includes("--write"))],
 	pinned: (args) => [() => checkPinned(versionArg(args))],
 	upstream: (args) => [() => checkUpstream(versionArg(args))],
-	all: (args) => [() => checkShareLink(), () => checkPinned(versionArg(args)), () => checkUpstream(versionArg(args))],
+	claude: () => [() => checkClaude()],
+	all: (args) => [() => checkShareLink(), () => checkPinned(versionArg(args)), () => checkUpstream(versionArg(args)), () => checkClaude()],
 };
 
 /** CLI entry: exit 0 when every check passes, 1 on drift or error, 2 on usage. */
@@ -342,7 +412,7 @@ export async function main(argv: string[]): Promise<number> {
 	const [command = "", ...args] = argv;
 	const checks = Object.hasOwn(CHECKS, command) ? CHECKS[command] : undefined;
 	if (!checks) {
-		console.error("usage: bun scripts/freshness.ts share-link [--write] | pinned | upstream | all  [--version X]");
+		console.error("usage: bun scripts/freshness.ts share-link [--write] | pinned | upstream | claude | all  [--version X]");
 		return 2;
 	}
 	let ok = true;
