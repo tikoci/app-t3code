@@ -86,9 +86,12 @@ export function parseBuiltInDrivers(source: string): string[] {
 	const init = decl.initializer;
 	if (!init || !ts.isArrayLiteralExpression(init)) return fail("BUILT_IN_DRIVERS is no longer a plain array literal");
 	if (!init.elements.length) fail("BUILT_IN_DRIVERS is empty");
-	return init.elements.map((element) =>
+	const names = init.elements.map((element) =>
 		ts.isIdentifier(element) ? element.text : fail(`BUILT_IN_DRIVERS has a ${ts.SyntaxKind[element.kind]} entry, not a plain name`),
 	);
+	const dupes = names.filter((name, i) => names.indexOf(name) !== i);
+	if (dupes.length) fail(`BUILT_IN_DRIVERS lists ${[...new Set(dupes)].join(", ")} more than once`);
+	return names;
 }
 
 export interface CatalogDiff {
@@ -118,7 +121,11 @@ export function stableVersion(tag: string): string | undefined {
 	return tag.match(/^v(\d+\.\d+\.\d+)$/)?.[1];
 }
 
+const STABLE = /^\d+\.\d+\.\d+$/;
+
+/** Order two stable `X.Y.Z` versions numerically; throws on anything else (a nightly has no place in this order). */
 export function compareVersions(a: string, b: string): number {
+	for (const v of [a, b]) if (!STABLE.test(v)) throw new Error(`${v} is not a stable X.Y.Z version`);
 	const pa = a.split(".").map(Number);
 	const pb = b.split(".").map(Number);
 	for (let i = 0; i < 3; i++) {
@@ -126,6 +133,14 @@ export function compareVersions(a: string, b: string): number {
 		if (d) return Math.sign(d);
 	}
 	return 0;
+}
+
+/** Stable versions among git tag refs (`refs/tags/vX.Y.Z`), newest first. */
+export function stableTagVersions(refs: ReadonlyArray<{ ref: string }>): string[] {
+	return refs
+		.map(({ ref }) => stableVersion(ref.replace(/^refs\/tags\//, "")))
+		.filter((v): v is string => v !== undefined)
+		.sort((a, b) => compareVersions(b, a));
 }
 
 /** Why a release cannot be the image's T3CODE_VER, or [] if it can. */
@@ -147,25 +162,30 @@ export function releaseProblems(release: Release, version: string): string[] {
 
 // --- network ----------------------------------------------------------------
 
+/** A 404 from GitHub: the tag, release or file does not exist (no retry). */
+export class NotFound extends Error {}
+
+/** GET with three tries and a 30 s timeout per try; a 404 throws NotFound at once. */
 async function fetchOk(url: string, headers: Record<string, string> = {}): Promise<Response> {
 	let last = "";
 	for (let attempt = 1; attempt <= 3; attempt++) {
 		if (attempt > 1) await Bun.sleep(2000 * attempt);
 		let res: Response;
 		try {
-			res = await fetch(url, { headers });
+			res = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
 		} catch (error) {
 			last = String(error);
 			continue;
 		}
 		if (res.ok) return res;
 		// A missing tag or file will not appear on retry.
-		if (res.status === 404) throw new Error(`${url}: HTTP 404 (no such release or file upstream)`);
+		if (res.status === 404) throw new NotFound(`${url}: HTTP 404 (no such release or file upstream)`);
 		last = `HTTP ${res.status}`;
 	}
 	throw new Error(`${url}: ${last}`);
 }
 
+/** GitHub API headers, with GH_TOKEN or GITHUB_TOKEN when set (the anonymous limit is 60 requests an hour). */
 function apiHeaders(): Record<string, string> {
 	const token = process.env["GH_TOKEN"] || process.env["GITHUB_TOKEN"];
 	return {
@@ -175,11 +195,19 @@ function apiHeaders(): Record<string, string> {
 	};
 }
 
+/** One upstream release: `tags/vX.Y.Z`. */
 async function release(path: string): Promise<Release> {
 	const res = await fetchOk(`https://api.github.com/repos/${UPSTREAM_REPO}/releases/${path}`, apiHeaders());
 	return (await res.json()) as Release;
 }
 
+/** Every upstream tag ref; GitHub returns them all in one unpaginated response. */
+async function upstreamTags(): Promise<Array<{ ref: string }>> {
+	const res = await fetchOk(`https://api.github.com/repos/${UPSTREAM_REPO}/git/matching-refs/tags/v`, apiHeaders());
+	return (await res.json()) as Array<{ ref: string }>;
+}
+
+/** The driver list in upstream's builtInDrivers.ts at `tag`. */
 async function upstreamDrivers(tag: string): Promise<string[]> {
 	const res = await fetchOk(`https://raw.githubusercontent.com/${UPSTREAM_REPO}/${tag}/${DRIVERS_PATH}`);
 	return parseBuiltInDrivers(await res.text());
@@ -187,12 +215,14 @@ async function upstreamDrivers(tag: string): Promise<string[]> {
 
 // --- checks -----------------------------------------------------------------
 
+/** T3CODE_VER as package.json carries it (the "release sync" test ties every other pin to it). */
 export function pinnedVersion(): string {
 	return (JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { version: string }).version;
 }
 
 type Report = { ok: boolean; lines: string[] };
 
+/** Compare one upstream driver list with scripts/harnesses.ts. */
 function catalogReport(tag: string, upstream: string[]): Report {
 	const { added, removed } = diffCatalog(upstream);
 	if (!added.length && !removed.length) return { ok: true, lines: [`harness catalog at ${tag}: ${upstream.length} drivers, all in scripts/harnesses.ts`] };
@@ -202,6 +232,14 @@ function catalogReport(tag: string, upstream: string[]): Report {
 	return { ok: false, lines };
 }
 
+/** Replace the one Markdown /app YAML Editor link's URL, not any bare copy of it elsewhere. */
+export function rewriteShareLink(readme: string, fresh: string): string {
+	const links = shareLinks(readme);
+	if (links.length !== 1) throw new Error(`README.md has ${links.length} /app YAML Editor links; expected exactly 1`);
+	return readme.replace(`](${links[0]})`, () => `](${fresh})`);
+}
+
+/** The README share link embeds app/t3code.tikapp.yaml exactly; `write` regenerates it. */
 export function checkShareLink(write = false): Report {
 	const readmePath = join(ROOT, "README.md");
 	const readme = readFileSync(readmePath, "utf8");
@@ -212,12 +250,13 @@ export function checkShareLink(write = false): Report {
 	const fresh = renderShareLink(yaml);
 	if (current === fresh) return { ok: true, lines: ["README share link matches app/t3code.tikapp.yaml"] };
 	if (write) {
-		writeFileSync(readmePath, readme.replace(current, () => fresh));
+		writeFileSync(readmePath, rewriteShareLink(readme, fresh));
 		return { ok: true, lines: ["README share link regenerated from app/t3code.tikapp.yaml"] };
 	}
 	return { ok: false, lines: ["README share link is stale against app/t3code.tikapp.yaml; run `make share-link`"] };
 }
 
+/** `version` is a published stable release with both Linux archives, and its driver list matches ours. */
 export async function checkPinned(version = pinnedVersion()): Promise<Report> {
 	const tag = `v${version}`;
 	const lines: string[] = [];
@@ -233,27 +272,47 @@ export async function checkPinned(version = pinnedVersion()): Promise<Report> {
 	return { ok: ok && catalog.ok, lines: [...lines, ...catalog.lines] };
 }
 
+/**
+ * No stable T3 release is newer than `version`. Newest comes from every
+ * upstream tag, not GitHub's "latest" flag; a newer tag counts once its
+ * release is published and not a prerelease (until then it is a note).
+ */
 export async function checkUpstream(version = pinnedVersion()): Promise<Report> {
-	const latest = await release("latest");
-	const newest = stableVersion(latest.tag_name);
-	if (!newest) return { ok: false, lines: [`upstream's latest release is ${latest.tag_name}, not a plain vX.Y.Z tag; check it by hand`] };
-	const order = compareVersions(newest, version);
-	if (order === 0) return { ok: true, lines: [`T3CODE_VER ${version} is the newest stable T3 Code`] };
-	if (order < 0) return { ok: false, lines: [`T3CODE_VER ${version} is ahead of upstream's latest stable ${newest}; was a release pulled?`] };
-	const lines = [`T3 Code ${newest} is out; T3CODE_VER is ${version}. Bump every pin (test/app-yaml.test.ts "release sync" lists them) and the CHANGELOG.`];
-	const problems = releaseProblems(latest, newest);
-	if (problems.length) lines.push(`  note: ${latest.tag_name} ${problems.join("; ")}`);
-	const catalog = catalogReport(latest.tag_name, await upstreamDrivers(latest.tag_name));
-	lines.push(...catalog.lines.map((line) => `  ${line}`));
-	return { ok: false, lines };
+	if (!STABLE.test(version)) return { ok: false, lines: [`T3CODE_VER ${version} is not a stable X.Y.Z; the image tracks stable releases only`] };
+	const tags = stableTagVersions(await upstreamTags());
+	if (!tags.length) return { ok: false, lines: ["no stable vX.Y.Z tags upstream; check by hand"] };
+	if (compareVersions(version, tags[0] as string) > 0) return { ok: false, lines: [`T3CODE_VER ${version} is ahead of upstream's newest stable tag v${tags[0]}; was a release pulled?`] };
+	const notes: string[] = [];
+	for (const newer of tags.filter((v) => compareVersions(v, version) > 0)) {
+		let found: Release;
+		try {
+			found = await release(`tags/v${newer}`);
+		} catch (error) {
+			if (!(error instanceof NotFound)) throw error;
+			notes.push(`  note: v${newer} is tagged but has no published release yet`);
+			continue;
+		}
+		if (found.draft || found.prerelease) {
+			notes.push(`  note: v${newer} is a ${found.draft ? "draft" : "prerelease"}`);
+			continue;
+		}
+		const lines = [`T3 Code ${newer} is out; T3CODE_VER is ${version}. Bump every pin (test/app-yaml.test.ts "release sync" lists them) and the CHANGELOG.`, ...notes];
+		const problems = releaseProblems(found, newer);
+		if (problems.length) lines.push(`  note: v${newer} ${problems.join("; ")}`);
+		const catalog = catalogReport(`v${newer}`, await upstreamDrivers(`v${newer}`));
+		lines.push(...catalog.lines.map((line) => `  ${line}`));
+		return { ok: false, lines };
+	}
+	return { ok: true, lines: [`T3CODE_VER ${version} is the newest stable T3 Code`, ...notes] };
 }
 
+/** Print a report; in Actions a failure is also an error annotation. */
 function print(report: Report): void {
-	// In Actions a failure is also an annotation, so it shows on the run page.
 	const annotate = process.env["GITHUB_ACTIONS"] === "true" && !report.ok;
 	console.log(annotate ? `::error title=freshness::${report.lines.join("%0A")}` : report.lines.join("\n"));
 }
 
+/** Run one check; an exception (network, parse) becomes a failed report. */
 async function guarded(check: () => Report | Promise<Report>): Promise<Report> {
 	try {
 		return await check();
@@ -278,9 +337,10 @@ const CHECKS: Record<string, (args: string[]) => Array<() => Report | Promise<Re
 	all: (args) => [() => checkShareLink(), () => checkPinned(versionArg(args)), () => checkUpstream(versionArg(args))],
 };
 
+/** CLI entry: exit 0 when every check passes, 1 on drift or error, 2 on usage. */
 export async function main(argv: string[]): Promise<number> {
 	const [command = "", ...args] = argv;
-	const checks = CHECKS[command];
+	const checks = Object.hasOwn(CHECKS, command) ? CHECKS[command] : undefined;
 	if (!checks) {
 		console.error("usage: bun scripts/freshness.ts share-link [--write] | pinned | upstream | all  [--version X]");
 		return 2;

@@ -19,11 +19,11 @@ lint-shell:
 test:
 	bun run test
 
-# Drift checks (scripts/freshness.ts): the README share link, the pinned T3
+# Drift checks (scripts/freshness.ts): the README share link, T3CODE_VER's
 # release and its harness catalog, and the newest stable T3. Needs network;
 # CI runs `pinned` on every PR and everything on a schedule (freshness.yml).
 freshness:
-	bun scripts/freshness.ts all
+	bun scripts/freshness.ts all --version $(T3CODE_VER)
 
 # Regenerate the README's /app YAML Editor link from app/t3code.tikapp.yaml.
 share-link:

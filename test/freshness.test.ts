@@ -2,18 +2,22 @@
 // share link is checked here against the real files; the network checks
 // (pinned T3 release, newest stable, harness catalog) run in CI and on a
 // schedule, so this file only tests their parsing and decisions on fixtures.
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
 	checkShareLink,
+	checkUpstream,
 	compareVersions,
 	diffCatalog,
+	main,
 	parseBuiltInDrivers,
 	type Release,
 	releaseProblems,
 	renderShareLink,
+	rewriteShareLink,
 	shareLinks,
+	stableTagVersions,
 	stableVersion,
 	versionArg,
 } from "../scripts/freshness.ts";
@@ -65,6 +69,15 @@ describe("README share link", () => {
 		expect(new URL(links[0] as string).searchParams.get("yaml")).toBe(yaml);
 		expect(links[0]).toBe(renderShareLink(yaml));
 		expect(checkShareLink().ok).toBe(true);
+	});
+
+	test("rewriting replaces the Markdown link, not a bare copy of its URL elsewhere", () => {
+		const stale = renderShareLink("name: old\n");
+		const fresh = renderShareLink("name: new\n");
+		const readme = `Old link, quoted: ${stale}\n\n[See in /app YAML Editor](${stale}) to inspect\n`;
+		const out = rewriteShareLink(readme, fresh);
+		expect(shareLinks(out)).toEqual([fresh]);
+		expect(out).toStartWith(`Old link, quoted: ${stale}\n`);
 	});
 
 	test("the rendered link round-trips any YAML, including # + & and non-ASCII", () => {
@@ -121,6 +134,10 @@ describe("harness catalog", () => {
 		expect(parseBuiltInDrivers(template)).toEqual(["CodexDriver", "NewDriver"]);
 	});
 
+	test("rejects a driver listed twice", () => {
+		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [CodexDriver, NewDriver, CodexDriver];")).toThrow(/CodexDriver more than once/);
+	});
+
 	test("rejects holes, spreads, assertions and non-exported or nested declarations", () => {
 		for (const array of ["[, CodexDriver]", "[CodexDriver,, ClaudeDriver]", "[CodexDriver, ClaudeDriver,,]"]) {
 			expect(() => parseBuiltInDrivers(`export const BUILT_IN_DRIVERS = ${array};`)).toThrow(/OmittedExpression entry/);
@@ -156,6 +173,11 @@ describe("harness catalog", () => {
 });
 
 describe("releases", () => {
+	test("stable versions come from vX.Y.Z tag refs only, newest first", () => {
+		const refs = ["v0.1.9", "v0.1.10", "v0.1.11-nightly.20261201.1", "v0.2.0-rc1", "0.3.0", "v0.1.7"].map((t) => ({ ref: `refs/tags/${t}` }));
+		expect(stableTagVersions(refs)).toEqual(["0.1.10", "0.1.9", "0.1.7"]);
+	});
+
 	test("--version picks the version to check; package.json is the default", () => {
 		const pkg = (JSON.parse(read("package.json")) as { version: string }).version;
 		expect(versionArg([])).toBe(pkg);
@@ -171,8 +193,9 @@ describe("releases", () => {
 		expect(stableVersion("0.1.7")).toBeUndefined();
 	});
 
-	test("compares versions numerically", () => {
+	test("compares stable versions numerically and refuses anything else", () => {
 		expect(compareVersions("0.1.10", "0.1.9")).toBe(1);
+		expect(() => compareVersions("0.1.7-nightly.20261108.4380", "0.1.8")).toThrow(/not a stable/);
 		expect(compareVersions("0.2.0", "0.1.99")).toBe(1);
 		expect(compareVersions("0.1.7", "0.1.7")).toBe(0);
 		expect(compareVersions("0.1.6", "0.1.7")).toBe(-1);
@@ -187,5 +210,56 @@ describe("releases", () => {
 		const noArm = release("v0.1.7", { assets: [{ name: "t3-0.1.7-linux-x64.tar.gz" }] });
 		expect(releaseProblems(noArm, "0.1.7")).toEqual(["has no t3-0.1.7-linux-arm64.tar.gz", "has no SHA256SUMS"]);
 		expect(releaseProblems(release("v0.1.7", { draft: true }), "0.1.7")).toEqual(["is a draft"]);
+	});
+});
+
+describe("newest stable (mocked GitHub)", () => {
+	const realFetch = globalThis.fetch;
+	afterEach(() => {
+		globalThis.fetch = realFetch;
+	});
+
+	/** Upstream with these tags; `releases` maps a tag to its release (absent = 404). */
+	function upstream(tags: string[], releases: Record<string, Partial<Release>>) {
+		globalThis.fetch = (async (input: string | URL | Request) => {
+			const url = String(input);
+			if (url.endsWith("/git/matching-refs/tags/v")) return Response.json(tags.map((t) => ({ ref: `refs/tags/${t}` })));
+			const tag = url.match(/\/releases\/tags\/(v[^/]+)$/)?.[1];
+			if (tag) return releases[tag] ? Response.json(release(tag, releases[tag])) : new Response("", { status: 404 });
+			if (url.includes("raw.githubusercontent.com")) return new Response(DRIVERS_V017);
+			throw new Error(`unexpected ${url}`);
+		}) as typeof fetch;
+	}
+
+	test("a newer published stable fails, whatever GitHub marks latest", async () => {
+		upstream(["v0.1.7", "v0.1.8", "v0.1.9"], { "v0.1.8": {}, "v0.1.9": {} });
+		const report = await checkUpstream("0.1.7");
+		expect(report.ok).toBe(false);
+		expect(report.lines[0]).toStartWith("T3 Code 0.1.9 is out; T3CODE_VER is 0.1.7.");
+	});
+
+	test("a newer tag without a published release, or a prerelease one, is only a note", async () => {
+		upstream(["v0.1.7", "v0.1.8", "v0.1.9"], { "v0.1.8": { prerelease: true } });
+		const report = await checkUpstream("0.1.7");
+		expect(report).toEqual({
+			ok: true,
+			lines: [
+				"T3CODE_VER 0.1.7 is the newest stable T3 Code",
+				"  note: v0.1.9 is tagged but has no published release yet",
+				"  note: v0.1.8 is a prerelease",
+			],
+		});
+	});
+
+	test("a nightly pin or a pin ahead of upstream fails", async () => {
+		upstream(["v0.1.7"], { "v0.1.7": {} });
+		expect((await checkUpstream("0.1.8-nightly.20261108.4380")).lines[0]).toContain("is not a stable X.Y.Z");
+		expect((await checkUpstream("0.1.8")).lines[0]).toContain("ahead of upstream's newest stable tag v0.1.7");
+	});
+});
+
+describe("CLI", () => {
+	test("inherited property names are usage errors, not commands", async () => {
+		for (const command of ["constructor", "__proto__", "toString", ""]) expect(await main([command])).toBe(2);
 	});
 });
