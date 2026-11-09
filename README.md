@@ -967,7 +967,7 @@ architectures. It does not authenticate providers or run paid model requests.
 
 Hands-on CHR runs (install, `/app/update` with an offline `/data` backup,
 commands inside the container, before/after manifests of the home) follow
-[`.claude/skills/chr-app-lab`](.claude/skills/chr-app-lab/SKILL.md), and
+[`.agents/skills/chr-app-lab`](.agents/skills/chr-app-lab/SKILL.md), and
 their results are in [`docs/research/`](docs/research/). They have
 confirmed that `/app/update` keeps `/data` (projects, threads, settings,
 logins, tool payloads and the environment ID). Assigning `/app/set yaml=`

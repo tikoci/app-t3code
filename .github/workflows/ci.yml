@@ -50,7 +50,7 @@ jobs:
             echo "image=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          code="$(printf '%s\n' "$changed" | grep -Ev '(\.md$|^docs/|^\.claude/|^LICENSE$|^\.coderabbit\.yaml$)' || true)"
+          code="$(printf '%s\n' "$changed" | grep -Ev '(\.md$|^docs/|^\.agents/|^\.claude/|^LICENSE$|^\.coderabbit\.yaml$)' || true)"
           if [ -n "$code" ]; then echo "image=true"; else echo "image=false"; fi >> "$GITHUB_OUTPUT"
           printf 'changed:\n%s\n' "$changed"
       - uses: oven-sh/setup-bun@v2

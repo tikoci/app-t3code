@@ -10,7 +10,7 @@
  * It never prints credential contents. Secret and login files appear as
  * type/size/mtime/mode plus a sha256 that `--compare` reports only as
  * "changed". Publish comparisons, not raw manifests. The T3 database is
- * opened read-only. See .claude/skills/chr-app-lab/SKILL.md.
+ * opened read-only. See .agents/skills/chr-app-lab/SKILL.md.
  */
 import { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";

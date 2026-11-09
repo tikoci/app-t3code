@@ -8,7 +8,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 - `bun run check` — biome (`--error-on-warnings`) + `tsc --noEmit` +
   markdownlint (`.markdownlint.yaml` holds the rules,
   `.markdownlint-cli2.yaml` the globs; LLM instruction files such as this one
-  and `.claude/` are not linted). The
+  and the skills in `.agents/` are not linted). The
   repo stays at **zero errors and zero warnings**; CI fails on either. If
   you run into one, even one that was already there, you own fixing it in your
   current PR (`bun run lint:fix` handles most).
@@ -84,7 +84,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   then the owner reviews it, then it is marked ready.
 - CI on a draft runs `lint-test` only. The ~10 min image `build` runs when
   the PR is marked ready, so don't wait on it while refining a draft. A
-  change that touches only docs (`*.md`, `docs/`, `.claude/`, `LICENSE`,
+  change that touches only docs (`*.md`, `docs/`, `.agents/`, `.claude/`, `LICENSE`,
   `.coderabbit.yaml`) never builds, on a PR or on `main`: nothing new would
   reach the image. To
   build a draft anyway (say, a pre-merge CHR test image),
@@ -134,11 +134,13 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   stability tag; releases also push `:0`, full version, and `:latest`.
 - Skills that govern this repo: `routeros-app-yaml`, `routeros-container`,
   `routeros-tikoci-centrs`, `routeros-tikoci-quickchr-cli`, `tikoci-crossref`.
-  The repo skill `.claude/skills/chr-app-lab/SKILL.md` is the hands-on recipe
+  The repo skill `.agents/skills/chr-app-lab/SKILL.md` is the hands-on recipe
   for a quickchr CHR: preparing it for `/app`, install and `/app/update`, an
   offline `/data` backup, commands inside the container, and the
-  before/after content manifest (`scripts/research-home-manifest.ts`). Agents
-  that don't load Claude skills can read it as a file.
+  before/after content manifest (`scripts/research-home-manifest.ts`).
+  Repo skills live in `.agents/skills/` (the cross-agent location Codex and
+  OpenCode read); `.claude/skills` is a symlink to it for Claude Code. Add new
+  repo skills under `.agents/skills/` only.
 
 ## Gotchas
 

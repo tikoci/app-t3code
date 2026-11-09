@@ -229,6 +229,7 @@ describe("t3code.tikappstore.yaml", () => {
 const ROOT = join(import.meta.dir, "..");
 const README = readFileSync(join(ROOT, "README.md"), "utf8");
 const DOCKERFILE = readFileSync(join(ROOT, "Dockerfile"), "utf8");
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** `ENV KEY=value` / `ENV KEY="value"` defaults from the Dockerfile. */
 function dockerfileEnv(): Record<string, string> {
@@ -375,7 +376,7 @@ describe("tool groups: docs and image contract", () => {
 		}
 		// T3's browser keeps its native libraries in the image's first apt layer.
 		for (const pkg of ["fontconfig", "fonts-liberation", "libasound2t64", "libatk-bridge2.0-0t64", "libgbm1", "libnss3", "libxkbcommon0", "libxrandr2"]) {
-			expect(DOCKERFILE).toMatch(new RegExp(`^\\s+${pkg.replace(/[.+]/g, "\\$&")} (?:\\\\|&&)`, "m"));
+			expect(DOCKERFILE).toMatch(new RegExp(`^\\s+${escapeRegExp(pkg)} (?:\\\\|&&)`, "m"));
 		}
 		const coreLibraries = CORE_CHECKS.filter((c) => c.kind === "library").map((c) => c.name);
 		expect(coreLibraries).toEqual([...BROWSER_LIBRARIES]);
@@ -431,7 +432,7 @@ describe("tool groups: docs and image contract", () => {
 			if (GROUP_NAMES.includes(place)) {
 				expect(GROUPS.find((g) => g.name === place)?.packages).toContain(name);
 			}
-			const installed = new RegExp(`^\\s+${name.replace(/[.+]/g, "\\$&")} \\\\$|^\\s+${name.replace(/[.+]/g, "\\$&")} &&`, "m");
+			const installed = new RegExp(`^\\s+${escapeRegExp(name)} \\\\$|^\\s+${escapeRegExp(name)} &&`, "m");
 			expect({ name, installed: installed.test(DOCKERFILE) }).toEqual({ name, installed: place === "core" });
 			if (place === "core" || GROUP_NAMES.includes(place)) expect(README).toContain(`\`${name}\``);
 			else expect(README.toLowerCase()).toContain(name.split(" ")[0] as string);

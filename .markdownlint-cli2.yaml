@@ -12,6 +12,7 @@ ignores:
   # LLM instruction files: a different audience, intentionally loose structure.
   - "CLAUDE.md"
   - "AGENTS.md"
+  - ".agents/**"
   - ".claude/**"
   - ".github/copilot-instructions.md"
   - ".github/instructions/**"
