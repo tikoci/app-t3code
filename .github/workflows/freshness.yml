@@ -1,0 +1,27 @@
+name: freshness
+
+# Drift against upstream that no commit here causes: a new stable T3 Code
+# release (and the harness catalog it would bring), plus everything `pinned`
+# and the share-link test check. A red run is the signal to bump; see
+# scripts/freshness.ts and the "release sync" test for every pin.
+
+on:
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freshness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.4"
+      - name: Freshness (share link, pinned and newest T3 release)
+        run: bun scripts/freshness.ts all
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
