@@ -10,11 +10,17 @@
 # It follows Anthropic's install.sh (https://claude.ai/install.sh) with one
 # download instead of two: read the channel pointer, then
 # <ver>/manifest.json's .platforms[<platform>] {checksum, size}; download
-# <ver>/<platform>/claude (resumable), check its size and SHA-256, stage it as
-# versions/<ver>, then run `<it> install <ver>`. Claude's installer finds the
+# <ver>/<platform>/claude.zst (resumable, about a third of the size) and
+# decompress it with the image's zstd, check the binary's size and SHA-256,
+# stage it as versions/<ver>, then run `<it> install <ver>`. The manifest has
+# no entry for the .zst, so only the decompressed binary is verified, as
+# install.sh does. Without zstd, when the .zst answers with an HTTP error, or
+# when an uncompressed partial is already there, it downloads
+# <ver>/<platform>/claude itself instead. Claude's installer finds the
 # staged version and only writes the launcher link and its own settings
 # (about 25 KiB of traffic, measured 2026-11-08 with 2.1.311).
-# scripts/freshness.ts `claude` checks this manifest contract daily.
+# scripts/freshness.ts `claude` checks this manifest contract, and that both
+# downloads exist, daily.
 #
 # A `claude` already on PATH (installed by hand, by T3's /welcome, or by an
 # earlier run) always wins: nothing is downloaded or replaced. A verified
@@ -28,7 +34,8 @@
 #
 # Test hooks: CLAUDE_CODE_RELEASES_URL (download base), INSTALL_CLAUDE_CODE_BACKOFF
 # (space-separated seconds between --keep-trying rounds),
-# INSTALL_CLAUDE_CODE_STALL_SECONDS (stall limit, default 120).
+# INSTALL_CLAUDE_CODE_STALL_SECONDS (stall limit, default 120),
+# INSTALL_CLAUDE_CODE_ZSTD (the zstd command, default zstd).
 set -euo pipefail
 
 RELEASES_URL="${CLAUDE_CODE_RELEASES_URL:-https://downloads.claude.ai/claude-code-releases}"
@@ -36,6 +43,7 @@ RELEASES_URL="${CLAUDE_CODE_RELEASES_URL:-https://downloads.claude.ai/claude-cod
 BACKOFF="${INSTALL_CLAUDE_CODE_BACKOFF:-15 60 300 900 1800 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600 3600}"
 
 STALL_SECONDS="${INSTALL_CLAUDE_CODE_STALL_SECONDS:-120}"
+ZSTD="${INSTALL_CLAUDE_CODE_ZSTD:-zstd}"
 VERSION_RE='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
 
 usage() { echo "usage: install-claude-code [--keep-trying] [stable|latest|X.Y.Z]" >&2; exit 2; }
@@ -104,8 +112,9 @@ attempt() {
 	return "$status"
 }
 
-# Fetch the binary into $1 from $2, resuming a partial: up to three curl runs.
-# A server that refuses to resume (curl exit 33) restarts from zero.
+# Fetch $2 into $1, resuming a partial: up to three curl runs. A server that
+# refuses to resume (curl exit 33) restarts from zero. An HTTP error (curl
+# exit 22) returns 22 at once; any other failure returns 1.
 download() {
 	local part="$1" url="$2" rc try
 	for try in 1 2 3; do
@@ -114,6 +123,7 @@ download() {
 			--continue-at - -o "$part" "$url" || rc=$?
 		case "$rc" in
 		0) return 0 ;;
+		22) return 22 ;;
 		33)
 			log "the server refused to resume; downloading from the start"
 			rm -f "$part"
@@ -125,6 +135,43 @@ download() {
 		esac
 	done
 	return 1
+}
+
+# Fill $1 with the uncompressed Claude Code $2 (manifest size $3; $4 bytes
+# already there). The caller checks it against the manifest either way.
+fetch_binary() {
+	local part="$1" version="$2" size="$3" have="$4" rc=0
+	local url="${RELEASES_URL}/${version}/${platform}/claude"
+	if [ "$have" -eq 0 ] && command -v "$ZSTD" >/dev/null 2>&1; then
+		local zpart="${part%.part}.zst.part"
+		log "downloading Claude Code ${version} (${platform}, compressed$([ -s "$zpart" ] && echo ", resuming at $(($(stat -c %s "$zpart") / 1048576)) MiB"))"
+		download "$zpart" "${url}.zst" || rc=$?
+		case "$rc" in
+		0)
+			# A .zst that does not decompress is discarded: the next attempt starts over.
+			if "$ZSTD" -dqf "$zpart" -o "$part"; then
+				rm -f "$zpart"
+				return 0
+			fi
+			rm -f "$zpart" "$part"
+			log "the compressed download did not decompress; discarded"
+			return 1
+			;;
+		22)
+			rm -f "$zpart"
+			log "no compressed build (HTTP error); downloading the uncompressed one"
+			;;
+		*)
+			log "download interrupted; a later attempt resumes it"
+			return 1
+			;;
+		esac
+	fi
+	log "downloading Claude Code ${version} (${platform}, $((size / 1048576)) MiB$([ "$have" -gt 0 ] && echo ", resuming at $((have / 1048576)) MiB"))"
+	if ! download "$part" "$url"; then
+		log "download interrupted; a later attempt resumes it"
+		return 1
+	fi
 }
 
 try_install() {
@@ -176,12 +223,8 @@ try_install() {
 			rm -f "$part"
 			have=0
 		fi
-		if [ "$have" -ne "$size" ]; then
-			log "downloading Claude Code ${version} (${platform}, $((size / 1048576)) MiB$([ "$have" -gt 0 ] && echo ", resuming at $((have / 1048576)) MiB"))"
-			if ! download "$part" "${RELEASES_URL}/${version}/${platform}/claude"; then
-				log "download interrupted; a later attempt resumes it"
-				return 1
-			fi
+		if [ "$have" -ne "$size" ] && ! fetch_binary "$part" "$version" "$size" "$have"; then
+			return 1
 		fi
 		if [ "$(stat -c %s "$part")" != "$size" ] || [ "$(sha256_of "$part")" != "$checksum" ]; then
 			rm -f "$part"

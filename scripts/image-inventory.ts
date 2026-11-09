@@ -15,7 +15,7 @@ rdisc6 ndisc6 arp-scan mosquitto_pub mosquitto_sub fc-list t3code-tools
 tsc tsserver cspell markdownlint-cli2 biome
 openssl gpg sudo locale python python3 pip pip3 pipx uv uvx node npm npx
 corepack yarn pnpm bun bunx gcc g++ cc c++ ld ar pkg-config cmake ninja
-autoconf automake libtool shellcheck shfmt sqlite3 gh git-lfs yq
+autoconf automake libtool shellcheck shfmt sqlite3 zstd gh git-lfs yq
 docker podman kubectl go rustc cargo ruby java dotnet
 qemu-system-x86_64 qemu-system-aarch64 qemu-img quickchr centrs
 t3 codex opencode muse claude`.split(/\s+/).sort();

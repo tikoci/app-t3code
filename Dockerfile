@@ -175,9 +175,10 @@ RUN npm install -g --no-fund --no-audit \
     npm cache clean --force
 
 # Core network tools (issue #5 assignment, see README "Network tool
-# assignment") and the sqlite3 CLI. Small user-space clients only; capture,
-# VPN and routing peers belong to optional groups. A separate late layer keeps
-# the heavy layers above cacheable when this list changes.
+# assignment"), the sqlite3 CLI and zstd (bin/install-claude-code downloads
+# Claude's .zst build: about 99 MiB instead of 280). Small user-space clients
+# only; capture, VPN and routing peers belong to optional groups. A separate
+# late layer keeps the heavy layers above cacheable when this list changes.
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         bind9-dnsutils \
@@ -193,7 +194,8 @@ RUN apt-get update && \
         socat \
         sqlite3 \
         traceroute \
-        whois && \
+        whois \
+        zstd && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 

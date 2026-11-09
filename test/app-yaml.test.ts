@@ -377,7 +377,7 @@ describe("tool groups: docs and image contract", () => {
 		expect(coreLibraries).toEqual([...BROWSER_LIBRARIES]);
 	});
 
-	test("Muse is not bundled; uv, uvx and sqlite3 are core bootstrap tools", () => {
+	test("Muse is not bundled; uv, uvx, sqlite3 and zstd are core bootstrap tools", () => {
 		expect(DOCKERFILE).not.toContain("dev.meta.ai/install.sh");
 		expect(DOCKERFILE).not.toMatch(/\/usr\/local\/bin\/muse/);
 		expect(CORE_CHECKS.map((c) => c.name)).not.toContain("muse");
@@ -385,8 +385,10 @@ describe("tool groups: docs and image contract", () => {
 		expect(DOCKERFILE).toMatch(/^ARG UV_VER=\d+\.\d+\.\d+$/m);
 		expect(DOCKERFILE).toContain("COPY --from=uv /uv /uvx /usr/local/bin/");
 		expect(DOCKERFILE).toMatch(/^\s+sqlite3 \\$/m);
+		// bin/install-claude-code downloads Claude's .zst build when zstd is present.
+		expect(DOCKERFILE).toMatch(/^\s+zstd && \\$/m);
 		expect(dockerfileEnv()["UV_PYTHON_DOWNLOADS"]).toBe("manual");
-		for (const name of ["uv", "uvx", "sqlite3"]) expect(CORE_CHECKS.map((c) => c.name)).toContain(name);
+		for (const name of ["uv", "uvx", "sqlite3", "zstd"]) expect(CORE_CHECKS.map((c) => c.name)).toContain(name);
 	});
 
 	test("gh is core: a pinned GitHub CLI release, checked against its checksums file", () => {
