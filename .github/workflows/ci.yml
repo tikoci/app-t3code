@@ -3,7 +3,12 @@ name: ci
 on:
   push:
     branches: [main]
+  # Drafts and docs-only changes run lint-test only (see "Image-relevant
+  # changes"); marking a PR ready runs the image build. To
+  # build a draft anyway (a pre-merge CHR test image), dispatch this workflow
+  # on its branch: that pushes :sha-<commit> and runs arm64 too.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
       t3code_ver:
@@ -21,8 +26,33 @@ env:
 jobs:
   lint-test:
     runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.changes.outputs.image }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      # Does this change reach the image? Docs (nothing the Dockerfile COPYs
+      # or `build` runs) skip `build`, and so `arm64` and `promote`; lint-test
+      # still runs, since its tests read README.md. A PR diffs its merge
+      # commit against the base side; a push diffs against `before`.
+      - name: Image-relevant changes
+        id: changes
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          case "$GITHUB_EVENT_NAME" in
+          pull_request) base="HEAD^1" ;;
+          push) base="$BEFORE"; git fetch --no-tags --depth=1 origin "$base" || base="" ;;
+          *) base="" ;;
+          esac
+          if [ -z "$base" ] || ! changed="$(git diff --name-only "$base" HEAD)" || [ -z "$changed" ]; then
+            echo "image=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          code="$(printf '%s\n' "$changed" | grep -Ev '(\.md$|^docs/|^\.claude/|^LICENSE$|^\.coderabbit\.yaml$)' || true)"
+          if [ -n "$code" ]; then echo "image=true"; else echo "image=false"; fi >> "$GITHUB_OUTPUT"
+          printf 'changed:\n%s\n' "$changed"
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"
@@ -59,6 +89,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
+    if: needs.lint-test.outputs.image == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
     runs-on: ubuntu-latest
     needs: lint-test
     outputs:
