@@ -81,8 +81,8 @@ describe("harness catalog", () => {
 
 	test("fails loudly when upstream changes the shape", () => {
 		expect(() => parseBuiltInDrivers("export const DRIVERS = [CodexDriver];")).toThrow(/no BUILT_IN_DRIVERS/);
-		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [...extraDrivers, CodexDriver];")).toThrow(/plain list/);
-		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [];")).toThrow(/plain list/);
+		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [...extraDrivers, CodexDriver];")).toThrow(/entry, not a plain name|is empty/);
+		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [];")).toThrow(/entry, not a plain name|is empty/);
 	});
 
 	// Shapes that once parsed to the old list while upstream's real catalog changed (Codex review of #33).
@@ -92,7 +92,7 @@ describe("harness catalog", () => {
 		expect(() => parseBuiltInDrivers(live)).toThrow(/plain array literal/);
 		const filtered = DRIVERS_V017.replace("  AcpRegistryDriver,\n];", "  AcpRegistryDriver,\n].filter(enabled);");
 		expect(() => parseBuiltInDrivers(filtered)).toThrow(/plain array literal/);
-		expect(() => parseBuiltInDrivers(`${DRIVERS_V017}\nBUILT_IN_DRIVERS.push(NewDriver);\n`)).toThrow(/appears 2 times/);
+		expect(() => parseBuiltInDrivers(`${DRIVERS_V017}\nBUILT_IN_DRIVERS.push(NewDriver);\n`)).toThrow(/occurs 2 times/);
 	});
 
 	test("ignores a commented-out declaration and reads the live one", () => {
@@ -110,7 +110,28 @@ describe("harness catalog", () => {
 		expect(diffCatalog(parseBuiltInDrivers(tricky))).toEqual({ added: ["NewDriver"], removed: [] });
 		const inString = "const note = '/* not a comment';\nexport const BUILT_IN_DRIVERS = [CodexDriver, NewDriver];\nconst end = '*/';\n";
 		expect(parseBuiltInDrivers(inString)).toEqual(["CodexDriver", "NewDriver"]);
-		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [CodexDriver, `x` as any];")).toThrow(/plain list/);
+		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [CodexDriver, `x` as any];")).toThrow(/entry, not a plain name|is empty/);
+	});
+
+	// Codex re-check of #33 at 007885b: both passed with the old 11 names.
+	test("a declaration inside a string can't stand in for the live one", () => {
+		const decoy = `const old = ${JSON.stringify(DRIVERS_V017)};\nexport const DRIVERS = [CodexDriver, NewDriver];\n`;
+		expect(() => parseBuiltInDrivers(decoy)).toThrow(/no BUILT_IN_DRIVERS/);
+		const template = `const old = \`${DRIVERS_V017.replaceAll("`", "")}\`;\nexport const BUILT_IN_DRIVERS = [CodexDriver, NewDriver];\n`;
+		expect(parseBuiltInDrivers(template)).toEqual(["CodexDriver", "NewDriver"]);
+	});
+
+	test("rejects holes, spreads, assertions and non-exported or nested declarations", () => {
+		for (const array of ["[, CodexDriver]", "[CodexDriver,, ClaudeDriver]", "[CodexDriver, ClaudeDriver,,]"]) {
+			expect(() => parseBuiltInDrivers(`export const BUILT_IN_DRIVERS = ${array};`)).toThrow(/OmittedExpression entry/);
+		}
+		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [...more];")).toThrow(/SpreadElement entry/);
+		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [CodexDriver] as const;")).toThrow(/plain array literal/);
+		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [CodexDriver] satisfies X;")).toThrow(/plain array literal/);
+		expect(() => parseBuiltInDrivers("const BUILT_IN_DRIVERS = [CodexDriver];")).toThrow(/top-level `export const`/);
+		expect(() => parseBuiltInDrivers("export let BUILT_IN_DRIVERS = [CodexDriver];")).toThrow(/top-level `export const`/);
+		expect(() => parseBuiltInDrivers("function f() { const BUILT_IN_DRIVERS = [CodexDriver]; }")).toThrow(/top-level `export const`/);
+		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [CodexDriver")).toThrow(/syntax error/);
 	});
 
 	test("reports drivers added and removed upstream", () => {

@@ -16,6 +16,7 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import ts from "typescript";
 import { HARNESSES } from "./harnesses.ts";
 
 const ROOT = join(import.meta.dir, "..");
@@ -45,30 +46,49 @@ export function renderShareLink(yaml: string): string {
 // --- harness catalog --------------------------------------------------------
 
 /**
- * Export names in upstream's `BUILT_IN_DRIVERS` array, in order. Strict on
- * purpose: anything but one `export const BUILT_IN_DRIVERS … = [Name, …];`
- * that nothing else in the file touches (a `.concat`, a filter, a push, a
- * second declaration) throws, so a catalog change can't pass unseen.
+ * Export names in upstream's `BUILT_IN_DRIVERS` array, in order, read from
+ * TypeScript's syntax tree (no regexes: comments, strings and templates can't
+ * pass for code). Strict on purpose: the name must occur once in the file, as
+ * a top-level `export const BUILT_IN_DRIVERS = [Name, …]` whose initializer is
+ * the bare array literal and whose entries are all identifiers. Anything else
+ * (a `.concat`, a filter, `as`/`satisfies`, a spread, a hole, a push, a
+ * second declaration, a syntax error) throws, so a catalog change can't pass
+ * unseen.
  */
 export function parseBuiltInDrivers(source: string): string[] {
-	const update = "update parseBuiltInDrivers";
-	// Bun's TypeScript transpiler, not regexes, drops comments and types: a
-	// commented-out declaration can't stand in for the live one, and a `/*`
-	// inside a line comment or a string can't hide live code. Its printer also
-	// normalizes layout (no trailing commas, one `;` per statement).
-	const code = new Bun.Transpiler({ loader: "ts", trimUnusedImports: false }).transformSync(source);
-	const uses = code.match(/\bBUILT_IN_DRIVERS\b/g)?.length ?? 0;
-	if (uses === 0) throw new Error(`no BUILT_IN_DRIVERS in ${DRIVERS_PATH}; upstream moved it, so ${update}`);
-	if (uses > 1) throw new Error(`BUILT_IN_DRIVERS appears ${uses} times in ${DRIVERS_PATH}, not just its declaration; ${update}`);
-	const body = code.match(/export const BUILT_IN_DRIVERS\b[^=]*=\s*\[([^\]]*)\]\s*;/)?.[1];
-	if (body === undefined) throw new Error(`BUILT_IN_DRIVERS is no longer a plain array literal; ${update}`);
-	const names = body
-		.split(",")
-		.map((entry) => entry.trim())
-		.filter(Boolean);
-	const bad = names.filter((name) => !/^[A-Za-z_$][\w$]*$/.test(name));
-	if (bad.length || !names.length) throw new Error(`BUILT_IN_DRIVERS is no longer a plain list of names (${bad.join(", ") || "empty"}); update parseBuiltInDrivers`);
-	return names;
+	const fail = (why: string): never => {
+		throw new Error(`${DRIVERS_PATH}: ${why}; upstream changed it, so update parseBuiltInDrivers`);
+	};
+	const file = ts.createSourceFile(DRIVERS_PATH, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+	const syntaxErrors = (file as unknown as { parseDiagnostics: readonly ts.Diagnostic[] }).parseDiagnostics;
+	if (syntaxErrors.length) fail(`syntax error: ${ts.flattenDiagnosticMessageText(syntaxErrors[0]?.messageText ?? "", " ")}`);
+	const uses: ts.Identifier[] = [];
+	const visit = (node: ts.Node): void => {
+		if (ts.isIdentifier(node) && node.text === "BUILT_IN_DRIVERS") uses.push(node);
+		ts.forEachChild(node, visit);
+	};
+	visit(file);
+	if (uses.length !== 1) fail(uses.length ? `BUILT_IN_DRIVERS occurs ${uses.length} times, not just its declaration` : "no BUILT_IN_DRIVERS");
+	const decl = (uses[0] as ts.Identifier).parent;
+	const list = decl.parent;
+	const statement = list?.parent;
+	if (
+		!ts.isVariableDeclaration(decl) ||
+		!ts.isVariableDeclarationList(list) ||
+		!(list.flags & ts.NodeFlags.Const) ||
+		!statement ||
+		!ts.isVariableStatement(statement) ||
+		statement.parent !== file ||
+		!statement.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+	) {
+		return fail("BUILT_IN_DRIVERS is no longer a top-level `export const`");
+	}
+	const init = decl.initializer;
+	if (!init || !ts.isArrayLiteralExpression(init)) return fail("BUILT_IN_DRIVERS is no longer a plain array literal");
+	if (!init.elements.length) fail("BUILT_IN_DRIVERS is empty");
+	return init.elements.map((element) =>
+		ts.isIdentifier(element) ? element.text : fail(`BUILT_IN_DRIVERS has a ${ts.SyntaxKind[element.kind]} entry, not a plain name`),
+	);
 }
 
 export interface CatalogDiff {

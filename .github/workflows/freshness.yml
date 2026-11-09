@@ -21,6 +21,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.4.4"
+      # The harness-catalog parser reads upstream with TypeScript's parser (a devDependency).
+      - run: bun install --frozen-lockfile
       - name: Freshness (share link, pinned and newest T3 release)
         run: bun scripts/freshness.ts all
         env:
