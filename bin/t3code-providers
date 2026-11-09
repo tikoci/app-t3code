@@ -1,0 +1,3 @@
+#!/bin/sh
+# t3code-providers: install and report the T3CODE_PROVIDERS selection (#13).
+exec bun /usr/local/lib/t3code/providers.ts "$@"

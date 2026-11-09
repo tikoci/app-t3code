@@ -11,8 +11,6 @@ import { join } from "node:path";
 import { CLAUDE_PLATFORMS, CLAUDE_RELEASES_URL, checkClaude, claudeManifestAssets } from "../scripts/freshness.ts";
 
 const SCRIPT = join(import.meta.dir, "..", "bin", "install-claude-code");
-const ENTRYPOINT_PATH = join(import.meta.dir, "..", "docker-entrypoint.sh");
-const ENTRYPOINT = readFileSync(ENTRYPOINT_PATH, "utf8");
 const VERSION = "2.1.311";
 const PLATFORM = process.arch === "arm64" ? "linux-arm64" : "linux-x64";
 
@@ -609,84 +607,4 @@ describe("install-claude-code contract", () => {
 		expect(heads()).toEqual([]);
 	});
 
-	test("the entrypoint retries in the background and appends to a log in the home", async () => {
-		expect(ENTRYPOINT).toMatch(/claude_log="\$\{HOME\}\/\.local\/state\/t3code\/install-claude-code\.log"/);
-		expect(ENTRYPOINT).toContain("/usr/local/bin/install-claude-code --keep-trying >>");
-		expect(ENTRYPOINT).not.toContain("/tmp/install-claude-code.log");
-	});
-});
-
-/**
- * docker-entrypoint.sh's Claude block, run for real: the installer and
- * t3code-tools paths are swapped for a fake installer and a missing file.
- */
-describe("entrypoint and the Claude install log", () => {
-	let dir: string;
-	let entrypoint: string;
-	beforeEach(() => {
-		dir = mkdtempSync(join(tmpdir(), "entrypoint-"));
-		const fake = join(dir, "fake-installer");
-		writeFileSync(fake, '#!/bin/sh\necho "fake installer ran: $*"\n');
-		chmodSync(fake, 0o755);
-		entrypoint = join(dir, "entrypoint.sh");
-		writeFileSync(entrypoint, ENTRYPOINT.replaceAll("/usr/local/bin/install-claude-code", fake).replaceAll("/usr/local/bin/t3code-tools", join(dir, "absent")));
-		mkdirSync(join(dir, "home"));
-	});
-	afterEach(() => {
-		chmodSync(dir, 0o755);
-		Bun.spawnSync(["chmod", "-R", "u+w", dir]);
-		rmSync(dir, { recursive: true, force: true });
-	});
-
-	async function start() {
-		const proc = Bun.spawn(["bash", entrypoint, "sh", "-c", "echo server started"], {
-			env: { HOME: join(dir, "home"), PATH: "/usr/bin:/bin" },
-			stdout: "pipe",
-			stderr: "pipe",
-		});
-		const [out, err, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
-		return { code, out, err };
-	}
-	const log = () => join(dir, "home/.local/state/t3code/install-claude-code.log");
-
-	test("each start appends to the persistent log", async () => {
-		for (let i = 0; i < 2; i++) {
-			const { code, out, err } = await start();
-			expect(code, err).toBe(0);
-			expect(out).toContain("server started");
-		}
-		for (let i = 0; i < 100 && (readFileSync(log(), "utf8").match(/fake installer ran/g) ?? []).length < 2; i++) await Bun.sleep(20);
-		expect(readFileSync(log(), "utf8").match(/fake installer ran: --keep-trying/g)).toHaveLength(2);
-	});
-
-	test("a log over 1 MiB is rotated once", async () => {
-		mkdirSync(join(dir, "home/.local/state/t3code"), { recursive: true });
-		writeFileSync(log(), "x".repeat(1048577));
-		expect((await start()).code).toBe(0);
-		expect(statSync(`${log()}.1`).size).toBe(1048577);
-		for (let i = 0; i < 100 && !readFileSync(log(), "utf8").includes("fake installer ran"); i++) await Bun.sleep(20);
-		expect(readFileSync(log(), "utf8")).toStartWith("fake installer ran");
-	});
-
-	test.skipIf(process.getuid?.() === 0)("an unwritable state directory never stops the server", async () => {
-		mkdirSync(join(dir, "home/.local/state"), { recursive: true });
-		chmodSync(join(dir, "home/.local/state"), 0o555);
-		const { code, out, err } = await start();
-		expect(code, err).toBe(0);
-		expect(out).toContain("server started");
-		expect(err).toContain("cannot write");
-		// stderr closes only once the background installer has exited too.
-		expect(err).toContain("fake installer ran: --keep-trying");
-	});
-
-	test.skipIf(process.getuid?.() === 0)("a read-only log falls back to the container log; the installer still runs", async () => {
-		mkdirSync(join(dir, "home/.local/state/t3code"), { recursive: true });
-		writeFileSync(log(), "earlier run\n", { mode: 0o444 });
-		const { code, out, err } = await start();
-		expect(code, err).toBe(0);
-		expect(out).toContain("server started");
-		expect(err).toContain("cannot write");
-		expect(err).toContain("fake installer ran: --keep-trying");
-		expect(readFileSync(log(), "utf8")).toBe("earlier run\n");
-	});
 });

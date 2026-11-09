@@ -158,14 +158,27 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   explicitly; don't pick product defaults for test convenience.
 - Not groups: `browser` (its native libraries are core, in the first apt
   layer; T3 launches its own browser, so no relocation or launch hooks) and
-  provider CLIs. Codex/opencode are baked npm globals and core checks; Claude
-  installs into `/data/.local/bin` in the background; Muse is no longer
-  bundled (about 396 MiB) — users install it into the home, T3's Muse driver
-  is untouched. Per-harness selection/provisioning, late rediscovery,
-  auth/session work is issue #13: don't grow it here.
-  `scripts/harnesses.ts` classifies every driver in T3's `BUILT_IN_DRIVERS`
-  (image, home or not-bundled); a T3 bump fails CI's freshness step until a
-  new or removed driver is classified there (0.1.7 added Kiro).
+  provider CLIs. Providers are `T3CODE_PROVIDERS` (`scripts/providers.ts`,
+  shipped as `t3code-providers`, issue #13): one token per provider in T3's
+  main Add provider list, default `claude codex` (Dockerfile `ENV`, both
+  YAMLs and the README; a test ties them). No provider CLI is baked into
+  the image. Installs run only while the CLI is missing from PATH and use the
+  path a user would (npm into `NPM_CONFIG_PREFIX=/data/.local`, the vendor's
+  `install.sh`, `install-claude-code`), so T3's **Update now** recognizes and
+  owns them afterwards. Don't pin, shim or wrap provider CLIs: T3 then can't
+  prove who owns the install and its updater puts a second copy on PATH.
+  Cursor (SDK inside T3) and Antigravity (T3 downloads it into
+  `/data/.t3/tools`) are `t3` installs: accepted, nothing to do. Kiro, fx and
+  ACP-registry agents get no token unless someone asks (an issue).
+  Deselecting never deletes. `scripts/harnesses.ts` holds the catalog: every
+  driver in T3's `BUILT_IN_DRIVERS`, and a token plus install recipe for the
+  selectable ones. A T3 bump fails CI's freshness step until a new or removed
+  driver is classified there (0.1.7 added Kiro).
+- Background installers (tool groups, providers) log to
+  `/data/.local/state/t3code/<name>.log` through the entrypoint's
+  `background` helper (append, one rotation at 1 MiB, container-log
+  fallback); provider state is `providers.json` and the lock
+  `providers.lock` in the same directory.
 - Core bootstrap: uv/uvx come from `ghcr.io/astral-sh/uv:${UV_VER}` (pinned
   ARG), `UV_PYTHON_DOWNLOADS=manual`; `sqlite3` and `zstd` are in the late
   core apt layer (`bin/install-claude-code` fetches Claude's `.zst` build

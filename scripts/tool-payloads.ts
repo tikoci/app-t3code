@@ -496,7 +496,7 @@ export function processStartTicks(pid: number): string | null {
 }
 
 /** Whether pid still names the same process (not a recycled pid). */
-function isSameProcess(id: ProcessId | undefined): boolean {
+export function isSameProcess(id: ProcessId | undefined): boolean {
 	if (!id || !Number.isInteger(id.pid) || id.pid <= 0) return false;
 	const ticks = processStartTicks(id.pid);
 	if (ticks !== null) return ticks === id.startTicks;
@@ -548,11 +548,11 @@ function clearWait(env: PayloadEnv) {
 	if (readLockInfo(waitPath(env))?.pid === process.pid) rmSync(waitPath(env), { force: true });
 }
 
-const LOCK_EX = 2;
-const LOCK_NB = 4;
+export const LOCK_EX = 2;
+export const LOCK_NB = 4;
 let flockFn: ((fd: number, op: number) => number) | null | undefined;
 /** flock(2) via libc. The kernel drops the lock when the holder dies, so there is no stale-lock recovery to race. */
-function kernelFlock(fd: number, op: number): boolean {
+export function kernelFlock(fd: number, op: number): boolean {
 	if (flockFn === undefined) {
 		try {
 			const lib = process.platform === "darwin" ? "/usr/lib/libSystem.B.dylib" : "libc.so.6";

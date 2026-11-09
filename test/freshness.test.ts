@@ -159,11 +159,9 @@ describe("harness catalog", () => {
 		expect(diffCatalog(["CodexDriver", "KiroDriver"], ["CodexDriver", "MuseDriver"])).toEqual({ added: ["KiroDriver"], removed: ["MuseDriver"] });
 	});
 
-	test("every harness the image bakes in is a core check", () => {
+	test("no provider CLI is a core check: T3CODE_PROVIDERS installs them into the home", () => {
 		const core = new Set(CORE_CHECKS.filter((c) => c.kind === "command").map((c) => c.name));
-		const baked = Object.values(HARNESSES).filter((h) => h.delivery === "image");
-		expect(baked.length).toBeGreaterThan(0);
-		for (const harness of baked) expect({ cli: harness.cli, core: core.has(harness.cli ?? "") }).toEqual({ cli: harness.cli, core: true });
+		for (const harness of Object.values(HARNESSES)) expect({ cli: harness.cli, core: core.has(harness.cli ?? "") }).toEqual({ cli: harness.cli, core: false });
 	});
 
 	test("every harness CLI we deliver or document is in the README provider table", () => {

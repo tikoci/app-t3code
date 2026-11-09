@@ -307,7 +307,7 @@ describe("npm payload groups", () => {
 		expect(hours(KEEP_TRYING_BACKOFF_MS)).toBeLessThan(30);
 		expect(Math.max(...KEEP_TRYING_BACKOFF_MS)).toBe(3_600_000);
 		const entrypoint = readFileSync(join(import.meta.dir, "..", "docker-entrypoint.sh"), "utf8");
-		expect(entrypoint).toContain("t3code-tools install --keep-trying >");
+		expect(entrypoint).toContain("background tool-groups /usr/local/bin/t3code-tools install --keep-trying");
 	});
 
 	test("low disk fails without downloading or deleting anything", async () => {

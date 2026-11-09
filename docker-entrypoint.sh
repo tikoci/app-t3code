@@ -1,6 +1,6 @@
 #!/bin/bash
-# App entrypoint: prepare the persistent home, kick off the (volume-local)
-# Claude Code install in the background, then exec the server.
+# App entrypoint: prepare the persistent home, start the background tool-group
+# and provider installs (into the volume), then exec the server.
 set -eu
 
 # RouterOS starts containers with umask 0000 (Docker uses 0022), so everything
@@ -24,41 +24,47 @@ if [ -n "${T3CODE_TOOLS_HOME:-}" ]; then
 	export PATH
 fi
 
+# Background installers log into the home, so a failure outlives an image
+# replacement (#13): one directory for all of them. Each start appends (one
+# rotation at about 1 MiB). Logging problems never stop T3: an unwritable log
+# falls back to the container log.
+log_dir="${HOME}/.local/state/t3code"
+background() {
+	local name="$1" log="${log_dir}/$1.log"
+	shift
+	if mkdir -p "$log_dir" 2>/dev/null &&
+		[ "$(stat -c %s "$log" 2>/dev/null || echo 0)" -gt 1048576 ]; then
+		mv -f "$log" "${log}.1" 2>/dev/null || true
+	fi
+	# Open it for append, as the installer will: a read-only log passes `touch`.
+	# Not `>>/dev/stderr` for the fallback: reopening it fails when stderr is a socket.
+	if { : >>"$log"; } 2>/dev/null; then
+		"$@" >>"$log" 2>&1 &
+	else
+		echo "t3code: cannot write ${log}; ${name} logs here instead" >&2
+		"$@" >&2 &
+	fi
+}
+
 # Report the T3CODE_TOOL_GROUPS selection (warnings go to the container log),
 # relink tool-group payloads already in the home (offline, fast) and write the
 # runtime status JSON. Bounded and never fatal: T3 must start whatever the
 # selection says. Missing payloads install in the background; T3 does not wait.
 # --keep-trying: routers often start containers before the uplink is up, so
-# the background run retries for about a day (`t3code-tools install` from a
-# terminal retries now).
+# the background runs retry for about a day (`t3code-tools install` and
+# `t3code-providers install` from a terminal retry now).
 if [ -x /usr/local/bin/t3code-tools ]; then
 	timeout 20 /usr/local/bin/t3code-tools init || echo "t3code-tools: init failed; continuing" >&2
-	/usr/local/bin/t3code-tools install --keep-trying >/tmp/t3code-tools-install.log 2>&1 &
+	background tool-groups /usr/local/bin/t3code-tools install --keep-trying
 fi
 
-# Claude Code cannot be baked into the image (license), so install it to the
-# volume while no `claude` is on PATH. Runs in the background and retries for
-# about a day; the server does not wait. The log stays in the home so a
-# failure outlives an image replacement (#13): each start appends (one
-# rotation at about 1 MiB). Logging problems never stop T3: an unwritable
-# log falls back to the container log.
-if ! command -v claude >/dev/null 2>&1 && [ -x /usr/local/bin/install-claude-code ]; then
-	claude_log="${HOME}/.local/state/t3code/install-claude-code.log"
-	if mkdir -p "${claude_log%/*}" 2>/dev/null &&
-		[ "$(stat -c %s "$claude_log" 2>/dev/null || echo 0)" -gt 1048576 ]; then
-		mv -f "$claude_log" "${claude_log}.1" 2>/dev/null || true
-	fi
-	# Open it for append, as the installer will: a read-only log passes `touch`.
-	if ! { : >>"$claude_log"; } 2>/dev/null; then
-		echo "t3code: cannot write ${claude_log}; the Claude install logs here instead" >&2
-		claude_log=""
-	fi
-	# Not `>>/dev/stderr`: reopening it fails when stderr is a socket.
-	if [ -n "$claude_log" ]; then
-		/usr/local/bin/install-claude-code --keep-trying >>"$claude_log" 2>&1 &
-	else
-		/usr/local/bin/install-claude-code --keep-trying >&2 &
-	fi
+# Provider CLIs (T3CODE_PROVIDERS, #13) install into the home while they are
+# missing from PATH: npm into /data/.local, the vendor's installer, or
+# install-claude-code (Claude's license forbids baking it into the image).
+# A CLI already on PATH is never replaced; the server does not wait.
+if [ -x /usr/local/bin/t3code-providers ]; then
+	timeout 20 /usr/local/bin/t3code-providers init || echo "t3code-providers: init failed; continuing" >&2
+	background providers /usr/local/bin/t3code-providers install --keep-trying
 fi
 
 # Pairing hint for the container log (#18). T3 prints its own startup
