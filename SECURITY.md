@@ -121,14 +121,16 @@ in to T3's telemetry. Provider CLIs have their own telemetry settings.
   `ghcr.io/tikoci/app-t3code`. CI pushes `:sha-<commit>` candidates from
   `main` and from manual `workflow_dispatch` runs on any branch, so a
   `sha-` tag alone does not mean the commit is on `main`. Only a `main` run
-  moves the release tags (`:0.1.7`, `:0.1`, `:0`, `:latest`), and only after
-  the arm64 container-replacement test passes.
+  moves the release tags (`:0.1.7`, `:0.1`, `:0`, `:latest`) and adds the
+  build's own `:0.1.7-app.<N>`, and only after the arm64
+  container-replacement test passes.
 - Build-time downloads are pinned: T3 Code by version, `gh` and the CI linters
   (hadolint, ShellCheck, actionlint) by version and SHA-256, and `uv` by image
   tag.
 - Workflow actions are pinned by tag, not yet by commit SHA (tracked on the
   [Roadmap](https://github.com/tikoci/app-t3code/issues/30)).
-- A ruleset on `main` blocks force-pushes and deletion and requires CI's
+- A ruleset on `main` blocks force-pushes and deletion, requires a pull
+  request with every review thread resolved, and requires CI's
   `lint-test` and `build` jobs. `build` skips changes that can't reach the
   image (docs, `.agents/`, `.claude/`), and GitHub counts a skipped job as
   passing, so the image build gates only image changes. Repository admins

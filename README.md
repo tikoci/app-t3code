@@ -905,8 +905,18 @@ Images track upstream **stable** T3 Code releases only — no nightlies
 
 - `ghcr.io/tikoci/app-t3code:0.1.7` — exact release
 - `ghcr.io/tikoci/app-t3code:0.1`, `:0`, `:latest` — stability aliases
+- `ghcr.io/tikoci/app-t3code:0.1.7-app.<N>` — one promoted build, never
+  moved. `N` is the `ci` workflow's run number. PR and branch runs use
+  numbers too, so promoted builds skip some. A re-run that rebuilds appends
+  the attempt (`-app.<N>.2`). Pin this to stay on a build; `CHANGELOG.md`
+  headings use the same name.
 - `ghcr.io/tikoci/app-t3code:sha-<commit>` — the candidate CI pushes from
   `main`; not for deployment
+
+Each pushed image carries its build name in the OCI label
+`org.opencontainers.image.version` (and the commit in
+`org.opencontainers.image.revision`), so a `sha-` candidate that never got
+promoted still says which run built it.
 
 A `main` push publishes only the candidate. Its arm64 image then runs the
 container replacement test natively on a GitHub arm64 runner (amd64 already

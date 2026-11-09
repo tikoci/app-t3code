@@ -1,11 +1,28 @@
 # Changelog
 
 User-visible changes to the `ghcr.io/tikoci/app-t3code` image and its
-RouterOS `/app` YAML. The image version is the upstream T3 Code version, so
-each entry names a date and the T3 version that shipped. Builds are
-identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
+RouterOS `/app` YAML. The image version is the upstream T3 Code version.
+Each promoted build is `<T3 version>-app.<N>` (`N` is the `ci` run
+number), which is also its image tag, and each entry names the promoted
+`sha-<commit>`. Entries from before these tags are headed by date. See
+`AGENTS.md` "Versions and CHANGELOG".
 
 ## Unreleased
+
+- Promoted builds get their own tag, `:<T3 version>-app.<N>` (`N` is the
+  `ci` run number), that never moves, so a router can stay on one build.
+  Every pushed image also carries that name in its
+  `org.opencontainers.image.version` label, and the commit in
+  `org.opencontainers.image.revision`. A re-run that rebuilds appends the
+  attempt (`-app.<N>.2`). `:0.1.7`, `:0.1`, `:0` and `:latest` move as
+  before.
+- Repository: the `main` ruleset now also requires a pull request with
+  every review thread resolved (no approval count). CHANGELOG-only PRs that
+  stamp a promoted build are pre-approved for write members (`AGENTS.md`).
+
+## 2026-11-09 — T3 Code 0.1.7, `sha-b232556`
+
+Promoted from `ci` run 125, before `-app.<N>` tags existed.
 
 - Repository: `SECURITY.md` (private reporting, the trust boundaries, the
   startup pairing token that RouterOS `read` users can see in

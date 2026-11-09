@@ -108,6 +108,7 @@ jobs:
       ver: ${{ steps.tags.outputs.ver }}
       minor: ${{ steps.tags.outputs.minor }}
       major: ${{ steps.tags.outputs.major }}
+      build: ${{ steps.tags.outputs.build }}
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-qemu-action@v3
@@ -118,16 +119,31 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # build: this run's identity, <T3 version>-app.<ci run number>. It
+      # goes into the OCI version label of every pushed candidate, and
+      # promote also tags it (immutable, unlike :0.1.7). Run numbers count
+      # PR and branch runs too, so promoted builds have gaps. A re-run keeps
+      # its run number but rebuilds to a new digest, so attempts after the
+      # first append .<attempt> (0.1.7-app.133.2): a pushed tag never moves.
+      # T3CODE_VER can be a dispatch input, so it must look like a version
+      # before it reaches tags, outputs or shell.
       - name: Derive stability tags
         id: tags
         run: |
           VER="${T3CODE_VER}"
+          if ! [[ "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::T3CODE_VER is not a version: $VER"
+            exit 1
+          fi
           MINOR="${VER%.*}"
           MAJOR="${MINOR%.*}"
+          BUILD="$VER-app.$GITHUB_RUN_NUMBER"
+          if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then BUILD="$BUILD.$GITHUB_RUN_ATTEMPT"; fi
           {
             echo "ver=$VER"
             echo "minor=$MINOR"
             echo "major=$MAJOR"
+            echo "build=$BUILD"
           } >> "$GITHUB_OUTPUT"
       - name: Load native image for replacement test
         uses: docker/build-push-action@v6
@@ -162,6 +178,10 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           build-args: T3CODE_VER=${{ steps.tags.outputs.ver }}
           tags: ghcr.io/tikoci/app-t3code:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.tags.outputs.build }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
       - name: Export inventories from the cached image builds
         uses: docker/build-push-action@v6
         with:
@@ -269,13 +289,20 @@ jobs:
           fi
       - name: Tag the candidate as the release
         if: steps.head.outputs.current == 'true'
+        env:
+          DIGEST: ${{ needs.build.outputs.digest }}
+          BUILD: ${{ needs.build.outputs.build }}
+          VER: ${{ needs.build.outputs.ver }}
+          MINOR: ${{ needs.build.outputs.minor }}
+          MAJOR: ${{ needs.build.outputs.major }}
         run: |
           repo=ghcr.io/tikoci/app-t3code
-          test -n "${{ needs.build.outputs.digest }}" || { echo "::error::build pushed no digest"; exit 1; }
+          test -n "$DIGEST" || { echo "::error::build pushed no digest"; exit 1; }
           docker buildx imagetools create \
-            -t "$repo:${{ needs.build.outputs.ver }}" \
-            -t "$repo:${{ needs.build.outputs.minor }}" \
-            -t "$repo:${{ needs.build.outputs.major }}" \
+            -t "$repo:$BUILD" \
+            -t "$repo:$VER" \
+            -t "$repo:$MINOR" \
+            -t "$repo:$MAJOR" \
             -t "$repo:latest" \
-            "$repo@${{ needs.build.outputs.digest }}"
-          docker buildx imagetools inspect "$repo:${{ needs.build.outputs.minor }}"
+            "$repo@$DIGEST"
+          docker buildx imagetools inspect "$repo:$MINOR"
