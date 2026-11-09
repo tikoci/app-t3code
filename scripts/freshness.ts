@@ -2,10 +2,12 @@
 // fails a build instead of waiting for a reviewer to notice.
 //
 //   bun scripts/freshness.ts share-link [--write]   README share link vs app/t3code.tikapp.yaml (offline)
-//   bun scripts/freshness.ts pinned                 the pinned T3 release (CI on every PR)
-//   bun scripts/freshness.ts upstream               the newest stable T3 release (scheduled)
+//   bun scripts/freshness.ts pinned [--version X]   the pinned T3 release (CI on every PR)
+//   bun scripts/freshness.ts upstream [--version X] the newest stable T3 release (scheduled)
 //
-// `pinned` checks that T3CODE_VER (package.json) is a published stable T3
+// The version defaults to package.json's; CI passes the T3CODE_VER it builds,
+// which a workflow_dispatch can override.
+// `pinned` checks that T3CODE_VER is a published stable T3
 // release with both Linux archives, and that its harness catalog matches
 // scripts/harnesses.ts. `upstream` checks that no newer stable release exists,
 // and previews the newest release's harness catalog so a bump PR knows what it
@@ -42,13 +44,24 @@ export function renderShareLink(yaml: string): string {
 
 // --- harness catalog --------------------------------------------------------
 
-/** Export names in upstream's `BUILT_IN_DRIVERS` array, in order. */
+/**
+ * Export names in upstream's `BUILT_IN_DRIVERS` array, in order. Strict on
+ * purpose: anything but one `export const BUILT_IN_DRIVERS … = [Name, …];`
+ * that nothing else in the file touches (a `.concat`, a filter, a push, a
+ * second declaration) throws, so a catalog change can't pass unseen.
+ */
 export function parseBuiltInDrivers(source: string): string[] {
-	const body = source.match(/export const BUILT_IN_DRIVERS\b[^=]*=\s*\[([^\]]*)\]/)?.[1];
-	if (body === undefined) throw new Error(`no BUILT_IN_DRIVERS array in ${DRIVERS_PATH}; upstream moved it, so update parseBuiltInDrivers`);
+	const update = "update parseBuiltInDrivers";
+	// Comments first, so a commented-out declaration can't stand in for the live one.
+	const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+	const uses = code.match(/\bBUILT_IN_DRIVERS\b/g)?.length ?? 0;
+	if (uses === 0) throw new Error(`no BUILT_IN_DRIVERS in ${DRIVERS_PATH}; upstream moved it, so ${update}`);
+	if (uses > 1) throw new Error(`BUILT_IN_DRIVERS appears ${uses} times in ${DRIVERS_PATH}, not just its declaration; ${update}`);
+	const body = code.match(/export const BUILT_IN_DRIVERS\b[^=]*=\s*\[([^\]]*)\]\s*;/)?.[1];
+	if (body === undefined) throw new Error(`BUILT_IN_DRIVERS is no longer a plain array literal; ${update}`);
 	const names = body
 		.split(",")
-		.map((entry) => entry.replace(/\/\/.*$/gm, "").trim())
+		.map((entry) => entry.trim())
 		.filter(Boolean);
 	const bad = names.filter((name) => !/^[A-Za-z_$][\w$]*$/.test(name));
 	if (bad.length || !names.length) throw new Error(`BUILT_IN_DRIVERS is no longer a plain list of names (${bad.join(", ") || "empty"}); update parseBuiltInDrivers`);
@@ -226,18 +239,27 @@ async function guarded(check: () => Report | Promise<Report>): Promise<Report> {
 	}
 }
 
+/** `--version X` / `--version=X`, else package.json's version. */
+export function versionArg(args: string[]): string {
+	const i = args.findIndex((arg) => arg === "--version" || arg.startsWith("--version="));
+	if (i < 0) return pinnedVersion();
+	const value = args[i]?.includes("=") ? args[i]?.slice("--version=".length) : args[i + 1];
+	if (!value || !/^\d+\.\d+\.\d+(?:-[\w.]+)?$/.test(value)) throw new Error(`--version needs a T3 version like 0.1.7, got ${value ?? "nothing"}`);
+	return value;
+}
+
 const CHECKS: Record<string, (args: string[]) => Array<() => Report | Promise<Report>>> = {
 	"share-link": (args) => [() => checkShareLink(args.includes("--write"))],
-	pinned: () => [() => checkPinned()],
-	upstream: () => [() => checkUpstream()],
-	all: () => [() => checkShareLink(), () => checkPinned(), () => checkUpstream()],
+	pinned: (args) => [() => checkPinned(versionArg(args))],
+	upstream: (args) => [() => checkUpstream(versionArg(args))],
+	all: (args) => [() => checkShareLink(), () => checkPinned(versionArg(args)), () => checkUpstream(versionArg(args))],
 };
 
 export async function main(argv: string[]): Promise<number> {
 	const [command = "", ...args] = argv;
 	const checks = CHECKS[command];
 	if (!checks) {
-		console.error("usage: bun scripts/freshness.ts share-link [--write] | pinned | upstream | all");
+		console.error("usage: bun scripts/freshness.ts share-link [--write] | pinned | upstream | all  [--version X]");
 		return 2;
 	}
 	let ok = true;

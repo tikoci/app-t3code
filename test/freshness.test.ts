@@ -15,6 +15,7 @@ import {
 	renderShareLink,
 	shareLinks,
 	stableVersion,
+	versionArg,
 } from "../scripts/freshness.ts";
 import { HARNESSES } from "../scripts/harnesses.ts";
 import { CORE_CHECKS } from "../scripts/tool-groups.ts";
@@ -84,6 +85,23 @@ describe("harness catalog", () => {
 		expect(() => parseBuiltInDrivers("export const BUILT_IN_DRIVERS = [];")).toThrow(/plain list/);
 	});
 
+	// Shapes that once parsed to the old list while upstream's real catalog changed (Codex review of #33).
+	test("rejects anything that changes the array after its literal", () => {
+		const live = DRIVERS_V017.replace("  AcpRegistryDriver,\n];", "  AcpRegistryDriver,\n].concat(NewDriver);");
+		expect(live).toContain(".concat(NewDriver)");
+		expect(() => parseBuiltInDrivers(live)).toThrow(/plain array literal/);
+		const filtered = DRIVERS_V017.replace("  AcpRegistryDriver,\n];", "  AcpRegistryDriver,\n].filter(enabled);");
+		expect(() => parseBuiltInDrivers(filtered)).toThrow(/plain array literal/);
+		expect(() => parseBuiltInDrivers(`${DRIVERS_V017}\nBUILT_IN_DRIVERS.push(NewDriver);\n`)).toThrow(/appears 2 times/);
+	});
+
+	test("ignores a commented-out declaration and reads the live one", () => {
+		const old = "// export const BUILT_IN_DRIVERS = [CodexDriver, ClaudeDriver];\n/* export const BUILT_IN_DRIVERS = [OldDriver]; */\n";
+		expect(parseBuiltInDrivers(old + DRIVERS_V017)).toEqual(Object.keys(HARNESSES));
+		const live = "export const BUILT_IN_DRIVERS: X = [\n  CodexDriver, // the default\n  NewDriver,\n];\n";
+		expect(parseBuiltInDrivers(old + live)).toEqual(["CodexDriver", "NewDriver"]);
+	});
+
 	test("reports drivers added and removed upstream", () => {
 		// v0.1.6 had no Kiro; v0.1.7 added it. This check would have flagged the bump.
 		expect(diffCatalog(["CodexDriver", "ClaudeDriver"], ["CodexDriver", "ClaudeDriver"])).toEqual({ added: [], removed: [] });
@@ -106,6 +124,15 @@ describe("harness catalog", () => {
 });
 
 describe("releases", () => {
+	test("--version picks the version to check; package.json is the default", () => {
+		const pkg = (JSON.parse(read("package.json")) as { version: string }).version;
+		expect(versionArg([])).toBe(pkg);
+		expect(versionArg(["--version", "0.1.6"])).toBe("0.1.6");
+		expect(versionArg(["--version=0.1.8"])).toBe("0.1.8");
+		expect(() => versionArg(["--version"])).toThrow(/needs a T3 version/);
+		expect(() => versionArg(["--version", "latest"])).toThrow(/needs a T3 version/);
+	});
+
 	test("only plain vX.Y.Z tags are stable", () => {
 		expect(stableVersion("v0.1.7")).toBe("0.1.7");
 		expect(stableVersion("v0.1.8-nightly.20261108.4380")).toBeUndefined();

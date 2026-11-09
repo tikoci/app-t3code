@@ -47,10 +47,11 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - run: make lint-shell
       - run: bun run test
-      # The pinned T3CODE_VER is a stable upstream release with both Linux
-      # archives, and its harness catalog matches scripts/harnesses.ts.
+      # The T3CODE_VER this run builds (the pin, or a dispatch's input) is a
+      # stable upstream release with both Linux archives, and its harness
+      # catalog matches scripts/harnesses.ts.
       - name: Freshness (pinned T3 release)
-        run: bun scripts/freshness.ts pinned
+        run: bun scripts/freshness.ts pinned --version "$T3CODE_VER"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
