@@ -1,0 +1,113 @@
+# Where T3 Code shows agent output
+
+Part of the [presentation inventory](t3code-presentation-menu.md), pinned to
+T3 v0.1.7. Findings below are from source and exposed tool contracts, not a
+recorded browser walkthrough.
+
+## Distinguish the surfaces
+
+| Surface | Default location / layout | Agent controls | Human/client controls |
+| --- | --- | --- | --- |
+| `html_render` result | Embedded in the conversation above the final reply | HTML document, title and initial height | Expand/fullscreen and zoom |
+| MCP App | Embedded in the conversation as the tool result | Tool invocation; app controls its own contents | Interaction, approval prompts, fullscreen |
+| Browser preview | Preview workspace alongside chat | Open/show a tab, URL/port, profile, viewport, appearance | Workspace placement, maximize, mini-player/separate-window controls where available |
+| File/document preview | Existing file preview workspace | Produce and link the file | Open the link and use the viewer controls |
+| Thread details | Card alongside chat when space permits; popover otherwise | Existing project metadata/actions and thread state | Show/hide built-in items and card visibility |
+| Device preview | Existing preview/device workspace | Open a supported simulator/emulator | Preview layout controls |
+
+An HTML document opened as a file, an inline HTML reply, and a browser pointed
+at a URL may show identical content but have different ownership, lifetime,
+controls and backend connections.
+
+## HTML in chat
+
+The answer to “is `html_render` HTML in the chat view?” is **yes**.
+Its input is a complete HTML string, a title and an initial height. There is no
+argument selecting a right-side tab or floating window.
+
+The published page runs scripts in a sandbox and receives T3 theme variables.
+It has no general bridge for executing agent tools. An interactive filter over
+data already embedded in the page is different from an authenticated live
+RouterOS inspector. Local images are embedded when published. Thread deletion
+deletes the published pages. See [visual replies][visuals].
+
+The current tool schema accepts an initial height of 80–2000 CSS pixels; its
+description separately documents automatic fitted height up to 20,000 pixels.
+These are different limits. The contract asks for fluid, theme-aware content
+without a whole-page card/background and rejects viewport-height layouts.
+
+## Browser preview and popouts
+
+`preview_open` accepts a URL or an environment-port target, `open`/`show`,
+tab reuse and a browser profile. **It has no panel-placement parameter.**
+`preview_resize` changes the page viewport, not where the workspace panel sits.
+
+The [panel shell][shell] has inline, sheet, sidebar and embedded modes;
+the [mini-player store][mini] separately tracks a floating browser/device
+preview and its position/size. The [preview menu][preview-menu] also includes
+an “Open separate preview window” action when supported by the host.
+These account for the small popout and right-side presentations the user has
+seen; the exact arrangement depends on the client, available space and UI state.
+They are not extra `html_render` destinations exposed to an agent.
+
+Browser automation has a separate ownership boundary: the agent may act on its
+own or unclaimed tab, while reading a human-driven tab has narrower behavior.
+Some tabs belong to the local desktop runtime and cannot be automated by the
+server environment's tools.
+
+## The floating card with the server, editor and scripts
+
+The card containing the environment/server, **Open in VS Code**, **Add project
+script**, and Git controls is **Thread details**. [Its implementation][details]
+places it beside chat when the layout has room and uses a popover otherwise.
+
+Its [content component][details-panel] renders built-in Workspace and Version
+Control sections. Workspace includes the environment/worktree picker, editor
+picker and project scripts. These rows are internal React components, not
+arbitrary HTML or an MCP resource slot.
+
+There is already a human setting to reduce Git clutter: the card's context menu
+has **Show in thread details**, with independent visibility choices for
+**Branch and pull request**, **Git actions**, **Changes**, and other rows.
+The [fixed item list][items] also includes servers, automations, lineage,
+side chats, usage limits and context. This is client-side visibility, not
+disabling T3's source-control integration. No settings were changed here.
+
+No exposed agent tool or supported extension-registration API was found to
+add a custom “target router / identity / connection” row to this card. The
+existing tools update known project/thread fields; they do not define new
+Thread details sections. A native router-status row would need an upstream
+extension point or a maintained frontend change.
+
+## Project scripts are persistent command entry points
+
+`t3_project_update.scripts` defines named actions, commands, icons and optional
+`previewUrl` / `autoOpenPreview`. The same project actions can be imported
+from `t3.json`. These are exposed in the existing project-script UI, including
+Thread details. See [project settings][settings].
+
+An action's browser preview URL is **different from `html_render`**: it opens a
+browser destination associated with running the action. The action can be a
+terminal command without a preview. It does not publish HTML into chat and
+does not create a custom status row in the card.
+
+## Follow-up questions
+
+- Confirm the precise layout labels and available popout controls on the
+  deployed RouterOS-hosted server and the user's connected desktop client.
+- Evaluate existing project actions for convenient human entry points before
+  requesting a native router-context row.
+- If asking upstream for a new row, distinguish a context/status extension
+  from a browser tab, MCP App, or arbitrary HTML injection.
+- The device workspace is a plausible future home for a VM/console display,
+  but its current API only opens supported mobile devices. CHR/QEMU console
+  registration was not found.
+
+[visuals]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/html-renders.md
+[shell]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/preview/PreviewPanelShell.tsx
+[mini]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/previewMiniPlayerStore.ts
+[preview-menu]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/preview/PreviewMoreMenu.tsx
+[details]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/ThreadDetailsCard.tsx
+[details-panel]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/ThreadDetailsPanel.tsx
+[items]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/threadDetailsItems.ts
+[settings]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/project-settings.md

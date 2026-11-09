@@ -1,0 +1,379 @@
+{
+  "researchDate": "2026-11-09",
+  "t3": {
+    "tag": "v0.1.7",
+    "commit": "322f6544dfad0a3c8a0c8cbecf2c7f7874b14268",
+    "sources": [
+      {
+        "path": "apps/server/src/auth/ServerSecretStore.ts",
+        "sha256": "73dafed19bec0d5166326c509dba79014891f6de718e935a3c255ba1917e4753",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/auth/ServerSecretStore.ts"
+      },
+      {
+        "path": "apps/server/src/config.ts",
+        "sha256": "a4bc71443efc6736f6410a2c8d785237a8b1df80bcaf0ae4d21255415f2d0839",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/config.ts"
+      },
+      {
+        "path": "apps/server/src/mcp/OrchestratorMcpService.ts",
+        "sha256": "29fbbc8d026cd763c34663e2ae4668b8aee95ab8381d6d6f6af8aa5d1dcc3c94",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/mcp/OrchestratorMcpService.ts"
+      },
+      {
+        "path": "apps/server/src/mcp/toolkits/html/tools.ts",
+        "sha256": "978081a0287522e0c8c4973e1c6d3ef176dc83ed171952c4e6599429d952ba76",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/mcp/toolkits/html/tools.ts"
+      },
+      {
+        "path": "apps/server/src/mcpApps/McpAppRequests.ts",
+        "sha256": "6daccc282514d72e4554d1a90c0a79a737835566c9f106ee19b06b1167280489",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/mcpApps/McpAppRequests.ts"
+      },
+      {
+        "path": "apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.ts",
+        "sha256": "31da7ca2e6605ed5570ba061cc75ffdd14b2e6d4b79cc4957db954ec14aae5ee",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.ts"
+      },
+      {
+        "path": "apps/server/src/orchestration-v2/Adapters/CodexAdapterV2.ts",
+        "sha256": "095320e9763129e035c17ce8689619902ccb10d141692354179a6b72d2125854",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/orchestration-v2/Adapters/CodexAdapterV2.ts"
+      },
+      {
+        "path": "apps/server/src/secrets/SecretRequests.ts",
+        "sha256": "1e5e02bd97ca9f6c5c592d45ac06653e4cf83ffd0e46e2c8f8cec9cd55390e19",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/secrets/SecretRequests.ts"
+      },
+      {
+        "path": "apps/server/src/workspace/WorkspaceFileSystem.ts",
+        "sha256": "bb542579d00dd18022880f3823e5b9a76cc58d37b1ce4204c829541e1bcd9caf",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/server/src/workspace/WorkspaceFileSystem.ts"
+      },
+      {
+        "path": "apps/web/src/components/ChatMarkdown.tsx",
+        "sha256": "7da292ba1426c03e7e971fa6a01a689b548c7ada45147fefdf557ff65506d21c",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/ChatMarkdown.tsx"
+      },
+      {
+        "path": "apps/web/src/components/chat/McpAppFrame.tsx",
+        "sha256": "2171a29d95c47c03c43c837b91cd097d4a42c5b62d5870f3c06a93e2b59194b8",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/McpAppFrame.tsx"
+      },
+      {
+        "path": "apps/web/src/components/chat/SecretRequestCard.tsx",
+        "sha256": "a2939f68af02cb8c1e27a0ec1fadf49cf1cd8615c7b05d24678c3babf47b96c5",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/SecretRequestCard.tsx"
+      },
+      {
+        "path": "apps/web/src/components/chat/ThreadDetailsCard.tsx",
+        "sha256": "995d549288518bd5078c869e5a2f13269204ad71a48f6e5a3e0c33f160fd07ed",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/ThreadDetailsCard.tsx"
+      },
+      {
+        "path": "apps/web/src/components/chat/ThreadDetailsPanel.tsx",
+        "sha256": "e7ea509f6c89610379b4a78b10f493bb99529862b0d17d252114a42af63bb7bb",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/ThreadDetailsPanel.tsx"
+      },
+      {
+        "path": "apps/web/src/components/chat/TimelineAssistantRows.tsx",
+        "sha256": "78ea8b35733941543907dc2212b01f6775e8cf85213fcc0004c0ce145b89a7b0",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/TimelineAssistantRows.tsx"
+      },
+      {
+        "path": "apps/web/src/components/chat/threadDetailsItems.ts",
+        "sha256": "7a795e6dc47693944e9e30c1d9aaaca4d89462b9d2cd75c2fe5e0d8f56a1729c",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/threadDetailsItems.ts"
+      },
+      {
+        "path": "apps/web/src/components/chat/useChatTerminalActions.ts",
+        "sha256": "313eaded7967cef35de0d0fc0c669fcca22947e625bef760d29704d5dfd65d1b",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/useChatTerminalActions.ts"
+      },
+      {
+        "path": "apps/web/src/components/files/BinaryViewer.tsx",
+        "sha256": "beb3260a4f48a098920ae9bc4864758ea4c74aba08226d60f1e1571782fc64c6",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/files/BinaryViewer.tsx"
+      },
+      {
+        "path": "apps/web/src/components/files/FilePreviewPanel.tsx",
+        "sha256": "e177db852d854304cf64ec5bce384072df33e9765990c3372f1008b03572bb38",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/files/FilePreviewPanel.tsx"
+      },
+      {
+        "path": "apps/web/src/components/files/LargeTextViewer.tsx",
+        "sha256": "2e05ab7a28217fecafbeaf77eb975962a253fe45248a126021c721aba668d8cc",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/files/LargeTextViewer.tsx"
+      },
+      {
+        "path": "apps/web/src/components/files/ReadOnlySourcePreview.tsx",
+        "sha256": "93d1a889cbe1d44c79cc0e3963c66a3af62e11f82b97595b0e5b1926befd0294",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/files/ReadOnlySourcePreview.tsx"
+      },
+      {
+        "path": "apps/web/src/components/preview/PreviewMoreMenu.tsx",
+        "sha256": "49e6885fab7fd7ac9acc4a7940e946301ed7462c3cad7fad7f7b7d3281de613d",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/preview/PreviewMoreMenu.tsx"
+      },
+      {
+        "path": "apps/web/src/components/preview/PreviewPanelShell.tsx",
+        "sha256": "9ad89e08eb2393e0388e4df2b7bfd47a83e5af53a2417ae2989f3c1e9408433b",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/preview/PreviewPanelShell.tsx"
+      },
+      {
+        "path": "apps/web/src/lib/syntaxHighlighting.ts",
+        "sha256": "53435c1cf1f2f732919d416f09c8ebfef0d7f1af6d4f812c63456155868669f6",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/lib/syntaxHighlighting.ts"
+      },
+      {
+        "path": "apps/web/src/previewMiniPlayerStore.ts",
+        "sha256": "986f5c66eb1be78fe040547afcba08d275685d3b9a3c1d279c8df066f04a6560",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/previewMiniPlayerStore.ts"
+      },
+      {
+        "path": "docs/user/activity-log.md",
+        "sha256": "3be9999adda07948b28be15b907a7dd52399760ccc6c1738968a2e67b10c54e4",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/activity-log.md"
+      },
+      {
+        "path": "docs/user/html-renders.md",
+        "sha256": "cd751da840898306919c6bdc61ae1ebea24abbf46bbb78b6393b3a85ba2fcff2",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/html-renders.md"
+      },
+      {
+        "path": "docs/user/mobile-notifications.md",
+        "sha256": "81969441356cdf83a2f2a2d68c0023d2cdaa64a2557ea0c73fca2e28f4e235fd",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/mobile-notifications.md"
+      },
+      {
+        "path": "docs/user/project-settings.md",
+        "sha256": "cc0e130e28095cdaf9351e681af06e990c89f56ba333b2769a065fb2ed9fae82",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/project-settings.md"
+      },
+      {
+        "path": "docs/user/prompt-links.md",
+        "sha256": "fee4023f5080bb2201f6f12a34d85c181cdb8edf1f837b189decbf610556e45f",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/prompt-links.md"
+      },
+      {
+        "path": "docs/user/question-attachments.md",
+        "sha256": "7059232217456f9542fa066c8458817d9b260b6af93985452d8d6b5d8a8803ee",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/question-attachments.md"
+      },
+      {
+        "path": "docs/user/source-control.md",
+        "sha256": "732b30471e2b9a4d6b44f2b48be83ef19e4af26d46a2fcb0296857719f827753",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/source-control.md"
+      },
+      {
+        "path": "packages/client-runtime/src/secretRequest.ts",
+        "sha256": "0b606b3d53bb2f8d449f858f796c4fb13d95a8aa046ab6b5909ec5f32947f5b3",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/packages/client-runtime/src/secretRequest.ts"
+      },
+      {
+        "path": "packages/provider-core/src/server/ProviderAdapter.ts",
+        "sha256": "ed11031a9e92f3a0327e37a91b3a764b840d4affc94facff772e10d485cadc6e",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/packages/provider-core/src/server/ProviderAdapter.ts"
+      },
+      {
+        "path": "packages/provider-core/src/server/orchestrationInstructions.ts",
+        "sha256": "eb08f66f347bcbd1cb5f6d8f37d1e17a85b800f14aecaf14788890bdba8b983d",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/packages/provider-core/src/server/orchestrationInstructions.ts"
+      },
+      {
+        "path": "packages/shared/src/codexArtifactTemplates.ts",
+        "sha256": "f46a8b9de70349dea06ea6734c0591962bae56365db496d8cf0e55cbb1020703",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/packages/shared/src/codexArtifactTemplates.ts"
+      },
+      {
+        "path": "packages/shared/src/filePreview.ts",
+        "sha256": "1b3062b3fd81282f047c87d415bad6f5e94949fa4dbc5d90a2f73672b3c7f0a4",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/packages/shared/src/filePreview.ts"
+      },
+      {
+        "path": "packages/shared/src/mcpApp.ts",
+        "sha256": "a45e80d8ee80c787e0da538d58de9d780533d991328a8825d3e2855e42559361",
+        "url": "https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/packages/shared/src/mcpApp.ts"
+      }
+    ]
+  },
+  "scope": {
+    "runtime": "Codex in a T3 desktop nightly; exposed tool definitions inspected, UI not exercised",
+    "claudeResearch": {
+      "model": "claude-opus-5-5",
+      "method": "Independent read-only inspection of the same pin plus Claude-visible tools/instructions; no app or HTML invocation"
+    },
+    "notTested": [
+      "Browser layout or file appearance",
+      "A real secret-card submission",
+      "centrs credential handoff",
+      "RouterOS/container presentation runtime"
+    ]
+  },
+  "dependencies": [
+    {
+      "name": "@pierre/diffs",
+      "version": "1.6.1",
+      "inspectedFile": "dist/utils/getFiletypeFromFileName.js",
+      "sha256": "b50fdbaccaf99cd31037519ec6ccd17a540922f699f6feb5634db0ade002c8e5",
+      "tarball": "https://registry.npmjs.org/@pierre/diffs/-/diffs-1.6.1.tgz"
+    },
+    {
+      "name": "@pierre/highlights",
+      "version": "0.2.0",
+      "inspectedFile": "dist/languages.js",
+      "sha256": "99d5e3884af0b8a0eacd186c8cb57d30f16ce1f393d509b45627332ba6075d5f",
+      "tarball": "https://registry.npmjs.org/@pierre/highlights/-/highlights-0.2.0.tgz"
+    }
+  ],
+  "lspFixture": {
+    "repository": "tikoci/lsp-routeros-ts",
+    "commit": "1d0999f69e4f062c8a6cc08f9977f2ae84bc87c1",
+    "path": "test-data/complex/piano.rsc",
+    "sha256": "02b0ff5ad74b34352635e6ab61fcfe391e9601f42edc384d8573f26fbba7dbb2",
+    "executed": false
+  },
+  "centrs": {
+    "localInstalledVersion": "0.1.9-next.24",
+    "sources": [
+      {
+        "path": "src/settings.ts",
+        "sha256": "b045b1ca3f5b1d1e411b71cca15803ccd91994f9294d0afb6c978471fb8e9059"
+      },
+      {
+        "path": "docs/CLI.md",
+        "sha256": "ac53cff90c62da37b7f6be7fc80d43bf371190d776521141f2d74854ef80618e"
+      },
+      {
+        "path": "commands/settings/README.md",
+        "sha256": "198436b0cf5cba3f5cb69fab4518173a00e2812aecaec8f4b127b44238f499ca"
+      }
+    ],
+    "note": "Hashes identify installed npm-package files; no claim that upstream main matches."
+  },
+  "probes": {
+    "method": "Bun imports of pinned source functions and published dependency resolver; synthetic values only",
+    "fileKinds": [
+      {
+        "name": "config.toml",
+        "withoutMime": "text",
+        "genericMime": "text",
+        "textMime": "text"
+      },
+      {
+        "name": "inventory.tsv",
+        "withoutMime": "text",
+        "genericMime": "text",
+        "textMime": "text"
+      },
+      {
+        "name": "inventory.sqlite",
+        "withoutMime": "sqlite",
+        "genericMime": "sqlite",
+        "textMime": "sqlite"
+      },
+      {
+        "name": "topology.mmd",
+        "withoutMime": "mermaid",
+        "genericMime": "mermaid",
+        "textMime": "mermaid"
+      },
+      {
+        "name": "piano.rsc",
+        "withoutMime": "unsupported",
+        "genericMime": "unsupported",
+        "textMime": "text"
+      }
+    ],
+    "filenameLanguages": [
+      {
+        "name": "config.toml",
+        "language": "toml"
+      },
+      {
+        "name": "piano.rsc",
+        "language": "text"
+      },
+      {
+        "name": "PIANO.rsc",
+        "language": "text"
+      }
+    ],
+    "syntheticSecretWhitespace": {
+      "input": "  synthetic-only  ",
+      "output": {
+        "type": "save",
+        "secret": "synthetic-only"
+      }
+    }
+  },
+  "toolContracts": [
+    {
+      "name": "mcp__t3_code__html_preview",
+      "description": "Check an HTML page before html_render. Returns PNG, contentHeight, and console output. If it says the browser is still installing, call again in a minute. Inline <style> and <script>. Local images as absolute paths are inlined. Remote URLs load as-is. Theme and layout rules are in html_render.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__html_preview(args: {\n  // Default dark.\n  appearance?: \"dark\" | \"light\";\n  // A complete, self-contained HTML document.\n  html: string;\n  // CSS pixels, 240 to 1600. Default 728. Use about 390 for phones.\n  width?: number;\n}): Promise<CallToolResult>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__html_render",
+      "description": "Show a finished HTML page (chart, diagram, mockup) inline in this thread, above your final reply. Do not announce or restate the page. Frame fits height to 20000px. On mobile, content past the given height scrolls. Frame width is reply width (728px desktop, about 360px phones), on the thread background. Leave html, body, and the outer element with no background color, no outer card, border, banner title, or side padding. This wins over any rule that sets a page background. T3 adds an overridable 8px html gutter for selection rings and shadows. Use fluid widths within it. A box that needs its own background gets 16px padding and var(--radius) corners. Give charts fixed pixel heights. Let content set the height. Do not use vh units or height:100% on html or body. Both are rejected or loop. Use theme CSS variables on :root, not fixed colors: --background, --foreground, --muted, --card, --popover, --secondary, --border, --ring, --primary, --accent, --destructive, --warning, --success, --info, --code-background (most have a matching -foreground; accent, destructive, and warning also have -surface), --chart-1 to --chart-6, --radius, --font-sans, --font-mono. The base sheet sets background, text, and font.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__html_render(args: {\n  // Frame height in CSS pixels, 80 to 2000. Use the contentHeight from html_preview.\n  height: number;\n  // A complete, self-contained HTML document.\n  html: string;\n  title: string;\n}): Promise<CallToolResult<{ htmlRender: { attachmentId: string; height: number | \"Infinity\" | \"-Infinity\" | \"NaN\"; heights?: Array<[number, number]> | null; title: string; [key: string]: unknown; }; message: string; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__preview_open",
+      "description": "Open a preview tab in this thread and show it. For a dev server, pass `target` instead of `url`. `open=false` keeps it in the background. Reuses your current tab unless `tabId` or `reuseExistingTab=false` says otherwise. Parallel subagents in one session must each use `reuseExistingTab=false`, then their own returned `tabId`.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__preview_open(args: {\n  // Show the preview to the user. Default true. False for background only.\n  open?: boolean;\n  // Profile id or name from preview_status, for a new tab. Default: the user's. A tab keeps its profile.\n  profileId?: string;\n  // Reuse `tabId`, or your current tab. Default true. False makes a new tab.\n  reuseExistingTab?: boolean;\n  // Old alias for `open`.\n  show?: boolean;\n  tabId?: string;\n  target?: {\n  kind: \"environment-port\";\n  // Path, query, and fragment, such as /settings?tab=account.\n  path?: string;\n  // Dev-server port here.\n  port: number;\n  // Default http.\n  protocol?: \"http\" | \"https\";\n};\n  // First page URL. Absolute http(s) URL, or a bare host (https; http for loopback). Omit to open a blank tab.\n  url?: string;\n}): Promise<CallToolResult<{ available: boolean; control?: { generation: number | \"Infinity\" | \"-Infinity\" | \"NaN\"; ownedByCaller: boolean; owner: \"agent\" | \"human\" | \"unclaimed\"; [key: string]: unknown; } | null; defaultProfileId?: string | null; dialog?: { defaultValue: string; message: string; type: string; [key: string]: unknown; } | null | null; downloads?: Array<{ completedAt: string; fileName: string; path: string; sizeBytes: number | \"Infinity\" | \"-Infinity\" | \"NaN\"; url: string; [key: string]: unknown; }> | null; fileChooser?: { accept: string; multiple: boolean; [key: string]: unknown; } | null | null; loading: boolean; profiles?: Array<{ id: string; incognito?: boolean | null; name: string; [key: string]: unknown; }> | null; tabId: string | null; tabs?: Array<{ openerTabId?: string | null; ownedByCaller?: boolean | null; owner?: \"agent\" | \"human\" | \"unclaimed\" | null; profileId?: string | null; tabId: string; url: string | null; visible?: boolean | null; [key: string]: unknown; }> | null; title: string | null; url: string | null; viewport?: { height: number; width: number; [key: string]: unknown; } | null; viewportSetting?: { _tag: \"fill\"; [key: string]: unknown; } | { _tag: \"freeform\"; height: number; width: number; [key: string]: unknown; } | { _tag: \"preset\"; height: number; presetId: \"iphone-se\" | \"iphone-xr\" | \"iphone-12-pro\" | \"iphone-14-pro-max\" | \"pixel-7\" | \"samsung-galaxy-s8-plus\" | \"samsung-galaxy-s20-ultra\" | \"ipad-mini\" | \"ipad-air\" | \"ipad-pro\" | \"surface-pro-7\" | \"surface-duo\" | \"galaxy-z-fold-5\" | \"asus-zenbook-fold\" | \"samsung-galaxy-a51-71\" | \"nest-hub\" | \"nest-hub-max\" | \"desktop-1920x1080\" | \"desktop-1440x900\" | \"laptop-1366x768\" | \"laptop-1280x800\" | \"ipad-pro-11\" | \"iphone-15-pro\" | \"pixel-8\" | \"galaxy-s24\"; width: number; [key: string]: unknown; } | null; visible: boolean; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__preview_resize",
+      "description": "Resize the chosen tab: {mode:'fill'}, {mode:'freeform',width,height}, or {mode:'preset',preset,orientation}. Changes CSS size only, not the user agent.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__preview_resize(args: {\n  height?: number;\n  mode: \"fill\" | \"freeform\" | \"preset\";\n  orientation?: \"portrait\" | \"landscape\";\n  preset?: \"iphone-se\" | \"iphone-xr\" | \"iphone-12-pro\" | \"iphone-14-pro-max\" | \"pixel-7\" | \"samsung-galaxy-s8-plus\" | \"samsung-galaxy-s20-ultra\" | \"ipad-mini\" | \"ipad-air\" | \"ipad-pro\" | \"surface-pro-7\" | \"surface-duo\" | \"galaxy-z-fold-5\" | \"asus-zenbook-fold\" | \"samsung-galaxy-a51-71\" | \"nest-hub\" | \"nest-hub-max\";\n  tabId?: string;\n  // Default 15000.\n  timeoutMs?: number;\n  width?: number;\n}): Promise<CallToolResult<{ setting: { _tag: \"fill\"; [key: string]: unknown; } | { _tag: \"freeform\"; height: number; width: number; [key: string]: unknown; } | { _tag: \"preset\"; height: number; presetId: \"iphone-se\" | \"iphone-xr\" | \"iphone-12-pro\" | \"iphone-14-pro-max\" | \"pixel-7\" | \"samsung-galaxy-s8-plus\" | \"samsung-galaxy-s20-ultra\" | \"ipad-mini\" | \"ipad-air\" | \"ipad-pro\" | \"surface-pro-7\" | \"surface-duo\" | \"galaxy-z-fold-5\" | \"asus-zenbook-fold\" | \"samsung-galaxy-a51-71\" | \"nest-hub\" | \"nest-hub-max\" | \"desktop-1920x1080\" | \"desktop-1440x900\" | \"laptop-1366x768\" | \"laptop-1280x800\" | \"ipad-pro-11\" | \"iphone-15-pro\" | \"pixel-8\" | \"galaxy-s24\"; width: number; [key: string]: unknown; }; tabId: string; toolIcon?: { _tag: \"website\"; faviconUrl?: string | null; faviconUrlDark?: string | null; pageUrl: string; [key: string]: unknown; } | { _tag: \"native-app\"; app: { _tag: \"app-id\"; appId: string; [key: string]: unknown; } | { _tag: \"display-name\"; displayName: string; [key: string]: unknown; }; [key: string]: unknown; } | { _tag: \"themed-logo\"; logoUrl: string; logoUrlDark?: string | null; [key: string]: unknown; } | null; viewport: { height: number; width: number; [key: string]: unknown; }; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__preview_set_appearance",
+      "description": "Set `prefers-color-scheme` for the chosen tab: 'dark', 'light', or 'system' to clear the override.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__preview_set_appearance(args: { colorScheme: \"system\" | \"light\" | \"dark\"; tabId?: string; }): Promise<CallToolResult<{ colorScheme: \"system\" | \"light\" | \"dark\"; tabId: string; toolIcon?: { _tag: \"website\"; faviconUrl?: string | null; faviconUrlDark?: string | null; pageUrl: string; [key: string]: unknown; } | { _tag: \"native-app\"; app: { _tag: \"app-id\"; appId: string; [key: string]: unknown; } | { _tag: \"display-name\"; displayName: string; [key: string]: unknown; }; [key: string]: unknown; } | { _tag: \"themed-logo\"; logoUrl: string; logoUrlDark?: string | null; [key: string]: unknown; } | null; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__preview_recording_start",
+      "description": "Start recording the chosen tab.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__preview_recording_start(args: { tabId?: string; }): Promise<CallToolResult<{ recording: boolean; startedAt: string | null; tabId: string; toolIcon?: { _tag: \"website\"; faviconUrl?: string | null; faviconUrlDark?: string | null; pageUrl: string; [key: string]: unknown; } | { _tag: \"native-app\"; app: { _tag: \"app-id\"; appId: string; [key: string]: unknown; } | { _tag: \"display-name\"; displayName: string; [key: string]: unknown; }; [key: string]: unknown; } | { _tag: \"themed-logo\"; logoUrl: string; logoUrlDark?: string | null; [key: string]: unknown; } | null; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__preview_recording_stop",
+      "description": "Stop recording the chosen tab. Returns a local path to the recording file (max 50 MiB).\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__preview_recording_stop(args: { tabId?: string; }): Promise<CallToolResult<{ createdAt: string; id: string; mimeType: string; path: string; sizeBytes: number; tabId: string; toolIcon?: { _tag: \"website\"; faviconUrl?: string | null; faviconUrlDark?: string | null; pageUrl: string; [key: string]: unknown; } | { _tag: \"native-app\"; app: { _tag: \"app-id\"; appId: string; [key: string]: unknown; } | { _tag: \"display-name\"; displayName: string; [key: string]: unknown; }; [key: string]: unknown; } | { _tag: \"themed-logo\"; logoUrl: string; logoUrlDark?: string | null; [key: string]: unknown; } | null; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__preview_snapshot",
+      "description": "Use it only when the current request asks for browser work, including checking an edit in the browser. Never use it unasked to verify your own edit, or to repeat a snapshot from an earlier turn. Works on a tab the user is driving. Returns page state, elements, diagnostics, and screenshot size. Target one element with `locator='aria-ref=<ref>'` from `accessibilityTree`, even in frames. Refs die on navigation, a new snapshot, or handoff. Text caps near 20 KB; on your own or an unclaimed tab, `preview_evaluate` reads more. To show a screenshot when asked: `save=true`, then embed ![alt](screenshotPath).\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__preview_snapshot(args: {\n  // Default false. True only to see the page.\n  includeImage?: boolean;\n  // Write PNG, return `screenshotPath`.\n  save?: boolean;\n  tabId?: string;\n}): Promise<CallToolResult>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__t3_preview_list",
+      "description": "List this thread's preview tabs. Only `runtime:'server'` entries can be automated here. Others are in the user's local desktop app. Never pass a non-server `tabId` to a `preview_*` tool. Tell the user that tab is on their local desktop and this environment cannot reach it.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__t3_preview_list(args: { cursor?: number; limit?: number; }): Promise<CallToolResult<{ nextCursor: number | null; revision: number; serverEpoch: string; sessions: Array<{ automationOwner?: string | null; canGoBack: boolean; canGoForward: boolean; colorScheme?: \"system\" | \"light\" | \"dark\" | null; headless?: boolean | null; navStatus: { _tag: \"Idle\"; [key: string]: unknown; } | { _tag: \"Loading\"; title: string; url: string; [key: string]: unknown; } | { _tag: \"Success\"; title: string; url: string; [key: string]: unknown; } | { _tag: \"LoadFailed\"; code: number; description: string; download?: { fileName: string; id: string; [key: string]: unknown; } | null; title: string; url: string; [key: string]: unknown; }; profileId?: string | null; reveal?: boolean | null; revealRequest?: { force: boolean; id: string; [key: string]: unknown; } | null; runtime?: \"desktop\" | \"server\" | null; tabId: string; threadId: string; updatedAt: string; viewport?: { _tag: \"fill\"; [key: string]: unknown; } | { _tag: \"freeform\"; height: number; width: number; [key: string]: unknown; } | { _tag: \"preset\"; height: number; presetId: \"iphone-se\" | \"iphone-xr\" | \"iphone-12-pro\" | \"iphone-14-pro-max\" | \"pixel-7\" | \"samsung-galaxy-s8-plus\" | \"samsung-galaxy-s20-ultra\" | \"ipad-mini\" | \"ipad-air\" | \"ipad-pro\" | \"surface-pro-7\" | \"surface-duo\" | \"galaxy-z-fold-5\" | \"asus-zenbook-fold\" | \"samsung-galaxy-a51-71\" | \"nest-hub\" | \"nest-hub-max\" | \"desktop-1920x1080\" | \"desktop-1440x900\" | \"laptop-1366x768\" | \"laptop-1280x800\" | \"ipad-pro-11\" | \"iphone-15-pro\" | \"pixel-8\" | \"galaxy-s24\"; width: number; [key: string]: unknown; } | null; zoomFactor?: 0.25 | 0.33 | 0.5 | 0.67 | 0.75 | 0.8 | 0.9 | 1 | 1.1 | 1.25 | 1.5 | 1.75 | 2 | 2.5 | 3 | 4 | 5 | null; [key: string]: unknown; }>; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__device_open",
+      "description": "Open a simulator or emulator for this thread. Pass `deviceId` and `hostId` from `device_list`. Boots it if needed and shows it in the user's Device panel. Returns the `agent-device` CLI call pinned to that device. Drive the device with that CLI.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__device_open(args: {\n  deviceId?: string;\n  hostId?: string;\n  // Needed with no `deviceId` when both platforms exist.\n  platform?: \"ios\" | \"android\";\n}): Promise<CallToolResult<{ agentDevice: { command: string; session: string; targetArgs: Array<string>; [key: string]: unknown; }; device: { booted: boolean; hostId: string; id: string; name: string; physical: boolean; platform: \"ios\" | \"android\"; version: string; [key: string]: unknown; }; quickStart: string; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__device_screenshot",
+      "description": "Get a PNG of an open device's screen. For taps and text, use the `agent-device` CLI.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__device_screenshot(args: { deviceId?: string; hostId?: string; }): Promise<CallToolResult>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__request_secret",
+      "description": "Ask the user to enter a secret in a private card and wait. You never see the value. Returns a one-use `secretRef` for a tool that accepts it, or with `delivery: \"file\"` a private file path to read inside a shell command. Asked how to provide a secret: call this now, do not explain instead.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__request_secret(args: {\n  // Retry key for this ask. New key after a timeout or cancel.\n  clientRequestId?: string;\n  // secretRef (default) for a T3 tool. file for a shell CLI: read the path in your command, e.g. TOKEN=\"$(cat <file>)\" wrangler whoami.\n  delivery?: \"secretRef\" | \"file\";\n  label: string;\n  placeholder?: string;\n  reason: string;\n  // Default 10 min.\n  timeoutMs?: number;\n}): Promise<CallToolResult>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__t3_project_update",
+      "description": "Update one project's settings. Omitted fields are unchanged.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__t3_project_update(args: {\n  // Threads and files are kept.\n  archived?: boolean;\n  autoPull?: boolean;\n  defaultModelSelection?: { instanceId?: unknown; model: unknown; options?: unknown; provider?: unknown; };\n  defaultThreadEnvMode?: \"local\" | \"worktree\";\n  environmentId?: string;\n  faviconPath?: string;\n  pinned?: boolean;\n  projectIcon?: { color?: \"gray\" | \"red\" | \"orange\" | \"amber\" | \"yellow\" | \"lime\" | \"green\" | \"emerald\" | \"teal\" | \"cyan\" | \"sky\" | \"blue\" | \"indigo\" | \"violet\" | \"purple\" | \"fuchsia\" | \"pink\" | \"rose\"; emoji?: string; kind: \"lucide\" | \"emoji\" | \"monogram\"; name?: string; text?: string; };\n  projectId: string;\n  scripts?: Array<{ async?: boolean; autoOpenPreview?: boolean; command: string; icon: \"play\" | \"test\" | \"lint\" | \"configure\" | \"build\" | \"debug\"; id: string; name: string; previewUrl?: string; runOnSettle?: boolean; runOnWorktreeCreate: boolean; }>;\n  title?: string;\n  workspaceRoot?: string;\n}): Promise<CallToolResult<{ archivedAt?: string | null | null; autoPull?: boolean | null; createdAt: string; defaultModelSelection: { instanceId?: unknown | null; model: unknown; options?: unknown | null; provider?: unknown | null; [key: string]: unknown; } | null; defaultThreadEnvMode?: \"local\" | \"worktree\" | null | null; deletedAt: string | null; faviconPath?: string | null | null; id: string; pinnedAt?: string | null | null; projectIcon?: { color: \"gray\" | \"red\" | \"orange\" | \"amber\" | \"yellow\" | \"lime\" | \"green\" | \"emerald\" | \"teal\" | \"cyan\" | \"sky\" | \"blue\" | \"indigo\" | \"violet\" | \"purple\" | \"fuchsia\" | \"pink\" | \"rose\"; kind: \"lucide\"; monogram?: string | null; monogramText?: string | null; name: string; [key: string]: unknown; } | { emoji: string; kind: \"emoji\"; [key: string]: unknown; } | { color: \"gray\" | \"red\" | \"orange\" | \"amber\" | \"yellow\" | \"lime\" | \"green\" | \"emerald\" | \"teal\" | \"cyan\" | \"sky\" | \"blue\" | \"indigo\" | \"violet\" | \"purple\" | \"fuchsia\" | \"pink\" | \"rose\"; kind: \"monogram\"; text: string; [key: string]: unknown; } | { kind: string; [key: string]: unknown; } | null | null; repositoryIdentity?: { canonicalKey: string; displayName?: string; locator: { remoteName: string; remoteUrl: string; source: \"git-remote\"; [key: string]: unknown; }; name?: string; origin?: { canonicalKey: string; displayName?: string; remoteUrl?: string; [key: string]: unknown; }; owner?: string; provider?: string; rootPath?: string; webUrl?: string; [key: string]: unknown; } | null | null; scripts: Array<{ async?: boolean | null; autoOpenPreview?: boolean | null; command: string; icon: \"play\" | \"test\" | \"lint\" | \"configure\" | \"build\" | \"debug\"; id: string; name: string; previewUrl?: string | null; runOnSettle?: boolean | null; runOnWorktreeCreate: boolean; [key: string]: unknown; }>; title: string; updatedAt: string; workspaceRoot: string; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__t3_thread_organize",
+      "description": "Pin, snooze, settle, archive, or mark a thread unread. Omit `threadId` for this thread. `snooze` needs `snoozedUntil`. Settling this thread applies at turn end. A failed turn or queued message leaves it active.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__t3_thread_organize(args: { action: \"pin\" | \"unpin\" | \"snooze\" | \"unsnooze\" | \"settle\" | \"unsettle\" | \"archive\" | \"unarchive\" | \"mark_unread\"; environmentId?: string; snoozedUntil?: string; threadId?: string; }): Promise<CallToolResult>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__t3_thread_update",
+      "description": "Rename a thread (`action:'rename'` with `title`) or regenerate its title. Omit `threadId` for this thread. Workspace and branch cannot change here.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__t3_thread_update(args: { action: \"rename\" | \"regenerate_title\"; clientRequestId?: string; environmentId?: string; threadId?: string; title?: string; }): Promise<CallToolResult<{ action: \"rename\" | \"regenerate_title\"; commandId: string; linkedPullRequest: { number: number; projectId: string; repository: string; url: string; [key: string]: unknown; } | null; sequence: number; threadId: string; title: string; titleRegeneration: { requestId: string; startedAt: string; [key: string]: unknown; } | null; updatedAt: string; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__link_pull_request",
+      "description": "Link a PR to this thread. T3 shows its status and settles the thread on merge. For several PRs, use `link_pull_requests`.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__link_pull_request(args: {\n  environmentId?: string;\n  host?: string;\n  // With `repository`, when no `url`.\n  number?: number;\n  repository?: string;\n  threadId?: string;\n  url?: string;\n}): Promise<CallToolResult<{ alreadyLinked: boolean; host: string; next?: string | null; number: number; repository: string; url: string; [key: string]: unknown; }>>; };\n```"
+    },
+    {
+      "name": "mcp__t3_code__write_pull_request_guides",
+      "description": "Write review guides for up to 20 PRs (the tour in the PR Guide tab). Returns once runs start. Each run takes minutes in a temporary checkout. A run for the same head is joined. Read with `read_pull_request_guide`. Fails while guides are off.\n\nexec tool declaration:\n```ts\ndeclare const tools: { mcp__t3_code__write_pull_request_guides(args: { environmentId?: string; pullRequests: Array<{\n  host?: string;\n  // With `repository`, when no `url`.\n  number?: number;\n  repository?: string;\n  url?: string;\n}>; }): Promise<CallToolResult<{ guides: Array<{\n  detail: string | null;\n  host: string;\n  number: number;\n  // started: a run began. running: joined a run for this head. failed: see detail.\n  outcome: \"started\" | \"running\" | \"failed\";\n  repository: string;\n  url: string;\n  [key: string]: unknown;\n}>; [key: string]: unknown; }>>; };\n```"
+    }
+  ]
+}
