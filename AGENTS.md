@@ -19,6 +19,10 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   time out without it (macOS). Run it on Linux, or rely on CI's `lint-test`
   job. `biome.json` turns off `noTemplateCurlyInString` only for the two test
   files that assert literal shell `${...}` text.
+- `make freshness` — drift checks (`scripts/freshness.ts`, needs network):
+  the README share link, the pinned T3 release (stable, both Linux archives)
+  and its harness catalog, and the newest stable T3. CI runs `pinned` on every
+  PR; `freshness.yml` runs them all daily, and a red run there means bump.
 - `APP_T3CODE_INTEGRATION=1 bun test test/integration/` — full CHR
   boot + container install + web UI probe. Needs QEMU and network; slow
   (the GHCR image pull alone is ~1GB on a free-license CHR).
@@ -148,6 +152,9 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   bundled (about 396 MiB) — users install it into the home, T3's Muse driver
   is untouched. Per-harness selection/provisioning, late rediscovery,
   auth/session work is issue #13: don't grow it here.
+  `scripts/harnesses.ts` classifies every driver in T3's `BUILT_IN_DRIVERS`
+  (image, home or not-bundled); a T3 bump fails CI's freshness step until a
+  new or removed driver is classified there (0.1.7 added Kiro).
 - Core bootstrap: uv/uvx come from `ghcr.io/astral-sh/uv:${UV_VER}` (pinned
   ARG), `UV_PYTHON_DOWNLOADS=manual`; `sqlite3` is in the late core apt
   layer; `gh` is GitHub's release tarball (`GH_VER` ARG, checksum-verified;
@@ -208,9 +215,9 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   (`scripts/research-quickchr-runtime.ts`, `QUICKCHR_MODULE` for a branch
   build). See `docs/research/2026-11-06/labs-qemu-payload.md`.
 - The README's `/app` YAML Editor share link embeds a snapshot of
-  `app/t3code.tikapp.yaml`, so it can get stale. Whenever that file changes
-  (including comments), regenerate the link's `yaml` query parameter from
-  the full file contents and verify decoding it reproduces the file exactly.
+  `app/t3code.tikapp.yaml`. Whenever that file changes (including comments),
+  run `make share-link`; `test/freshness.test.ts` fails until the link
+  decodes to the file exactly.
   URL-based loading is requested in https://github.com/tikoci/restraml/issues/123;
   once supported, prefer a link that loads the published YAML URL.
 - RouterOS sends a container's stop signal only if PID 1 has a handler for

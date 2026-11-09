@@ -47,6 +47,16 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - run: make lint-shell
       - run: bun run test
+      # The T3CODE_VER this run builds (the pin, or a dispatch's input) is a
+      # stable upstream release with both Linux archives, and its harness
+      # catalog matches scripts/harnesses.ts. A dispatch may build a nightly
+      # on purpose (CI accepts any T3CODE_VER): it gets the annotation but
+      # still builds.
+      - name: Freshness (pinned T3 release)
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' }}
+        run: bun scripts/freshness.ts pinned --version "$T3CODE_VER"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
     runs-on: ubuntu-latest

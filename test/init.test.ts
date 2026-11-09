@@ -1,5 +1,6 @@
 /** bin/t3code-init, the image's PID 1 (#25): signal forwarding and exit status. */
 import { afterEach, describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 
 const init = new URL("../bin/t3code-init", import.meta.url).pathname;
 const groups: number[] = [];
@@ -41,6 +42,36 @@ describe.skipIf(!modernBash)("t3code-init", () => {
 	}
 
 	const loop = "while :; do sleep 0.1; done";
+	// A child with default signal handlers, whatever /bin/sh is. A shell can't
+	// be that child: bash (5.2 and 5.3) ignores QUIT in its own process while it
+	// runs a script, so where /bin/sh is bash (Arch) a looping `sh -c` never dies
+	// of QUIT, while Debian's dash does. `exec` swaps the shell for sleep, which
+	// inherits only what the init gave the shell: if the init failed to reset
+	// INT/QUIT, sleep would still ignore them and these tests would hang.
+	const idle = "exec sleep 300";
+
+	/**
+	 * Wait until the init's child has exec'd `name`. "up" comes from the shell
+	 * before its exec, and a signal sent in between reaches the shell, which
+	 * bash would ignore (QUIT) instead of dying. Same pid throughout: the init's
+	 * subshell execs sh, which execs sleep.
+	 */
+	async function childBecomes(init: number, name: string) {
+		const deadline = Date.now() + 2000;
+		const comm = (pid: string) => {
+			try {
+				return readFileSync(`/proc/${pid}/comm`, "utf8").trim();
+			} catch {
+				return "";
+			}
+		};
+		while (Date.now() < deadline) {
+			const kids = readFileSync(`/proc/${init}/task/${init}/children`, "utf8").split(/\s+/).filter(Boolean);
+			if (kids.some((pid) => comm(pid) === name)) return;
+			await Bun.sleep(10);
+		}
+		throw new Error(`the init's child never became ${name}`);
+	}
 
 	test("passes the child's exit status through", async () => {
 		const { proc } = await start("echo up; exit 7");
@@ -64,7 +95,8 @@ describe.skipIf(!modernBash)("t3code-init", () => {
 	});
 
 	test("a child that dies of the signal reports 128+n", async () => {
-		const { proc } = await start(`echo up; ${loop}`);
+		const { proc } = await start(`echo up; ${idle}`);
+		await childBecomes(proc.pid, "sleep");
 		proc.kill("SIGTERM");
 		expect(await proc.exited).toBe(143);
 	});
@@ -76,7 +108,8 @@ describe.skipIf(!modernBash)("t3code-init", () => {
 		["SIGQUIT", 131],
 	] as const) {
 		test(`a child with default handlers dies of a forwarded ${signal}`, async () => {
-			const { proc } = await start(`echo up; ${loop}`);
+			const { proc } = await start(`echo up; ${idle}`);
+			await childBecomes(proc.pid, "sleep");
 			proc.kill(signal);
 			expect(await proc.exited).toBe(code);
 		});

@@ -2,7 +2,7 @@ T3CODE_VER ?= 0.1.7
 IMAGE ?= ghcr.io/tikoci/app-t3code
 PLATFORMS ?= linux/amd64,linux/arm64
 
-.PHONY: check lint-shell test integration build push dev-lock
+.PHONY: check lint-shell test freshness share-link integration build push dev-lock
 
 check:
 	bun run check
@@ -18,6 +18,16 @@ lint-shell:
 
 test:
 	bun run test
+
+# Drift checks (scripts/freshness.ts): the README share link, T3CODE_VER's
+# release and its harness catalog, and the newest stable T3. Needs network;
+# CI runs `pinned` on every PR and everything on a schedule (freshness.yml).
+freshness:
+	bun scripts/freshness.ts all --version $(T3CODE_VER)
+
+# Regenerate the README's /app YAML Editor link from app/t3code.tikapp.yaml.
+share-link:
+	bun scripts/freshness.ts share-link --write
 
 integration:
 	bun run test:integration
