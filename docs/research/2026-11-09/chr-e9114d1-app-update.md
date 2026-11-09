@@ -4,9 +4,12 @@
 [chr-d36a5e5-verify.md](chr-d36a5e5-verify.md): `t3code` (x86, RouterOS
 7.25, HVF) and `t3code-arm64` (arm64, 7.25.1, TCG).
 
-This closes the two acceptance items PR #38 left open: a literal
-`/app/update` through the `:0.1` release tag (the candidate was tested with a
-direct container start), and the `/welcome` provider cards after it.
+PR #38 left two acceptance items open. This run closes the first: a
+literal `/app/update` through the `:0.1` release tag (the candidate was
+tested with a direct container start). The second, `/welcome` and login
+checks on arm64, stays open: x86 passes, but on arm64 under TCG the Claude
+account probe times out, and this home has no Codex login. That needs native
+arm64 hardware.
 
 ## Starting state
 

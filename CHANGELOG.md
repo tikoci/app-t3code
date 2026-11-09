@@ -14,13 +14,15 @@ identified by `sha-<commit>`. See `AGENTS.md` "Versions and CHANGELOG".
   runs every gate). Repo skills moved to `.agents/skills/`
   (`.claude/skills` is a symlink to it). Repository settings: secret
   scanning with push protection, Dependabot security PRs, and a `main`
-  ruleset that requires CI's `lint-test` and `build`. No image change.
+  ruleset that requires CI's `lint-test` and `build`. Nothing the image is
+  built from changes, but CI counts workflow and package changes as
+  image-relevant, so merging this rebuilds and promotes a new `sha-<commit>`.
 
 ## 2026-11-09 — T3 Code 0.1.7
 
-The newest promoted build is `sha-e9114d1` (`:0.1.7`, `:0.1`, `:0`,
-`:latest`). This entry collects every rebuild of T3 0.1.7 promoted since the
-previous entry, from `sha-c244a7e` (late 2026-11-08 UTC) on.
+This entry collects every rebuild of T3 0.1.7 promoted from `sha-c244a7e`
+(late 2026-11-08 UTC) through `sha-e9114d1`. `sha-e9114d1` is the build
+verified on both test CHRs on 2026-11-09 with `/app/update`.
 
 - **Provider CLIs are now chosen with `T3CODE_PROVIDERS`** (#13), one token
   per provider in T3's main Add provider list: `claude codex cursor grok

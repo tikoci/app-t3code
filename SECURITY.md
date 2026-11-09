@@ -91,15 +91,22 @@ version is not fixed by the image:
 | `capture`, `labs`, `vpn`, `routing` tool groups | Debian packages pinned at image build | size and SHA-256 from apt's signed indexes |
 
 Provider CLIs update through T3 or their own updaters after install, the
-same as on any T3 host. Set `T3CODE_PROVIDERS=none` and
-`T3CODE_TOOL_GROUPS=none` to install nothing at runtime.
+same as on any T3 host. `T3CODE_PROVIDERS=none` and
+`T3CODE_TOOL_GROUPS=none` stop this image's own runtime installs. They do
+not stop T3 itself from downloading things: its built-in browser on first
+use, its managed providers (Codex's **Continue with ChatGPT**, Antigravity)
+and any **Install** you click on its welcome screen.
 
 ### File modes in `/data`
 
 RouterOS starts containers with umask 0000. Since the 2026-11-09 image the
 entrypoint sets umask 022 before starting T3, so new files in `/data` are no
-longer world-writable. Files created by older images keep their modes:
-`chmod -R go-w /data` from a T3 terminal fixes them. Commands run directly
+longer world-writable. Files created by older images keep their modes. The
+home belongs to `node` (uid 1000), the user T3's terminals run as, so
+`chmod -R go-w /data` from a T3 terminal fixes them. Afterwards,
+`find /data -xdev -perm -0002 ! -type l` should print nothing; anything it
+still lists belongs to another user, and only that user can change it.
+Commands run directly
 through RouterOS `/container/shell` bypass the entrypoint and still use
 0000.
 
@@ -111,9 +118,11 @@ in to T3's telemetry. Provider CLIs have their own telemetry settings.
 ## Build and CI
 
 - Images are built by GitHub Actions and published to
-  `ghcr.io/tikoci/app-t3code`. CI pushes only `:sha-<commit>` from `main`.
-  Release tags (`:0.1.7`, `:0.1`, `:0`, `:latest`) move to that digest only
-  after the arm64 container-replacement test passes.
+  `ghcr.io/tikoci/app-t3code`. CI pushes `:sha-<commit>` candidates from
+  `main` and from manual `workflow_dispatch` runs on any branch, so a
+  `sha-` tag alone does not mean the commit is on `main`. Only a `main` run
+  moves the release tags (`:0.1.7`, `:0.1`, `:0`, `:latest`), and only after
+  the arm64 container-replacement test passes.
 - Build-time downloads are pinned: T3 Code by version, `gh` and the CI linters
   (hadolint, ShellCheck, actionlint) by version and SHA-256, and `uv` by image
   tag.
