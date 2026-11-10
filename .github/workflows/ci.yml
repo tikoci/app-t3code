@@ -25,7 +25,7 @@ env:
 
 jobs:
   lint-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       image: ${{ steps.changes.outputs.image }}
     steps:
@@ -98,7 +98,7 @@ jobs:
 
   build:
     if: needs.lint-test.outputs.image == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: lint-test
     outputs:
       # The pushed manifest list: arm64 tests and promote retags exactly this,
@@ -269,7 +269,7 @@ jobs:
   # instead of moving the tags back (the newer run promotes its own build).
   promote:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [build, arm64]
     concurrency:
       group: promote-${{ github.ref }}
