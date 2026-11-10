@@ -6,7 +6,7 @@
 # comparisons at the end, after the payload checks. Never touches a router.
 #
 #   docker run --rm -u root --entrypoint bash \
-#     -v "$PWD/scripts:/probe:ro" -v "$PWD/test:/tests:ro" <image> \
+#     -v "$PWD/docs/research/2026-11-tool-group-payloads:/probe:ro" -v "$PWD/test:/tests:ro" <image> \
 #     /probe/research-vpn-routing.sh > docs/research/2026-11-tool-group-payloads/vpn-routing-amd64.txt 2>&1
 set -u
 export LC_ALL=C
