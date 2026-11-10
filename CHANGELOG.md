@@ -14,6 +14,13 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+Nothing since `0.1.7-app.142`.
+
+## 0.1.7-app.142 — 2026-11-10
+
+`sha-69660fb`. The last build of T3 0.1.7 before the 0.1.8 bump; see the
+[0.1.7 closeout](docs/research/2026-11-09/t3-0.1.7-closeout.md).
+
 - Repository: every workflow action is pinned to a commit SHA (with its
   release in a comment), and Dependabot opens one grouped PR a month to
   move them (GitHub Actions only). The daily freshness check now also
