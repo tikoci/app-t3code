@@ -14,6 +14,10 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+## 0.1.7-app.173 — 2026-11-10
+
+`sha-1cac114`.
+
 - **Breaking (#45): `t3app` is the operator command, and the image's own
   settings are `T3APP_*`.**
   - `t3code-tools`, `t3code-providers` and `t3-pairing-link` are now
