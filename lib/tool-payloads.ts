@@ -6,7 +6,7 @@
 // `npm` (a package-lock.json, `npm ci`) and `deb` (a Debian closure pinned
 // from the image's apt metadata, see deb-payloads.ts).
 //
-//   $T3CODE_TOOLS_HOME/                      (default ~/.local/share/t3code-tools)
+//   $T3APP_TOOLS_HOME/                      (default ~/.local/share/t3code-tools)
 //     bin/<command>                          -> ../groups/<g>/current/<npm: node_modules/.bin | deb: bin>/<command>
 //     groups/<g>/<payloadId>/                payload files + manifest.json
 //     groups/<g>/current                     -> <payloadId> (swapped atomically)
@@ -120,21 +120,27 @@ export interface PayloadEnv {
 	freeBytes: (path: string) => number;
 	/**
 	 * Delays between retry rounds; attempts = backoff.length + 1. The lock is
-	 * released while waiting, so `t3code-tools install` (retry now) and
+	 * released while waiting, so `t3app tools install` (retry now) and
 	 * `prune` are never blocked by a back-off.
 	 */
 	backoffMs: readonly number[];
+	/**
+	 * The entrypoint's day-long run (--keep-trying): a lock that is busy at
+	 * the first round is waited out like any later round, so a manual
+	 * install that won the race at start never ends the retries.
+	 */
+	keepTrying?: boolean;
 	/** Per-attempt install timeout. */
 	installTimeoutMs: number;
 }
 
 /**
- * The payload root: T3CODE_TOOLS_HOME, else under HOME. Root always uses the
+ * The payload root: T3APP_TOOLS_HOME, else under HOME. Root always uses the
  * app's home: a root shell (RouterOS /container/shell, `docker exec -u 0`)
  * may carry HOME=/root, and the payloads are the app's, not root's.
  */
 export function defaultRoot(env: NodeJS.ProcessEnv = process.env, uid: number | undefined = process.getuid?.()): string {
-	return env["T3CODE_TOOLS_HOME"] || join(appHome(env, uid), ".local/share/t3code-tools");
+	return env["T3APP_TOOLS_HOME"] || join(appHome(env, uid), ".local/share/t3code-tools");
 }
 
 let cachedCompat: Compat | null | undefined;
@@ -184,7 +190,7 @@ function appendLog(path: string, line: string) {
 	} catch {
 		// Logging must never break installation or startup.
 	}
-	console.error(`t3code-tools: ${line}`);
+	console.error(`t3app tools: ${line}`);
 }
 
 /** Commands a group must provide (its command checks). */
@@ -895,15 +901,18 @@ export async function installGroups(
 		for (let round = 0; round < attempts; ) {
 			clearWait(env);
 			if (!(await acquireLock(env, "install"))) {
-				if (round === 0) {
+				if (round === 0 && !env.keepTrying) {
 					env.log("another installer or prune is running; leaving it to finish");
 					return { locked: false, results };
 				}
 				// A busy round (a prune, a manual install) costs no attempt:
-				// wait as long again and retry, at most `attempts` times.
+				// wait as long again and retry, at most `attempts` times. Busy
+				// at the first round (keepTrying only), the waits walk the
+				// schedule, so a long manual install can't outlast them.
 				if (++busy > attempts) break;
 				env.log(`round ${round + 1}/${attempts}: another installer or prune holds the lock; trying again later`);
-				await env.sleep(env.backoffMs[round - 1] as number);
+				const wait = round === 0 ? Math.min(busy - 1, env.backoffMs.length - 1) : round - 1;
+				await env.sleep(env.backoffMs[wait] as number);
 				continue;
 			} else {
 				locked = true;
@@ -1039,7 +1048,7 @@ async function installRound(
 		rmSync(staging, { recursive: true, force: true });
 		if (group.delivery !== "deb") rmSync(cache, { recursive: true, force: true });
 		rec(last ? "failed" : "installing", { error: message });
-		env.log(`${name}: attempt ${attempt} failed${last ? " (giving up until the next start or a manual t3code-tools install)" : ""}: ${message}`);
+		env.log(`${name}: attempt ${attempt} failed${last ? " (giving up until the next start or a manual t3app tools install)" : ""}: ${message}`);
 		return last ? "failed" : "retry";
 	}
 }

@@ -1,4 +1,4 @@
-// The tool groups this image offers (T3CODE_TOOL_GROUPS): their definitions,
+// The tool groups this image offers (T3APP_TOOL_GROUPS): their definitions,
 // smoke fixtures, the core every selection gets, where each researched
 // network package lives, and how a selection string is parsed. Data and pure
 // functions only; tool-status.ts reports on it, tool-payloads.ts installs it,
@@ -9,7 +9,7 @@
 import { join } from "node:path";
 import type { WrapperRule } from "./deb-payloads.ts";
 
-export const SELECTOR_ENV = "T3CODE_TOOL_GROUPS";
+export const SELECTOR_ENV = "T3APP_TOOL_GROUPS";
 /** Payload specs: <dir>/<group>/package{,-lock}.json (npm) or debs.lock.json (deb, generated at build time). */
 export const PAYLOAD_SPEC_DIR = join(import.meta.dir, "groups");
 
@@ -293,7 +293,7 @@ export const GROUPS: readonly GroupDef[] = [
 export const GROUP_NAMES: readonly string[] = GROUPS.map((group) => group.name);
 
 /**
- * The selection when T3CODE_TOOL_GROUPS is unset or empty, and the value the
+ * The selection when T3APP_TOOL_GROUPS is unset or empty, and the value the
  * image ENV and the /app YAML ship. An explicit list rather than `all`, so a
  * group added later never activates on an existing install by itself:
  * operators remove names, or set `none` for core only.
@@ -307,7 +307,7 @@ export const BROWSER_LIBRARIES = ["libnss3.so", "libgbm.so.1", "libasound.so.2",
  * What the core must provide regardless of selection (presence probes): T3,
  * the language bootstraps (Node, Bun, Python with uv/uvx), sqlite3, zstd,
  * the browser's native libraries, centrs and the core network tools. Provider
- * CLIs are not core: T3CODE_PROVIDERS installs them into the home
+ * CLIs are not core: T3APP_PROVIDERS installs them into the home
  * (providers.ts, #13), and status reports them separately.
  */
 export const CORE_CHECKS: readonly Check[] = [
@@ -417,7 +417,7 @@ export interface Selection {
 }
 
 /**
- * Parse T3CODE_TOOL_GROUPS. Separators: whitespace, `+`, comma (RouterOS
+ * Parse T3APP_TOOL_GROUPS. Separators: whitespace, `+`, comma (RouterOS
  * `/app/set environment=` splits on commas, so docs use spaces). Names are
  * case-insensitive. Unset or empty means DEFAULT_TOOL_GROUPS (the image ENV
  * sets the same value, so a dropped key falls back to it); `none` means core

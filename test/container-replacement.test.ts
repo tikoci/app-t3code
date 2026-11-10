@@ -110,7 +110,7 @@ test.skipIf(!image)(
 		// Every start sets its selection explicitly, except `null`, which checks
 		// the image's own group default. Every start pins providers to Codex (a
 		// real npm install into the home, #13), so the test never downloads Claude.
-		const start = (groups: string | null, offline = false) =>
+		const start = (groups: string | null, offline = false, extraEnv: string[] = []) =>
 			docker(
 				"run",
 				"--detach",
@@ -119,9 +119,10 @@ test.skipIf(!image)(
 				...(offline ? ["--network", "none"] : ["--publish", "127.0.0.1::3773"]),
 				"--volume",
 				`${volume}:/data`,
-				...(groups === null ? [] : ["--env", `T3CODE_TOOL_GROUPS=${groups}`]),
+				...(groups === null ? [] : ["--env", `T3APP_TOOL_GROUPS=${groups}`]),
 				"--env",
-				"T3CODE_PROVIDERS=codex",
+				"T3APP_PROVIDERS=codex",
+				...extraEnv.flatMap((pair) => ["--env", pair]),
 				image as string,
 			);
 		/** The agent-facing status (live) and the runtime JSON the entrypoint wrote. */
@@ -142,7 +143,7 @@ test.skipIf(!image)(
 				}[];
 				buildInventory: { present: boolean };
 			};
-			const live = JSON.parse(await run("t3code-tools", "status", "--json")) as Status;
+			const live = JSON.parse(await run("t3app", "tools", "status", "--json")) as Status;
 			const written = JSON.parse(await run("cat", "/tmp/t3code-tools/status.json")) as Status;
 			expect(written.selector).toEqual(live.selector);
 			return live;
@@ -228,7 +229,7 @@ test.skipIf(!image)(
 			const codexReady = async (timeoutMs: number) => {
 				const deadline = Date.now() + timeoutMs;
 				for (;;) {
-					const codex = (JSON.parse(await run("t3code-providers", "status", "--json")) as Providers).providers.find((p) => p.token === "codex");
+					const codex = (JSON.parse(await run("t3app", "providers", "status", "--json")) as Providers).providers.find((p) => p.token === "codex");
 					if (codex?.state === "ready" || Date.now() > deadline) return codex;
 					await Bun.sleep(2000);
 				}
@@ -238,7 +239,7 @@ test.skipIf(!image)(
 			expect(await run("realpath", "/data/.local/bin/codex")).toStartWith("/data/.local/lib/node_modules/@openai/codex/");
 			expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", "command -v muse"]).exitCode).not.toBe(0);
 			for (const shell of ["-c", "-lc"]) {
-				const shellStatus = JSON.parse(await run("bash", shell, "t3code-tools status --json"));
+				const shellStatus = JSON.parse(await run("bash", shell, "t3app tools status --json"));
 				expect(shellStatus.core).toMatchObject({ state: "ready", missing: [] });
 				await run(
 					"bash",
@@ -247,6 +248,30 @@ test.skipIf(!image)(
 				);
 				for (const [group, ok] of Object.entries(nativeOk)) expect(await groupTools(group, shell)).toContain(ok);
 			}
+			// t3app (#45): one status for both areas; argument errors run nothing.
+			const combined = JSON.parse(await run("t3app", "status", "--json"));
+			expect(combined.tools.selector.selected).toEqual(all.selector.selected);
+			expect(combined.providers.providers.find((p: { token: string }) => p.token === "codex")).toMatchObject({ state: "ready" });
+			expect(combined.ignoredEnv).toEqual([]);
+			expect(Bun.spawnSync(["docker", "exec", name, "t3app", "tools", "install", "now"]).exitCode).toBe(2);
+			// Root (`/container/shell user=root`): tool commands switch to node, so
+			// nothing in the home becomes root-owned; providers install refuses.
+			expect(Bun.spawnSync(["docker", "exec", "-u", "0", name, "t3app", "providers", "install"]).exitCode).toBe(3);
+			await docker("exec", "-u", "0", name, "t3app", "tools", "prune");
+			// A long verb answers at once and leaves the work in the background.
+			const asked = Date.now();
+			const started = await docker("exec", "-u", "0", name, "t3app", "tools", "install");
+			expect(started).toContain("started in the background");
+			expect(Date.now() - asked).toBeLessThan(15_000);
+			// Wait for that run itself (its pid), not the advisory installer record.
+			const pid = /\(pid (\d+)\)/.exec(started)?.[1] as string;
+			const gone = Date.now() + 60_000;
+			while (Bun.spawnSync(["docker", "exec", name, "test", "-d", `/proc/${pid}`]).exitCode === 0) {
+				if (Date.now() > gone) throw new Error(`background tools install (pid ${pid}) still running after 60 s`);
+				await Bun.sleep(1000);
+			}
+			expect(await run("cat", "/data/.local/state/t3code/tool-groups.log")).toContain("t3app: tools install started in the background");
+			expect(await docker("exec", "-u", "0", name, "find", "/data/.local/share/t3code-tools", "/data/.local/state/t3code", "-uid", "0")).toBe("");
 			await run(
 				"bash",
 				"-ec",
@@ -317,7 +342,8 @@ t3 project add /data/projects/survivor --title 'Survivor'
 
 			// A new writable layer and container id, with only the same named home
 			// volume. An unknown group is a warning: T3 must still start.
-			await start("capture+bogus labs");
+			// A legacy key from before #45 is ignored, and named in the log.
+			await start("capture+bogus labs", false, ["T3CODE_TOOL_GROUPS=dev"]);
 			await waitForServer(name);
 			const partial = await toolStatus();
 			expect(partial.selector.selected).toEqual(["capture", "labs"]);
@@ -341,6 +367,8 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			await captureTools("-lc");
 			const logs = Bun.spawnSync(["docker", "logs", name]);
 			expect(`${logs.stdout}${logs.stderr}`).toContain('unknown group "bogus" ignored');
+			expect(`${logs.stdout}${logs.stderr}`).toContain("t3app: ignoring T3CODE_TOOL_GROUPS (now T3APP_TOOL_GROUPS)");
+			expect(JSON.parse(await run("t3app", "status", "--json")).ignoredEnv).toEqual([{ key: "T3CODE_TOOL_GROUPS", replacement: "T3APP_TOOL_GROUPS" }]);
 			await run("test", "!", "-e", "/tmp/replacement-fixture");
 			expect(
 				await run(

@@ -27,8 +27,9 @@ The trust boundaries, from the outside in:
 
 - **RouterOS access implies container access.** A RouterOS user with write
   access to `/container` or `/app` can run commands in the container
-  (`/container/shell`), mint a pairing token (`t3-pairing-link`), change its
-  environment, or replace its image. Treat router admin accounts as admin
+  (`/container/shell`, as `node` by default and as root with `user=root`),
+  mint a pairing token (`t3app pairing`), change its environment, or
+  replace its image. Treat router admin accounts as admin
   accounts for T3 and everything in `/data`.
 - **Treat a paired T3 client as a full T3 admin.** The startup pairing token
   grants T3's administrative scopes, including terminals, file writes and
@@ -73,7 +74,7 @@ WebFig and WinBox, not over the API or REST. So no group setting hides
 page already warns against giving the built-in `read` group to untrusted
 users (it includes `reboot` and `sensitive`).
 
-The supported way to pair is still `t3-pairing-link` (see
+The supported way to pair is still `t3app pairing` (see
 [Pairing with the web UI](README.md#pairing-with-the-web-ui)), which needs
 `/container/shell`, so it needs write access.
 
@@ -84,15 +85,15 @@ version is not fixed by the image:
 
 | What | Source | Check |
 |---|---|---|
-| Claude Code (`T3CODE_PROVIDERS`) | Anthropic's release manifest, stable channel | size and SHA-256 from the manifest; the manifest's signature is not yet checked ([#13](https://github.com/tikoci/app-t3code/issues/13)) |
-| Codex, OpenCode, Pi (`T3CODE_PROVIDERS`) | npm registry, latest | npm's registry integrity; not pinned, by design, so T3's **Update now** can manage them |
-| Grok, Muse (`T3CODE_PROVIDERS`) | the vendor's `install.sh` over HTTPS | whatever the vendor's installer checks |
+| Claude Code (`T3APP_PROVIDERS`) | Anthropic's release manifest, stable channel | size and SHA-256 from the manifest; the manifest's signature is not yet checked ([#13](https://github.com/tikoci/app-t3code/issues/13)) |
+| Codex, OpenCode, Pi (`T3APP_PROVIDERS`) | npm registry, latest | npm's registry integrity; not pinned, by design, so T3's **Update now** can manage them |
+| Grok, Muse (`T3APP_PROVIDERS`) | the vendor's `install.sh` over HTTPS | whatever the vendor's installer checks |
 | `dev` tool group | npm, from a committed lockfile | lockfile integrity hashes |
 | `capture`, `labs`, `vpn`, `routing` tool groups | Debian packages pinned at image build | size and SHA-256 from apt's signed indexes |
 
 Provider CLIs update through T3 or their own updaters after install, the
-same as on any T3 host. `T3CODE_PROVIDERS=none` and
-`T3CODE_TOOL_GROUPS=none` stop this image's own runtime installs. They do
+same as on any T3 host. `T3APP_PROVIDERS=none` and
+`T3APP_TOOL_GROUPS=none` stop this image's own runtime installs. They do
 not stop T3 itself from downloading things: its built-in browser on first
 use, its managed providers (Codex's **Continue with ChatGPT**, Antigravity)
 and any **Install** you click on its welcome screen.
@@ -108,7 +109,10 @@ home belongs to `node` (uid 1000), the user T3's terminals run as, so
 still lists belongs to another user, and only that user can change it.
 Commands run directly
 through RouterOS `/container/shell` bypass the entrypoint and still use
-0000.
+0000, except `t3app`, which sets 022 itself, so tool payloads and provider
+CLIs it installs in the background aren't world-writable. Payload files
+installed from `/container/shell` by earlier images may be; the
+`chmod -R go-w /data` above fixes them too.
 
 ### Telemetry
 

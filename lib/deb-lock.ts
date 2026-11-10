@@ -2,7 +2,7 @@
 // group's package closure from apt metadata into
 // <spec-dir>/<group>/debs.lock.json. Not an operator command.
 //
-//   bun /usr/local/lib/t3code/deb-lock.ts [--spec-dir <dir>]
+//   bun /usr/local/lib/t3app/deb-lock.ts [--spec-dir <dir>]
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DEB_LOCK_FILE, resolveDebLock } from "./deb-payloads.ts";

@@ -163,7 +163,7 @@ describe("harness catalog", () => {
 		expect(diffCatalog(["CodexDriver", "KiroDriver"], ["CodexDriver", "MuseDriver"])).toEqual({ added: ["KiroDriver"], removed: ["MuseDriver"] });
 	});
 
-	test("no provider CLI is a core check: T3CODE_PROVIDERS installs them into the home", () => {
+	test("no provider CLI is a core check: T3APP_PROVIDERS installs them into the home", () => {
 		const core = new Set(CORE_CHECKS.filter((c) => c.kind === "command").map((c) => c.name));
 		for (const harness of Object.values(HARNESSES)) expect({ cli: harness.cli, core: core.has(harness.cli ?? "") }).toEqual({ cli: harness.cli, core: false });
 	});

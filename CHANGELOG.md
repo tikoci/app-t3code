@@ -14,6 +14,37 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+- **Breaking (#45): `t3app` is the operator command, and the image's own
+  settings are `T3APP_*`.**
+  - `t3code-tools`, `t3code-providers` and `t3-pairing-link` are now
+    `t3app tools`, `t3app providers` and `t3app pairing`. `t3app status`
+    reports tool groups and provider CLIs together (`--json` for agents).
+    `t3app help` is the reference.
+  - `T3CODE_TOOL_GROUPS`, `T3CODE_PROVIDERS` and `T3CODE_TOOLS_HOME` are now
+    `T3APP_TOOL_GROUPS`, `T3APP_PROVIDERS` and `T3APP_TOOLS_HOME`, in the
+    image, the `/app` YAML and the store document. The old names are no
+    longer read: an install that set them gets the defaults after
+    `/app/update`, and the container log names each ignored key at every
+    start. Set the new keys with `/app/set environment=` to keep a
+    selection. Upstream T3's own `T3CODE_*` settings are unchanged.
+  - `t3app tools install` and `t3app providers install` start in the
+    background and answer at once with their log, because RouterOS drops a
+    `/container/shell` reply after about 60 s. If one is already running
+    they say so and start nothing. `--wait` runs them in place (the old
+    behavior), and `tools install --wait` now exits 1 when another install
+    or a prune holds the lock. The startup tool-group run no longer gives
+    up when a manual install holds the lock as it starts: it waits and
+    keeps its day of retries.
+  - Usage errors exit 2 with usage on stderr across `t3app`, including a
+    help flag with anything extra (`help extra`, `install now --help`); the
+    internal `init` rejects arguments.
+  - The shipped modules move to `/usr/local/lib/t3app`. Paths in `/data`
+    (`~/.local/share/t3code-tools`, `~/.local/state/t3code`) don't change.
+
+## 0.1.7-app.162 — 2026-11-10
+
+`sha-96db559`.
+
 - `t3code-tools prune` and `t3code-tools groups` now reject extra arguments
   (exit 2, usage on stderr), like `install`. Before, `prune` ignored them and
   pruned anyway. Argument errors are now caught before a root caller

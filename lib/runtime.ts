@@ -1,10 +1,11 @@
 // Primitives both installers share: tool-group payloads (tool-payloads.ts)
 // and provider CLIs (providers.ts). Each keeps its own lifecycle; this file
 // holds only what both already need: the app's home and state directory,
-// disk and retry budgets, process identity, stopping an orphaned child, and
-// the kernel lock. Nothing here knows about groups or providers.
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+// disk and retry budgets, process identity, stopping an orphaned child, the
+// kernel lock, starting an install in the background, and the help rule every
+// t3app area shares. Nothing here knows about groups or providers.
+import { closeSync, existsSync, ftruncateSync, mkdirSync, openSync, readFileSync, renameSync, statSync, writeSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { dlopen, FFIType } from "bun:ffi";
 
 export const MiB = 1024 * 1024;
@@ -89,6 +90,122 @@ export function stopChild(child: Child): boolean {
 /** Wait up to about 5 s for a stopped child to be gone. */
 export async function waitGone(child: Child): Promise<void> {
 	for (let i = 0; i < 100 && isSameProcess(child); i++) await Bun.sleep(50);
+}
+
+/** Rotate a background log once it passes this, as the entrypoint's `background` helper does. */
+export const LOG_ROTATE_BYTES = MiB;
+
+/**
+ * Start an install in its own session and return its pid at once. RouterOS
+ * drops a /container/shell reply after about 60 s, so a long operation
+ * answers with what it started and leaves progress to `t3app status`.
+ * Output is appended to `log` (the same file the entrypoint's background
+ * run of that installer uses, rotated the same way at 1 MiB), after a line
+ * naming what started; nothing is left attached to the caller's terminal,
+ * so the child outlives it.
+ */
+export function startInBackground(name: string, argv: readonly string[], log: string, env: NodeJS.ProcessEnv = process.env): number {
+	mkdirSync(dirname(log), { recursive: true });
+	if (existsSync(log) && statSync(log).size > LOG_ROTATE_BYTES) renameSync(log, `${log}.1`);
+	const fd = openSync(log, "a");
+	try {
+		const proc = Bun.spawn([...argv], { detached: true, env, stdin: "ignore", stdout: fd, stderr: fd });
+		writeSync(fd, `${new Date().toISOString()} t3app: ${name} started in the background (pid ${proc.pid})\n`);
+		proc.unref();
+		return proc.pid;
+	} finally {
+		closeSync(fd);
+	}
+}
+
+/** A running install as `startOnce` reports it: the one it started, or whatever `busy` found. */
+export interface Running extends ProcessId {
+	startedAt: string;
+	/** What holds the installer's lock, when `busy` knows (install, prune). */
+	command?: string;
+}
+
+export type Launch = { started: true; pid: number } | { started: false; running: Running };
+
+/**
+ * Start a background install unless one is running, atomically: the check,
+ * the spawn and the record of what was spawned happen under a kernel lock on
+ * `<log>.launch`, which also holds that record. So two callers at once never
+ * both start one, including in the moment before a child takes the
+ * installer's own lock. `busy` reports runs this launcher didn't start (the
+ * entrypoint's, or one holding the installer lock).
+ */
+export function startOnce(name: string, argv: readonly string[], log: string, busy: () => Running | null): Launch {
+	mkdirSync(dirname(log), { recursive: true });
+	const fd = openSync(`${log}.launch`, "a+");
+	try {
+		if (!kernelFlock(fd, LOCK_EX)) throw new Error(`cannot lock ${log}.launch`);
+		let last: Running | null = null;
+		try {
+			last = JSON.parse(readFileSync(`${log}.launch`, "utf8")) as Running;
+		} catch {
+			// Empty or unreadable: nothing launched yet.
+		}
+		if (last && isSameProcess(last)) return { started: false, running: last };
+		const other = busy();
+		if (other) return { started: false, running: other };
+		const pid = startInBackground(name, argv, log);
+		const record: Running = { pid, startTicks: processStartTicks(pid), startedAt: new Date().toISOString(), command: "install" };
+		ftruncateSync(fd, 0);
+		writeSync(fd, JSON.stringify(record), 0);
+		return { started: true, pid };
+	} finally {
+		closeSync(fd); // drops the lock
+	}
+}
+
+/**
+ * Who holds the kernel lock on an installer's lock file, for a launcher's
+ * `busy` check: an installer takes the lock before it writes its record, and
+ * the providers installer may stop an orphaned step in between, so the
+ * record alone can miss a run that has started. Tries the lock without
+ * waiting and lets go at once; an installer trying it at that same instant
+ * finds it busy, which it already handles (--keep-trying waits a round).
+ * The holder's pid is whatever its record names so far (0 if none yet;
+ * `pidLabel` prints that as "unknown").
+ */
+export function lockHolder(path: string): Running | null {
+	if (!existsSync(path)) return null;
+	const fd = openSync(path, "r");
+	try {
+		if (kernelFlock(fd, LOCK_EX | LOCK_NB)) return null;
+	} finally {
+		closeSync(fd); // drops the lock if the try took it
+	}
+	let pid = 0;
+	let command: string | undefined;
+	try {
+		const text = readFileSync(path, "utf8");
+		const record = text.trimStart().startsWith("{") ? (JSON.parse(text) as Partial<Running>) : { pid: Number.parseInt(text, 10) };
+		pid = Number.isInteger(record.pid) ? (record.pid as number) : 0;
+		command = record.command;
+	} catch {
+		// A record mid-write: the lock is what counts.
+	}
+	return { pid, startTicks: null, startedAt: statSync(path).mtime.toISOString(), ...(command ? { command } : {}) };
+}
+
+/** A pid for operator output: "unknown" when a lock holder has not named itself yet. */
+export const pidLabel = (id: { pid: number }): string => (id.pid > 0 ? String(id.pid) : "unknown");
+
+const isHelpFlag = (arg: string | undefined) => arg === "--help" || arg === "-h";
+
+/**
+ * The t3app help rule (AGENTS.md "CLI conventions"): `help`, `--help` or
+ * `-h` alone, or `<command> --help` for a known command, is a help request
+ * ("help", exit 0). Any of them with anything else ("help extra",
+ * "install now --help", "bogus --help") is a usage error ("usage", exit 2).
+ * null: not about help at all.
+ */
+export function helpRequest(command: string, rest: readonly string[], commands: readonly string[]): "help" | "usage" | null {
+	if (command !== "help" && !isHelpFlag(command) && !rest.some(isHelpFlag)) return null;
+	if (rest.length === 0) return "help";
+	return rest.length === 1 && isHelpFlag(rest[0]) && commands.includes(command) ? "help" : "usage";
 }
 
 export const LOCK_EX = 2;

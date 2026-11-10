@@ -11,7 +11,7 @@
 // Keep COMMAND in step with README.md "Pairing with the web UI" (a test
 // checks both).
 (() => {
-	const COMMAND = ':put [/container/shell app-t3code cmd="t3-pairing-link" as-value]';
+	const COMMAND = ':put [/container/shell app-t3code cmd="t3app pairing" as-value]';
 	const PANEL_ID = "routeros-pairing-help";
 
 	const css = `

@@ -275,6 +275,62 @@ describe("npm payload groups", () => {
 		expect(npmCalls()).toBe(2);
 	});
 
+	test("--keep-trying waits out a lock that is busy at the first round; a terminal install leaves it", async () => {
+		// A manual `t3app tools install` that took the lock just before the
+		// entrypoint's day-long run must not end that run's retries (#45).
+		env.backoffMs = [0];
+		const lock = join(env.root, "install.lock");
+		mkdirSync(env.root, { recursive: true });
+		const holder = Bun.spawn(["flock", "-o", lock, "sleep", "30"]);
+		try {
+			for (let i = 0; i < 100 && Bun.spawnSync(["flock", "-n", lock, "true"]).exitCode === 0; i++) await Bun.sleep(20);
+			const terminal = await installGroups(npmGroups, ["dev"], { ...env, sleep: async () => {} });
+			expect(terminal).toEqual({ locked: false, results: {} });
+			let sleeps = 0;
+			const startup = await installGroups(npmGroups, ["dev"], {
+				...env,
+				keepTrying: true,
+				sleep: async () => {
+					sleeps++;
+					holder.kill();
+					await holder.exited;
+				},
+			});
+			expect(sleeps).toBe(1);
+			expect(startup.locked).toBe(true);
+			expect(startup.results["dev"]).toMatchObject({ state: "ready", attempt: 1 });
+			expect(npmCalls()).toBe(1);
+		} finally {
+			holder.kill();
+		}
+	});
+
+	test("--keep-trying: a lock busy for several first rounds walks the back-off schedule", async () => {
+		env.backoffMs = [1, 2, 3];
+		const lock = join(env.root, "install.lock");
+		mkdirSync(env.root, { recursive: true });
+		const holder = Bun.spawn(["flock", "-o", lock, "sleep", "30"]);
+		try {
+			for (let i = 0; i < 100 && Bun.spawnSync(["flock", "-n", lock, "true"]).exitCode === 0; i++) await Bun.sleep(20);
+			const waits: number[] = [];
+			const result = await installGroups(npmGroups, ["dev"], {
+				...env,
+				keepTrying: true,
+				sleep: async (ms) => {
+					waits.push(ms);
+					if (waits.length === 3) {
+						holder.kill();
+						await holder.exited;
+					}
+				},
+			});
+			expect(waits).toEqual([1, 2, 3]);
+			expect(result.results["dev"]).toMatchObject({ state: "ready", attempt: 1 });
+		} finally {
+			holder.kill();
+		}
+	});
+
 	test("a group that failed on low disk counts as ready once another run installed it", async () => {
 		cpSync(join(tmp, "spec", "dev"), join(tmp, "spec", "dev2"), { recursive: true });
 		const groups = [...npmGroups, { ...dev, name: "dev2" }];
@@ -297,7 +353,7 @@ describe("npm payload groups", () => {
 		expect(hours(KEEP_TRYING_BACKOFF_MS)).toBeLessThan(30);
 		expect(Math.max(...KEEP_TRYING_BACKOFF_MS)).toBe(3_600_000);
 		const entrypoint = readFileSync(join(import.meta.dir, "..", "docker-entrypoint.sh"), "utf8");
-		expect(entrypoint).toContain("background tool-groups /usr/local/bin/t3code-tools install --keep-trying");
+		expect(entrypoint).toContain("background tool-groups /usr/local/bin/t3app tools install --keep-trying");
 	});
 
 	test("low disk fails without downloading or deleting anything", async () => {
@@ -540,11 +596,12 @@ await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 	});
 });
 
-describe("t3code-tools command reference", () => {
+describe("t3app tools command reference", () => {
 	test("help describes every command, and <command> --help prints it", async () => {
 		for (const command of ["status", "install", "prune", "init", "groups"]) expect(USAGE).toMatch(new RegExp(`^  ${command}\\b`, "m"));
 		for (const name of GROUPS.map((g) => g.name)) expect(USAGE).toContain(name);
 		expect(USAGE).toContain("--keep-trying");
+		expect(USAGE).toContain("install [--wait]");
 		expect(USAGE).toContain("setpriv");
 		const out = process.stdout.write;
 		const err = process.stderr.write;
@@ -580,9 +637,9 @@ describe("t3code-tools command reference", () => {
 		}
 	});
 
-	test("root resolves the app's payload root, not its own HOME; T3CODE_TOOLS_HOME still wins", () => {
+	test("root resolves the app's payload root, not its own HOME; T3APP_TOOLS_HOME still wins", () => {
 		expect(defaultRoot({ HOME: "/root" }, 0)).toBe("/data/.local/share/t3code-tools");
-		expect(defaultRoot({ HOME: "/root", T3CODE_TOOLS_HOME: "/srv/tools" }, 0)).toBe("/srv/tools");
+		expect(defaultRoot({ HOME: "/root", T3APP_TOOLS_HOME: "/srv/tools" }, 0)).toBe("/srv/tools");
 		expect(defaultRoot({ HOME: "/home/x" }, 1000)).toBe("/home/x/.local/share/t3code-tools");
 		expect(defaultRoot({}, 1000)).toBe("/data/.local/share/t3code-tools");
 	});

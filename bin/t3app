@@ -1,0 +1,4 @@
+#!/bin/sh
+# t3app: the operator command for this image (`t3app help`). It runs
+# lib/t3app.ts, which calls each area's module in-process.
+exec bun /usr/local/lib/t3app/t3app.ts "$@"

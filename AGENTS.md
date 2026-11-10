@@ -12,8 +12,8 @@ mirror their place in the image.
 | --- | --- | --- |
 | `app/` | routers (`/app add`) | The `/app` YAML and app-store document |
 | `Dockerfile`, `docker-entrypoint.sh`, `profile.sh` | image | The build, the server start, the login-shell PATH |
-| `bin/` | `/usr/local/bin` | Entry points (`t3code-init`, `t3code-tools`, `t3code-providers`, …) |
-| `lib/` | `/usr/local/lib/t3code` | Shipped runtime modules: tool groups (catalog, status, payloads, CLI), providers, shared runtime, the harness catalog, image inventory, the build-only `deb-lock.ts`; `lib/groups/` holds payload specs and locks |
+| `bin/` | `/usr/local/bin` | Entry points: `t3app` (the operator command), `t3code-init` (PID 1), `install-claude-code` |
+| `lib/` | `/usr/local/lib/t3app` | Shipped runtime modules: tool groups (catalog, status, payloads, CLI), providers, shared runtime, the harness catalog, image inventory, the build-only `deb-lock.ts`; `lib/groups/` holds payload specs and locks |
 | `client/` | T3's web client, at build time | Deliberate UI overlays (`scripts/install-pairing-help.sh` installs them) |
 | `scripts/` | never | Build, CI and repo upkeep: freshness, runner inventory, `home-manifest.ts` for CHR runs |
 | `test/` | never | Bun tests, plus the shell smoke tests the image tests run |
@@ -78,7 +78,7 @@ it doesn't exist yet.
 
 Where each suite runs and what it needs. CI's `lint-test` (`ubuntu-24.04`,
 `bun run test`) runs every row above `container-replacement`; the rest need
-an image or a CHR. On macOS, only the first four rows are meaningful today:
+an image or a CHR. On macOS, only the first five rows are meaningful today:
 the others hang or fail rather than skip, because they need Linux tools
 (#30 "CI modularity" tracks gating them).
 
@@ -87,13 +87,56 @@ the others hang or fail rather than skip, because they need Linux tools
 | `app-yaml` | `/app` YAML and store doc, release and Bun/runner pins, selector parsing, docs ↔ image contract | any host | nothing (reads files) |
 | `freshness` | drift checks with GitHub mocked, the README share link | any host | nothing |
 | `pairing-help` | the pairing UI overlay and its install script | any host | `sh` |
-| `providers` | `T3CODE_PROVIDERS` selection, install steps, installer state | any host | fakes; lock via FFI `flock` |
+| `providers` | `T3APP_PROVIDERS` selection, install steps, installer state | any host | fakes; lock via FFI `flock` |
+| `t3app` | the `t3app` CLI: usage errors and exit codes, ignored legacy `T3CODE_*` keys, combined status, background `install` starts and "already running", umask 022 | any host | `sh`; lock via FFI `flock`; skips the start tests as root |
 | `init` | `t3code-init` signal forwarding and reaping | Linux | bash ≥ 5.1 (skipped on macOS's 3.2) |
 | `entrypoint` | background installs, log rotation and fallbacks | Linux | GNU `stat`; two tests skip as root |
 | `tool-payloads`, `deb-payloads` | npm and deb payload lifecycles: install, activate, recover, prune, locks, CLI | Linux | util-linux `flock`, `/proc`, `setpriv` as root; fake npm, dpkg-deb, mirror |
 | `install-claude-code` | the Claude installer against a fake download server | Linux | util-linux `flock`, `setpriv` as root (runs as `nobody`); `zstd` optional |
 | `container-replacement` | the built image: start, replacement with the same home, every tool group's smoke script (`test/*-tools.sh`, run only inside the image) | CI `build` (amd64) and `arm64` jobs | Docker, `APP_T3CODE_DOCKER_IMAGE` (skips without it) |
 | `integration/app-install` | `/app` install on a real CHR and the web UI answering | `integration.yml`: after each successful `ci` push to `main`, weekly, on dispatch | QEMU, network, quickchr, centrs, `APP_T3CODE_INTEGRATION=1` |
+
+## CLI conventions
+
+`t3app` (`bin/t3app` → `lib/t3app.ts`) is the one operator command; its
+`USAGE` and each area's (`t3app tools help`, `t3app providers help`) are the
+reference. Every area follows these rules:
+
+- **Shape:** `t3app <area> <verb>`. `lib/t3app.ts` calls the area module's
+  `main(argv)` in-process, never through a shell string. A new area
+  (inventory, skills #46, credential handoff #47, a `t3 triage`-style
+  support command) is a new module and a line in `t3app.ts`, never a new
+  binary in `bin/`.
+- **Exit codes:** `help`, `--help` or `-h` alone, or `<command> --help`,
+  exits 0 on stdout. An unknown command or an extra argument, including
+  with a help flag (`help extra`, `install now --help`), exits 2 with usage
+  on stderr, before anything runs (including the switch to the payload
+  owner). `helpRequest` in `lib/runtime.ts` is the shared rule. 1 means the operation
+  failed; 3 means the wrong user.
+- **`--json` only on status:** `t3app status --json` is the agent form;
+  `tools status` and `providers status` keep theirs for the image build and
+  tests. No other verb grows `--json` unless something consumes it.
+- **Within 60 s:** RouterOS drops a `/container/shell` reply after about
+  60 s (`.agents/skills/chr-app-lab`), so a verb that can run longer starts
+  its work in the background (`startOnce` in `lib/runtime.ts`: the
+  check and the start are atomic, and the log rotates at 1 MiB), answers at once with what started and its log, and leaves progress to
+  `t3app status`. `--wait` runs it in place. If one is already running, it
+  says so and starts nothing; "running" includes the installer's kernel lock
+  (`lockHolder`), not only its record, since a run started elsewhere (the
+  entrypoint) takes the lock before it writes the record. Measured on the lab CHRs, idle: `t3app status`
+  stays within a few seconds on x86 and about 6 s on arm64 under TCG.
+- **Users:** `/container/shell` runs as `node` (uid 1000) unless given
+  `user=root` (measured on 7.25 x86 and 7.25.1 arm64). Commands that write
+  the tool payload root re-exec as its owner; `providers install` refuses
+  root (exit 3).
+- **umask:** `t3app` sets 022 at start, like the entrypoint, because
+  `/container/shell` starts commands with 0000.
+- **Internal forms:** `t3app init` and `install --keep-trying` are the
+  entrypoint's and stay out of the top-level help; `lib/deb-lock.ts` is
+  build-only and not a `t3app` command at all.
+- **Settings:** the image reads `T3APP_*` only. `LEGACY_ENV` in
+  `lib/t3app.ts` names the old `T3CODE_*` keys so `init` can log them as
+  ignored, and that is the only place they appear (a test checks).
 
 ## Workflow
 
@@ -256,9 +299,9 @@ the others hang or fail rather than skip, because they need Linux tools
   the *whole* env list (YAML env is only the initial value), and the CLI and
   REST split values on commas. See
   `docs/research/2026-11-app-set-environment/README.md`.
-- Tool groups (`T3CODE_TOOL_GROUPS`, issue #5): the groups and selection
+- Tool groups (`T3APP_TOOL_GROUPS`, issue #5): the groups and selection
   parsing are in `lib/tool-catalog.ts`, the report in `lib/tool-status.ts`,
-  installs in `lib/tool-payloads.ts`, and the `t3code-tools` CLI in
+  installs in `lib/tool-payloads.ts`, and the `t3app tools` CLI in
   `lib/tool-groups.ts`. `lib/runtime.ts` holds only what payloads and
   providers both use (app home, state dir, budgets, process identity,
   orphan stop, `flock`); it is not an installer framework. Any key added to the
@@ -266,7 +309,7 @@ the others hang or fail rather than skip, because they need Linux tools
   value (a test enforces it), because an operator's `environment=` set
   drops the YAML values. Never document group changes as a YAML edit.
 - The shipped default is the explicit list
-  `T3CODE_TOOL_GROUPS="capture labs vpn routing dev"` (`DEFAULT_TOOL_GROUPS`,
+  `T3APP_TOOL_GROUPS="capture labs vpn routing dev"` (`DEFAULT_TOOL_GROUPS`,
   mirrored in Dockerfile `ENV`, both YAML files and the README; a test ties
   them). Unset/empty also mean that list; `none` is core only; `all` also
   picks up future groups. A new group joins the default only deliberately
@@ -274,8 +317,8 @@ the others hang or fail rather than skip, because they need Linux tools
   explicitly; don't pick product defaults for test convenience.
 - Not groups: `browser` (its native libraries are core, in the first apt
   layer; T3 launches its own browser, so no relocation or launch hooks) and
-  provider CLIs. Providers are `T3CODE_PROVIDERS` (`lib/providers.ts`,
-  shipped as `t3code-providers`, issue #13): one token per provider in T3's
+  provider CLIs. Providers are `T3APP_PROVIDERS` (`lib/providers.ts`,
+  shipped as `t3app providers`, issue #13): one token per provider in T3's
   main Add provider list, default `claude codex` (Dockerfile `ENV`, both
   YAMLs and the README; a test ties them). No provider CLI is baked into
   the image. Installs run only while the CLI is missing from PATH and use the
@@ -302,12 +345,14 @@ the others hang or fail rather than skip, because they need Linux tools
   checksum-verified; Debian trixie's is 2.46.0) because T3's GitHub provider
   and agent PR work need it. Other forge CLIs (glab, fj/tea, az) and login UX are issue #15.
   No general SDK expansion beyond that.
-- `t3code-tools help` (`USAGE` in `lib/tool-groups.ts`) is the command
-  reference; a test checks every command is in it, so update it with the
-  CLI. `install`/`prune`/`init` re-exec as the payload root's owner when
-  run as root (`/container/shell`), never leaving root-owned payloads.
-  The entrypoint runs `install --keep-trying` (rounds for about a day, lock
-  released between them); a terminal `install` stays at three attempts.
+- `t3app tools help` (`USAGE` in `lib/tool-groups.ts`) is the area's
+  command reference; a test checks every command is in it, so update it
+  with the CLI. `install`/`prune`/`init` re-exec as the payload root's owner
+  when run as root (`/container/shell user=root`, `docker exec -u 0`),
+  never leaving root-owned payloads. The entrypoint runs
+  `t3app tools install --keep-trying` (rounds for about a day, lock released
+  between them); `t3app tools install` starts three attempts in the
+  background, and `--wait` runs them in place.
 - npm payload groups (`dev`) are installed by `lib/tool-payloads.ts`
   from the lockfile in `lib/groups/<group>/` into
   `/data/.local/share/t3code-tools`; startup only relinks (offline) and
@@ -386,7 +431,7 @@ the others hang or fail rather than skip, because they need Linux tools
   CHR disk. Use an 8G app disk at minimum: the image extracts to roughly
   3GB, and the default groups add about 0.7GB in `/data` (plus install
   headroom; about twice that after a refreshing update, until
-  `t3code-tools prune`), before projects and lab VMs. Extra RAM (`mem: 1024`) for the
+  `t3app tools prune`), before projects and lab VMs. Extra RAM (`mem: 1024`) for the
   pull + unpack.
 - `centrs api <router> app -X PUT` is the structured write path
   (PUT = RouterOS create). `execute` is the fallback if validation rejects.

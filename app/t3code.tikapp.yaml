@@ -29,10 +29,10 @@ services:
       # Optional tool groups, installed into /data in the background after
       # start. Remove names to skip them; "none" is core only. On an installed
       # app change this with /app/set environment= (README), never yaml=.
-      T3CODE_TOOL_GROUPS: "capture labs vpn routing dev"
+      T3APP_TOOL_GROUPS: "capture labs vpn routing dev"
       # Provider CLIs to install into /data in the background: claude codex
       # cursor grok opencode antigravity pi muse, or "none". Same rules.
-      T3CODE_PROVIDERS: "claude codex"
+      T3APP_PROVIDERS: "claude codex"
     volumes:
       # Keep this name and destination when upgrading: the whole home,
       # including .t3/userdata, projects, worktrees, and provider logins.

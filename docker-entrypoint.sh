@@ -12,14 +12,14 @@ mkdir -p "${HOME}/projects"
 cd "${HOME}"
 
 # The image PATH carries the default tool-group shim dir; a relocated payload
-# root (T3CODE_TOOLS_HOME) needs its own, resolved here at runtime so T3 and
+# root (T3APP_TOOLS_HOME) needs its own, resolved here at runtime so T3 and
 # every agent it starts inherit it. Same slot as profile.d: after the user's
 # own installs (/data/.local/bin, /data/.bun/bin), which must keep winning.
-if [ -n "${T3CODE_TOOLS_HOME:-}" ]; then
+if [ -n "${T3APP_TOOLS_HOME:-}" ]; then
 	case ":${PATH}:" in
-	*:/data/.bun/bin:*) PATH="${PATH/\/data\/.bun\/bin:/\/data\/.bun\/bin:${T3CODE_TOOLS_HOME}\/bin:}" ;;
-	*:/data/.local/share/t3code-tools/bin:*) PATH="${PATH/\/data\/.local\/share\/t3code-tools\/bin:/${T3CODE_TOOLS_HOME}\/bin:\/data\/.local\/share\/t3code-tools\/bin:}" ;;
-	*) PATH="${T3CODE_TOOLS_HOME}/bin:${PATH}" ;;
+	*:/data/.bun/bin:*) PATH="${PATH/\/data\/.bun\/bin:/\/data\/.bun\/bin:${T3APP_TOOLS_HOME}\/bin:}" ;;
+	*:/data/.local/share/t3code-tools/bin:*) PATH="${PATH/\/data\/.local\/share\/t3code-tools\/bin:/${T3APP_TOOLS_HOME}\/bin:\/data\/.local\/share\/t3code-tools\/bin:}" ;;
+	*) PATH="${T3APP_TOOLS_HOME}/bin:${PATH}" ;;
 	esac
 	export PATH
 fi
@@ -46,31 +46,29 @@ background() {
 	fi
 }
 
-# Report the T3CODE_TOOL_GROUPS selection (warnings go to the container log),
-# relink tool-group payloads already in the home (offline, fast) and write the
-# runtime status JSON. Bounded and never fatal: T3 must start whatever the
-# selection says. Missing payloads install in the background; T3 does not wait.
-# --keep-trying: routers often start containers before the uplink is up, so
-# the background runs retry for about a day (`t3code-tools install` and
-# `t3code-providers install` from a terminal retry now).
-if [ -x /usr/local/bin/t3code-tools ]; then
-	timeout 20 /usr/local/bin/t3code-tools init || echo "t3code-tools: init failed; continuing" >&2
-	background tool-groups /usr/local/bin/t3code-tools install --keep-trying
-fi
-
-# Provider CLIs (T3CODE_PROVIDERS, #13) install into the home while they are
-# missing from PATH: npm into /data/.local, the vendor's installer, or
-# install-claude-code (Claude's license forbids baking it into the image).
-# A CLI already on PATH is never replaced; the server does not wait.
-if [ -x /usr/local/bin/t3code-providers ]; then
-	timeout 20 /usr/local/bin/t3code-providers init || echo "t3code-providers: init failed; continuing" >&2
-	background providers /usr/local/bin/t3code-providers install --keep-trying
+# t3app (lib/t3app.ts) is the operator command; `init` and
+# `install --keep-trying` are its entrypoint-only forms.
+# init: name any ignored legacy T3CODE_* keys, report both selections
+# (warnings go to the container log), relink tool-group payloads already in
+# the home (offline, fast) and write the runtime status JSON. Bounded and
+# never fatal: T3 must start whatever the selections say.
+# Then the installs run in the background; T3 does not wait. Tool-group
+# payloads install while missing; provider CLIs (#13) install while missing
+# from PATH (npm into /data/.local, the vendor's installer, or
+# install-claude-code, since Claude's license forbids baking it in), and a
+# CLI already on PATH is never replaced. --keep-trying: routers often start
+# containers before the uplink is up, so these runs retry for about a day
+# (`t3app tools install` and `t3app providers install` retry now).
+if [ -x /usr/local/bin/t3app ]; then
+	timeout 40 /usr/local/bin/t3app init || echo "t3app: init failed; continuing" >&2
+	background tool-groups /usr/local/bin/t3app tools install --keep-trying
+	background providers /usr/local/bin/t3app providers install --keep-trying
 fi
 
 # Pairing hint for the container log (#18). T3 prints its own startup
 # pairingUrl too, but with a localhost address the router's browser can't use.
 # Keep this command in step with client/routeros-pairing.js (a test checks).
-echo 't3code: to pair a browser, open the app URL and run in a RouterOS terminal: :put [/container/shell app-t3code cmd="t3-pairing-link" as-value]'
+echo 't3code: to pair a browser, open the app URL and run in a RouterOS terminal: :put [/container/shell app-t3code cmd="t3app pairing" as-value]'
 
 if [ -n "${DEBUG:-}" ]; then
 	set -x

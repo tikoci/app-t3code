@@ -10,7 +10,7 @@ cd /tmp
 rm -rf /tmp/vpn-check && mkdir /tmp/vpn-check && cd /tmp/vpn-check
 
 # Tools come from the payload shims, not the image, with no global library path.
-tools=${T3CODE_TOOLS_HOME:-/data/.local/share/t3code-tools}/bin
+tools=${T3APP_TOOLS_HOME:-/data/.local/share/t3code-tools}/bin
 for c in wg pki swanctl openvpn ike-scan; do test "$(command -v "$c")" = "$tools/$c"; done
 test ! -e /usr/bin/wg && test ! -e /usr/bin/pki
 test -z "${LD_LIBRARY_PATH:-}" && test -z "${LD_PRELOAD:-}" && test -z "${STRONGSWAN_CONF:-}"

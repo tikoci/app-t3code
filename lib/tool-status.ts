@@ -1,4 +1,4 @@
-// The agent-facing status report (`t3code-tools status`, and the JSON the
+// The agent-facing status report (`t3app tools status`, and the JSON the
 // entrypoint writes): selection, core readiness, each group's state and
 // payload, and a summary of the provider CLIs. Presence probes only.
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
@@ -163,14 +163,14 @@ export function buildStatus(
 		groups: GROUPS.map((group) =>
 			groupStatus(group, selection.selected.includes(group.name), probe, isPayloadGroup(group) && payloads ? payloadInfo(group, payloads) : undefined),
 		),
-		// Provider CLIs are not groups (T3CODE_PROVIDERS, #13); `t3code-providers status` has the detail.
+		// Provider CLIs are not groups (T3APP_PROVIDERS, #13); `t3app providers status` has the detail.
 		providers: buildProviderStatus(providers, probe.which).providers.map(({ token, selected, state, path }) => ({ token, selected, state, path })),
 		buildInventory: readBuildInventory(inventoryDir),
 		runtimeStatusPath: RUNTIME_STATUS_PATH,
 		notes: [
 			"npm and deb groups install in the background into the home and are reused across container replacement; not-implemented groups have no installer yet.",
 			`Unset or empty ${SELECTOR_ENV} selects the default "${DEFAULT_TOOL_GROUPS}"; "none" is core only. Installing a group grants no privileges (see each group's privileges).`,
-			"Provider CLIs are not tool groups: T3CODE_PROVIDERS installs them into the home in the background (issue #13). The providers block is as of generatedAt; t3code-providers status is always live.",
+			"Provider CLIs are not tool groups: T3APP_PROVIDERS installs them into the home in the background (issue #13). The providers block is as of generatedAt; t3app providers status is always live.",
 			"A deb group's file checks are paths inside its payload root, reported through the group's current link.",
 			"Checks are presence probes (PATH, files, ldconfig), not functional tests or capability grants.",
 			"Change the selection with /app/set environment= (see README), never by reapplying the /app YAML.",
@@ -184,7 +184,7 @@ export function formatStatus(status: Status): string {
 	const lines = [
 		`${SELECTOR_ENV}=${status.selector.raw === null ? "(unset)" : JSON.stringify(status.selector.raw)}${status.selector.defaulted ? " (default)" : ""} -> ${status.selector.selected.length ? status.selector.selected.join(" ") : "none (core only)"}`,
 		`core: ${status.core.state}${status.core.missing.length ? ` (missing: ${status.core.missing.join(", ")})` : ""}`,
-		`providers: ${providerSummary(status.providers)} (t3code-providers status)`,
+		`providers: ${providerSummary(status.providers)} (t3app providers status)`,
 	];
 	for (const group of status.groups) {
 		const extra = group.missing.length && group.state !== "not-selected" ? ` missing: ${group.missing.join(", ")}` : "";
@@ -192,9 +192,9 @@ export function formatStatus(status: Status): string {
 		const p = group.payload;
 		if (p && (group.selected || p.installed.length)) {
 			const detail = [`payload ${p.active ?? "none"}${p.stale ? ` (refresh to ${p.desired} due)` : ""}`];
-			if (!group.selected && p.installed.length) detail.push(`kept on disk: ${p.installed.join(", ")} (t3code-tools prune removes)`);
+			if (!group.selected && p.installed.length) detail.push(`kept on disk: ${p.installed.join(", ")} (t3app tools prune removes)`);
 			if (p.last?.error && group.state !== "ready") detail.push(`last error: ${p.last.error}`);
-			if (group.state === "installing" && p.installer?.waitingUntil) detail.push(`retrying at ${p.installer.waitingUntil} (t3code-tools install retries now)`);
+			if (group.state === "installing" && p.installer?.waitingUntil) detail.push(`retrying at ${p.installer.waitingUntil} (t3app tools install retries now)`);
 			if (p.desiredError) detail.push(p.desiredError);
 			lines.push(`${"".padEnd(14)}${detail.join("; ")}`);
 		}
@@ -214,7 +214,7 @@ export function writeRuntimeStatus(raw: string | undefined) {
 		renameSync(`${RUNTIME_STATUS_PATH}.tmp`, RUNTIME_STATUS_PATH);
 		return status;
 	} catch (error) {
-		console.error(`t3code-tools: warning: status unavailable: ${String(error)}`);
+		console.error(`t3app tools: warning: status unavailable: ${String(error)}`);
 		return null;
 	}
 }
