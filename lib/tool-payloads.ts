@@ -996,7 +996,11 @@ async function reconcile(groups: readonly GroupDef[], selected: readonly string[
 		for (const name of names) {
 			const rec = results[name] as StateRecord;
 			if (!missing.includes(name)) {
-				results[name] = { state: "ready", payloadId: rec.payloadId, attempt: rec.attempt, updatedAt: now() };
+				// On disk too: a round that only relinked (a probe that recovered,
+				// #53) left this run's `installing` record behind.
+				results[name] = { state: "ready", payloadId: readLink(currentLink(env, name)) ?? rec.payloadId, attempt: rec.attempt, updatedAt: now() };
+				writeState(env, name, results[name] as StateRecord);
+				onChange();
 			} else if (rec.state === "installing") {
 				results[name] = unfinished(rec);
 				writeState(env, name, results[name] as StateRecord);

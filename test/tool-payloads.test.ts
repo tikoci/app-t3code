@@ -588,8 +588,13 @@ await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 		};
 		const result = await installGroups(npmGroups, ["dev"], env);
 		expect(result.results["dev"]?.state).toBe("ready");
-		expect(readState(env)["dev"]?.permanent).toBeUndefined();
 		expect(devState()?.state).toBe("ready");
+		// Persisted as well, with the payload in use, not the round-one record.
+		const saved = readState(env)["dev"];
+		expect(saved).toMatchObject({ state: "ready", payloadId: readlinkSync(join(env.root, "groups", "dev", "current")) });
+		expect(saved?.permanent).toBeUndefined();
+		expect(saved?.nextAttemptAt).toBeUndefined();
+		expect(saved?.error).toBeUndefined();
 		expect(existsSync(join(env.root, "bin", "tsc"))).toBe(true);
 		expect(npmCalls()).toBe(1);
 	});
