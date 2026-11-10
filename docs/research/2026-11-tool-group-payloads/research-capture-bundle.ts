@@ -19,7 +19,7 @@
 // probe adds curl/ca-certificates/iproute2 and a node-owned /data first, so its
 // closure is larger than the app image's.
 import { type DebLock, fetchDeb } from "../../../lib/deb-payloads.ts";
-import { TZSP_DNS_PCAPNG } from "../../../lib/tool-groups.ts";
+import { TZSP_DNS_PCAPNG } from "../../../lib/tool-catalog.ts";
 
 if (process.argv[2] === "--snapshot") {
 	const [lockPath, name = "tcpdump", cache = "snapshot-cache"] = process.argv.slice(3);

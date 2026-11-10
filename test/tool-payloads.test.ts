@@ -3,21 +3,11 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildStatus, formatStatus, GROUPS, main, ownerMismatch, type Probe, USAGE } from "../lib/tool-groups.ts";
-import {
-	activate,
-	activateIfIdle,
-	type Compat,
-	defaultRoot,
-	INTERACTIVE_BACKOFF_MS,
-	installGroups,
-	KEEP_TRYING_BACKOFF_MS,
-	liveInstaller,
-	type PayloadEnv,
-	processStartTicks,
-	prunePayloads,
-	readState,
-} from "../lib/tool-payloads.ts";
+import { INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, processStartTicks } from "../lib/runtime.ts";
+import { GROUPS } from "../lib/tool-catalog.ts";
+import { main, ownerMismatch, USAGE } from "../lib/tool-groups.ts";
+import { activate, activateIfIdle, type Compat, defaultRoot, installGroups, liveInstaller, type PayloadEnv, prunePayloads, readState } from "../lib/tool-payloads.ts";
+import { buildStatus, formatStatus, type Probe } from "../lib/tool-status.ts";
 
 const SPEC = join(import.meta.dir, "..", "lib", "groups");
 const dev = GROUPS.find((g) => g.name === "dev");
@@ -373,7 +363,7 @@ describe("npm payload groups", () => {
 		writeFileSync(
 			script,
 			`import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-payloads.ts"))};
-import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-groups.ts"))};
+import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-catalog.ts"))};
 const env = JSON.parse(process.argv[2]);
 const r = await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 	...env, compat: () => env.compatValue, sleep: async () => {}, log: () => {}, freeBytes: () => 10 * 1024 ** 3,
@@ -462,7 +452,7 @@ process.exit(r.locked ? 0 : 3);
 		writeFileSync(
 			script,
 			`import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-payloads.ts"))};
-import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-groups.ts"))};
+import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-catalog.ts"))};
 const env = JSON.parse(process.argv[2]);
 await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 	...env, compat: () => env.compatValue, sleep: async () => {}, log: () => {}, freeBytes: () => 10 * 1024 ** 3,
@@ -552,7 +542,7 @@ await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 
 describe("t3code-tools command reference", () => {
 	test("help describes every command, and <command> --help prints it", async () => {
-		for (const command of ["status", "install", "prune", "init", "groups", "deb-lock"]) expect(USAGE).toMatch(new RegExp(`^  ${command}\\b`, "m"));
+		for (const command of ["status", "install", "prune", "init", "groups"]) expect(USAGE).toMatch(new RegExp(`^  ${command}\\b`, "m"));
 		for (const name of GROUPS.map((g) => g.name)) expect(USAGE).toContain(name);
 		expect(USAGE).toContain("--keep-trying");
 		expect(USAGE).toContain("setpriv");
@@ -567,6 +557,9 @@ describe("t3code-tools command reference", () => {
 			expect(await main(["install", "--help"])).toBe(0);
 			expect(await main(["bogus", "--help"])).toBe(2);
 			expect(await main(["install", "--bogus"])).toBe(2);
+			// Stray arguments are a usage error before anything runs (prune used to ignore them and prune).
+			expect(await main(["prune", "--all"])).toBe(2);
+			expect(await main(["groups", "--json"])).toBe(2);
 		} finally {
 			process.stdout.write = out;
 			process.stderr.write = err;

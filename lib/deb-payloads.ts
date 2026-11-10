@@ -18,8 +18,8 @@
 // STRONGSWAN_CONF) and, for a compiled-in plugin directory, the plugins
 // preloaded so the loader finds them by symbol.
 //
-// Pins come from the image's own apt metadata at build time (`t3code-tools
-// deb-lock`, run in the Dockerfile right after `apt-get update`): package,
+// Pins come from the image's own apt metadata at build time (`lib/deb-lock.ts`,
+// run in the Dockerfile right after `apt-get update`): package,
 // version, architecture, size and SHA256 from the signed indexes apt
 // verified, so the lock changes exactly when Debian (or the image) does. At
 // runtime every file must match its pinned size and SHA256, and its control

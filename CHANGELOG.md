@@ -14,6 +14,22 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+- `t3code-tools prune` and `t3code-tools groups` now reject extra arguments
+  (exit 2, usage on stderr), like `install`. Before, `prune` ignored them and
+  pruned anyway. Argument errors are now caught before a root caller
+  switches to the payload owner. `deb-lock` is no longer a `t3code-tools`
+  command: the image build runs `lib/deb-lock.ts` directly.
+- Repository (#45): `lib/tool-groups.ts` is split into the catalog
+  (`tool-catalog.ts`), the status report (`tool-status.ts`), the CLI
+  (`tool-groups.ts`) and the build-only `deb-lock.ts`. What both installers
+  share (app home, state dir, budgets, process identity, stopping an
+  orphaned step, `flock`) moves to `lib/runtime.ts`. `AGENTS.md` gains a
+  Tests table. Otherwise nothing in the image behaves differently.
+
+## 0.1.7-app.157 — 2026-11-10
+
+`sha-862c538`.
+
 - Repository: the shipped runtime modules move from `scripts/` to `lib/`
   (#45), with `lib/groups/` for the payload specs. They land in the same
   place in the image, `/usr/local/lib/t3code`, which the Dockerfile now

@@ -656,7 +656,7 @@ took 565 MiB of QEMU and firmware out of every image
 ([write-up](docs/research/2026-11-tool-group-payloads/labs-qemu-payload.md)). Each installs as
 the app user with no root at runtime:
 
-- **Pinned at image build.** The Dockerfile runs `t3code-tools deb-lock` after
+- **Pinned at image build.** The Dockerfile runs `lib/deb-lock.ts` after
   the last apt layer. It asks apt for the group's dependency closure that the
   image does not already have, and records each package's version,
   architecture, size and SHA256 from the apt indexes. apt has already checked

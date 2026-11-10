@@ -2,19 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import YAML from "js-yaml";
-import {
-	BROWSER_LIBRARIES,
-	buildStatus,
-	CORE_CHECKS,
-	DEFAULT_TOOL_GROUPS,
-	formatStatus,
-	GROUP_NAMES,
-	GROUPS,
-	groupStatus,
-	NETWORK_PACKAGE_ASSIGNMENT,
-	type Probe,
-	parseToolGroups,
-} from "../lib/tool-groups.ts";
+import { BROWSER_LIBRARIES, CORE_CHECKS, DEFAULT_TOOL_GROUPS, GROUP_NAMES, GROUPS, NETWORK_PACKAGE_ASSIGNMENT, parseToolGroups } from "../lib/tool-catalog.ts";
+import { buildStatus, formatStatus, groupStatus, type Probe } from "../lib/tool-status.ts";
 
 const APP_DIR = join(import.meta.dir, "..", "app");
 const YAML_PATH = join(APP_DIR, "t3code.tikapp.yaml");
