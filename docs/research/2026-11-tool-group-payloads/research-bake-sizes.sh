@@ -1,7 +1,7 @@
 #!/bin/bash
 # Issue #5 slice 3: apt-metadata download/unpacked sizes of each native group's closure
 # against the image, and the bytes + gzip size of the files a baked layer would add.
-# Run by scripts/research-capture-bundle.ts --sizes as root in a disposable container.
+# Run by docs/research/2026-11-tool-group-payloads/research-capture-bundle.ts --sizes as root in a disposable container.
 set -eu
 apt-get update -qq >/dev/null 2>&1
 for g in "vpn:wireguard-tools strongswan-swanctl strongswan-pki strongswan-charon openvpn sstp-client ppp xl2tpd pppoe ike-scan" "routing:bird2 lldpd ndisc6 arping arp-scan nftables conntrack nmap" "capture-no-tshark:tcpdump nfdump" "tshark-only:tshark"; do

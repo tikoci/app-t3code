@@ -41,7 +41,7 @@ evidence document retains its assumptions and limitations.
 
 ## Reproduction helpers
 
-All are Bun/TypeScript files under the repository's `scripts/` directory.
+All are Bun/TypeScript files in this folder.
 
 | Helper | Purpose / side effects |
 | --- | --- |

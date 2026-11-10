@@ -21,7 +21,7 @@ pppd and tunnels need root or capabilities either way.
 As `node`, `CapEff 0`, through the payload shims, with no `LD_LIBRARY_PATH`,
 `LD_PRELOAD` or `STRONGSWAN_CONF` in the caller's environment
 ([amd64 transcript](vpn-routing-amd64.txt), from
-[`scripts/research-vpn-routing.sh`](../../../scripts/research-vpn-routing.sh)):
+[`research-vpn-routing.sh`](research-vpn-routing.sh)):
 
 | Tool | Compiled-in paths | Result in the payload |
 | --- | --- | --- |

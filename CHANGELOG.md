@@ -14,12 +14,20 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
-- Repository: `docs/` is split in two. `docs/notes/<date>-<topic>.md`
-  holds dated, write-once logbook entries (CHR runs, reviews, closeouts).
-  `docs/research/<YYYY-MM>-<topic>/` holds research topics that can grow
-  over several days. Every existing file moved, and links were updated. Only
-  code comments in the image change, but `scripts/` counts as
-  image-relevant, so the merge rebuilds and promotes a new build.
+- Repository: the shipped runtime modules move from `scripts/` to `lib/`
+  (#45), with `lib/groups/` for the payload specs. They land in the same
+  place in the image, `/usr/local/lib/t3code`, which the Dockerfile now
+  copies as one folder. `scripts/` keeps only build, CI and repo upkeep.
+  The frozen research probes move next to their evidence under
+  `docs/research/`, where they are now type-checked and linted.
+  `research-home-manifest.ts`, still used for CHR runs, becomes
+  `scripts/home-manifest.ts`. `AGENTS.md` gains a layout map. Nothing
+  in the image changes, but the merge rebuilds and promotes it.
+
+## 0.1.7-app.151 — 2026-11-10
+
+`sha-4a5b66e`.
+
 - CI: the workflow actions move to their current majors (#43), among them
   `docker/build-push-action` v7 and Buildx setup v4, which all run on
   Node 24. Every job now runs on `ubuntu-24.04` rather than `ubuntu-latest`,
@@ -27,6 +35,17 @@ gives them their `-app.<N>` heading.
   but the merge rebuilds and promotes it. A manual freshness
   run on `main` now opens, updates or closes the `freshness` issue, like
   the daily one.
+
+## 0.1.7-app.147 — 2026-11-10
+
+`sha-32ff722`.
+
+- Repository: `docs/` is split in two. `docs/notes/<date>-<topic>.md`
+  holds dated, write-once logbook entries (CHR runs, reviews, closeouts).
+  `docs/research/<YYYY-MM>-<topic>/` holds research topics that can grow
+  over several days. Every existing file moved, and links were updated. Only
+  code comments in the image change, but `scripts/` counts as
+  image-relevant, so the merge rebuilds and promotes a new build.
 
 ## 0.1.7-app.142 — 2026-11-10
 

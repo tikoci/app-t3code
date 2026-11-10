@@ -1,5 +1,5 @@
 import { mkdir } from "node:fs/promises";
-import { readDebianPackages } from "./image-inventory.ts";
+import { readDebianPackages } from "../lib/image-inventory.ts";
 
 // Capture the actual host's complete dpkg database as a complement to the
 // selected tables published by actions/runner-images. Never dumps host env.

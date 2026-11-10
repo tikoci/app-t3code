@@ -4,7 +4,7 @@
 // `bun scripts/freshness.ts pinned` fails when the pinned T3 release's list
 // differs from these keys, so a T3 bump that adds, renames or drops a driver
 // cannot land without someone deciding how this image delivers it.
-// scripts/providers.ts (T3CODE_PROVIDERS, issue #13) installs from this list.
+// lib/providers.ts (T3CODE_PROVIDERS, issue #13) installs from this list.
 
 /**
  * How a provider's runtime reaches the container.

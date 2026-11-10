@@ -19,5 +19,5 @@
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false
 	},
-	"include": ["test/**/*.ts", "scripts/**/*.ts", "*.ts"]
+	"include": ["test/**/*.ts", "lib/**/*.ts", "scripts/**/*.ts", "docs/research/**/*.ts", "*.ts"]
 }

@@ -177,16 +177,16 @@ dated record of the first pass.
 
 ```sh
 docker run --rm --user root \
-  --mount "type=bind,src=$PWD/scripts/research-package-costs.ts,dst=/tmp/research.ts,readonly" \
+  --mount "type=bind,src=$PWD/docs/research/2026-11-agent-tools/research-package-costs.ts,dst=/tmp/research.ts,readonly" \
   --entrypoint bun app-t3code:agent-tools /tmp/research.ts \
   network-extension routeros-network-baseline ipsec-peer
 
 docker run --rm --user root \
-  --mount "type=bind,src=$PWD/scripts/research-node-tools.ts,dst=/tmp/research.ts,readonly" \
+  --mount "type=bind,src=$PWD/docs/research/2026-11-agent-tools/research-node-tools.ts,dst=/tmp/research.ts,readonly" \
   --entrypoint bun app-t3code:agent-tools /tmp/research.ts
 
 docker run --rm --user root \
-  --mount "type=bind,src=$PWD/scripts/research-packet-tools.ts,dst=/tmp/research.ts,readonly" \
+  --mount "type=bind,src=$PWD/docs/research/2026-11-agent-tools/research-packet-tools.ts,dst=/tmp/research.ts,readonly" \
   --entrypoint bun app-t3code:agent-tools /tmp/research.ts
 ```
 

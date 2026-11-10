@@ -8,7 +8,9 @@
 	"files": {
 		"includes": [
 			"test/**/*.ts",
+			"lib/**/*.ts",
 			"scripts/**/*.ts",
+			"docs/research/**/*.ts",
 			"*.ts",
 			"client/**/*.js"
 		]

@@ -2,7 +2,7 @@
 # Issue #5 slice 5: can Debian's QEMU run from a payload under /data as node?
 # Run on a host with Docker, from the repo root:
 #
-#   scripts/research-labs-payload.sh [base-image] > docs/research/2026-11-tool-group-payloads/labs-qemu-amd64.txt
+#   docs/research/2026-11-tool-group-payloads/research-labs-payload.sh [base-image] > docs/research/2026-11-tool-group-payloads/labs-qemu-amd64.txt
 #
 # The base image (default app-t3code:pr10-review, an image that still has
 # QEMU) runs as root only to purge QEMU and download the closure with apt; the

@@ -11,7 +11,7 @@
 // which a workflow_dispatch can override.
 // `pinned` checks that T3CODE_VER is a published stable T3
 // release with both Linux archives, and that its harness catalog matches
-// scripts/harnesses.ts. `upstream` checks that no newer stable release exists,
+// lib/harnesses.ts. `upstream` checks that no newer stable release exists,
 // and previews the newest release's harness catalog so a bump PR knows what it
 // has to classify. `claude` checks that Anthropic's stable channel, manifest
 // and binaries still have the shape bin/install-claude-code reads (a 404 and a
@@ -24,7 +24,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
-import { HARNESSES } from "./harnesses.ts";
+import { HARNESSES } from "../lib/harnesses.ts";
 
 const ROOT = join(import.meta.dir, "..");
 export const UPSTREAM_REPO = "pingdotgg/t3code";
@@ -268,11 +268,11 @@ export function pinnedVersion(): string {
 
 type Report = { ok: boolean; lines: string[] };
 
-/** Compare one upstream driver list with scripts/harnesses.ts. */
+/** Compare one upstream driver list with lib/harnesses.ts. */
 function catalogReport(tag: string, upstream: string[]): Report {
 	const { added, removed } = diffCatalog(upstream);
-	if (!added.length && !removed.length) return { ok: true, lines: [`harness catalog at ${tag}: ${upstream.length} drivers, all in scripts/harnesses.ts`] };
-	const lines = [`harness catalog at ${tag} differs from scripts/harnesses.ts (${DRIVERS_PATH}):`];
+	if (!added.length && !removed.length) return { ok: true, lines: [`harness catalog at ${tag}: ${upstream.length} drivers, all in lib/harnesses.ts`] };
+	const lines = [`harness catalog at ${tag} differs from lib/harnesses.ts (${DRIVERS_PATH}):`];
 	if (added.length) lines.push(`  new upstream, classify each in HARNESSES: ${added.join(", ")}`);
 	if (removed.length) lines.push(`  gone upstream, remove from HARNESSES (and any delivery): ${removed.join(", ")}`);
 	return { ok: false, lines };

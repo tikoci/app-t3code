@@ -366,7 +366,7 @@ package list into this README.
 To inspect a local build without starting T3 or running the first-boot installer:
 
 ```sh
-bun scripts/image-inventory.ts --image app-t3code:test --output image-inventory
+bun lib/image-inventory.ts --image app-t3code:test --output image-inventory
 ```
 
 See the [GitHub runner comparison and package recommendations](docs/research/2026-11-agent-tools/README.md)
@@ -643,7 +643,7 @@ re-execute as `node` with `setpriv`, so no payload file becomes root-owned.
 
 The `dev` payload is about 154 MiB on amd64 (TypeScript 7.0.2, CSpell 10.4.0,
 markdownlint-cli2 0.24.0, Biome 2.6.5). Maintainers refresh the pins with
-`make dev-lock` after editing `scripts/groups/dev/package.json`.
+`make dev-lock` after editing `lib/groups/dev/package.json`.
 
 #### Debian-package payloads
 

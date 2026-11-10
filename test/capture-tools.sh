@@ -3,7 +3,7 @@
 # test/container-replacement.test.ts as node with no capabilities: offline
 # decoding with the payload's own data and plugin paths, capture-file tools,
 # an unprivileged NetFlow collector, and live capture refused rather than
-# granted. The fixture is TZSP_DNS_PCAPNG from scripts/tool-groups.ts.
+# granted. The fixture is TZSP_DNS_PCAPNG from lib/tool-groups.ts.
 set -euo pipefail
 cd /tmp
 fixture=/tmp/capture-fixture.pcapng

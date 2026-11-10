@@ -30,7 +30,7 @@ As `node`, `CapEff 0`, no `/dev/kvm`, the closure extracted with
 `dpkg-deb -x` under `/tmp/p/root`, binaries called directly (no wrapper from
 this repo), in an image with QEMU purged
 ([transcript](labs-qemu-amd64.txt), from
-[`scripts/research-labs-payload.sh`](../../../scripts/research-labs-payload.sh)):
+[`research-labs-payload.sh`](research-labs-payload.sh)):
 
 | Piece | Compiled-in path | Result in the payload |
 | --- | --- | --- |
@@ -99,7 +99,7 @@ labs: ready in 6s (quickchr 0.5.5; QEMU emulator version 10.0.13 (Debian 1:10.0.
 
 ## CHR boots from the payload (the readiness contract)
 
-[`scripts/research-quickchr-runtime.ts`](../../../scripts/research-quickchr-runtime.ts)
+[`research-quickchr-runtime.ts`](research-quickchr-runtime.ts)
 in a disposable container as `node`, TCG (no `/dev/kvm`), real CHR 7.25.1,
 managed login, qcow2 boot resize plus an extra disk, a read-only centrs
 query, machines removed afterwards ([transcript](labs-chr-boot-amd64.txt)).

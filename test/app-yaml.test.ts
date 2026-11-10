@@ -14,7 +14,7 @@ import {
 	NETWORK_PACKAGE_ASSIGNMENT,
 	type Probe,
 	parseToolGroups,
-} from "../scripts/tool-groups.ts";
+} from "../lib/tool-groups.ts";
 
 const APP_DIR = join(import.meta.dir, "..", "app");
 const YAML_PATH = join(APP_DIR, "t3code.tikapp.yaml");
@@ -446,7 +446,7 @@ describe("tool groups: docs and image contract", () => {
 	});
 
 	test("every network package is assigned once; core ones are installed, group ones are not", () => {
-		const research = readFileSync(join(ROOT, "scripts", "research-package-costs.ts"), "utf8");
+		const research = readFileSync(join(ROOT, "docs", "research", "2026-11-agent-tools", "research-package-costs.ts"), "utf8");
 		const networkBundle = research.match(/"network-extension": \[([^\]]+)\]/)?.[1] ?? "";
 		const baseBundle = research.match(/"network-tools": \[([^\]]+)\]/)?.[1] ?? "";
 		const researched = [...`${networkBundle},${baseBundle}`.matchAll(/"([^"]+)"/g)].map((m) => m[1] as string);

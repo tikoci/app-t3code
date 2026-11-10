@@ -28,9 +28,9 @@ rollback, prune).
 
 ## Measurements
 
-The probes are reproducible: [`scripts/research-capture-bundle.ts`](../../../scripts/research-capture-bundle.ts)
-runs [`research-capture-bundle.sh`](../../../scripts/research-capture-bundle.sh)
-(or `--sizes` → [`research-bake-sizes.sh`](../../../scripts/research-bake-sizes.sh))
+The probes are reproducible: [`research-capture-bundle.ts`](research-capture-bundle.ts)
+runs [`research-capture-bundle.sh`](research-capture-bundle.sh)
+(or `--sizes` → [`research-bake-sizes.sh`](research-bake-sizes.sh))
 as root in a disposable container. The payload steps switch to `node`.
 The amd64 image is `app-t3code:slice3`: this branch's late Dockerfile layers on
 the local `app-t3code:agent-tools`, Debian 13.7 trixie. Raw output:

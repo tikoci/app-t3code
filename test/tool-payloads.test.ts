@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildStatus, formatStatus, GROUPS, main, ownerMismatch, type Probe, USAGE } from "../scripts/tool-groups.ts";
+import { buildStatus, formatStatus, GROUPS, main, ownerMismatch, type Probe, USAGE } from "../lib/tool-groups.ts";
 import {
 	activate,
 	activateIfIdle,
@@ -17,9 +17,9 @@ import {
 	processStartTicks,
 	prunePayloads,
 	readState,
-} from "../scripts/tool-payloads.ts";
+} from "../lib/tool-payloads.ts";
 
-const SPEC = join(import.meta.dir, "..", "scripts", "groups");
+const SPEC = join(import.meta.dir, "..", "lib", "groups");
 const dev = GROUPS.find((g) => g.name === "dev");
 if (!dev) throw new Error("dev group missing");
 // The npm group alone: these tests cover the shared lifecycle with npm.
@@ -372,8 +372,8 @@ describe("npm payload groups", () => {
 		const script = join(tmp, "child.ts");
 		writeFileSync(
 			script,
-			`import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-payloads.ts"))};
-import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-groups.ts"))};
+			`import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-payloads.ts"))};
+import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-groups.ts"))};
 const env = JSON.parse(process.argv[2]);
 const r = await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 	...env, compat: () => env.compatValue, sleep: async () => {}, log: () => {}, freeBytes: () => 10 * 1024 ** 3,
@@ -461,8 +461,8 @@ process.exit(r.locked ? 0 : 3);
 		const script = join(tmp, "child.ts");
 		writeFileSync(
 			script,
-			`import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-payloads.ts"))};
-import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-groups.ts"))};
+			`import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-payloads.ts"))};
+import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-groups.ts"))};
 const env = JSON.parse(process.argv[2]);
 await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 	...env, compat: () => env.compatValue, sleep: async () => {}, log: () => {}, freeBytes: () => 10 * 1024 ** 3,

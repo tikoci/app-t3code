@@ -148,7 +148,7 @@ live source of alerts and advisories. What runs today:
 - **CodeQL**: GitHub default setup, `default` query suite, for
   `javascript-typescript` and `actions`.
 - **Dependabot**: alerts and security-update PRs, enabled. Security PRs on
-  `scripts/groups/dev/package-lock.json` change the `dev` payload id, so
+  `lib/groups/dev/package-lock.json` change the `dev` payload id, so
   every home re-downloads it on its next start, which is the intended
   security refresh. Version updates run for GitHub Actions only.
 - **Secret scanning** with **push protection**: enabled.

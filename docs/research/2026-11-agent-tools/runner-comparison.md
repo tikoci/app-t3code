@@ -166,7 +166,7 @@ capability only, not an SSH server. Version equality is not evaluated.
 Recollect the local image without its entrypoint or network:
 
 ```sh
-bun scripts/image-inventory.ts --image app-t3code:agent-tools \
+bun lib/image-inventory.ts --image app-t3code:agent-tools \
   --output docs/research/2026-11-agent-tools/image-amd64
 bun scripts/compare-runner-packages.ts docs/research/2026-11-agent-tools
 ```
@@ -176,7 +176,7 @@ container. It only updates indexes and runs apt simulation/metadata reads:
 
 ```sh
 docker run --rm --user root \
-  --mount "type=bind,src=$PWD/scripts/research-package-costs.ts,dst=/tmp/research.ts,readonly" \
+  --mount "type=bind,src=$PWD/docs/research/2026-11-agent-tools/research-package-costs.ts,dst=/tmp/research.ts,readonly" \
   --entrypoint bun app-t3code:agent-tools /tmp/research.ts \
   > /tmp/package-costs-amd64.json
 ```
