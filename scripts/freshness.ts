@@ -384,13 +384,21 @@ export function toolPinReport(pin: ToolPin, pinned: string, latestTag: string): 
 	return { ok: false, lines: [`${pin.name}: ${pin.repo}'s latest release is ${latestTag}; ${pin.file} pins ${pinned}. Bump ${pin.bump}.`] };
 }
 
-/** Every TOOL_PINS entry against `releases/latest` (GitHub's newest non-draft, non-prerelease release). */
+/**
+ * Every TOOL_PINS entry against `releases/latest` (GitHub's newest non-draft,
+ * non-prerelease release). Each pin is checked on its own: a parse or network
+ * error fails that pin only, so the report still lists every other stale one.
+ */
 export async function checkTools(): Promise<Report> {
 	const reports: Report[] = [];
 	for (const pin of TOOL_PINS) {
-		const pinned = toolPinVersion(pin, readFileSync(join(ROOT, pin.file), "utf8"));
-		const res = await fetchOk(`https://api.github.com/repos/${pin.repo}/releases/latest`, apiHeaders());
-		reports.push(toolPinReport(pin, pinned, ((await res.json()) as { tag_name: string }).tag_name));
+		try {
+			const pinned = toolPinVersion(pin, readFileSync(join(ROOT, pin.file), "utf8"));
+			const res = await fetchOk(`https://api.github.com/repos/${pin.repo}/releases/latest`, apiHeaders());
+			reports.push(toolPinReport(pin, pinned, ((await res.json()) as { tag_name: string }).tag_name));
+		} catch (error) {
+			reports.push({ ok: false, lines: [`${pin.name}: not checked: ${error instanceof Error ? error.message : String(error)}`] });
+		}
 	}
 	const stale = reports.filter((r) => !r.ok);
 	if (stale.length) return { ok: false, lines: stale.flatMap((r) => r.lines) };

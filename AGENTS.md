@@ -96,7 +96,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   counts as passing, so it waits only on `lint-test`. Admins bypass it; that
   is what lets small doc fixes go straight to `main`. Don't rename those two
   jobs without updating the ruleset.
-- **CHANGELOG stamps** (renaming `## Unreleased` after a promotion, below)
+- **CHANGELOG stamps** (numbering `## Not yet numbered` after a promotion, below)
   are pre-approved for anyone with write access: a PR that changes only
   `CHANGELOG.md`, labeled `skip-review`, merged by its author once
   `lint-test` passes. Rulesets can't exempt a single file, so a PR is the
@@ -137,11 +137,11 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   `next`, `rc`), so any label added later ranks above it, and the bare
   `0.1.7` above all of them.
 - Every PR that changes the image, the YAML or user-visible behavior adds a
-  line under `## Unreleased` in `CHANGELOG.md`. When its `main` build is
-  promoted, rename that heading `## <T3 version>-app.<N> — <date>` and
-  start the entry with the promoted `sha-<commit>`. `N` exists only once the
-  merge's `ci` run starts, so the rename goes in the next PR or a CHANGELOG
-  stamp (see Branches). Take the name from the promoted image, which already
+  line under `## Not yet numbered` in `CHANGELOG.md`. When its `main` build is
+  promoted, move its lines under a new `## <T3 version>-app.<N> — <date>`
+  heading that starts with the promoted `sha-<commit>` (each promoted build
+  gets its own heading). `N` exists only once the merge's `ci` run starts,
+  so the move goes in the next PR or a CHANGELOG stamp (see Branches). Take the name from the promoted image, which already
   includes any re-run suffix:
   `crane config ghcr.io/tikoci/app-t3code:0.1 | jq -r '.config.Labels["org.opencontainers.image.version"]'`.
   Without crane, `gh run list --workflow ci.yml --branch main --event push --json number,attempt,headSha`

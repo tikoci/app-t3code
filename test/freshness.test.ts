@@ -309,6 +309,22 @@ describe("tool pins", () => {
 		expect(report.lines).toHaveLength(1);
 		expect(report.lines[0]).toStartWith("uv: astral-sh/uv's latest release is 9.9.9;");
 	});
+
+	test("a lookup that fails is reported for that pin, and the others are still checked", async () => {
+		globalThis.fetch = (async (input: string | URL | Request) => {
+			const url = new URL(input instanceof Request ? input.url : input);
+			const repo = url.pathname.match(/^\/repos\/(.+)\/releases\/latest$/)?.[1];
+			const pin = TOOL_PINS.find((p) => p.repo === repo);
+			if (!pin) throw new Error(`unexpected ${url}`);
+			if (pin.name === "gh") return new Response("", { status: 404 });
+			return Response.json({ tag_name: `${pin.tagPrefix}${pin.name === "actionlint" ? "9.9.9" : toolPinVersion(pin, read(pin.file))}` });
+		}) as typeof fetch;
+		const report = await checkTools();
+		expect(report.ok).toBe(false);
+		expect(report.lines).toHaveLength(2);
+		expect(report.lines[0]).toStartWith("gh: not checked: https://api.github.com/repos/cli/cli/releases/latest: HTTP 404");
+		expect(report.lines[1]).toStartWith("actionlint: rhysd/actionlint's latest release is v9.9.9;");
+	});
 });
 
 describe("CLI", () => {
