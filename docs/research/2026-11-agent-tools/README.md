@@ -41,19 +41,20 @@ evidence document retains its assumptions and limitations.
 
 ## Reproduction helpers
 
-All are Bun/TypeScript files in this folder.
+All are Bun/TypeScript files. Paths are from the repository root; the
+`research-*` probes are frozen with this research, and the rest are maintained.
 
 | Helper | Purpose / side effects |
 | --- | --- |
-| `image-inventory.ts` | Collect image inventory; `--image` bypasses entrypoint with no network and a read-only root |
-| `runner-inventory.ts` | Read installed CI-host packages and selected identity fields |
-| `compare-runner-packages.ts` | Render saved source/image facts as Markdown and TSV |
-| `research-package-costs.ts` | Refresh indexes and simulate installs in a disposable container |
-| `research-node-tools.ts` | Install/measure exact-version temporary CLI prefixes in a disposable container |
-| `research-packet-tools.ts` | Install packet tools in a disposable container; synthesize/decode a capture as node |
-| `research-quickchr-runtime.ts` | Boot/provision/read/remove real CHRs inside a disposable container; no production router |
-| `research-uv-persistence.ts` | Create two containers and a temporary home; prove offline replacement, then remove the home |
-| `research-core-footprint.ts` | Copy apt selections to tmpfs, simulate autoremove, read file sizes/hashes |
+| `lib/image-inventory.ts` | Collect image inventory; `--image` bypasses entrypoint with no network and a read-only root |
+| `scripts/runner-inventory.ts` | Read installed CI-host packages and selected identity fields |
+| `scripts/compare-runner-packages.ts` | Render saved source/image facts as Markdown and TSV |
+| `docs/research/2026-11-agent-tools/research-package-costs.ts` | Refresh indexes and simulate installs in a disposable container |
+| `docs/research/2026-11-agent-tools/research-node-tools.ts` | Install/measure exact-version temporary CLI prefixes in a disposable container |
+| `docs/research/2026-11-agent-tools/research-packet-tools.ts` | Install packet tools in a disposable container; synthesize/decode a capture as node |
+| `docs/research/2026-11-tool-group-payloads/research-quickchr-runtime.ts` | Boot/provision/read/remove real CHRs inside a disposable container; no production router |
+| `docs/research/2026-11-agent-tools/research-uv-persistence.ts` | Create two containers and a temporary home; prove offline replacement, then remove the home |
+| `docs/research/2026-11-agent-tools/research-core-footprint.ts` | Copy apt selections to tmpfs, simulate autoremove, read file sizes/hashes |
 
 Commands and pinned versions are in the relevant evidence document/helper.
 Repositories and floating image tags move; saved results record what was

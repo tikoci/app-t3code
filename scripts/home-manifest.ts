@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * research-home-manifest — read-only, metadata-only content manifest of an
+ * home-manifest — read-only, metadata-only content manifest of an
  * app-t3code home (`/data`), for before/after comparisons across an
  * upgrade (issue #3). Runs inside the container with the baked Bun:
  *
