@@ -217,7 +217,7 @@ centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="sh /tmp/gh
 
 ## 8. Content manifest (before and after)
 
-`scripts/research-home-manifest.ts` prints a read-only, metadata-only JSON
+`scripts/home-manifest.ts` prints a read-only, metadata-only JSON
 manifest of the home. It records:
 - the T3 and provider versions, and the environment ID
 - settings key paths
@@ -232,10 +232,10 @@ Secret and login files appear only as metadata plus a hash for
 same/different. Run it in the container with the baked Bun:
 
 ```sh
-centrs transfer --quickchr <n> upload scripts/research-home-manifest.ts pcie1/apps/t3code/t3code_root/tmp/m1.ts
+centrs transfer --quickchr <n> upload scripts/home-manifest.ts pcie1/apps/t3code/t3code_root/tmp/m1.ts
 centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="bun /tmp/m1.ts > /tmp/m-pre.json && echo ok"' --timeout 190s
 centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="cat /tmp/m-pre.json"' --json | jq -r .data.ret | tr -d '\r' > m-pre.json
-bun scripts/research-home-manifest.ts --compare m-pre.json m-post.json
+bun scripts/home-manifest.ts --compare m-pre.json m-post.json
 ```
 
 Under TCG, use the detached form from step 6. A run takes minutes.

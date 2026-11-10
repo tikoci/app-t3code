@@ -5,7 +5,7 @@
 # wrapper's -L dirs (the image has none of them), the arm emulator runs code,
 # qemu-img writes qcow2, the unused firmware is pruned, and KVM and TAP are
 # unavailable rather than granted. Booting a CHR with quickchr is the
-# research probe's job (scripts/research-quickchr-runtime.ts).
+# research probe's job (docs/research/2026-11-tool-group-payloads/research-quickchr-runtime.ts).
 set -euo pipefail
 rm -rf /tmp/labs-check && mkdir /tmp/labs-check && cd /tmp/labs-check
 

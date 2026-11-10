@@ -1,5 +1,5 @@
 #!/bin/bash
-# Issue #5 slice 3 spike, run by scripts/research-capture-bundle.ts as root in
+# Issue #5 slice 3 spike, run by docs/research/2026-11-tool-group-payloads/research-capture-bundle.ts as root in
 # a disposable container (never on a router). Compares two ways to ship the
 # `capture` group:
 #   (a) the Debian closure the image lacks, downloaded, SHA256-checked and

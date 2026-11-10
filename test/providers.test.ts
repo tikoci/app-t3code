@@ -8,7 +8,7 @@ import { closeSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, writ
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import YAML from "js-yaml";
-import { HARNESSES } from "../scripts/harnesses.ts";
+import { HARNESSES } from "../lib/harnesses.ts";
 import {
 	buildProviderStatus,
 	DEFAULT_PROVIDERS,
@@ -23,8 +23,8 @@ import {
 	requiredBytes,
 	stateDir,
 	USAGE,
-} from "../scripts/providers.ts";
-import { isSameProcess, kernelFlock, LOCK_EX, LOCK_NB, processStartTicks } from "../scripts/tool-payloads.ts";
+} from "../lib/providers.ts";
+import { isSameProcess, kernelFlock, LOCK_EX, LOCK_NB, processStartTicks } from "../lib/tool-payloads.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
@@ -82,7 +82,7 @@ describe("T3CODE_PROVIDERS selection", () => {
 	test("no provider CLI is baked into the image", () => {
 		const dockerfile = read("Dockerfile");
 		for (const pkg of ["@openai/codex", "opencode-ai", "pi-coding-agent", "x.ai/cli", "dev.meta.ai"]) expect(dockerfile).not.toContain(pkg);
-		expect(dockerfile).toContain("scripts/providers.ts scripts/harnesses.ts /usr/local/lib/t3code/");
+		expect(dockerfile).toContain("COPY lib /usr/local/lib/t3code");
 	});
 
 	test("help names every token and the README documents every one", () => {

@@ -27,8 +27,8 @@ import {
 	UPSTREAM_REPO,
 	versionArg,
 } from "../scripts/freshness.ts";
-import { HARNESSES } from "../scripts/harnesses.ts";
-import { CORE_CHECKS } from "../scripts/tool-groups.ts";
+import { HARNESSES } from "../lib/harnesses.ts";
+import { CORE_CHECKS } from "../lib/tool-groups.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");

@@ -19,7 +19,7 @@ import {
 	pruneExtracted,
 	resolveDebLock,
 	wrapperScript,
-} from "../scripts/deb-payloads.ts";
+} from "../lib/deb-payloads.ts";
 import {
 	AARCH64_PSCI_OFF,
 	BIRD_BGP_CONF,
@@ -31,8 +31,8 @@ import {
 	type Probe,
 	QEMU_SYSTEM_COMMANDS,
 	TZSP_DNS_PCAPNG,
-} from "../scripts/tool-groups.ts";
-import { activate, desiredPayload, installGroups, type Manifest, type PayloadEnv, payloadInfo, processStartTicks, prunePayloads, readState } from "../scripts/tool-payloads.ts";
+} from "../lib/tool-groups.ts";
+import { activate, desiredPayload, installGroups, type Manifest, type PayloadEnv, payloadInfo, processStartTicks, prunePayloads, readState } from "../lib/tool-payloads.ts";
 
 const capture = GROUPS.find((g) => g.name === "capture");
 if (!capture) throw new Error("capture group missing");
@@ -542,8 +542,8 @@ describe("deb payload groups (capture)", () => {
 		publish(basePackages());
 		const { pidFile, workerPidFile } = holdExtraction();
 		const script = join(tmp, "installer.ts");
-		writeFileSync(script, `import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-payloads.ts"))};
-import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "scripts", "tool-groups.ts"))};
+		writeFileSync(script, `import { installGroups } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-payloads.ts"))};
+import { GROUPS } from ${JSON.stringify(join(import.meta.dir, "..", "lib", "tool-groups.ts"))};
 const config = JSON.parse(process.argv[2]);
 await installGroups(GROUPS.filter((g) => g.delivery === "deb"), ["capture"], {
 	...config.env, debCompat: () => config.compat, sleep: async () => {}, log: () => {}, freeBytes: () => 10 * 1024 ** 3,

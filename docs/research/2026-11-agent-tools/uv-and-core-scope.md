@@ -149,8 +149,8 @@ keep the app-store document in sync.
 Reproducible evidence helpers:
 
 ```sh
-bun scripts/research-uv-persistence.ts
+bun docs/research/2026-11-agent-tools/research-uv-persistence.ts
 docker run --rm --network none --read-only --tmpfs /tmp \
-  --mount "type=bind,src=$PWD/scripts/research-core-footprint.ts,dst=/tmp/research.ts,readonly" \
+  --mount "type=bind,src=$PWD/docs/research/2026-11-agent-tools/research-core-footprint.ts,dst=/tmp/research.ts,readonly" \
   --entrypoint bun app-t3code:agent-tools /tmp/research.ts
 ```

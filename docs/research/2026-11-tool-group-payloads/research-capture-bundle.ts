@@ -2,13 +2,13 @@
 // containers and save the transcript plus parsed key=value measurements.
 // Never touches a router. The probe itself is research-capture-bundle.sh.
 //
-//   bun scripts/research-capture-bundle.ts <image> <platform> <out-prefix>
-//   bun scripts/research-capture-bundle.ts --sizes <image> <out-prefix>
+//   bun docs/research/2026-11-tool-group-payloads/research-capture-bundle.ts <image> <platform> <out-prefix>
+//   bun docs/research/2026-11-tool-group-payloads/research-capture-bundle.ts --sizes <image> <out-prefix>
 //
 // --sizes runs research-bake-sizes.sh instead: closure sizes for vpn, routing
 // and capture subsets, and the gzip size of a baked layer for vpn and routing.
 //
-//   bun scripts/research-capture-bundle.ts --snapshot <debs.lock.json> <package> <cache-dir>
+//   bun docs/research/2026-11-tool-group-payloads/research-capture-bundle.ts --snapshot <debs.lock.json> <package> <cache-dir>
 //
 // --snapshot fetches one pinned package through fetchDeb() with its mirror URL
 // forced to a 404, so only snapshot.debian.org can supply it (SHA256-checked).
@@ -18,8 +18,8 @@
 // arm64: node:24-trixie-slim under QEMU user-mode emulation (binfmt); the
 // probe adds curl/ca-certificates/iproute2 and a node-owned /data first, so its
 // closure is larger than the app image's.
-import { type DebLock, fetchDeb } from "./deb-payloads.ts";
-import { TZSP_DNS_PCAPNG } from "./tool-groups.ts";
+import { type DebLock, fetchDeb } from "../../../lib/deb-payloads.ts";
+import { TZSP_DNS_PCAPNG } from "../../../lib/tool-groups.ts";
 
 if (process.argv[2] === "--snapshot") {
 	const [lockPath, name = "tcpdump", cache = "snapshot-cache"] = process.argv.slice(3);
@@ -38,7 +38,7 @@ const sizes = process.argv[2] === "--sizes";
 const args = process.argv.slice(sizes ? 3 : 2);
 const [image, platform, out] = sizes ? [args[0], "linux/amd64", args[1] ?? "bake-sizes"] : [args[0], args[1] ?? "linux/amd64", args[2] ?? "capture-bundle"];
 if (!image) {
-	console.error("usage: bun scripts/research-capture-bundle.ts <image> <platform> <out-prefix>");
+	console.error("usage: bun docs/research/2026-11-tool-group-payloads/research-capture-bundle.ts <image> <platform> <out-prefix>");
 	process.exit(2);
 }
 const probe = new URL(sizes ? "./research-bake-sizes.sh" : "./research-capture-bundle.sh", import.meta.url).pathname;

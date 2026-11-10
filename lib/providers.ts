@@ -1,7 +1,7 @@
 // T3CODE_PROVIDERS: which provider (harness) runtimes this image installs into
 // the home, one explicit token per provider in T3's main Add provider list
 // (issue #13). Separate from T3CODE_TOOL_GROUPS: groups are tools for agents,
-// providers are the agents themselves. The catalog is scripts/harnesses.ts.
+// providers are the agents themselves. The catalog is lib/harnesses.ts.
 //
 // Installs act only while a provider's CLI is missing from PATH and install
 // the way a user would (npm into /data/.local, the vendor's installer, or

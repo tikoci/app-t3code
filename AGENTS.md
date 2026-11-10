@@ -3,6 +3,27 @@
 RouterOS `/app` container for T3 Code. Greenfield tikoci repo: Dockerfile
 rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
 
+## Layout
+
+What ships, and where, versus what stays in the repo. Folders that ship
+mirror their place in the image.
+
+| Path | Ships to | What |
+| --- | --- | --- |
+| `app/` | routers (`/app add`) | The `/app` YAML and app-store document |
+| `Dockerfile`, `docker-entrypoint.sh`, `profile.sh` | image | The build, the server start, the login-shell PATH |
+| `bin/` | `/usr/local/bin` | Entry points (`t3code-init`, `t3code-tools`, `t3code-providers`, …) |
+| `lib/` | `/usr/local/lib/t3code` | Shipped runtime modules: tool groups and payloads, providers, the harness catalog, image inventory; `lib/groups/` holds payload specs and locks |
+| `client/` | T3's web client, at build time | Deliberate UI overlays (`scripts/install-pairing-help.sh` installs them) |
+| `scripts/` | never | Build, CI and repo upkeep: freshness, runner inventory, `home-manifest.ts` for CHR runs |
+| `test/` | never | Bun tests, plus the shell smoke tests the image tests run |
+| `docs/notes/`, `docs/research/` | never | Logbook and research topics (Workflow below). Probes sit next to their evidence and are frozen: type-checked and linted, but not maintained, and not shell-linted |
+| `.agents/skills/` | never | Skills for developing this repo (`.claude/skills` links here) |
+| `scratch/` | never | Git-ignored dump for files agents need (a `/tmp` that lasts a few sessions). Never referenced from docs, tests or skills |
+
+Skills shipped in the image will get their own top-level `skills/` (#46);
+it doesn't exist yet.
+
 ## Commands
 
 - `bun run check` — biome (`--error-on-warnings`) + `tsc --noEmit` +
@@ -194,7 +215,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   The repo skill `.agents/skills/chr-app-lab/SKILL.md` is the hands-on recipe
   for a quickchr CHR: preparing it for `/app`, install and `/app/update`, an
   offline `/data` backup, commands inside the container, and the
-  before/after content manifest (`scripts/research-home-manifest.ts`).
+  before/after content manifest (`scripts/home-manifest.ts`).
   Repo skills live in `.agents/skills/` (the cross-agent location Codex and
   OpenCode read); `.claude/skills` is a symlink to it for Claude Code. Add new
   repo skills under `.agents/skills/` only.
@@ -215,7 +236,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   REST split values on commas. See
   `docs/research/2026-11-app-set-environment/README.md`.
 - Tool groups (`T3CODE_TOOL_GROUPS`, issue #5) live in
-  `scripts/tool-groups.ts`, shipped as `t3code-tools`. Any key added to the
+  `lib/tool-groups.ts`, shipped as `t3code-tools`. Any key added to the
   YAML `environment:` must also be a Dockerfile `ENV` default with the same
   value (a test enforces it), because an operator's `environment=` set
   drops the YAML values. Never document group changes as a YAML edit.
@@ -228,7 +249,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   explicitly; don't pick product defaults for test convenience.
 - Not groups: `browser` (its native libraries are core, in the first apt
   layer; T3 launches its own browser, so no relocation or launch hooks) and
-  provider CLIs. Providers are `T3CODE_PROVIDERS` (`scripts/providers.ts`,
+  provider CLIs. Providers are `T3CODE_PROVIDERS` (`lib/providers.ts`,
   shipped as `t3code-providers`, issue #13): one token per provider in T3's
   main Add provider list, default `claude codex` (Dockerfile `ENV`, both
   YAMLs and the README; a test ties them). No provider CLI is baked into
@@ -240,7 +261,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   Cursor (SDK inside T3) and Antigravity (T3 downloads it into
   `/data/.t3/tools`) are `t3` installs: accepted, nothing to do. Kiro, fx and
   ACP-registry agents get no token unless someone asks (an issue).
-  Deselecting never deletes. `scripts/harnesses.ts` holds the catalog: every
+  Deselecting never deletes. `lib/harnesses.ts` holds the catalog: every
   driver in T3's `BUILT_IN_DRIVERS`, and a token plus install recipe for the
   selectable ones. A T3 bump fails CI's freshness step until a new or removed
   driver is classified there (0.1.7 added Kiro).
@@ -256,20 +277,20 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   checksum-verified; Debian trixie's is 2.46.0) because T3's GitHub provider
   and agent PR work need it. Other forge CLIs (glab, fj/tea, az) and login UX are issue #15.
   No general SDK expansion beyond that.
-- `t3code-tools help` (`USAGE` in `scripts/tool-groups.ts`) is the command
+- `t3code-tools help` (`USAGE` in `lib/tool-groups.ts`) is the command
   reference; a test checks every command is in it, so update it with the
   CLI. `install`/`prune`/`init` re-exec as the payload root's owner when
   run as root (`/container/shell`), never leaving root-owned payloads.
   The entrypoint runs `install --keep-trying` (rounds for about a day, lock
   released between them); a terminal `install` stays at three attempts.
-- npm payload groups (`dev`) are installed by `scripts/tool-payloads.ts`
-  from the lockfile in `scripts/groups/<group>/` into
+- npm payload groups (`dev`) are installed by `lib/tool-payloads.ts`
+  from the lockfile in `lib/groups/<group>/` into
   `/data/.local/share/t3code-tools`; startup only relinks (offline) and
   installs in the background. Pins change with `make dev-lock`; a changed
   lockfile is a new payload id on every home. `bun run test` covers the
   lifecycle with a fake npm; the docker replacement test covers real npm and
   offline reuse.
-- `capture` (issue #5 slice 3) is a deb payload: `scripts/deb-payloads.ts`.
+- `capture` (issue #5 slice 3) is a deb payload: `lib/deb-payloads.ts`.
   The Dockerfile pins its Debian closure from apt metadata with
   `t3code-tools deb-lock` after the last apt layer (run with `HOME=/root`, or
   Bun seeds a root-owned `/data/.bun`). The closure is "what the image lacks",
@@ -307,7 +328,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   ships in quickchr 0.5.6 (`@next`; tikoci/quickchr#254/#255). Older builds
   fail with `MISSING_FIRMWARE` on arm64. Its smoke tests boot firmware, not
   a CHR; CHR boots are the research probe
-  (`scripts/research-quickchr-runtime.ts`, `QUICKCHR_MODULE` for a branch
+  (`docs/research/2026-11-tool-group-payloads/research-quickchr-runtime.ts`, `QUICKCHR_MODULE` for a branch
   build). See `docs/research/2026-11-tool-group-payloads/labs-qemu-payload.md`.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`. Whenever that file changes (including comments),

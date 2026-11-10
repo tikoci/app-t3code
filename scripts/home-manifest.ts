@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 /**
- * research-home-manifest — read-only, metadata-only content manifest of an
+ * home-manifest — read-only, metadata-only content manifest of an
  * app-t3code home (`/data`), for before/after comparisons across an
  * upgrade (issue #3). Runs inside the container with the baked Bun:
  *
- *   bun research-home-manifest.ts > manifest.json
- *   bun research-home-manifest.ts --compare before.json after.json
+ *   bun home-manifest.ts > manifest.json
+ *   bun home-manifest.ts --compare before.json after.json
  *
  * It never prints credential contents. Secret and login files appear as
  * type/size/mtime/mode plus a sha256 that `--compare` reports only as

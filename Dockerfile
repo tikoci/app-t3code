@@ -36,11 +36,11 @@ ENV T3CODE_PORT=3773
 # RouterOS `/app/set environment=` replaces the whole env list, so anything
 # the /app YAML sets must also be an image default here (issue #5).
 ENV T3CODE_TELEMETRY_ENABLED=false
-# Optional tool groups (scripts/tool-groups.ts DEFAULT_TOOL_GROUPS): an
+# Optional tool groups (lib/tool-groups.ts DEFAULT_TOOL_GROUPS): an
 # explicit list, so a group added later is never enabled silently. Operators
 # remove names, or set `none` for core only, with /app/set environment=.
 ENV T3CODE_TOOL_GROUPS="capture labs vpn routing dev"
-# Provider CLIs to install into the home (scripts/providers.ts
+# Provider CLIs to install into the home (lib/providers.ts
 # DEFAULT_PROVIDERS): an explicit list, like the groups above. OpenCode, Pi,
 # Grok and Muse are opt-in; Cursor and Antigravity come with T3 itself.
 ENV T3CODE_PROVIDERS="claude codex"
@@ -206,8 +206,8 @@ ENV PATH="/data/.local/bin:/data/.bun/bin:/data/.local/share/t3code-tools/bin:/o
 COPY docker-entrypoint.sh /
 COPY bin /usr/local/bin
 COPY profile.sh /etc/profile.d/t3code.sh
-COPY scripts/image-inventory.ts scripts/tool-groups.ts scripts/tool-payloads.ts scripts/deb-payloads.ts scripts/providers.ts scripts/harnesses.ts /usr/local/lib/t3code/
-COPY scripts/groups /usr/local/lib/t3code/groups
+# lib/ is the shipped runtime (AGENTS.md "Layout"); scripts/ never ships.
+COPY lib /usr/local/lib/t3code
 
 # Native tool groups (`capture`, `vpn`, `routing`, `labs`) install as
 # Debian-package payloads into the home at runtime, as node. QEMU and its
