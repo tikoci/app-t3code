@@ -237,6 +237,7 @@ const idHash = (parts: readonly (string | number)[]) => createHash("sha256").upd
 /** Why no payload id can be computed. `retry`: the runtime probe failed, which may pass next round (#53); otherwise permanent for this image. */
 type NoPayload = { error: string; retry?: boolean };
 
+/** npm: the payload id covers the lockfile, platform, arch and Node ABI, so any of them changing means a new payload. */
 function desiredNpm(group: GroupDef, env: PayloadEnv): Desired | NoPayload {
 	const dir = join(env.specDir, group.name);
 	let lock: string;
@@ -254,6 +255,7 @@ function desiredNpm(group: GroupDef, env: PayloadEnv): Desired | NoPayload {
 	return { id, lockSha256, compat, packages: pkg.dependencies ?? {} };
 }
 
+/** deb: the payload id covers the Debian lock, arch, release and wiring rules; a lock built for another arch or release is no payload at all. */
 function desiredDeb(group: GroupDef, env: PayloadEnv): Desired | NoPayload {
 	const path = join(env.specDir, group.name, DEB_LOCK_FILE);
 	let text: string;
