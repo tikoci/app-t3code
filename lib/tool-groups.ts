@@ -6,7 +6,7 @@
 // background install.
 import { accessSync, constants, existsSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { APP_HOME, DISK_RESERVE_BYTES, helpRequest, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, lockHolder, startOnce, stateDir } from "./runtime.ts";
+import { APP_HOME, DISK_RESERVE_BYTES, helpRequest, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, lockHolder, pidLabel, startOnce, stateDir } from "./runtime.ts";
 import {
 	CORE_CHECKS,
 	DEFAULT_TOOL_GROUPS,
@@ -186,10 +186,10 @@ function startInstall(): number {
 	}
 	const { running } = launch;
 	if (running.command && running.command !== "install") {
-		process.stderr.write(`t3app tools install: a ${running.command} is running (pid ${running.pid}); try again when it finishes\n`);
+		process.stderr.write(`t3app tools install: a ${running.command} is running (pid ${pidLabel(running)}); try again when it finishes\n`);
 		return 1;
 	}
-	process.stdout.write(`t3app tools install: already running (pid ${running.pid}, since ${running.startedAt})\nlog: ${log}\nprogress: t3app status\n`);
+	process.stdout.write(`t3app tools install: already running (pid ${pidLabel(running)}, since ${running.startedAt})\nlog: ${log}\nprogress: t3app status\n`);
 	return 0;
 }
 

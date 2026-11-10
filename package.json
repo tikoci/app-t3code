@@ -19,7 +19,7 @@
 		"lint:typecheck": "tsc --noEmit",
 		"lint:md": "markdownlint-cli2",
 		"lint:fix": "biome check --write .",
-		"test": "bun test test/app-yaml.test.ts test/freshness.test.ts test/init.test.ts test/pairing-help.test.ts test/tool-payloads.test.ts test/deb-payloads.test.ts test/install-claude-code.test.ts test/providers.test.ts test/entrypoint.test.ts",
+		"test": "bun test test/app-yaml.test.ts test/freshness.test.ts test/init.test.ts test/pairing-help.test.ts test/tool-payloads.test.ts test/deb-payloads.test.ts test/install-claude-code.test.ts test/providers.test.ts test/entrypoint.test.ts test/t3app.test.ts",
 		"test:all": "bun test",
 		"test:integration": "APP_T3CODE_INTEGRATION=1 bun test test/integration/"
 	},

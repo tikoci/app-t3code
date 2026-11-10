@@ -166,7 +166,8 @@ export function startOnce(name: string, argv: readonly string[], log: string, bu
  * record alone can miss a run that has started. Tries the lock without
  * waiting and lets go at once; an installer trying it at that same instant
  * finds it busy, which it already handles (--keep-trying waits a round).
- * The holder's pid is whatever its record names so far (0 if none yet).
+ * The holder's pid is whatever its record names so far (0 if none yet;
+ * `pidLabel` prints that as "unknown").
  */
 export function lockHolder(path: string): Running | null {
 	if (!existsSync(path)) return null;
@@ -188,6 +189,9 @@ export function lockHolder(path: string): Running | null {
 	}
 	return { pid, startTicks: null, startedAt: statSync(path).mtime.toISOString(), ...(command ? { command } : {}) };
 }
+
+/** A pid for operator output: "unknown" when a lock holder has not named itself yet. */
+export const pidLabel = (id: { pid: number }): string => (id.pid > 0 ? String(id.pid) : "unknown");
 
 const isHelpFlag = (arg: string | undefined) => arg === "--help" || arg === "-h";
 

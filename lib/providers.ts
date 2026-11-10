@@ -27,6 +27,7 @@ import {
 	LOCK_EX,
 	LOCK_NB,
 	lockHolder,
+	pidLabel,
 	processStartTicks,
 	startOnce,
 	stateDir,
@@ -468,7 +469,7 @@ function startInstall(): number {
 		process.stdout.write(`t3app providers install: started in the background (pid ${launch.pid})\nlog: ${log}\nprogress: t3app status\n`);
 		return 0;
 	}
-	process.stdout.write(`t3app providers install: already running (pid ${launch.running.pid}, since ${launch.running.startedAt})\nlog: ${log}\nprogress: t3app status\n`);
+	process.stdout.write(`t3app providers install: already running (pid ${pidLabel(launch.running)}, since ${launch.running.startedAt})\nlog: ${log}\nprogress: t3app status\n`);
 	return 0;
 }
 

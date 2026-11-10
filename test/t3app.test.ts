@@ -273,7 +273,7 @@ describe("install starts in the background", () => {
 		try {
 			const tools = await cli(["tools", "install"]);
 			expect(tools.code).toBe(0);
-			expect(tools.out).toStartWith("t3app tools install: already running (pid 0, since ");
+			expect(tools.out).toStartWith("t3app tools install: already running (pid unknown, since ");
 		} finally {
 			releaseTools();
 		}
