@@ -183,9 +183,8 @@ reference. Every area follows these rules:
 - **Sister projects:** a clear, reproduced bug in centrs, quickchr or T3 gets
   filed there (or handed to an agent in that project) and linked from the
   issue, even if you worked around it here.
-- **Tooling & skills feedback** (#29, pinned; it reconstructs #24, hidden
-  since the Amm0Bot suspension): the low-stakes way to *note* a
-  possible bug in another tikoci tool without switching tasks. When a tool call
+- **Tooling & skills feedback** (#29, pinned): the low-stakes way to
+  *note* a possible bug in another tikoci tool without switching tasks. When a tool call
   fails or misses mid-task, work around it, leave one comment on #29 and get
   back to the main work; triage happens later, here or in the tool's repo.
   Those failures are still worth that later look. It also covers a skill that

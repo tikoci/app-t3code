@@ -108,7 +108,7 @@ The quickchr skills (`routeros-tikoci-quickchr-cli`,
 `routeros-tikoci-quickchr`) cover the general lifecycle, and
 `quickchr snapshot save|load` takes live snapshots. Its help says it works on
 the qcow2 *boot* disk. Whether it also covers the data disk that holds
-`/data` is untested (#24). The offline clone below covers everything.
+`/data` is untested (#29). The offline clone below covers everything.
 
 Stop the app first, so nothing writes during the copy. Images from #25 on
 stop gracefully: PID 1 (`t3code-init`) catches TERM and forwards it, and T3
