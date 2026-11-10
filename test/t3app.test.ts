@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { isSameProcess, processStartTicks, startInBackground } from "../lib/runtime.ts";
+import { isSameProcess, LOG_ROTATE_BYTES, processStartTicks, startInBackground, startOnce } from "../lib/runtime.ts";
 import { ignoredLegacyEnv, LEGACY_ENV, legacyEnvLine, main, USAGE } from "../lib/t3app.ts";
 
 const ROOT = join(import.meta.dir, "..");
@@ -173,6 +173,33 @@ describe("background start", () => {
 		expect(readFileSync(log, "utf8")).toMatch(new RegExp(`t3app: x install started in the background \\(pid ${pid}\\)\\n$`));
 		for (let i = 0; i < 100 && !existsSync(done); i++) await Bun.sleep(50);
 		expect(readFileSync(log, "utf8")).toContain("job output\njob error\n");
+	});
+
+	test("rotates the log once it passes 1 MiB, like the entrypoint", () => {
+		const log = join(dir, "x.log");
+		writeFileSync(log, "x".repeat(LOG_ROTATE_BYTES + 1));
+		startInBackground("x install", ["true"], log);
+		expect(statSync(`${log}.1`).size).toBe(LOG_ROTATE_BYTES + 1);
+		expect(readFileSync(log, "utf8")).toStartWith(new Date().toISOString().slice(0, 4));
+	});
+
+	test("startOnce: a second caller sees the first run, even before it takes any lock; a finished run starts again", async () => {
+		const log = join(dir, "y.log");
+		const argv = ["sh", "-c", "sleep 1"];
+		const first = startOnce("y install", argv, log, () => null);
+		const second = startOnce("y install", argv, log, () => null);
+		expect(first.started).toBe(true);
+		if (!first.started) return;
+		expect(second).toMatchObject({ started: false, running: { pid: first.pid, command: "install" } });
+		expect(readFileSync(log, "utf8").match(/started in the background/g)).toHaveLength(1);
+		const id = { pid: first.pid, startTicks: processStartTicks(first.pid) };
+		for (let i = 0; i < 100 && isSameProcess(id); i++) await Bun.sleep(50);
+		const third = startOnce("y install", argv, log, () => null);
+		expect(third.started).toBe(true);
+		// What `busy` reports (the entrypoint's run, a lock holder) also stops a start.
+		const holder = { pid: process.pid, startTicks: processStartTicks(process.pid), startedAt: "2026-11-10T00:00:00.000Z", command: "prune" };
+		for (let i = 0; i < 100 && third.started && isSameProcess({ pid: third.pid, startTicks: processStartTicks(third.pid) }); i++) await Bun.sleep(50);
+		expect(startOnce("y install", argv, log, () => holder)).toEqual({ started: false, running: holder });
 	});
 });
 

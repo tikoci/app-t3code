@@ -252,7 +252,7 @@ describe("deb payload groups (capture)", () => {
 		const run = Bun.spawnSync([shim("tshark"), "env"], { env: { PATH: "/usr/bin:/bin" } });
 		expect(run.stdout.toString().trim()).toBe(`LD_LIBRARY_PATH=${join(env.root, "groups", "capture", id, "root", "usr/lib/x86_64-linux-gnu")}`);
 		expect(Bun.spawnSync([shim("rawshark")]).stdout.toString().trim()).toBe("rawshark fake 1.0");
-		expect(process.env["LD_LIBRARY_PATH"] ?? "").not.toContain("t3app tools");
+		expect(process.env["LD_LIBRARY_PATH"] ?? "").not.toContain("t3code-tools");
 		// Downloads are not kept once the payload is ready.
 		expect(existsSync(join(env.root, "groups", "capture", DEB_CACHE_DIR))).toBe(false);
 		expect(fetched).toHaveLength(5);

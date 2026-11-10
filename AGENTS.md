@@ -118,8 +118,8 @@ reference. Every area follows these rules:
   tests. No other verb grows `--json` unless something consumes it.
 - **Within 60 s:** RouterOS drops a `/container/shell` reply after about
   60 s (`.agents/skills/chr-app-lab`), so a verb that can run longer starts
-  its work in the background (`startInBackground` in `lib/runtime.ts`),
-  answers at once with what started and its log, and leaves progress to
+  its work in the background (`startOnce` in `lib/runtime.ts`: the
+  check and the start are atomic, and the log rotates at 1 MiB), answers at once with what started and its log, and leaves progress to
   `t3app status`. `--wait` runs it in place. If one is already running, it
   says so and starts nothing. Measured on the lab CHRs, idle: `t3app status`
   stays within a few seconds on x86 and about 6 s on arm64 under TCG.

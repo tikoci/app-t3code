@@ -27,7 +27,7 @@ import {
 	LOCK_EX,
 	LOCK_NB,
 	processStartTicks,
-	startInBackground,
+	startOnce,
 	stateDir,
 	stopChild,
 	waitGone,
@@ -452,18 +452,21 @@ still missing or another install holds the lock (--wait), 2 usage, 3 root.
 
 /**
  * `install` without --wait: start `install --wait` in the background, unless
- * an install round is running now. A --keep-trying run waiting out its
- * back-off holds no lock, so starting one is the "retry now".
+ * an install is running (one started here, or a round in progress). A
+ * --keep-trying run waiting out its back-off holds no lock, so starting one
+ * is the "retry now". startOnce makes the check and the start atomic.
  */
 function startInstall(): number {
 	const log = installLogPath();
-	const running = readProviderState(stateDir()).installer;
-	if (running && !running.waitingUntil && isSameProcess(running)) {
-		process.stdout.write(`t3app providers install: already running (pid ${running.pid}, since ${running.startedAt})\nlog: ${log}\nprogress: t3app status\n`);
+	const launch = startOnce("providers install", [process.execPath, import.meta.path, "install", "--wait"], log, () => {
+		const installer = readProviderState(stateDir()).installer;
+		return installer && !installer.waitingUntil && isSameProcess(installer) ? installer : null;
+	});
+	if (launch.started) {
+		process.stdout.write(`t3app providers install: started in the background (pid ${launch.pid})\nlog: ${log}\nprogress: t3app status\n`);
 		return 0;
 	}
-	const pid = startInBackground("providers install", [process.execPath, import.meta.path, "install", "--wait"], log);
-	process.stdout.write(`t3app providers install: started in the background (pid ${pid})\nlog: ${log}\nprogress: t3app status\n`);
+	process.stdout.write(`t3app providers install: already running (pid ${launch.running.pid}, since ${launch.running.startedAt})\nlog: ${log}\nprogress: t3app status\n`);
 	return 0;
 }
 

@@ -6,7 +6,7 @@
 // background install.
 import { accessSync, constants, existsSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { APP_HOME, DISK_RESERVE_BYTES, helpRequest, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, startInBackground, stateDir } from "./runtime.ts";
+import { APP_HOME, DISK_RESERVE_BYTES, helpRequest, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, startOnce, stateDir } from "./runtime.ts";
 import {
 	CORE_CHECKS,
 	DEFAULT_TOOL_GROUPS,
@@ -167,23 +167,27 @@ function runAsOwner(command: string, argv: string[]): number | null {
 
 /**
  * `install` without --wait: start `install --wait` in the background, unless
- * an install already holds the lock (a prune holding it is a failure: the
- * install would only find the lock busy). A waiting --keep-trying run holds
- * no lock, so starting one is the "retry now".
+ * an install is running (one started here, or one holding the lock); a prune
+ * holding the lock is a failure, since the install would only find it busy.
+ * A waiting --keep-trying run holds no lock, so starting one is the
+ * "retry now". startOnce makes the check and the start atomic.
  */
 function startInstall(): number {
 	const log = installLogPath();
-	const running = liveInstaller(defaultPayloadEnv(PAYLOAD_SPEC_DIR));
-	if (running && !running.waitingUntil) {
-		if (running.command !== "install") {
-			process.stderr.write(`t3app tools install: a ${running.command} is running (pid ${running.pid}); try again when it finishes\n`);
-			return 1;
-		}
-		process.stdout.write(`t3app tools install: already running (pid ${running.pid}, since ${running.startedAt})\nlog: ${log}\nprogress: t3app status\n`);
+	const launch = startOnce("tools install", [process.execPath, import.meta.path, "install", "--wait"], log, () => {
+		const holder = liveInstaller(defaultPayloadEnv(PAYLOAD_SPEC_DIR));
+		return holder && !holder.waitingUntil ? holder : null;
+	});
+	if (launch.started) {
+		process.stdout.write(`t3app tools install: started in the background (pid ${launch.pid})\nlog: ${log}\nprogress: t3app status\n`);
 		return 0;
 	}
-	const pid = startInBackground("tools install", [process.execPath, import.meta.path, "install", "--wait"], log);
-	process.stdout.write(`t3app tools install: started in the background (pid ${pid})\nlog: ${log}\nprogress: t3app status\n`);
+	const { running } = launch;
+	if (running.command && running.command !== "install") {
+		process.stderr.write(`t3app tools install: a ${running.command} is running (pid ${running.pid}); try again when it finishes\n`);
+		return 1;
+	}
+	process.stdout.write(`t3app tools install: already running (pid ${running.pid}, since ${running.startedAt})\nlog: ${log}\nprogress: t3app status\n`);
 	return 0;
 }
 
