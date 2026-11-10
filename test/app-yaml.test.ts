@@ -232,7 +232,7 @@ describe("runner pin", () => {
 		const root = join(import.meta.dir, "..");
 		for (const wf of ["ci.yml", "freshness.yml", "integration.yml", "pages.yml"]) {
 			const text = readFileSync(join(root, ".github/workflows", wf), "utf8");
-			const labels = [...text.matchAll(/^ +(?:runs-on|- runner): (\S+)$/gm)].map((m) => m[1] ?? "");
+			const labels = [...text.matchAll(/^ +(?:runs-on|- runner): (.+?)\s*$/gm)].map((m) => m[1] ?? "");
 			expect(labels.length).toBeGreaterThan(0);
 			const unpinned = labels.filter((l) => l !== "${{ matrix.runner }}" && !/^ubuntu-\d\d\.\d\d(-arm)?$/.test(l));
 			expect({ wf, unpinned }).toEqual({ wf, unpinned: [] });
