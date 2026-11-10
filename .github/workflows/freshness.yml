@@ -3,8 +3,12 @@ name: freshness
 # Drift against upstream that no commit here causes: a new stable T3 Code
 # release (and the harness catalog it would bring), a change to Claude Code's
 # download channel or manifest (bin/install-claude-code), plus everything
-# `pinned` and the share-link test check. A red run is the signal to bump; see
-# scripts/freshness.ts and the "release sync" test for every pin.
+# `pinned` and the share-link test check, and the other tool pins (gh, uv,
+# Bun, the CI linters). A red run is the signal to bump; see
+# scripts/freshness.ts and the "release sync" test for every pin. A scheduled
+# run also keeps one `freshness` issue open while it is red
+# (scripts/freshness-issue.sh), so drift notifies instead of waiting for
+# someone to open the Actions tab.
 
 on:
   schedule:
@@ -13,18 +17,34 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   freshness:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: "1.4.4"
       # The harness-catalog parser reads upstream with TypeScript's parser (a devDependency).
       - run: bun install --frozen-lockfile
-      - name: Freshness (share link, pinned and newest T3 release, Claude Code downloads)
-        run: bun scripts/freshness.ts all
+      - name: Freshness (share link, pinned and newest T3 release, Claude Code downloads, tool pins)
+        id: check
+        run: |
+          set +e
+          bun scripts/freshness.ts all > report.txt 2>&1
+          status=$?
+          cat report.txt
+          exit "$status"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Scheduled runs only: a manual run (or one on a branch) just goes red.
+      - name: Track drift in the freshness issue
+        if: always() && github.event_name == 'schedule' && (steps.check.outcome == 'success' || steps.check.outcome == 'failure')
+        run: scripts/freshness-issue.sh "$OUTCOME" report.txt "$RUN_URL"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          OUTCOME: ${{ steps.check.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

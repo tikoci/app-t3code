@@ -15,7 +15,7 @@ lint: check lint-shell lint-actions
 # The Dockerfile (hadolint, which also runs ShellCheck on its RUN steps) and
 # every shell script that ships in the image or runs in its tests. CI runs
 # this with pinned, checksum-verified hadolint and ShellCheck (ci.yml).
-SHELL_SCRIPTS = bin/* docker-entrypoint.sh profile.sh scripts/install-pairing-help.sh test/*.sh
+SHELL_SCRIPTS = bin/* docker-entrypoint.sh profile.sh scripts/install-pairing-help.sh scripts/freshness-issue.sh test/*.sh
 
 lint-shell:
 	hadolint Dockerfile

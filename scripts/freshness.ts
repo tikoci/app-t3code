@@ -5,6 +5,7 @@
 //   bun scripts/freshness.ts pinned [--version X]   the pinned T3 release (CI on every PR)
 //   bun scripts/freshness.ts upstream [--version X] the newest stable T3 release (scheduled)
 //   bun scripts/freshness.ts claude                 Claude Code's download contract (scheduled)
+//   bun scripts/freshness.ts tools                  the other upstream tool pins (scheduled)
 //
 // The version defaults to package.json's; CI passes the T3CODE_VER it builds,
 // which a workflow_dispatch can override.
@@ -15,6 +16,8 @@
 // has to classify. `claude` checks that Anthropic's stable channel, manifest
 // and binaries still have the shape bin/install-claude-code reads (a 404 and a
 // changed manifest schema left every new home without Claude until #13).
+// `tools` checks that every other pinned tool (TOOL_PINS: gh, uv and Bun in the
+// image, the CI linters) is its upstream's latest release.
 // Network checks read GitHub; set GH_TOKEN or GITHUB_TOKEN to avoid the
 // anonymous API rate limit.
 
@@ -349,6 +352,59 @@ export async function checkUpstream(version = pinnedVersion()): Promise<Report> 
 	return { ok: true, lines: [`T3CODE_VER ${version} is the newest stable T3 Code`, ...notes] };
 }
 
+// --- other tool pins --------------------------------------------------------
+
+/**
+ * Tools pinned by version that the image or CI downloads, each read from the
+ * one line that sets it. Not here: T3 (`pinned`/`upstream`), Claude (`claude`),
+ * GitHub Actions (Dependabot), `@tikoci/*@next` and the Debian payloads (they
+ * float, and follow the next rebuild), and the Node base image (a major line).
+ */
+export const TOOL_PINS = [
+	{ name: "gh", repo: "cli/cli", tagPrefix: "v", file: "Dockerfile", pattern: /^ARG GH_VER=(\S+)$/gm, bump: "GH_VER (the build checks gh's own checksums)" },
+	{ name: "uv", repo: "astral-sh/uv", tagPrefix: "", file: "Dockerfile", pattern: /^ARG UV_VER=(\S+)$/gm, bump: "UV_VER (the ghcr.io/astral-sh/uv image tag)" },
+	{ name: "Bun", repo: "oven-sh/bun", tagPrefix: "bun-v", file: "Dockerfile", pattern: /^ARG BUN_VER=(\S+)$/gm, bump: 'BUN_VER and every workflow\'s setup-bun `bun-version` ("release sync" test)' },
+	{ name: "hadolint", repo: "hadolint/hadolint", tagPrefix: "v", file: ".github/workflows/ci.yml", pattern: /^ +HADOLINT_VER: "([^"]+)"$/gm, bump: "HADOLINT_VER and HADOLINT_SHA256" },
+	{ name: "ShellCheck", repo: "koalaman/shellcheck", tagPrefix: "v", file: ".github/workflows/ci.yml", pattern: /^ +SHELLCHECK_VER: "([^"]+)"$/gm, bump: "SHELLCHECK_VER and SHELLCHECK_SHA256" },
+	{ name: "actionlint", repo: "rhysd/actionlint", tagPrefix: "v", file: ".github/workflows/ci.yml", pattern: /^ +ACTIONLINT_VER: "([^"]+)"$/gm, bump: "ACTIONLINT_VER and ACTIONLINT_SHA256" },
+] as const;
+
+export type ToolPin = (typeof TOOL_PINS)[number];
+
+/** The version `pin` sets in `source` (its file's text); throws unless exactly one line sets it. */
+export function toolPinVersion(pin: ToolPin, source: string): string {
+	const found = [...source.matchAll(pin.pattern)].map((m) => m[1] as string);
+	if (found.length !== 1) throw new Error(`${pin.file}: ${found.length} lines set the ${pin.name} pin; expected exactly 1`);
+	return found[0] as string;
+}
+
+/** One pin against its upstream's latest release tag. */
+export function toolPinReport(pin: ToolPin, pinned: string, latestTag: string): Report {
+	if (latestTag === `${pin.tagPrefix}${pinned}`) return { ok: true, lines: [`${pin.name} ${pinned} is ${pin.repo}'s latest release`] };
+	return { ok: false, lines: [`${pin.name}: ${pin.repo}'s latest release is ${latestTag}; ${pin.file} pins ${pinned}. Bump ${pin.bump}.`] };
+}
+
+/**
+ * Every TOOL_PINS entry against `releases/latest` (GitHub's newest non-draft,
+ * non-prerelease release). Each pin is checked on its own: a parse or network
+ * error fails that pin only, so the report still lists every other stale one.
+ */
+export async function checkTools(): Promise<Report> {
+	const reports: Report[] = [];
+	for (const pin of TOOL_PINS) {
+		try {
+			const pinned = toolPinVersion(pin, readFileSync(join(ROOT, pin.file), "utf8"));
+			const res = await fetchOk(`https://api.github.com/repos/${pin.repo}/releases/latest`, apiHeaders());
+			reports.push(toolPinReport(pin, pinned, ((await res.json()) as { tag_name: string }).tag_name));
+		} catch (error) {
+			reports.push({ ok: false, lines: [`${pin.name}: not checked: ${error instanceof Error ? error.message : String(error)}`] });
+		}
+	}
+	const stale = reports.filter((r) => !r.ok);
+	if (stale.length) return { ok: false, lines: stale.flatMap((r) => r.lines) };
+	return { ok: true, lines: [`tool pins: ${TOOL_PINS.map((p) => p.name).join(", ")} are each upstream's latest release`] };
+}
+
 /**
  * Claude Code's `channel` pointer names a version whose manifest has both
  * Linux platforms, each binary answers with the manifest's size, and each has
@@ -421,7 +477,8 @@ const CHECKS: Record<string, (args: string[]) => Array<() => Report | Promise<Re
 	pinned: (args) => [() => checkPinned(versionArg(args))],
 	upstream: (args) => [() => checkUpstream(versionArg(args))],
 	claude: () => [() => checkClaude()],
-	all: (args) => [() => checkShareLink(), () => checkPinned(versionArg(args)), () => checkUpstream(versionArg(args)), () => checkClaude()],
+	tools: () => [() => checkTools()],
+	all: (args) => [() => checkShareLink(), () => checkPinned(versionArg(args)), () => checkUpstream(versionArg(args)), () => checkClaude(), () => checkTools()],
 };
 
 /** CLI entry: exit 0 when every check passes, 1 on drift or error, 2 on usage. */
@@ -429,7 +486,7 @@ export async function main(argv: string[]): Promise<number> {
 	const [command = "", ...args] = argv;
 	const checks = Object.hasOwn(CHECKS, command) ? CHECKS[command] : undefined;
 	if (!checks) {
-		console.error("usage: bun scripts/freshness.ts share-link [--write] | pinned | upstream | claude | all  [--version X]");
+		console.error("usage: bun scripts/freshness.ts share-link [--write] | pinned | upstream | claude | tools | all  [--version X]");
 		return 2;
 	}
 	let ok = true;

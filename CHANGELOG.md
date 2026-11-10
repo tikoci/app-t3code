@@ -7,7 +7,24 @@ number), which is also its image tag, and each entry names the promoted
 `sha-<commit>`. Entries from before these tags are headed by date. See
 `AGENTS.md` "Versions and CHANGELOG".
 
-## Unreleased
+Every merge to `main` that changes the image ships on its own, but its run
+number is known only after the merge. So the newest changes sit under
+**Not yet numbered**: they may already be in `:0.1`, and a later commit
+gives them their `-app.<N>` heading.
+
+## Not yet numbered
+
+- Repository: every workflow action is pinned to a commit SHA (with its
+  release in a comment), and Dependabot opens one grouped PR a month to
+  move them (GitHub Actions only). The daily freshness check now also
+  watches the gh, uv and Bun pins and CI's linters, and while it is red
+  keeps one `freshness` issue open with the latest report, closing it on
+  the next green run. Nothing in the image changes; the merge rebuilds and
+  promotes a new build because workflows count as image-relevant.
+
+## 0.1.7-app.137 — 2026-11-09
+
+`sha-589e0a6`. The first build with an `-app.<N>` tag.
 
 - Promoted builds get their own tag, `:<T3 version>-app.<N>` (`N` is the
   `ci` run number), that never moves, so a router can stay on one build.

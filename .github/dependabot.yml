@@ -1,0 +1,19 @@
+# Version updates for GitHub Actions only. Workflows pin each action to a
+# commit SHA with its release in a comment (`@<sha> # v6.1.0`); Dependabot
+# moves both. A workflow change counts as image-relevant in CI, so a merge
+# rebuilds and promotes the image: one grouped PR a month keeps that rare.
+#
+# Not here on purpose: npm/bun (devDependencies; the `dev` group's lockfile
+# gets Dependabot security PRs from the repository setting) and Docker
+# base images (Dockerfile ARGs; scripts/freshness.ts `tools` watches them).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "CI"

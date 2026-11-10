@@ -127,8 +127,8 @@ in to T3's telemetry. Provider CLIs have their own telemetry settings.
 - Build-time downloads are pinned: T3 Code by version, `gh` and the CI linters
   (hadolint, ShellCheck, actionlint) by version and SHA-256, and `uv` by image
   tag.
-- Workflow actions are pinned by tag, not yet by commit SHA (tracked on the
-  [Roadmap](https://github.com/tikoci/app-t3code/issues/30)).
+- Workflow actions are pinned to a commit SHA, with the release in a
+  comment. Dependabot proposes updates monthly (GitHub Actions only).
 - A ruleset on `main` blocks force-pushes and deletion, requires a pull
   request with every review thread resolved, and requires CI's
   `lint-test` and `build` jobs. `build` skips changes that can't reach the
@@ -136,7 +136,9 @@ in to T3's telemetry. Provider CLIs have their own telemetry settings.
   passing, so the image build gates only image changes. Repository admins
   can bypass it, for small doc fixes straight to `main`.
 - Daily freshness checks (`.github/workflows/freshness.yml`) flag a new
-  upstream T3 release or a change in Claude Code's download contract.
+  upstream T3 release, a change in Claude Code's download contract, and a
+  newer release of any other pinned download (gh, uv, Bun, the CI linters).
+  While they fail, a `freshness` issue stays open with the report.
 
 ## Code scanning
 
@@ -148,7 +150,7 @@ live source of alerts and advisories. What runs today:
 - **Dependabot**: alerts and security-update PRs, enabled. Security PRs on
   `scripts/groups/dev/package-lock.json` change the `dev` payload id, so
   every home re-downloads it on its next start, which is the intended
-  security refresh. Version-update PRs are not configured.
+  security refresh. Version updates run for GitHub Actions only.
 - **Secret scanning** with **push protection**: enabled.
 - **Private vulnerability reporting**: enabled.
 
