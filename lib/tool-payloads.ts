@@ -906,10 +906,13 @@ export async function installGroups(
 					return { locked: false, results };
 				}
 				// A busy round (a prune, a manual install) costs no attempt:
-				// wait as long again and retry, at most `attempts` times.
+				// wait as long again and retry, at most `attempts` times. Busy
+				// at the first round (keepTrying only), the waits walk the
+				// schedule, so a long manual install can't outlast them.
 				if (++busy > attempts) break;
 				env.log(`round ${round + 1}/${attempts}: another installer or prune holds the lock; trying again later`);
-				await env.sleep(env.backoffMs[Math.max(round - 1, 0)] as number);
+				const wait = round === 0 ? Math.min(busy - 1, env.backoffMs.length - 1) : round - 1;
+				await env.sleep(env.backoffMs[wait] as number);
 				continue;
 			} else {
 				locked = true;

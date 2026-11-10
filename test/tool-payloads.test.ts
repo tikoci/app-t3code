@@ -305,6 +305,32 @@ describe("npm payload groups", () => {
 		}
 	});
 
+	test("--keep-trying: a lock busy for several first rounds walks the back-off schedule", async () => {
+		env.backoffMs = [1, 2, 3];
+		const lock = join(env.root, "install.lock");
+		mkdirSync(env.root, { recursive: true });
+		const holder = Bun.spawn(["flock", "-o", lock, "sleep", "30"]);
+		try {
+			for (let i = 0; i < 100 && Bun.spawnSync(["flock", "-n", lock, "true"]).exitCode === 0; i++) await Bun.sleep(20);
+			const waits: number[] = [];
+			const result = await installGroups(npmGroups, ["dev"], {
+				...env,
+				keepTrying: true,
+				sleep: async (ms) => {
+					waits.push(ms);
+					if (waits.length === 3) {
+						holder.kill();
+						await holder.exited;
+					}
+				},
+			});
+			expect(waits).toEqual([1, 2, 3]);
+			expect(result.results["dev"]).toMatchObject({ state: "ready", attempt: 1 });
+		} finally {
+			holder.kill();
+		}
+	});
+
 	test("a group that failed on low disk counts as ready once another run installed it", async () => {
 		cpSync(join(tmp, "spec", "dev"), join(tmp, "spec", "dev2"), { recursive: true });
 		const groups = [...npmGroups, { ...dev, name: "dev2" }];
