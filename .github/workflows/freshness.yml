@@ -6,9 +6,9 @@ name: freshness
 # `pinned` and the share-link test check, and the other tool pins (gh, uv,
 # Bun, the CI linters). A red run is the signal to bump; see
 # scripts/freshness.ts and the "release sync" test for every pin. A scheduled
-# run also keeps one `freshness` issue open while it is red
-# (scripts/freshness-issue.sh), so drift notifies instead of waiting for
-# someone to open the Actions tab.
+# run, or a manual one on main, also keeps one `freshness` issue open while
+# it is red (scripts/freshness-issue.sh), so drift notifies instead of
+# waiting for someone to open the Actions tab.
 
 on:
   schedule:
@@ -21,9 +21,9 @@ permissions:
 
 jobs:
   freshness:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: "1.4.4"
@@ -39,9 +39,13 @@ jobs:
           exit "$status"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # Scheduled runs only: a manual run (or one on a branch) just goes red.
+      # Scheduled runs and manual runs on main: a manual run on a branch
+      # just goes red, since it checks that branch's pins.
       - name: Track drift in the freshness issue
-        if: always() && github.event_name == 'schedule' && (steps.check.outcome == 'success' || steps.check.outcome == 'failure')
+        if: >-
+          always()
+          && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
+          && (steps.check.outcome == 'success' || steps.check.outcome == 'failure')
         run: scripts/freshness-issue.sh "$OUTCOME" report.txt "$RUN_URL"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

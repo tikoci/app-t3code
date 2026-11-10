@@ -34,13 +34,16 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   pinned download (`TOOL_PINS`: gh, uv, Bun, hadolint, ShellCheck,
   actionlint) against its upstream's latest release. CI runs `pinned` on every
   PR; `freshness.yml` runs them all daily, and a red run there means bump.
-  While the scheduled run is red it keeps one open `freshness` issue with the
-  latest report (`scripts/freshness-issue.sh`) and closes it when green.
+  While the scheduled run (or a manual run on `main`) is red it keeps one
+  open `freshness` issue with the latest report (`scripts/freshness-issue.sh`)
+  and closes it when green.
 - Workflow actions are pinned to a commit SHA with the release in a comment
-  (`uses: actions/checkout@<sha> # v6.1.0`). Dependabot (`.github/dependabot.yml`,
+  (`uses: actions/checkout@<sha> # v7.0.1`). Dependabot (`.github/dependabot.yml`,
   GitHub Actions only) moves both monthly in one grouped PR; pin new actions
-  the same way. Bun's version is in the Dockerfile (`BUN_VER`) and every
-  setup-bun step; `test/app-yaml.test.ts` keeps them equal.
+  the same way. Jobs run on a named release (`ubuntu-24.04`,
+  `ubuntu-24.04-arm`), never `ubuntu-latest`, which GitHub moves to 26.04
+  on its own schedule; the "runner pin" test checks it. Bun's version is in
+  the Dockerfile (`BUN_VER`) and every setup-bun step; `test/app-yaml.test.ts` keeps them equal.
 - `APP_T3CODE_INTEGRATION=1 bun test test/integration/` — full CHR
   boot + container install + web UI probe. Needs QEMU and network; slow
   (the GHCR image pull alone is ~1GB on a free-license CHR).

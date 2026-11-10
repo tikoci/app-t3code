@@ -20,6 +20,13 @@ gives them their `-app.<N>` heading.
   over several days. Every existing file moved, and links were updated. Only
   code comments in the image change, but `scripts/` counts as
   image-relevant, so the merge rebuilds and promotes a new build.
+- CI: the workflow actions move to their current majors (#43), among them
+  `docker/build-push-action` v7 and Buildx setup v4, which all run on
+  Node 24. Every job now runs on `ubuntu-24.04` rather than `ubuntu-latest`,
+  which GitHub is moving to Ubuntu 26.04. The image contents do not change,
+  but the merge rebuilds and promotes it. A manual freshness
+  run on `main` now opens, updates or closes the `freshness` issue, like
+  the daily one.
 
 ## 0.1.7-app.142 — 2026-11-10
 
