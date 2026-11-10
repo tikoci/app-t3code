@@ -1,10 +1,11 @@
 // Primitives both installers share: tool-group payloads (tool-payloads.ts)
 // and provider CLIs (providers.ts). Each keeps its own lifecycle; this file
 // holds only what both already need: the app's home and state directory,
-// disk and retry budgets, process identity, stopping an orphaned child, and
-// the kernel lock. Nothing here knows about groups or providers.
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+// disk and retry budgets, process identity, stopping an orphaned child, the
+// kernel lock and starting an install in the background. Nothing here knows
+// about groups or providers.
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, writeSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { dlopen, FFIType } from "bun:ffi";
 
 export const MiB = 1024 * 1024;
@@ -89,6 +90,27 @@ export function stopChild(child: Child): boolean {
 /** Wait up to about 5 s for a stopped child to be gone. */
 export async function waitGone(child: Child): Promise<void> {
 	for (let i = 0; i < 100 && isSameProcess(child); i++) await Bun.sleep(50);
+}
+
+/**
+ * Start an install in its own session and return its pid at once. RouterOS
+ * drops a /container/shell reply after about 60 s, so a long operation
+ * answers with what it started and leaves progress to `t3app status`.
+ * Output is appended to `log` (the same file the entrypoint's background
+ * run of that installer uses), after a line naming what started; nothing is
+ * left attached to the caller's terminal, so the child outlives it.
+ */
+export function startInBackground(name: string, argv: readonly string[], log: string, env: NodeJS.ProcessEnv = process.env): number {
+	mkdirSync(dirname(log), { recursive: true });
+	const fd = openSync(log, "a");
+	try {
+		const proc = Bun.spawn([...argv], { detached: true, env, stdin: "ignore", stdout: fd, stderr: fd });
+		writeSync(fd, `${new Date().toISOString()} t3app: ${name} started in the background (pid ${proc.pid})\n`);
+		proc.unref();
+		return proc.pid;
+	} finally {
+		closeSync(fd);
+	}
 }
 
 export const LOCK_EX = 2;

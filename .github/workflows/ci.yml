@@ -157,7 +157,7 @@ jobs:
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: "1.4.4"
-      # Starts T3 with T3CODE_TOOL_GROUPS=all (waits for every payload to
+      # Starts T3 with T3APP_TOOL_GROUPS=all (waits for every payload to
       # install and runs the native group tools unprivileged), then with an
       # unknown group, then offline: dev, the native groups, the image default
       # (no --env) and none.
@@ -207,8 +207,8 @@ jobs:
           printf '%s\n' "$GITHUB_SHA" > image-inventory/source-commit.txt
       - name: Record runtime tool-group status with every group selected
         run: |
-          docker run --rm --network none --env T3CODE_TOOL_GROUPS=all \
-            --entrypoint t3code-tools app-t3code:test status --json \
+          docker run --rm --network none --env T3APP_TOOL_GROUPS=all \
+            --entrypoint t3app app-t3code:test tools status --json \
             > image-inventory/tool-groups-runtime-linux_amd64.json
           jq -e '(.selector.selected | length) == (.groups | length)' image-inventory/tool-groups-runtime-linux_amd64.json
           jq -r '.groups[] | "\(.name)\t\(.state)"' image-inventory/tool-groups-runtime-linux_amd64.json
@@ -250,8 +250,8 @@ jobs:
           APP_T3CODE_T3VER: ${{ needs.build.outputs.ver }}
       - name: Record runtime tool-group status with every group selected (arm64)
         run: |
-          docker run --rm --network none --env T3CODE_TOOL_GROUPS=all \
-            --entrypoint t3code-tools "ghcr.io/tikoci/app-t3code@${{ needs.build.outputs.digest }}" status --json \
+          docker run --rm --network none --env T3APP_TOOL_GROUPS=all \
+            --entrypoint t3app "ghcr.io/tikoci/app-t3code@${{ needs.build.outputs.digest }}" tools status --json \
             > tool-groups-runtime-linux_arm64.json
           jq -e '(.selector.selected | length) == (.groups | length)' tool-groups-runtime-linux_arm64.json
           jq -r '.groups[] | "\(.name)\t\(.state)"' tool-groups-runtime-linux_arm64.json

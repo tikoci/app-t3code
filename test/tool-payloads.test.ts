@@ -297,7 +297,7 @@ describe("npm payload groups", () => {
 		expect(hours(KEEP_TRYING_BACKOFF_MS)).toBeLessThan(30);
 		expect(Math.max(...KEEP_TRYING_BACKOFF_MS)).toBe(3_600_000);
 		const entrypoint = readFileSync(join(import.meta.dir, "..", "docker-entrypoint.sh"), "utf8");
-		expect(entrypoint).toContain("background tool-groups /usr/local/bin/t3code-tools install --keep-trying");
+		expect(entrypoint).toContain("background tool-groups /usr/local/bin/t3app tools install --keep-trying");
 	});
 
 	test("low disk fails without downloading or deleting anything", async () => {
@@ -540,11 +540,12 @@ await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 	});
 });
 
-describe("t3code-tools command reference", () => {
+describe("t3app tools command reference", () => {
 	test("help describes every command, and <command> --help prints it", async () => {
 		for (const command of ["status", "install", "prune", "init", "groups"]) expect(USAGE).toMatch(new RegExp(`^  ${command}\\b`, "m"));
 		for (const name of GROUPS.map((g) => g.name)) expect(USAGE).toContain(name);
 		expect(USAGE).toContain("--keep-trying");
+		expect(USAGE).toContain("install [--wait]");
 		expect(USAGE).toContain("setpriv");
 		const out = process.stdout.write;
 		const err = process.stderr.write;
@@ -580,9 +581,9 @@ describe("t3code-tools command reference", () => {
 		}
 	});
 
-	test("root resolves the app's payload root, not its own HOME; T3CODE_TOOLS_HOME still wins", () => {
+	test("root resolves the app's payload root, not its own HOME; T3APP_TOOLS_HOME still wins", () => {
 		expect(defaultRoot({ HOME: "/root" }, 0)).toBe("/data/.local/share/t3code-tools");
-		expect(defaultRoot({ HOME: "/root", T3CODE_TOOLS_HOME: "/srv/tools" }, 0)).toBe("/srv/tools");
+		expect(defaultRoot({ HOME: "/root", T3APP_TOOLS_HOME: "/srv/tools" }, 0)).toBe("/srv/tools");
 		expect(defaultRoot({ HOME: "/home/x" }, 1000)).toBe("/home/x/.local/share/t3code-tools");
 		expect(defaultRoot({}, 1000)).toBe("/data/.local/share/t3code-tools");
 	});

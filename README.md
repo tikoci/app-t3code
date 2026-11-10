@@ -38,7 +38,7 @@ app disk, so logins, the T3 database, and `~/projects` survive reboots.
 
 ### Preview or edit the YAML
 
-[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++HOME%3A+%2Fdata%0A++++++T3CODE_HOME%3A+%2Fdata%2F.t3%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++++%23+Optional+tool+groups%2C+installed+into+%2Fdata+in+the+background+after%0A++++++%23+start.+Remove+names+to+skip+them%3B+%22none%22+is+core+only.+On+an+installed%0A++++++%23+app+change+this+with+%2Fapp%2Fset+environment%3D+%28README%29%2C+never+yaml%3D.%0A++++++T3CODE_TOOL_GROUPS%3A+%22capture+labs+vpn+routing+dev%22%0A++++++%23+Provider+CLIs+to+install+into+%2Fdata+in+the+background%3A+claude+codex%0A++++++%23+cursor+grok+opencode+antigravity+pi+muse%2C+or+%22none%22.+Same+rules.%0A++++++T3CODE_PROVIDERS%3A+%22claude+codex%22%0A++++volumes%3A%0A++++++%23+Keep+this+name+and+destination+when+upgrading%3A+the+whole+home%2C%0A++++++%23+including+.t3%2Fuserdata%2C+projects%2C+worktrees%2C+and+provider+logins.%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
+[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++HOME%3A+%2Fdata%0A++++++T3CODE_HOME%3A+%2Fdata%2F.t3%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++++%23+Optional+tool+groups%2C+installed+into+%2Fdata+in+the+background+after%0A++++++%23+start.+Remove+names+to+skip+them%3B+%22none%22+is+core+only.+On+an+installed%0A++++++%23+app+change+this+with+%2Fapp%2Fset+environment%3D+%28README%29%2C+never+yaml%3D.%0A++++++T3APP_TOOL_GROUPS%3A+%22capture+labs+vpn+routing+dev%22%0A++++++%23+Provider+CLIs+to+install+into+%2Fdata+in+the+background%3A+claude+codex%0A++++++%23+cursor+grok+opencode+antigravity+pi+muse%2C+or+%22none%22.+Same+rules.%0A++++++T3APP_PROVIDERS%3A+%22claude+codex%22%0A++++volumes%3A%0A++++++%23+Keep+this+name+and+destination+when+upgrading%3A+the+whole+home%2C%0A++++++%23+including+.t3%2Fuserdata%2C+projects%2C+worktrees%2C+and+provider+logins.%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
 the single-app definition in our sister project, [tikoci/restraml](https://github.com/tikoci/restraml).
 The share link embeds the YAML as a snapshot; the downloads below track the
 current published files. Both YAML files include schema comments for editor validation.
@@ -88,7 +88,7 @@ The image is about 0.8GB compressed and 3GB extracted (amd64 build,
 2026-11-07). The default tool groups add about 0.7GB in `/data` after the
 first start (see [Optional tool groups](#optional-tool-groups)), and up to
 about twice that after an image update that refreshes them, because the
-previous payloads are kept until `t3code-tools prune`. Allow at
+previous payloads are kept until `t3app tools prune`. Allow at
 least an 8GB app disk, plus space for projects, browser downloads, and any
 quickchr lab disks. Builds need extra space for intermediate layers and
 loading the finished image.
@@ -176,18 +176,18 @@ RouterOS?" panel under T3's token field with this command, which prints a
 fresh token:
 
 ```routeros
-:put [/container/shell app-t3code cmd="t3-pairing-link" as-value]
+:put [/container/shell app-t3code cmd="t3app pairing" as-value]
 ```
 
 The container log has the same command at every start. If you renamed the
 app, use its container name (`/container/print`) in place of `app-t3code`.
 
 To get the browser URL as well, run this in the **RouterOS terminal** to print both
-the app's browser URL and a fresh token from `t3-pairing-link` inside the
+the app's browser URL and a fresh token from `t3app pairing` inside the
 `app-t3code` container:
 
 ```routeros
-:put "** Using T3Code **\r\n\r\nIn your browser go to: $[/app/get t3code ui-url]\r\n\r\nThen, use the Token below in your browser to connect it with this container:\r\n$[/container/shell app-t3code cmd="t3-pairing-link" as-value]"
+:put "** Using T3Code **\r\n\r\nIn your browser go to: $[/app/get t3code ui-url]\r\n\r\nThen, use the Token below in your browser to connect it with this container:\r\n$[/container/shell app-t3code cmd="t3app pairing" as-value]"
 ```
 
 For example (illustrative token):
@@ -220,8 +220,56 @@ if you need a fresh one.
 > user in the `read` group can see that token too; see
 > [SECURITY.md](SECURITY.md#the-startup-pairing-token-in-containerlog).
 
-If `PUBLIC_URL` is set in the container, `t3-pairing-link` can print a full
+If `PUBLIC_URL` is set in the container, `t3app pairing` can print a full
 pairing URL instead of a raw token.
+
+### The `t3app` command
+
+`t3app` is the image's operator command: status, tool groups, provider CLIs
+and pairing, one command with an area and a verb. From RouterOS it runs
+through `/container/shell`, as the app user (`node`):
+
+```routeros
+/container/shell app-t3code cmd="t3app status"
+/container/shell app-t3code cmd="t3app tools install"
+/container/shell app-t3code cmd="t3app providers install"
+/container/shell app-t3code cmd="t3app tools prune"
+:put [/container/shell app-t3code cmd="t3app pairing" as-value]
+```
+
+| Command | What it does |
+|---|---|
+| `t3app status [--json]` | Tool groups and provider CLIs in one report: selections, states, last errors, log paths. Read-only |
+| `t3app tools status\|install\|prune\|groups` | [Optional tool groups](#optional-tool-groups); `t3app tools help` has the details |
+| `t3app providers status\|install` | [Provider CLIs](#providers-t3app_providers); `t3app providers help` |
+| `t3app pairing [label]` | A fresh pairing token (a full link with `PUBLIC_URL` set) |
+| `t3app help` | The command reference |
+
+RouterOS drops a `/container/shell` command's output after about 60 s, so
+`tools install` and `providers install` start in the background and answer
+at once with the log to follow. `t3app status` shows the progress. In a T3
+terminal, `--wait` runs them in place instead. A mistyped command or an
+extra argument prints the usage and exits 2, and nothing runs:
+
+```routeros
+/container/shell app-t3code cmd="t3app tools install now"
+```
+
+Exit codes are 0 for ok, 1 when the operation failed, 2 for usage, and 3 for
+the wrong user. The shell runs as `node` unless you add `user=root`. As root,
+the tool commands switch to `node` (no file in `/data` becomes root-owned),
+and `providers install` refuses with exit 3.
+
+> [!IMPORTANT]
+> **Renamed settings and commands (breaking).** `T3CODE_TOOL_GROUPS`,
+> `T3CODE_PROVIDERS` and `T3CODE_TOOLS_HOME` are now `T3APP_TOOL_GROUPS`,
+> `T3APP_PROVIDERS` and `T3APP_TOOLS_HOME`. The old names are ignored, with
+> one line in `/container/log` at start that names them, so an install that
+> set them gets the defaults after `/app/update` until you set the new keys
+> (see [Changing groups on RouterOS](#changing-groups-on-routeros)).
+> `t3code-tools`, `t3code-providers` and `t3-pairing-link` are now
+> `t3app tools`, `t3app providers` and `t3app pairing`. Upstream T3's own
+> `T3CODE_*` settings (`T3CODE_HOST`, `T3CODE_PORT`, …) are unchanged.
 
 ### Environment and providers
 
@@ -229,16 +277,16 @@ pairing URL instead of a raw token.
 |---|---|---|
 | `T3CODE_HOST` / `T3CODE_PORT` | `0.0.0.0` / `3773` | server bind |
 | `T3CODE_TELEMETRY_ENABLED` | `false` (image default and YAML) | set `true` to opt back in |
-| `T3CODE_TOOL_GROUPS` | `capture labs vpn routing dev` (image default and YAML) | optional tool groups; remove names to skip them, `none` for core only; see [below](#optional-tool-groups) |
-| `T3CODE_PROVIDERS` | `claude codex` (image default and YAML) | provider CLIs to install into the home; see [Providers](#providers-t3code_providers) |
+| `T3APP_TOOL_GROUPS` | `capture labs vpn routing dev` (image default and YAML) | optional tool groups; remove names to skip them, `none` for core only; see [below](#optional-tool-groups) |
+| `T3APP_PROVIDERS` | `claude codex` (image default and YAML) | provider CLIs to install into the home; see [Providers](#providers-t3app_providers) |
 | `UV_PYTHON_DOWNLOADS` | `manual` (image default) | uv uses the image's Python 3 and downloads another only on `uv python install` |
 | `PUBLIC_URL` | unset | base URL baked into pairing links |
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, … | inherited | agents see container env |
 | `T3CODE_*` | passthrough | e.g. `T3CODE_SERVER_BROWSER_SANDBOX=0` |
 
-#### Providers (`T3CODE_PROVIDERS`)
+#### Providers (`T3APP_PROVIDERS`)
 
-No provider CLI is baked into the image. `T3CODE_PROVIDERS` picks which ones
+No provider CLI is baked into the image. `T3APP_PROVIDERS` picks which ones
 install into the home, in the background after T3 starts, one explicit
 token per provider in T3's main **Add provider** list:
 
@@ -259,7 +307,7 @@ nothing. Like the tool groups, it is an explicit list with no `all`, so a
 provider T3 adds later never starts downloading by itself. Change it the
 same way as the groups: with `/app/set environment=`, never the YAML (see
 [Changing groups on RouterOS](#changing-groups-on-routeros), with
-`T3CODE_PROVIDERS=` as the key).
+`T3APP_PROVIDERS=` as the key).
 
 How the installs behave:
 
@@ -278,8 +326,8 @@ How the installs behave:
   whenever Settings → Providers opens, so a CLI that finishes installing
   after the welcome screen appeared shows up then.
 - **Retries.** The background run retries for about a day (15 s, 1 m, 5 m,
-  15 m, 30 m, then hourly). Run `t3code-providers install` in a terminal
-  to retry now, and `t3code-providers status` to see each provider's state,
+  15 m, 30 m, then hourly). `t3app providers install` retries now, and
+  `t3app providers status` shows each provider's state,
   where its CLI resolves and its last error.
 - **Disk.** Each install needs about twice its size free in `/data` (the
   download or npm cache plus the install), plus 256 MiB. With less, that
@@ -311,7 +359,7 @@ live in the home.
 > carried `codex` and `opencode` in `/usr/local`. After `/app/update`, the
 > default installs `claude` and `codex` into the home on first start (Codex
 > is a download of about 166 MiB, then about 437 MiB in `/data`). OpenCode is
-> no longer installed by default: add `opencode` to `T3CODE_PROVIDERS` to
+> no longer installed by default: add `opencode` to `T3APP_PROVIDERS` to
 > keep it. Logins, settings and sessions in `/data` stay either way.
 
 ### Installed package inventory
@@ -350,7 +398,7 @@ dependencies), versions, architecture, installed sizes, selected executable
 availability, runtime versions, and top-level global npm/Bun packages in
 `/usr/share/t3code/inventory/`. Read `README.md`, `packages.tsv`,
 `commands.tsv`, or `inventory.json` there. `tool-groups.json` holds
-`t3code-tools status --json --groups all` as evaluated at build time. These describe the image before
+`t3app tools status --json --groups all` as evaluated at build time. These describe the image before
 first boot; Claude, browser downloads, and tools installed in your home are
 outside this inventory. A command on PATH can also be a downloader shim.
 
@@ -377,7 +425,7 @@ the core network tools and group assignment are in [Optional tool groups](#optio
 
 ### Optional tool groups
 
-`T3CODE_TOOL_GROUPS` selects optional tool groups from the same image and
+`T3APP_TOOL_GROUPS` selects optional tool groups from the same image and
 the same `/app` YAML. There are no profile tags or separate apps. Separate
 names with spaces, for example `"capture labs"`. The parser also accepts `+`
 and commas, but RouterOS splits `/app/set environment=` values on commas, so
@@ -406,7 +454,7 @@ needs roughly 660 MiB more in `/data` once all five are installed (amd64
 measurements in the table below), plus 256 MiB of headroom while installing.
 After an image update that changes the package pins, the refreshed payloads
 install next to the previous ones, which are kept (an offline fallback)
-until `t3code-tools prune`: budget about twice that. On a fast
+until `t3app tools prune`: budget about twice that. On a fast
 link that takes a few minutes; at 1 Mbit/s plan for about 15 minutes. With
 too little space a group fails with a `low disk` error and T3 keeps
 running.
@@ -420,8 +468,8 @@ running.
 > survives `/app/update`. Never reapply the YAML to change it.
 >
 > The same update removes the bundled `muse` binary. Muse logins and history
-> in `/data` stay; add `muse` to `T3CODE_PROVIDERS` to install it into the
-> home again (see [Providers](#providers-t3code_providers)).
+> in `/data` stay; add `muse` to `T3APP_PROVIDERS` to install it into the
+> home again (see [Providers](#providers-t3app_providers)).
 
 `browser` and `agents-extra` are no longer groups. T3's browser libraries
 are core, and the provider CLIs are described in
@@ -531,10 +579,10 @@ Tools changed or moved because of privileges, not size:
 #### Group status for agents
 
 ```sh
-t3code-tools status            # one line per group
-t3code-tools status --json     # runtime inventory for agents
-t3code-tools status --groups "vpn routing"   # evaluate another selection
-t3code-tools groups            # definitions and the network package assignment
+t3app tools status            # one line per group
+t3app tools status --json     # runtime inventory for agents
+t3app tools status --groups "vpn routing"   # evaluate another selection
+t3app tools groups            # definitions and the network package assignment
 ```
 
 Each group reports `selected`, a `state`, and whether its checks found the
@@ -542,9 +590,9 @@ files (`present`, `missing`). The states are:
 
 | State | Meaning |
 |---|---|
-| `not-selected` | Not in `T3CODE_TOOL_GROUPS` |
+| `not-selected` | Not in `T3APP_TOOL_GROUPS` |
 | `pending` | Selected; waiting for the background installer |
-| `installing` | The background installer is working on it, including waiting to retry (`retrying at …` in `t3code-tools status`) |
+| `installing` | The background installer is working on it, including waiting to retry (`retrying at …` in `t3app tools status`) |
 | `ready` | Selected, and every check passed |
 | `failed` | Selected, and checks failed for tools the image should provide, or the last install failed and nothing usable is active |
 | `not-implemented` | Selected, but this image has no way to provide the group yet (no group today) |
@@ -562,7 +610,7 @@ path inside the payload, reported through `groups/<group>/current/root/…`.
 Core checks (`t3`, Node, Bun,
 Python with uv/uvx, sqlite3, zstd, Git/SSH, `gh`, centrs, the core network tools
 and the browser's native libraries) are reported separately as `core.state`,
-and each provider's state as `providers` (details: `t3code-providers status`). At each start the entrypoint logs warnings and a summary to
+and each provider's state as `providers` (details: `t3app providers status`). At each start the entrypoint logs warnings and a summary to
 the container log and writes the same JSON to `/tmp/t3code-tools/status.json`.
 The output also points at the immutable build inventory in
 `/usr/share/t3code/inventory`.
@@ -579,7 +627,7 @@ lifecycle:
 
 - **Start never waits.** At each start the entrypoint relinks payloads that
   are already in the home (offline, no download) and then runs
-  `t3code-tools install` in the background. T3 is serving while a first
+  `t3app tools install` in the background. T3 is serving while a first
   install is `pending` or `installing`.
 - **Pinned and verified.** For `dev`, the image ships the group's
   `package.json` and `package-lock.json` (with npm integrity hashes); the
@@ -615,8 +663,8 @@ lifecycle:
   about a day (15 s, 1, 5, 15 and 30 minutes, then hourly), because a router
   often starts the container before its uplink or DNS is up; verified
   `.deb` files are kept between attempts. Each attempt is capped at 30
-  minutes. `t3code-tools install` from a terminal makes three attempts in
-  about 75 s. The installer needs room for the
+  minutes. `t3app tools install` starts a run of three attempts in about
+  75 s in the background (`--wait` runs it in place). The installer needs room for the
   payload and its downloads (for `dev`, twice the payload size; for the
   Debian groups, the pinned `.deb` sizes not already verified in the cache,
   plus their unpacked sizes) plus 256 MiB,
@@ -624,21 +672,22 @@ lifecycle:
   volume. It never deletes projects, VMs or other home data. Interrupted
   installs (`.staging-*`) are removed on the next run.
 - **Deselecting** a group removes its shims at the next start but keeps its
-  payload, so selecting it again needs no download. `t3code-tools prune`
+  payload, so selecting it again needs no download. `t3app tools prune`
   deletes payloads that no selected group uses, and any kept `.deb`
   downloads. Switching to `none` therefore frees no space until you run
-  `t3code-tools prune` in a T3 terminal; prune touches only
+  `t3app tools prune` (in a T3 terminal or through `/container/shell`); prune touches only
   `/data/.local/share/t3code-tools`.
 
-`t3code-tools status --json` reports `payload.desired`, `payload.active`,
+`t3app tools status --json` reports `payload.desired`, `payload.active`,
 `stale`, `installed`, the verified `activeVersions` and the last installer
 result with its error. The installer log is
-`/data/.local/share/t3code-tools/install.log`. Run `t3code-tools install` in
-a terminal to retry now, including while the background installer waits;
-otherwise the next start retries a group that ran out of attempts.
-`t3code-tools help` is the command reference (commands, selection syntax,
+`/data/.local/share/t3code-tools/install.log`. `t3app tools install`
+retries now, including while the background installer waits; otherwise the
+next start retries a group that ran out of attempts. If an install is
+already running, it says so and starts nothing.
+`t3app tools help` is the command reference (commands, selection syntax,
 files, exit codes). `install`, `prune` and `init` run as the home's owner:
-started as root (for example from RouterOS `/container/shell`), they
+started as root (`/container/shell user=root`, `docker exec -u 0`), they
 re-execute as `node` with `setpriv`, so no payload file becomes root-owned.
 
 The `dev` payload is about 154 MiB on amd64 (TypeScript 7.0.2, CSpell 10.4.0,
@@ -661,7 +710,7 @@ the app user with no root at runtime:
   image does not already have, and records each package's version,
   architecture, size and SHA256 from the apt indexes. apt has already checked
   those indexes against Debian's signing keys. The lock is
-  `/usr/local/lib/t3code/groups/<group>/debs.lock.json` (also in the build
+  `/usr/local/lib/t3app/groups/<group>/debs.lock.json` (also in the build
   inventory as `<group>-debs.lock.json`). Every image rebuild picks up Debian
   security updates, and a changed lock is a new payload id, which refreshes
   as described above. An unchanged lock keeps the same id, so nothing is
@@ -782,7 +831,7 @@ survives `/app/update` and reboots.
 
 `environment=` replaces the **whole** environment list. The YAML's
 `environment:` block is only the initial value, and it does not come back as
-a default. A single-key set like `environment="t3code:T3CODE_TOOL_GROUPS=vpn"`
+a default. A single-key set like `environment="t3code:T3APP_TOOL_GROUPS=vpn"`
 silently drops every other key. Every setting the app needs is therefore also
 an image `ENV` default, so a dropped key falls back to the same value. Keys
 you added yourself, such as API keys or `PUBLIC_URL`, are not.
@@ -791,13 +840,13 @@ To replace only the group key and keep the rest, run this script from the
 RouterOS terminal (or paste it into a `/system/script`). Change `val`:
 
 ```routeros
-:local app "t3code"; :local key "t3code:T3CODE_TOOL_GROUPS="; :local val "capture labs"
+:local app "t3code"; :local key "t3code:T3APP_TOOL_GROUPS="; :local val "capture labs"
 :local keep ({}); :foreach e in=[/app/get $app environment] do={ :if ([:find $e $key] != 0) do={ :set keep ($keep, $e) } }
 /app/set $app environment=($keep, ($key . $val))
 ```
 
 Check the result with `:put [/app/get t3code environment]`, then run
-`t3code-tools status` in the container. Running the script again with
+`t3app tools status` in the container. Running the script again with
 another value replaces the key; it does not add a duplicate. Tested on a
 CHR 7.25.1 app named `t3code` with service `t3code`: the other key was kept,
 the container restarted, and the volume's contents survived.
@@ -806,7 +855,7 @@ the container restarted, and the volume's contents survived.
 
 Every network package from the
 [2026-11-05 research](docs/research/2026-11-agent-tools/routeros-protocol-map.md) is
-assigned here. `t3code-tools groups` prints the same table as JSON.
+assigned here. `t3app tools groups` prints the same table as JSON.
 
 | Where | Packages |
 |---|---|
@@ -847,7 +896,7 @@ compatible payloads across image replacements (write-ups:
 selects all five by name. `browser` is not a group (its libraries stay in
 core, and T3's browser setup is unchanged), and provider CLIs are not a
 group either: they have their own selector,
-[`T3CODE_PROVIDERS`](#providers-t3code_providers). The labs matrix (native
+[`T3APP_PROVIDERS`](#providers-t3app_providers). The labs matrix (native
 ARM64 hosts, nested RouterOS, transfer, snapshots and cleanup) is still
 open; see the [final-slice notes](docs/notes/2026-11-07-final-tooling-slice.md).
 RouterOS privileges and devices are

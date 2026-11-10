@@ -22,7 +22,7 @@ refused() {
 	if ! grep -Eqi 'permission|not permitted|requires root|must be root|CAP_NET_(RAW|ADMIN)' <<<"$out"; then echo "$name failed for another reason (exit $rc): $out" >&2; exit 1; fi
 }
 
-tools=${T3CODE_TOOLS_HOME:-/data/.local/share/t3code-tools}/bin
+tools=${T3APP_TOOLS_HOME:-/data/.local/share/t3code-tools}/bin
 for c in bird birdc rdisc6 arping arp-scan nft conntrack nmap; do test "$(command -v "$c")" = "$tools/$c"; done
 test ! -e /usr/sbin/bird && test ! -e /usr/bin/nmap
 test -z "${LD_LIBRARY_PATH:-}"

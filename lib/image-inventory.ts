@@ -11,7 +11,7 @@ bridge tc arping traceroute tracepath mtr iperf3 ethtool whois
 tcpdump tshark dumpcap capinfos editcap mergecap text2pcap
 swanctl pki wg conntrack nft snmpget snmpwalk snmptranslate radtest radclient nmap
 nfcapd nfdump openvpn sstpc pppd xl2tpd pppoe-discovery ike-scan bird birdc lldpd lldpcli
-rdisc6 ndisc6 arp-scan mosquitto_pub mosquitto_sub fc-list t3code-tools
+rdisc6 ndisc6 arp-scan mosquitto_pub mosquitto_sub fc-list t3app
 tsc tsserver cspell markdownlint-cli2 biome
 openssl gpg sudo locale python python3 pip pip3 pipx uv uvx node npm npx
 corepack yarn pnpm bun bunx gcc g++ cc c++ ld ar pkg-config cmake ninja
@@ -67,7 +67,7 @@ export async function collect() {
 		architecture: run(["dpkg", "--print-architecture"]),
 		path: process.env.PATH, packages, commands: paths, versions,
 		npmPackages: npm.dependencies, bunPackages,
-		notes: ["Image contents before entrypoint/first boot; provider CLIs (T3CODE_PROVIDERS), browser downloads, tool-group payloads and user installs are excluded.",
+		notes: ["Image contents before entrypoint/first boot; provider CLIs (T3APP_PROVIDERS), browser downloads, tool-group payloads and user installs are excluded.",
 			"Commands are curated executable PATH probes, not an exhaustive list or functional tests; shims can need downloads.",
 			"Installed-Size is dpkg metadata in KiB, not compressed image size.",
 			"npm/Bun list top-level global packages; this is not a complete dependency SBOM."] };

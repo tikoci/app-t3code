@@ -257,7 +257,7 @@ function dockerfileEnv(): Record<string, string> {
 	return env;
 }
 
-describe("T3CODE_TOOL_GROUPS selector", () => {
+describe("T3APP_TOOL_GROUPS selector", () => {
 	test("accepts space, + and comma separators, case-insensitively", () => {
 		for (const raw of ["capture labs", "capture+labs", "capture,labs", " LABS ,  Capture+", "labs capture capture"]) {
 			const selection = parseToolGroups(raw);
@@ -319,7 +319,7 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 			const expected: Record<string, string> = { npm: "pending", deb: "pending", none: "not-implemented" };
 			expect(group.state as string).toBe(expected[group.delivery] as string);
 		}
-		// Core covers the browser libraries; provider CLIs are T3CODE_PROVIDERS (#13), reported beside core.
+		// Core covers the browser libraries; provider CLIs are T3APP_PROVIDERS (#13), reported beside core.
 		expect(missing.core.missing).toEqual(expect.arrayContaining(["uv", "uvx", "sqlite3", "gh", "fc-list", ...BROWSER_LIBRARIES]));
 		expect(missing.core.missing).not.toContain("codex");
 		const codex = (status: ReturnType<typeof buildStatus>) => status.providers.find((p) => p.token === "codex");
@@ -337,7 +337,7 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 		const defaulted = buildStatus(undefined, everything, "/nonexistent", null);
 		expect(defaulted.selector.defaulted).toBe(true);
 		expect(defaulted.groups.map((g) => g.state)).toEqual(["pending", "pending", "pending", "pending", "pending"]);
-		expect(formatStatus(defaulted)).toStartWith("T3CODE_TOOL_GROUPS=(unset) (default) -> capture labs vpn routing dev\n");
+		expect(formatStatus(defaulted)).toStartWith("T3APP_TOOL_GROUPS=(unset) (default) -> capture labs vpn routing dev\n");
 		// A group without an installer never claims ready, even if its tools happen to exist.
 		const labs = GROUPS.find((g) => g.name === "labs");
 		if (!labs) throw new Error("labs group missing");
@@ -350,15 +350,15 @@ describe("T3CODE_TOOL_GROUPS selector", () => {
 
 describe("tool groups: docs and image contract", () => {
 	test("README documents the selector with spaces and every group", () => {
-		expect(README).toContain('`T3CODE_TOOL_GROUPS`');
+		expect(README).toContain('`T3APP_TOOL_GROUPS`');
 		expect(README).toContain('`"capture labs"`');
 		for (const name of GROUP_NAMES) expect(README).toContain(`| \`${name}\` |`);
-		expect(README).toContain("t3code-tools status --json");
+		expect(README).toContain("t3app tools status --json");
 	});
 
 	test("README carries the tested replace-one-key script for app and service t3code", () => {
 		expect(README).toContain(`\`\`\`routeros
-:local app "t3code"; :local key "t3code:T3CODE_TOOL_GROUPS="; :local val "capture labs"
+:local app "t3code"; :local key "t3code:T3APP_TOOL_GROUPS="; :local val "capture labs"
 :local keep ({}); :foreach e in=[/app/get $app environment] do={ :if ([:find $e $key] != 0) do={ :set keep ($keep, $e) } }
 /app/set $app environment=($keep, ($key . $val))
 \`\`\``);
@@ -368,7 +368,7 @@ describe("tool groups: docs and image contract", () => {
 
 	test("YAML description stays a product description; the selection lives in environment", () => {
 		const descr = asRecord(loadYaml(YAML_PATH))["descr"] as string;
-		expect(descr).not.toContain("T3CODE_TOOL_GROUPS");
+		expect(descr).not.toContain("T3APP_TOOL_GROUPS");
 		// "browser" and "dev" are ordinary words; the distinctive names and "group" are not.
 		for (const word of ["group", "capture", "labs", "vpn", "routing", "agents-extra"]) {
 			expect(descr.toLowerCase()).not.toContain(word);
@@ -377,11 +377,11 @@ describe("tool groups: docs and image contract", () => {
 
 	test("YAML, store YAML, image ENV and README ship the same explicit default", () => {
 		const svc = asRecord(asRecord(asRecord(loadYaml(YAML_PATH))["services"])["t3code"]);
-		expect(asRecord(svc["environment"])["T3CODE_TOOL_GROUPS"]).toBe(DEFAULT_TOOL_GROUPS);
+		expect(asRecord(svc["environment"])["T3APP_TOOL_GROUPS"]).toBe(DEFAULT_TOOL_GROUPS);
 		const store = (loadYaml(STORE_PATH) as Record<string, unknown>[]).find((d) => d["name"] === "t3code");
-		expect(asRecord(asRecord(asRecord(store?.["services"])["t3code"])["environment"])["T3CODE_TOOL_GROUPS"]).toBe(DEFAULT_TOOL_GROUPS);
-		expect(dockerfileEnv()["T3CODE_TOOL_GROUPS"]).toBe(DEFAULT_TOOL_GROUPS);
-		expect(README).toContain(`| \`T3CODE_TOOL_GROUPS\` | \`${DEFAULT_TOOL_GROUPS}\``);
+		expect(asRecord(asRecord(asRecord(store?.["services"])["t3code"])["environment"])["T3APP_TOOL_GROUPS"]).toBe(DEFAULT_TOOL_GROUPS);
+		expect(dockerfileEnv()["T3APP_TOOL_GROUPS"]).toBe(DEFAULT_TOOL_GROUPS);
+		expect(README).toContain(`| \`T3APP_TOOL_GROUPS\` | \`${DEFAULT_TOOL_GROUPS}\``);
 	});
 
 	test("browser and agents-extra are retired as groups; their contents stay core", () => {

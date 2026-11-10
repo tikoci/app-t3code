@@ -1,5 +1,0 @@
-#!/bin/sh
-# t3code-tools: report T3CODE_TOOL_GROUPS selection and per-group state.
-# `t3code-tools status --json` is the agent-facing runtime inventory; the
-# immutable build inventory is in /usr/share/t3code/inventory.
-exec bun /usr/local/lib/t3code/tool-groups.ts "$@"

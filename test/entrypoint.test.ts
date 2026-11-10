@@ -18,7 +18,7 @@ describe("entrypoint", () => {
 		entrypoint = join(dir, "entrypoint.sh");
 		writeFileSync(
 			entrypoint,
-			ENTRYPOINT.replaceAll("/usr/local/bin/t3code-providers", join(dir, "t3code-providers")).replaceAll("/usr/local/bin/t3code-tools", join(dir, "absent")),
+			ENTRYPOINT.replaceAll("/usr/local/bin/t3app", join(dir, "absent")),
 		);
 		mkdirSync(join(dir, "home"));
 	});
@@ -36,17 +36,17 @@ describe("entrypoint", () => {
 		expect(out.trim().split("\n").at(-1)).toBe("0022");
 	});
 
-	test("no provider CLI or Claude installer is started outside t3code-providers", () => {
+	test("no provider CLI or Claude installer is started outside t3app providers", () => {
 		expect(ENTRYPOINT.split("\n").filter((line) => !line.trim().startsWith("#") && line.includes("install-claude-code"))).toEqual([]);
-		expect(ENTRYPOINT).toContain("background providers /usr/local/bin/t3code-providers install --keep-trying");
-		expect(ENTRYPOINT).toContain("background tool-groups /usr/local/bin/t3code-tools install --keep-trying");
+		expect(ENTRYPOINT).toContain("background providers /usr/local/bin/t3app providers install --keep-trying");
+		expect(ENTRYPOINT).toContain("background tool-groups /usr/local/bin/t3app tools install --keep-trying");
+		expect(ENTRYPOINT).toContain("timeout 40 /usr/local/bin/t3app init");
 	});
 });
 
 /**
- * The entrypoint's `background` log helper, run for real: t3code-providers is
- * a fake installer and t3code-tools a missing file. Every background
- * installer logs into /data/.local/state/t3code (#13).
+ * The entrypoint's `background` log helper, run for real, with a fake t3app.
+ * Every background installer logs into /data/.local/state/t3code (#13).
  */
 describe("background install logs", () => {
 	let dir: string;
@@ -57,7 +57,7 @@ describe("background install logs", () => {
 		writeFileSync(fake, '#!/bin/sh\necho "fake installer ran: $*"\n');
 		chmodSync(fake, 0o755);
 		entrypoint = join(dir, "entrypoint.sh");
-		writeFileSync(entrypoint, ENTRYPOINT.replaceAll("/usr/local/bin/t3code-providers", fake).replaceAll("/usr/local/bin/t3code-tools", join(dir, "absent")));
+		writeFileSync(entrypoint, ENTRYPOINT.replaceAll("/usr/local/bin/t3app", fake));
 		mkdirSync(join(dir, "home"));
 	});
 	afterEach(() => {
@@ -84,7 +84,7 @@ describe("background install logs", () => {
 			expect(out).toContain("server started");
 		}
 		for (let i = 0; i < 100 && (readFileSync(log(), "utf8").match(/fake installer ran/g) ?? []).length < 2; i++) await Bun.sleep(20);
-		expect(readFileSync(log(), "utf8").match(/fake installer ran: install --keep-trying/g)).toHaveLength(2);
+		expect(readFileSync(log(), "utf8").match(/fake installer ran: providers install --keep-trying/g)).toHaveLength(2);
 	});
 
 	test("a log over 1 MiB is rotated once", async () => {
@@ -104,7 +104,7 @@ describe("background install logs", () => {
 		expect(out).toContain("server started");
 		expect(err).toContain("cannot write");
 		// stderr closes only once the background installer has exited too.
-		expect(err).toContain("fake installer ran: install --keep-trying");
+		expect(err).toContain("fake installer ran: providers install --keep-trying");
 	});
 
 	test.skipIf(process.getuid?.() === 0)("a read-only log falls back to the container log; the installer still runs", async () => {
@@ -114,7 +114,7 @@ describe("background install logs", () => {
 		expect(code, err).toBe(0);
 		expect(out).toContain("server started");
 		expect(err).toContain("cannot write");
-		expect(err).toContain("fake installer ran: install --keep-trying");
+		expect(err).toContain("fake installer ran: providers install --keep-trying");
 		expect(readFileSync(log(), "utf8")).toBe("earlier run\n");
 	});
 });

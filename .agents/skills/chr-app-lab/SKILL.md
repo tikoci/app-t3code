@@ -81,8 +81,8 @@ centrs retrieve --quickchr <n> /container   # .running is the string "true"
 
 `use-https=no` on CHR: there's no `/ip/cloud` to mint certificates. A PUT
 leaves the app disabled, so enable it. The pull plus the first five-group
-install takes a while; `t3code-tools status --json` (step 6) says when the
-groups are `ready`.
+install takes a while; `t3app status` (step 6) says when the groups and
+provider CLIs are `ready`.
 
 ## 4. Upgrade an existing install
 
@@ -159,11 +159,19 @@ while the guest is shut down. That variant is untested.
 ## 6. Commands inside the container
 
 ```sh
-centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="t3code-tools status --json"' --json | jq -r .data.ret
+centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="t3app status --json"' --json | jq -r .data.ret
 ```
 
 - Output comes back in `.data.ret` with CRLF line ends (`tr -d '\r'`). It
-  runs as the image user (uid 1000, `node`).
+  runs as the image user (uid 1000, `node`); `user=root` runs it as root,
+  with HOME still `/data` (7.25 x86 and 7.25.1 arm64). The umask is `0000`,
+  not the entrypoint's 022; `t3app` sets 022 itself.
+- `t3app` is the command for the image's own operations (`t3app help`):
+  `status`, `tools …`, `providers …`, `pairing`. Images before #45 had
+  `t3code-tools`, `t3code-providers` and `t3-pairing-link` instead, and
+  read `T3CODE_TOOL_GROUPS`/`T3CODE_PROVIDERS`; from #45 on those keys are
+  ignored (the container log names them at start) and the `T3APP_*` keys
+  apply. Set them with `/app/set environment=`.
 - No bare `$` inside `cmd="…"`. RouterOS treats it as a variable, and centrs
   refuses it offline (write `\$`, or move the logic into a script).
 - Files in: `centrs transfer --quickchr <n> upload <local>
@@ -172,7 +180,9 @@ centrs execute --quickchr <n> --yes '/container/shell app-t3code cmd="t3code-too
   container root, so `--force`, download and remove fail there; use a new
   name each time (tikoci/centrs#636). Files out: `cat` them through
   `/container/shell`.
-- **About 60 s at most per command.** RouterOS runs the command to the end,
+- **About 60 s at most per command.** `t3app tools install` and
+  `t3app providers install` already start in the background and answer at
+  once; follow them with `t3app status`. For anything else: RouterOS runs the command to the end,
   but if it took longer than about 60 s, the reply is `action timed out …
   (13)` and the output is lost. That's a native-API `!trap`; over REST the
   session closes. The process isn't killed. This is RouterOS's limit on
@@ -222,7 +232,7 @@ manifest of the home. It records:
 - the T3 and provider versions, and the environment ID
 - settings key paths
 - migration IDs, row counts and row hashes of the T3 DB (opened read-only)
-- the `t3code-tools` payload IDs
+- the `t3app tools` payload IDs
 - the presence of each provider and `gh` login
 - the git state of each repo under `/data/projects`, `/data/tikoci` and
   `/data/.t3/{worktrees,scratch,projects}`: HEAD, status, the tracked

@@ -10,7 +10,7 @@ fixture=/tmp/capture-fixture.pcapng
 printf %s 'Cg0NChwAAABNPCsaAQAAAP//////////HAAAAAEAAAAUAAAAAQAAAP//AAAUAAAABgAAAJwAAAAAAAAAAAAAAEBCDwB7AAAAewAAAAIAAAAAAgIAAAAAAQgARQAAbQAAAABAEfZ8wAACAcAAAgKn+JCQAFkAAAEAAAEBAgAAAAACAgAAAAABCABFAAA+AAAAAEAR9qvAAAIBwAACAjA5ADUAKgAAEjQBAAABAAAAAAAACHJvdXRlcm9zB2V4YW1wbGUAAAEAAQCcAAAA' | base64 -d >"$fixture"
 
 # Tools come from the payload shims, not the image, with no global library path.
-test "$(command -v tshark)" = "${T3CODE_TOOLS_HOME:-/data/.local/share/t3code-tools}/bin/tshark"
+test "$(command -v tshark)" = "${T3APP_TOOLS_HOME:-/data/.local/share/t3code-tools}/bin/tshark"
 test ! -e /usr/bin/tshark
 test -z "${LD_LIBRARY_PATH:-}"
 

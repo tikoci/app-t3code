@@ -9,7 +9,7 @@
 set -euo pipefail
 rm -rf /tmp/labs-check && mkdir /tmp/labs-check && cd /tmp/labs-check
 
-home=${T3CODE_TOOLS_HOME:-/data/.local/share/t3code-tools}
+home=${T3APP_TOOLS_HOME:-/data/.local/share/t3code-tools}
 tools=$home/bin
 root=$(readlink -f "$home/groups/labs/current")/root
 for c in qemu-system-x86_64 qemu-system-aarch64 qemu-system-i386 qemu-system-arm kvm qemu-img; do test "$(command -v "$c")" = "$tools/$c"; done

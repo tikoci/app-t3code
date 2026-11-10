@@ -4,7 +4,7 @@
 # ship on GHCR is one we control: Debian trixie-slim (glibc, which the T3 Code
 # release binaries need), per-arch t3 tarball from pingdotgg/t3code with
 # SHA256 verification, the GitHub CLI, uv/uvx and Bun/RouterOS tools baked
-# in. No provider CLI is baked: the T3CODE_PROVIDERS selection (#13) installs
+# in. No provider CLI is baked: the T3APP_PROVIDERS selection (#13) installs
 # Claude Code, Codex and the others into the volume in the background.
 #
 # Build:
@@ -39,11 +39,11 @@ ENV T3CODE_TELEMETRY_ENABLED=false
 # Optional tool groups (lib/tool-catalog.ts DEFAULT_TOOL_GROUPS): an
 # explicit list, so a group added later is never enabled silently. Operators
 # remove names, or set `none` for core only, with /app/set environment=.
-ENV T3CODE_TOOL_GROUPS="capture labs vpn routing dev"
+ENV T3APP_TOOL_GROUPS="capture labs vpn routing dev"
 # Provider CLIs to install into the home (lib/providers.ts
 # DEFAULT_PROVIDERS): an explicit list, like the groups above. OpenCode, Pi,
 # Grok and Muse are opt-in; Cursor and Antigravity come with T3 itself.
-ENV T3CODE_PROVIDERS="claude codex"
+ENV T3APP_PROVIDERS="claude codex"
 # uv uses the image's Python 3 and never fetches a managed Python by itself;
 # `uv python install` still works when asked for explicitly.
 ENV UV_PYTHON_DOWNLOADS=manual
@@ -207,7 +207,7 @@ COPY docker-entrypoint.sh /
 COPY bin /usr/local/bin
 COPY profile.sh /etc/profile.d/t3code.sh
 # lib/ is the shipped runtime (AGENTS.md "Layout"); scripts/ never ships.
-COPY lib /usr/local/lib/t3code
+COPY lib /usr/local/lib/t3app
 
 # Native tool groups (`capture`, `vpn`, `routing`, `labs`) install as
 # Debian-package payloads into the home at runtime, as node. QEMU and its
@@ -218,7 +218,7 @@ COPY lib /usr/local/lib/t3code
 # Must stay after every apt layer: the closure is computed against them.
 # HOME=/root: Bun run as root would otherwise seed a root-owned /data/.bun.
 RUN apt-get update && \
-    HOME=/root bun /usr/local/lib/t3code/deb-lock.ts && \
+    HOME=/root bun /usr/local/lib/t3app/deb-lock.ts && \
     rm -rf /var/lib/apt/lists/*
 
 RUN install -d -o node -g node /usr/share/t3code/inventory
@@ -228,9 +228,9 @@ USER node
 WORKDIR /data
 
 # Capture the completed image before the entrypoint installs anything into HOME.
-RUN bun /usr/local/lib/t3code/image-inventory.ts --output /usr/share/t3code/inventory && \
-    t3code-tools status --json --groups all > /usr/share/t3code/inventory/tool-groups.json && \
-    for lock in /usr/local/lib/t3code/groups/*/debs.lock.json; do \
+RUN bun /usr/local/lib/t3app/image-inventory.ts --output /usr/share/t3code/inventory && \
+    t3app tools status --json --groups all > /usr/share/t3code/inventory/tool-groups.json && \
+    for lock in /usr/local/lib/t3app/groups/*/debs.lock.json; do \
       group="${lock%/debs.lock.json}"; \
       cp "$lock" "/usr/share/t3code/inventory/${group##*/}-debs.lock.json"; \
     done

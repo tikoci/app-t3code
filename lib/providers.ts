@@ -1,6 +1,6 @@
-// T3CODE_PROVIDERS: which provider (harness) runtimes this image installs into
+// T3APP_PROVIDERS: which provider (harness) runtimes this image installs into
 // the home, one explicit token per provider in T3's main Add provider list
-// (issue #13). Separate from T3CODE_TOOL_GROUPS: groups are tools for agents,
+// (issue #13). Separate from T3APP_TOOL_GROUPS: groups are tools for agents,
 // providers are the agents themselves. The catalog is lib/harnesses.ts.
 //
 // Installs act only while a provider's CLI is missing from PATH and install
@@ -11,8 +11,8 @@
 // tokens are accepted and install nothing.
 //
 // Never throw on operator input: an unknown token is a warning, and T3 must
-// always start. The image copies this file to /usr/local/lib/t3code/ and runs
-// it with Bun as `t3code-providers`.
+// always start. The image copies lib/ to /usr/local/lib/t3app/; lib/t3app.ts
+// dispatches `t3app providers` here.
 import { closeSync, ftruncateSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, statfsSync, writeFileSync, writeSync } from "node:fs";
 import { join } from "node:path";
 import { HARNESSES, type Harness, type Install } from "./harnesses.ts";
@@ -26,12 +26,13 @@ import {
 	LOCK_EX,
 	LOCK_NB,
 	processStartTicks,
+	startInBackground,
 	stateDir,
 	stopChild,
 	waitGone,
 } from "./runtime.ts";
 
-export const PROVIDERS_ENV = "T3CODE_PROVIDERS";
+export const PROVIDERS_ENV = "T3APP_PROVIDERS";
 /** The shipped default: an explicit list, so a provider added later is never enabled silently. */
 export const DEFAULT_PROVIDERS = "claude codex";
 
@@ -61,7 +62,7 @@ export interface ProviderSelection {
 }
 
 /**
- * Parse T3CODE_PROVIDERS like T3CODE_TOOL_GROUPS: whitespace, `+` or comma
+ * Parse T3APP_PROVIDERS like T3APP_TOOL_GROUPS: whitespace, `+` or comma
  * separated, case-insensitive. Unset or empty is DEFAULT_PROVIDERS; `none`
  * installs nothing. There is no `all`: a provider T3 adds later is never
  * installed without someone choosing it.
@@ -200,7 +201,7 @@ export function buildProviderStatus(raw: string | undefined | null, which: Which
 
 export type ProvidersStatus = ReturnType<typeof buildProviderStatus>;
 
-/** One line for the container log and `t3code-tools status`. */
+/** One line for the container log and `t3app tools status`. */
 export function providerSummary(providers: readonly Pick<ProviderStatus, "token" | "selected" | "state">[]): string {
 	const selected = providers.filter((p) => p.selected);
 	return selected.length ? selected.map((p) => `${p.token}=${p.state}`).join(" ") : "none";
@@ -214,7 +215,7 @@ export function formatProviderStatus(status: ProvidersStatus): string {
 		lines.push(`${p.token.padEnd(12)} ${p.state.padEnd(13)} ${where}`);
 		if (p.selected && p.state !== "ready" && p.last?.error) lines.push(`${"".padEnd(13)}last error: ${p.last.error}`);
 	}
-	if (status.installer?.waitingUntil) lines.push(`installer waiting; retrying at ${status.installer.waitingUntil} (t3code-providers install retries now)`);
+	if (status.installer?.waitingUntil) lines.push(`installer waiting; retrying at ${status.installer.waitingUntil} (t3app providers install retries now)`);
 	for (const warning of sel.warnings) lines.push(`warning: ${warning}`);
 	lines.push(`logs and state: ${status.stateDir}`);
 	return `${lines.join("\n")}\n`;
@@ -243,7 +244,7 @@ export function defaultInstallEnv(keepTrying: boolean): InstallEnv {
 		which: (c) => Bun.which(c),
 		backoffMs: keepTrying ? KEEP_TRYING_BACKOFF_MS : INTERACTIVE_BACKOFF_MS,
 		sleep: (ms) => Bun.sleep(ms),
-		log: (line) => console.log(`${new Date().toISOString()} t3code-providers: ${line}`),
+		log: (line) => console.log(`${new Date().toISOString()} t3app providers: ${line}`),
 		freeBytes: (path) => {
 			const fs = statfsSync(path);
 			return Number(fs.bavail) * Number(fs.bsize);
@@ -324,7 +325,7 @@ async function installOne(provider: Provider, env: InstallEnv, recordChild: (chi
 /**
  * Install every selected provider whose CLI is missing, in rounds: one
  * attempt each per round, then the back-off. The lock is held only during a
- * round, so `t3code-providers install` from a terminal can run while the
+ * round, so `t3app providers install` from a terminal can run while the
  * background installer waits; only the lock holder writes the state. An
  * install step left running by an installer that died is stopped first.
  * Returns 0 when every selected CLI is present, 1 on failure or when another
@@ -339,7 +340,7 @@ export async function installProviders(selected: readonly string[], env: Install
 		let missing: Provider[] = [];
 		if (fd === null) {
 			if (!keepTrying) {
-				env.log("another provider install is running; try again when it finishes (t3code-providers status)");
+				env.log("another provider install is running; try again when it finishes (t3app providers status)");
 				return 1;
 			}
 			env.log("another provider install is running; waiting for the next round");
@@ -388,7 +389,7 @@ export async function installProviders(selected: readonly string[], env: Install
 		if (missing.length === 0) return 0;
 		const wait = env.backoffMs[round];
 		if (wait === undefined) {
-			env.log(`giving up for now on ${missing.map((p) => p.token).join(", ")}; the next container start retries (t3code-providers install retries now)`);
+			env.log(`giving up for now on ${missing.map((p) => p.token).join(", ")}; the next container start retries (t3app providers install retries now)`);
 			return 1;
 		}
 		await env.sleep(wait);
@@ -397,19 +398,33 @@ export async function installProviders(selected: readonly string[], env: Install
 
 // --- CLI ---------------------------------------------------------------------
 
-export const USAGE = `t3code-providers: provider (agent) runtimes for the app-t3code image (issue #13)
+/** Where the background install logs: the entrypoint's run and `t3app providers install` share it. */
+export const installLogPath = () => join(stateDir(), "providers.log");
 
-usage: t3code-providers <command> [options]     (no command: status)
+const COMMANDS = ["status", "install", "init", "help"];
+
+export const USAGE = `t3app providers: provider (agent) runtimes for the app-t3code image (issue #13)
+
+usage: t3app providers <command> [options]     (no command: status)
+       t3app providers help | --help | <command> --help
 
 Commands
   status [--json] [--providers <selection>]
-      Each provider's state and where its CLI resolves. Read-only.
-  install [--keep-trying]
-      Install every selected provider whose CLI is not on PATH. Without
-      --keep-trying: ${INTERACTIVE_BACKOFF_MS.length + 1} rounds (use this to retry now). --keep-trying is the
-      entrypoint's background run: rounds for about a day.
+      Each provider's state and where its CLI resolves. --providers evaluates
+      another selection without changing anything. Read-only.
+  install [--wait]
+      Install every selected provider whose CLI is not on PATH. Starts in the
+      background and answers at once (RouterOS drops a /container/shell reply
+      after about 60 s) with the log to follow; "t3app status" shows progress.
+      If an install is already running it says so and starts nothing. --wait
+      runs it here instead: ${INTERACTIVE_BACKOFF_MS.length + 1} rounds, exit 1 if a provider is still missing.
+
+Internal (the container's entrypoint runs these)
   init
-      Entrypoint hook: log selection warnings and a one-line summary. Never fails.
+      Log selection warnings and a one-line summary. Never fails.
+  install --keep-trying
+      The background run at start: rounds for about a day, lock released
+      between them, so "t3app providers install" (retry now) can run meanwhile.
 
 Selection (${PROVIDERS_ENV})
   Tokens separated by spaces (or commas or +), case-insensitive:
@@ -422,42 +437,73 @@ Selection (${PROVIDERS_ENV})
 Rules
   A CLI already on PATH is never replaced: after the first install, T3's
   Update now or the CLI's own updater owns it. Deselecting deletes nothing.
-  install refuses to run as root: it installs into the app user's home.
+  install refuses to run as root (exit 3): it installs into the app user's
+  home. RouterOS /container/shell runs as that user (node) unless given user=.
 
 Files (${stateDir()})
-  providers.log       the entrypoint's background install output
+  providers.log       output of the background install (the entrypoint's and install's)
   providers.json      last result per provider
-  tool-groups.log     the entrypoint's background tool-group install output
+  providers.lock      held while an install round runs
+
+Exit codes: 0 ok (install: started, or already running), 1 a provider is
+still missing or another install holds the lock (--wait), 2 usage, 3 root.
 `;
 
+/**
+ * `install` without --wait: start `install --wait` in the background, unless
+ * an install round is running now. A --keep-trying run waiting out its
+ * back-off holds no lock, so starting one is the "retry now".
+ */
+function startInstall(): number {
+	const log = installLogPath();
+	const running = readProviderState(stateDir()).installer;
+	if (running && !running.waitingUntil && isSameProcess(running)) {
+		process.stdout.write(`t3app providers install: already running (pid ${running.pid}, since ${running.startedAt})\nlog: ${log}\nprogress: t3app status\n`);
+		return 0;
+	}
+	const pid = startInBackground("providers install", [process.execPath, import.meta.path, "install", "--wait"], log);
+	process.stdout.write(`t3app providers install: started in the background (pid ${pid})\nlog: ${log}\nprogress: t3app status\n`);
+	return 0;
+}
+
+/** The `t3app providers` CLI (see USAGE); returns the process exit code. */
 export async function main(argv: string[]): Promise<number> {
 	const [command = "status", ...rest] = argv;
 	const raw = process.env[PROVIDERS_ENV];
-	if (command === "help" || command === "-h" || command === "--help" || rest.includes("--help")) {
+	if (command === "help" || command === "-h" || command === "--help" || rest.includes("--help") || rest.includes("-h")) {
+		if (command !== "-h" && command !== "--help" && !COMMANDS.includes(command)) {
+			process.stderr.write(USAGE);
+			return 2;
+		}
 		process.stdout.write(USAGE);
 		return 0;
 	}
 	if (command === "init") {
+		if (rest.length > 0) {
+			process.stderr.write(USAGE);
+			return 2;
+		}
 		try {
 			const status = buildProviderStatus(raw);
-			for (const warning of status.selector.warnings) console.error(`t3code-providers: warning: ${warning}`);
-			console.error(`t3code-providers: providers ${providerSummary(status.providers)}`);
+			for (const warning of status.selector.warnings) console.error(`t3app providers: warning: ${warning}`);
+			console.error(`t3app providers: providers ${providerSummary(status.providers)}`);
 		} catch (error) {
-			console.error(`t3code-providers: warning: status unavailable: ${String(error)}`);
+			console.error(`t3app providers: warning: status unavailable: ${String(error)}`);
 		}
 		return 0;
 	}
 	if (command === "install") {
-		if (rest.some((arg) => arg !== "--keep-trying")) {
+		if (rest.length > 1 || rest.some((arg) => arg !== "--keep-trying" && arg !== "--wait")) {
 			process.stderr.write(USAGE);
 			return 2;
 		}
 		if (process.getuid?.() === 0) {
-			process.stderr.write("t3code-providers install: run it as the app user (node), not root; it installs into that user's home\n");
+			process.stderr.write("t3app providers install: run it as the app user (node), not root; it installs into that user's home (drop user=root)\n");
 			return 3;
 		}
+		if (rest.length === 0) return startInstall();
 		const selection = parseProviders(raw);
-		for (const warning of selection.warnings) console.error(`t3code-providers: warning: ${warning}`);
+		for (const warning of selection.warnings) console.error(`t3app providers: warning: ${warning}`);
 		return await installProviders(selection.selected, defaultInstallEnv(rest.includes("--keep-trying")));
 	}
 	if (command !== "status") {

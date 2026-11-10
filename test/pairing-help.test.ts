@@ -17,8 +17,8 @@ const commandMatch = helper.match(/const COMMAND = '([^']+)';/);
 const COMMAND = commandMatch?.[1] ?? "";
 
 describe("RouterOS pairing help", () => {
-	test("the helper declares one RouterOS command that runs t3-pairing-link", () => {
-		expect(COMMAND).toBe(':put [/container/shell app-t3code cmd="t3-pairing-link" as-value]');
+	test("the helper declares one RouterOS command that runs t3app pairing", () => {
+		expect(COMMAND).toBe(':put [/container/shell app-t3code cmd="t3app pairing" as-value]');
 	});
 
 	test("the README and the container log line give the same command", () => {

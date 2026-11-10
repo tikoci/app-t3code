@@ -1,5 +1,5 @@
 /**
- * T3CODE_PROVIDERS (#13): selection, status and the background installer,
+ * T3APP_PROVIDERS (#13): selection, status and the background installer,
  * with the install steps faked. The docker replacement test covers a real
  * npm install of Codex in the image.
  */
@@ -20,7 +20,7 @@ function provider(token: string) {
 	return found;
 }
 
-describe("T3CODE_PROVIDERS selection", () => {
+describe("T3APP_PROVIDERS selection", () => {
 	test("tokens are the eight providers in T3's main Add provider list", () => {
 		expect([...PROVIDER_TOKENS].sort()).toEqual(["antigravity", "claude", "codex", "cursor", "grok", "muse", "opencode", "pi"]);
 	});
@@ -54,21 +54,21 @@ describe("T3CODE_PROVIDERS selection", () => {
 	});
 
 	test("the image ENV, both YAML files and the README ship the same default", () => {
-		const env = /^ENV T3CODE_PROVIDERS="([^"]*)"$/m.exec(read("Dockerfile"))?.[1];
+		const env = /^ENV T3APP_PROVIDERS="([^"]*)"$/m.exec(read("Dockerfile"))?.[1];
 		expect(env).toBe(DEFAULT_PROVIDERS);
 		const app = YAML.load(read("app/t3code.tikapp.yaml")) as { services: { t3code: { environment: Record<string, string> } } };
-		expect(app.services.t3code.environment.T3CODE_PROVIDERS).toBe(DEFAULT_PROVIDERS);
+		expect(app.services.t3code.environment.T3APP_PROVIDERS).toBe(DEFAULT_PROVIDERS);
 		const store = (YAML.load(read("app/t3code.tikappstore.yaml")) as { name: string; services: { t3code: { environment: Record<string, string> } } }[]).find(
 			(d) => d.name === "t3code",
 		);
-		expect(store?.services.t3code.environment.T3CODE_PROVIDERS).toBe(DEFAULT_PROVIDERS);
-		expect(read("README.md")).toContain(`| \`T3CODE_PROVIDERS\` | \`${DEFAULT_PROVIDERS}\``);
+		expect(store?.services.t3code.environment.T3APP_PROVIDERS).toBe(DEFAULT_PROVIDERS);
+		expect(read("README.md")).toContain(`| \`T3APP_PROVIDERS\` | \`${DEFAULT_PROVIDERS}\``);
 	});
 
 	test("no provider CLI is baked into the image", () => {
 		const dockerfile = read("Dockerfile");
 		for (const pkg of ["@openai/codex", "opencode-ai", "pi-coding-agent", "x.ai/cli", "dev.meta.ai"]) expect(dockerfile).not.toContain(pkg);
-		expect(dockerfile).toContain("COPY lib /usr/local/lib/t3code");
+		expect(dockerfile).toContain("COPY lib /usr/local/lib/t3app");
 	});
 
 	test("help names every token and the README documents every one", () => {

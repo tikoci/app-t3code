@@ -1,10 +1,12 @@
-// t3code-tools: the command for optional tool groups (USAGE below is the
-// reference). The groups are in tool-catalog.ts, the report in
-// tool-status.ts, installs in tool-payloads.ts. The image copies lib/ to
-// /usr/local/lib/t3code/ and bin/t3code-tools runs this file with Bun.
+// `t3app tools`: the area for optional tool groups (USAGE below is its
+// reference; lib/t3app.ts dispatches here). The groups are in
+// tool-catalog.ts, the report in tool-status.ts, installs in
+// tool-payloads.ts. The image copies lib/ to /usr/local/lib/t3app/; this file
+// also runs on its own for the re-exec as the payload owner and for a
+// background install.
 import { accessSync, constants, existsSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { APP_HOME, DISK_RESERVE_BYTES, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, stateDir } from "./runtime.ts";
+import { APP_HOME, DISK_RESERVE_BYTES, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, startInBackground, stateDir } from "./runtime.ts";
 import {
 	CORE_CHECKS,
 	DEFAULT_TOOL_GROUPS,
@@ -15,46 +17,54 @@ import {
 	parseToolGroups,
 	SELECTOR_ENV,
 } from "./tool-catalog.ts";
-import { activateIfIdle, defaultPayloadEnv, defaultRoot, installGroups, isPayloadGroup, prunePayloads } from "./tool-payloads.ts";
+import { activateIfIdle, defaultPayloadEnv, defaultRoot, installGroups, isPayloadGroup, liveInstaller, prunePayloads } from "./tool-payloads.ts";
 import { BUILD_INVENTORY_DIR, buildStatus, formatStatus, RUNTIME_STATUS_PATH, writeRuntimeStatus } from "./tool-status.ts";
 
 /** A back-off delay as 15s / 5m / 1h. */
 const fmtWait = (ms: number) => (ms < 60_000 ? `${ms / 1000}s` : ms < 3_600_000 ? `${ms / 60_000}m` : `${ms / 3_600_000}h`);
 const keepTryingHours = Math.round(KEEP_TRYING_BACKOFF_MS.reduce((a, b) => a + b, 0) / 3_600_000);
 
-/**
- * The command reference: the one place that says what t3code-tools does.
- * `t3code-tools help` (or any command with --help) prints it. Keep it in
- * step with main(); a test checks every command is described.
- */
-export const USAGE = `t3code-tools: optional tool groups for the app-t3code image (issue #5)
+/** Where the background install logs: the entrypoint's run and `t3app tools install` share it. */
+export const installLogPath = () => join(stateDir(), "tool-groups.log");
 
-usage: t3code-tools <command> [options]        (no command: status)
-       t3code-tools help | --help | <command> --help
+/**
+ * The command reference for `t3app tools`. `t3app tools help` (or any
+ * command with --help) prints it. Keep it in step with main(); a test checks
+ * every command is described.
+ */
+export const USAGE = `t3app tools: optional tool groups for the app-t3code image (issue #5)
+
+usage: t3app tools <command> [options]        (no command: status)
+       t3app tools help | --help | <command> --help
 
 Commands
   status [--json] [--groups <selection>]
       Report the selection, core readiness and each group's state, payload and
       last error. --groups evaluates another selection without changing
       anything. Read-only; safe at any time.
-  install [--keep-trying]
+  install [--wait]
       Install missing payloads for the selection, one group at a time, then
-      link them. Without --keep-trying: ${INTERACTIVE_BACKOFF_MS.length + 1} attempts per group over about
-      ${fmtWait(INTERACTIVE_BACKOFF_MS.reduce((a, b) => a + b, 0))} (use this to retry now). --keep-trying is the entrypoint's
-      background run: retries for about ${keepTryingHours}h (${KEEP_TRYING_BACKOFF_MS.slice(0, 5).map(fmtWait).join(", ")}, then hourly) and
-      releases the lock between rounds, so a manual install or prune can run.
-      Exit 1 if a group ended failed.
+      link them. Starts in the background and answers at once (RouterOS drops
+      a /container/shell reply after about 60 s) with the log to follow;
+      "t3app status" shows progress. If an install is already running it says
+      so and starts nothing. --wait runs it here instead: ${INTERACTIVE_BACKOFF_MS.length + 1} attempts per
+      group over about ${fmtWait(INTERACTIVE_BACKOFF_MS.reduce((a, b) => a + b, 0))}, exit 1 if a group ended failed.
   prune
       Delete payloads no selected group uses (deselected groups, the previous
       payload kept after a refresh), interrupted installs and kept downloads.
       Exit 1 while an installer holds the lock.
-  init
-      Entrypoint hook: relink already-installed payloads for the selection,
-      unlink deselected ones, log warnings and write the status file. Offline,
-      bounded, never fails.
   groups
       Print the group definitions, core checks and network package assignment
       as JSON (the static spec this image ships).
+
+Internal (the container's entrypoint runs these)
+  init
+      Relink already-installed payloads for the selection, unlink deselected
+      ones, log warnings and write the status file. Offline, bounded, never fails.
+  install --keep-trying
+      The background run at start: retries for about ${keepTryingHours}h (${KEEP_TRYING_BACKOFF_MS.slice(0, 5).map(fmtWait).join(", ")}, then
+      hourly) and releases the lock between rounds, so "t3app tools install"
+      (retry now) or prune can run meanwhile.
 
 Selection (${SELECTOR_ENV})
   Group names separated by spaces (or commas or +), case-insensitive:
@@ -66,26 +76,27 @@ Selection (${SELECTOR_ENV})
 
 Files
   ${defaultRoot()}
-      payload root (T3CODE_TOOLS_HOME moves it): groups/<group>/<id>, bin/
+      payload root (T3APP_TOOLS_HOME moves it): groups/<group>/<id>, bin/
       shims on PATH, state.json, install.log, install.lock
   ${RUNTIME_STATUS_PATH}
       status JSON written by init and install
-  ${join(stateDir(), "tool-groups.log")}
-      output of the entrypoint's background install
+  ${installLogPath()}
+      output of the background install (the entrypoint's and install's)
   ${BUILD_INVENTORY_DIR}
       build-time inventory (image contents, deb locks)
 
 Users
   install, prune and init must run as the owner of the payload root (node in
-  this image). Run as root (for example RouterOS /container/shell), they
-  re-execute as that owner with setpriv, so files never become root-owned;
-  root always means the app's payload root (${APP_HOME}), whatever its HOME.
-  A waiting background installer is recorded in install.wait.
+  this image; RouterOS /container/shell runs as node unless given user=).
+  Run as root, they re-execute as that owner with setpriv, so files never
+  become root-owned; root always means the app's payload root (${APP_HOME}),
+  whatever its HOME. A waiting background installer is recorded in install.wait.
 
-Exit codes: 0 ok, 1 a group failed or the lock is busy (prune), 2 usage,
-3 wrong user and cannot switch. Installing a group grants no privileges;
-each group's "privileges" field says what its operations need. Each install
-needs its payload and downloads plus ${DISK_RESERVE_BYTES / 1024 / 1024} MiB free.
+Exit codes: 0 ok (install: started, or already running), 1 a group failed or
+the lock is busy, 2 usage, 3 wrong user and cannot switch. Installing a group
+grants no privileges; each group's "privileges" field says what its
+operations need. Each install needs its payload and downloads plus
+${DISK_RESERVE_BYTES / 1024 / 1024} MiB free.
 `;
 
 const COMMANDS = ["status", "install", "prune", "init", "groups", "help"] as const;
@@ -127,32 +138,55 @@ export function ownerMismatch(root: string, uid: number | undefined = process.ge
 
 /**
  * Run as the payload root's owner: root re-executes this command through
- * setpriv (so /container/shell, which may be root, leaves no root-owned
- * files); anyone else gets exit 3. Returns null when no switch is needed.
+ * setpriv (so `/container/shell user=root` or `docker exec -u 0` leaves no
+ * root-owned files); anyone else gets exit 3. Returns null when no switch is
+ * needed. A background install switches first, so its log stays node's.
  */
 function runAsOwner(command: string, argv: string[]): number | null {
 	const owner = ownerMismatch(defaultRoot());
 	if (!owner) return null;
 	const uid = process.getuid?.();
 	if (uid !== 0) {
-		process.stderr.write(`t3code-tools ${command}: ${owner.path} belongs to uid ${owner.uid}, this is uid ${uid}; run it as that user\n`);
+		process.stderr.write(`t3app tools ${command}: ${owner.path} belongs to uid ${owner.uid}, this is uid ${uid}; run it as that user\n`);
 		return 3;
 	}
 	// Pin the payload root and home for the child: root's HOME (often /root)
 	// would otherwise point the app user's run somewhere else.
-	const env = { ...process.env, HOME: APP_HOME, T3CODE_TOOLS_HOME: defaultRoot() };
+	const env = { ...process.env, HOME: APP_HOME, T3APP_TOOLS_HOME: defaultRoot() };
 	const proc = Bun.spawnSync(
 		["setpriv", `--reuid=${owner.uid}`, `--regid=${owner.gid}`, "--clear-groups", "--", process.execPath, import.meta.path, ...argv],
 		{ stdin: "inherit", stdout: "inherit", stderr: "inherit", env },
 	);
 	if (proc.exitCode === null || (proc.exitCode === 127 && !Bun.which("setpriv"))) {
-		process.stderr.write(`t3code-tools ${command}: running as root and cannot switch to uid ${owner.uid} (setpriv unavailable)\n`);
+		process.stderr.write(`t3app tools ${command}: running as root and cannot switch to uid ${owner.uid} (setpriv unavailable)\n`);
 		return 3;
 	}
 	return proc.exitCode;
 }
 
-/** The t3code-tools CLI (see USAGE); returns the process exit code. */
+/**
+ * `install` without --wait: start `install --wait` in the background, unless
+ * an install already holds the lock (a prune holding it is a failure: the
+ * install would only find the lock busy). A waiting --keep-trying run holds
+ * no lock, so starting one is the "retry now".
+ */
+function startInstall(): number {
+	const log = installLogPath();
+	const running = liveInstaller(defaultPayloadEnv(PAYLOAD_SPEC_DIR));
+	if (running && !running.waitingUntil) {
+		if (running.command !== "install") {
+			process.stderr.write(`t3app tools install: a ${running.command} is running (pid ${running.pid}); try again when it finishes\n`);
+			return 1;
+		}
+		process.stdout.write(`t3app tools install: already running (pid ${running.pid}, since ${running.startedAt})\nlog: ${log}\nprogress: t3app status\n`);
+		return 0;
+	}
+	const pid = startInBackground("tools install", [process.execPath, import.meta.path, "install", "--wait"], log);
+	process.stdout.write(`t3app tools install: started in the background (pid ${pid})\nlog: ${log}\nprogress: t3app status\n`);
+	return 0;
+}
+
+/** The `t3app tools` CLI (see USAGE); returns the process exit code. */
 export async function main(argv: string[]): Promise<number> {
 	const [command = "status", ...rest] = argv;
 	const raw = process.env[SELECTOR_ENV];
@@ -165,7 +199,10 @@ export async function main(argv: string[]): Promise<number> {
 		return 0;
 	}
 	// Reject stray arguments before anything else, including the switch to the owner.
-	const strayArgs = command === "install" ? rest.some((arg) => arg !== "--keep-trying") : (command === "prune" || command === "groups") && rest.length > 0;
+	const strayArgs =
+		command === "install"
+			? rest.length > 1 || rest.some((arg) => arg !== "--keep-trying" && arg !== "--wait")
+			: (command === "prune" || command === "groups" || command === "init") && rest.length > 0;
 	if (strayArgs) {
 		process.stderr.write(USAGE);
 		return 2;
@@ -183,18 +220,19 @@ export async function main(argv: string[]): Promise<number> {
 		try {
 			// Serialized with install/prune; if one is running it activates instead.
 			const pending = await activateIfIdle(GROUPS.filter(isPayloadGroup), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
-			if (pending === null) console.error("t3code-tools: an install or prune is running; it will relink payloads when done");
+			if (pending === null) console.error("t3app tools: an install or prune is running; it will relink payloads when done");
 		} catch (error) {
-			console.error(`t3code-tools: warning: payload activation failed: ${String(error)}`);
+			console.error(`t3app tools: warning: payload activation failed: ${String(error)}`);
 		}
 		const status = writeRuntimeStatus(raw);
 		if (status) {
-			for (const warning of status.selector.warnings) console.error(`t3code-tools: warning: ${warning}`);
+			for (const warning of status.selector.warnings) console.error(`t3app tools: warning: ${warning}`);
 			const summary = status.groups.filter((g) => g.selected).map((g) => `${g.name}=${g.state}`);
-			console.error(`t3code-tools: groups ${summary.length ? summary.join(" ") : "none (core only)"}; core ${status.core.state}`);
+			console.error(`t3app tools: groups ${summary.length ? summary.join(" ") : "none (core only)"}; core ${status.core.state}`);
 		}
 		return 0;
 	}
+	if (command === "install" && rest.length === 0) return startInstall();
 	if (command === "install") {
 		const selection = parseToolGroups(raw);
 		const env = defaultPayloadEnv(PAYLOAD_SPEC_DIR);
@@ -209,7 +247,7 @@ export async function main(argv: string[]): Promise<number> {
 			const removed = await prunePayloads(GROUPS.filter(isPayloadGroup), selection.selected, defaultPayloadEnv(PAYLOAD_SPEC_DIR));
 			process.stdout.write(removed.length ? `removed ${removed.join(" ")}\n` : "nothing to remove\n");
 		} catch (error) {
-			process.stderr.write(`t3code-tools: ${error instanceof Error ? error.message : String(error)}\n`);
+			process.stderr.write(`t3app tools: ${error instanceof Error ? error.message : String(error)}\n`);
 			return 1;
 		}
 		writeRuntimeStatus(raw);

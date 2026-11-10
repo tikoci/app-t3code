@@ -199,7 +199,8 @@ function repos(): Json {
 }
 
 function toolsStatus(): Json {
-	const raw = sh("t3code-tools status --json");
+	// Before and after an upgrade: images from #45 on have t3app, older ones t3code-tools.
+	const raw = sh("t3app tools status --json 2>/dev/null || t3code-tools status --json");
 	try {
 		const full = JSON.parse(raw);
 		return {
@@ -237,7 +238,7 @@ function manifest(): Json {
 		versions: Object.fromEntries(commands.map((c) => [c, sh(`${c} --version 2>&1 | head -1`)])),
 		which: Object.fromEntries(commands.map((c) => [c, sh(`command -v ${c}`) || null])),
 		env: Object.fromEntries(
-			["T3CODE_VER", "HOME", "T3CODE_HOME", "T3CODE_TOOL_GROUPS"].map((k) => [k, process.env[k] ?? null]),
+			["T3CODE_VER", "HOME", "T3CODE_HOME", "T3APP_TOOL_GROUPS", "T3APP_PROVIDERS", "T3CODE_TOOL_GROUPS", "T3CODE_PROVIDERS"].map((k) => [k, process.env[k] ?? null]),
 		),
 		environmentId: readFileSync(join(USERDATA, "environment-id"), "utf8").trim(),
 		identityFiles: Object.fromEntries(
