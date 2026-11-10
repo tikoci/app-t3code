@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, processStartTicks } from "../lib/runtime.ts";
+import { cachedProbe, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, processStartTicks } from "../lib/runtime.ts";
 import { GROUPS } from "../lib/tool-catalog.ts";
 import { main, ownerMismatch, USAGE } from "../lib/tool-groups.ts";
 import { activate, activateIfIdle, type Compat, defaultRoot, installGroups, liveInstaller, type PayloadEnv, prunePayloads, readState } from "../lib/tool-payloads.ts";
@@ -561,20 +561,76 @@ await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 		expect(devState()?.state).toBe("ready");
 	});
 
-	test("an unusable Node runtime never reports a payload active or keeps its shims", async () => {
+	test("a Node probe that doesn't answer leaves the shims; status never reports the payload active meanwhile (#53)", async () => {
 		await installGroups(npmGroups, ["dev"], env);
 		const working = compat;
 		env.compat = () => null;
 		expect(activate(npmGroups, ["dev"], env)).toEqual(["dev"]);
-		expect(existsSync(join(env.root, "bin", "tsc"))).toBe(false);
+		expect(readlinkSync(join(env.root, "bin", "tsc"))).toContain("groups/dev/current/");
 		const status = devState();
 		expect(status?.payload?.active).toBeNull();
 		expect(status?.payload?.desiredError).toContain("node is not usable");
 		expect(status?.state).not.toBe("ready");
-		// Node comes back: the same payload is relinked offline.
+		// Node answers again: the same payload, nothing reinstalled.
 		env.compat = () => working;
 		expect(activate(npmGroups, ["dev"], env)).toEqual([]);
+		expect(devState()?.state).toBe("ready");
 		expect(npmCalls()).toBe(1);
+	});
+
+	test("a probe that misses one round is retried, not given up on (#53)", async () => {
+		await installGroups(npmGroups, ["dev"], env);
+		const working = compat;
+		env.compat = () => null;
+		// The back-off wait is when the load eases.
+		env.sleep = async () => {
+			env.compat = () => working;
+		};
+		const result = await installGroups(npmGroups, ["dev"], env);
+		expect(result.results["dev"]?.state).toBe("ready");
+		expect(readState(env)["dev"]?.permanent).toBeUndefined();
+		expect(devState()?.state).toBe("ready");
+		expect(existsSync(join(env.root, "bin", "tsc"))).toBe(true);
+		expect(npmCalls()).toBe(1);
+	});
+
+	test("a probe that misses every round fails without `permanent`; a later install relinks offline (#53)", async () => {
+		await installGroups(npmGroups, ["dev"], env);
+		const working = compat;
+		env.compat = () => null;
+		await installGroups(npmGroups, ["dev"], env);
+		expect(readState(env)["dev"]).toMatchObject({ state: "failed", error: expect.stringContaining("node is not usable") });
+		expect(readState(env)["dev"]?.permanent).toBeUndefined();
+		expect(existsSync(join(env.root, "bin", "tsc"))).toBe(true);
+		env.compat = () => working;
+		await installGroups(npmGroups, ["dev"], env);
+		expect(devState()?.state).toBe("ready");
+		expect(npmCalls()).toBe(1);
+	});
+
+	test("cachedProbe keeps an answer for good and a failure only briefly (#53)", () => {
+		let clock = 0;
+		let answer: string | null = null;
+		let calls = 0;
+		const probe = cachedProbe(
+			() => {
+				calls++;
+				return answer;
+			},
+			10_000,
+			() => clock,
+		);
+		expect(probe()).toBeNull();
+		answer = "ok";
+		clock = 9_999;
+		expect(probe()).toBeNull(); // still inside the failure window
+		expect(calls).toBe(1);
+		clock = 10_000;
+		expect(probe()).toBe("ok");
+		answer = null;
+		clock = 1e9;
+		expect(probe()).toBe("ok"); // an answer is kept
+		expect(calls).toBe(2);
 	});
 
 	test("interrupted installs of deselected groups are cleaned too", async () => {

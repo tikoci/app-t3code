@@ -29,6 +29,7 @@
 import { createHash } from "node:crypto";
 import { chmodSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, normalize, relative } from "node:path";
+import { cachedProbe } from "./runtime.ts";
 
 export const DEB_LOCK_SCHEMA = 1;
 export const DEB_LOCK_FILE = "debs.lock.json";
@@ -85,20 +86,17 @@ export function osReleaseDistro(text: string): string | null {
 	return id && codename ? `${id}-${codename}` : null;
 }
 
-let cachedDebCompat: DebCompat | null | undefined;
-/** The runtime a deb payload must match: dpkg architecture and Debian release. */
-export function debCompat(): DebCompat | null {
-	if (cachedDebCompat !== undefined) return cachedDebCompat;
+/** The runtime a deb payload must match: dpkg architecture and Debian release. Null when the probe fails, for now (#53). */
+export const debCompat = cachedProbe((): DebCompat | null => {
 	try {
 		const distro = osReleaseDistro(readFileSync("/etc/os-release", "utf8"));
 		const proc = Bun.spawnSync(["dpkg", "--print-architecture"], { timeout: 10_000 });
 		const arch = proc.stdout.toString().trim();
-		cachedDebCompat = proc.exitCode === 0 && arch && distro ? { platform: process.platform, arch, distro } : null;
+		return proc.exitCode === 0 && arch && distro ? { platform: process.platform, arch, distro } : null;
 	} catch {
-		cachedDebCompat = null;
+		return null;
 	}
-	return cachedDebCompat;
-}
+});
 
 // ---- build time: resolve the lock from apt metadata ----------------------
 
