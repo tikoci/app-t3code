@@ -149,7 +149,7 @@ centrs execute --quickchr <n> --yes '/app/set [find where name="t3code"] disable
 
 Tested 2026-11-08 with the disks only: the restored home's manifest
 matched the control, and `/app/update` from it worked again
-(`docs/research/2026-11-08/chr-persistence-closeout.md`). The `machine.json`
+(`docs/notes/2026-11-08-chr-persistence-closeout.md`). The `machine.json`
 in the backup is quickchr's settings for the VM. Between backup and restore
 on that run, only runtime fields differed (`status`, `pid`,
 `lastStartedAt`). If `quickchr set` changed the machine after the backup

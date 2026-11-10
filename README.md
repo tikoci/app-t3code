@@ -369,7 +369,7 @@ To inspect a local build without starting T3 or running the first-boot installer
 bun scripts/image-inventory.ts --image app-t3code:test --output image-inventory
 ```
 
-See the [GitHub runner comparison and package recommendations](docs/research/2026-11-05/README.md)
+See the [GitHub runner comparison and package recommendations](docs/research/2026-11-agent-tools/README.md)
 for a dated amd64 snapshot, pinned Ubuntu 24.04/26.04 runner data for both
 architectures, dependency-cost estimates, and the proposed additions. Package
 choices are tracked in [issue #5](https://github.com/tikoci/app-t3code/issues/5);
@@ -651,9 +651,9 @@ markdownlint-cli2 0.24.0, Biome 2.6.5). Maintainers refresh the pins with
 42 MB more to pull on every image update, measured on amd64), so it is a
 payload too. `vpn` and `routing` are smaller, but use the same machinery
 rather than adding 13 MB to every image pull for routers that never select
-them ([write-up](docs/research/2026-11-06/vpn-routing-payloads.md)). `labs`
+them ([write-up](docs/research/2026-11-tool-group-payloads/vpn-routing-payloads.md)). `labs`
 took 565 MiB of QEMU and firmware out of every image
-([write-up](docs/research/2026-11-06/labs-qemu-payload.md)). Each installs as
+([write-up](docs/research/2026-11-tool-group-payloads/labs-qemu-payload.md)). Each installs as
 the app user with no root at runtime:
 
 - **Pinned at image build.** The Dockerfile runs `t3code-tools deb-lock` after
@@ -741,7 +741,7 @@ overhead is about 1 ms per command. On arm64 the same code installed and
 passed the decoding, capture-file and NetFlow checks under QEMU user-mode
 emulation on an amd64 host. That is not native hardware, and interface
 listing and the live-capture refusal could not be tested there. See the
-[spike write-up](docs/research/2026-11-06/capture-native-bundle.md).
+[spike write-up](docs/research/2026-11-tool-group-payloads/capture-native-bundle.md).
 
 Measured on amd64 for the other two (same image): `vpn` is 14 packages, 3.5
 MiB to download and 11.4 MiB on disk; `routing` is 21 packages, 8.3 MiB and
@@ -776,7 +776,7 @@ loopback), and nmap connect scans all work. The rest is in
 Use `/app/set environment=`. Never reapply or edit the YAML to change
 groups. On 7.25.1 and 7.26beta5, assigning `yaml=` recreates the app's
 volumes, which wipes the home, and leaves the app disabled
-([lab results](docs/research/2026-11-05/app-set-environment.md)).
+([lab results](docs/research/2026-11-app-set-environment/README.md)).
 `environment=` restarts the container and keeps its volumes. The setting
 survives `/app/update` and reboots.
 
@@ -805,7 +805,7 @@ the container restarted, and the volume's contents survived.
 #### Network tool assignment
 
 Every network package from the
-[2026-11-05 research](docs/research/2026-11-05/routeros-protocol-map.md) is
+[2026-11-05 research](docs/research/2026-11-agent-tools/routeros-protocol-map.md) is
 assigned here. `t3code-tools groups` prints the same table as JSON.
 
 | Where | Packages |
@@ -820,7 +820,7 @@ assigned here. `t3code-tools groups` prints the same table as JSON.
 Core gets only small user-space clients. With dependencies, their image
 layer measured 29.3 MB uncompressed on amd64. The largest are `snmp` (9 MiB
 with libsnmp and `pci.ids`) and `bind9-dnsutils` (6 MiB), per the apt
-estimates in the [cost data](docs/research/2026-11-05/network-package-costs-amd64.json).
+estimates in the [cost data](docs/research/2026-11-agent-tools/network-package-costs-amd64.json).
 Ordinary client use needs no privileges, with two exceptions worth knowing:
 `ping` relies on ICMP echo sockets being allowed (`net.ipv4.ping_group_range`)
 and `mtr` on a `cap_net_raw` file capability; see
@@ -841,15 +841,15 @@ same reason: they are Linux router tools that need `CAP_NET_ADMIN`.
 `dev`, `capture`, `labs`, `vpn` and `routing` install as persistent
 payloads under `/data` in the background, after T3 starts, and reuse
 compatible payloads across image replacements (write-ups:
-[capture](docs/research/2026-11-06/capture-native-bundle.md),
-[vpn and routing](docs/research/2026-11-06/vpn-routing-payloads.md),
-[labs](docs/research/2026-11-06/labs-qemu-payload.md)). The image default
+[capture](docs/research/2026-11-tool-group-payloads/capture-native-bundle.md),
+[vpn and routing](docs/research/2026-11-tool-group-payloads/vpn-routing-payloads.md),
+[labs](docs/research/2026-11-tool-group-payloads/labs-qemu-payload.md)). The image default
 selects all five by name. `browser` is not a group (its libraries stay in
 core, and T3's browser setup is unchanged), and provider CLIs are not a
 group either: they have their own selector,
 [`T3CODE_PROVIDERS`](#providers-t3code_providers). The labs matrix (native
 ARM64 hosts, nested RouterOS, transfer, snapshots and cleanup) is still
-open; see the [final-slice notes](docs/research/2026-11-07/final-tooling-slice.md).
+open; see the [final-slice notes](docs/notes/2026-11-07-final-tooling-slice.md).
 RouterOS privileges and devices are
 [issue #7](https://github.com/tikoci/app-t3code/issues/7), and automatic
 upstream-release and security delivery is
@@ -978,7 +978,8 @@ architectures. It does not authenticate providers or run paid model requests.
 Hands-on CHR runs (install, `/app/update` with an offline `/data` backup,
 commands inside the container, before/after manifests of the home) follow
 [`.agents/skills/chr-app-lab`](.agents/skills/chr-app-lab/SKILL.md), and
-their results are in [`docs/research/`](docs/research/). They have
+their results are in [`docs/notes/`](docs/notes/) (dated run logs and
+closeouts; topic research is in [`docs/research/`](docs/research/)). They have
 confirmed that `/app/update` keeps `/data` (projects, threads, settings,
 logins, tool payloads and the environment ID). Assigning `/app/set yaml=`
 to an installed app does not: it wipes the app-owned volume, even for a

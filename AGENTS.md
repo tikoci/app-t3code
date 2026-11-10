@@ -60,15 +60,35 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   issue, re-read the live Roadmap and update its lists and dependency graph**
   (`gh issue edit <n> --body-file`). Tracking lives in GitHub, not in
   committed files, so machines don't need sync commits.
+- **Now is a handful of items.** Each one is either clear, needs only a
+  small decision, or has unknowns you resolve by starting it (a T3 version
+  bump). Anything waiting on hardware, on another repo or on GitHub goes to
+  Next. When every Now item is done, fold them into a collapsed
+  "Now: closed <date> (<what>)" section with one line each. Move what's left
+  to Next, and promote a few Next items so Now has some work again. A
+  closeout note (`docs/notes/`) records the baseline when that matters, as
+  in `docs/notes/2026-11-10-t3-0.1.7-closeout.md`.
 - **Labels:** `track` is a long-lived issue that collects one concern and
   is never "done" (updating #6, skills). `research` means grounding comes before
   code. `upstream` means it needs work or a bug report in a sister project
   (centrs, quickchr, restraml, routeros-skills) or in T3 Code. `ux` means
   first-user friction.
-- **Research output** goes to `docs/research/<YYYY-MM-DD>/`, with a comment
-  on the issue linking it. A review of a live install by an agent running on it
-  is `chr-<agent>-review.md`, in the same shape as
-  `docs/research/2026-11-07/chr-codex-review.md`.
+- **`docs/` has two kinds of writing.** Most sessions add to neither; the
+  PR, the issue and `CHANGELOG.md` are the record. Write one only when the
+  work earns it: research that later work will build on, or a closeout,
+  deep review or major design decision across sessions. Link it from the
+  issue in a comment.
+  - **`docs/research/<YYYY-MM>-<topic>/`**: a research topic that can grow
+    over several days, with its evidence beside it (probes, JSON, logs).
+    The main write-up is `README.md`. The month dates the topic, not each
+    edit; update the folder rather than starting a new dated one. Example:
+    `docs/research/2026-11-t3code-presentation/`.
+  - **`docs/notes/<YYYY-MM-DD>-<topic>.md`**: an engineering logbook entry,
+    one file, written once and not edited later: a live CHR run, a review
+    of an install, a closeout. A later run gets a new note. A review of a
+    live install by an agent running on it is
+    `<date>-chr-<agent>-review.md`, in the same shape as
+    `docs/notes/2026-11-08-chr-codex-review.md`.
 - **Closing an issue** takes a closeout comment that marks each acceptance item
   done, transferred (to an issue, by link) or dropped. Use `Closes #n` only
   in the PR that finishes it; slices use `Refs #n`.
@@ -190,7 +210,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   volumes, and the override survives `/app/update` and reboot. But it replaces
   the *whole* env list (YAML env is only the initial value), and the CLI and
   REST split values on commas. See
-  `docs/research/2026-11-05/app-set-environment.md`.
+  `docs/research/2026-11-app-set-environment/README.md`.
 - Tool groups (`T3CODE_TOOL_GROUPS`, issue #5) live in
   `scripts/tool-groups.ts`, shipped as `t3code-tools`. Any key added to the
   YAML `environment:` must also be a Dockerfile `ENV` default with the same
@@ -270,7 +290,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   user); they belong to the `labs` Linux guest. Keep the README's
   "Privileges by tool" table and each group's `privileges` (plus
   `CORE_PRIVILEGES`) in step when tools move.
-  See `docs/research/2026-11-06/vpn-routing-payloads.md`.
+  See `docs/research/2026-11-tool-group-payloads/vpn-routing-payloads.md`.
 - `labs` (slice 5) is a deb payload too: QEMU and its firmware are no longer
   in the image (the first apt layer dropped them, which also moved a few
   libraries into the `capture`/`vpn` closures). Debian's QEMU is not
@@ -285,7 +305,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   fail with `MISSING_FIRMWARE` on arm64. Its smoke tests boot firmware, not
   a CHR; CHR boots are the research probe
   (`scripts/research-quickchr-runtime.ts`, `QUICKCHR_MODULE` for a branch
-  build). See `docs/research/2026-11-06/labs-qemu-payload.md`.
+  build). See `docs/research/2026-11-tool-group-payloads/labs-qemu-payload.md`.
 - The README's `/app` YAML Editor share link embeds a snapshot of
   `app/t3code.tikapp.yaml`. Whenever that file changes (including comments),
   run `make share-link`; `test/freshness.test.ts` fails until the link
@@ -300,7 +320,7 @@ rebuild of the wodby/t3code approach, `/app` YAML in `app/`, Bun tests.
   the child's status through). Don't put tini, or any init that only
   blocks and waits for signals, back in front of it. T3's normal signal exit
   is 130, which RouterOS logs as `error: exited with status 130`. See
-  `docs/research/2026-11-08/routeros-sigterm.md` (#25).
+  `docs/research/2026-11-routeros-sigterm/README.md` (#25).
 - `deviceMode: { enable: ["container"] }` must be set at first boot;
   guest-side `/system/device-mode/update container=yes` never completes.
 - `installPackage("container")` reboots the guest; poll, don't assume.

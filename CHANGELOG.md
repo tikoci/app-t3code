@@ -14,12 +14,17 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
-Nothing since `0.1.7-app.142`.
+- Repository: `docs/` is split in two. `docs/notes/<date>-<topic>.md`
+  holds dated, write-once logbook entries (CHR runs, reviews, closeouts).
+  `docs/research/<YYYY-MM>-<topic>/` holds research topics that can grow
+  over several days. Every existing file moved, and links were updated. Only
+  code comments in the image change, but `scripts/` counts as
+  image-relevant, so the merge rebuilds and promotes a new build.
 
 ## 0.1.7-app.142 — 2026-11-10
 
 `sha-69660fb`. The last build of T3 0.1.7 before the 0.1.8 bump; see the
-[0.1.7 closeout](docs/research/2026-11-09/t3-0.1.7-closeout.md).
+[0.1.7 closeout](docs/notes/2026-11-10-t3-0.1.7-closeout.md).
 
 - Repository: every workflow action is pinned to a commit SHA (with its
   release in a comment), and Dependabot opens one grouped PR a month to

@@ -1,7 +1,7 @@
 # `/app/update` to the promoted `:0.1` (`e9114d1`, #38)
 
 2026-11-09, quickchr and centrs `@next`. The same two licensed test CHRs as
-[chr-d36a5e5-verify.md](chr-d36a5e5-verify.md): `t3code` (x86, RouterOS
+[chr-d36a5e5-verify.md](2026-11-09-chr-d36a5e5-verify.md): `t3code` (x86, RouterOS
 7.25, HVF) and `t3code-arm64` (arm64, 7.25.1, TCG).
 
 PR #38 left two acceptance items open. This run closes the first: a

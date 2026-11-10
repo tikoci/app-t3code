@@ -8,11 +8,11 @@ questions for later work, not an integration specification.
 
 | Area | Reference | Main question |
 | --- | --- | --- |
-| Placement and persistent controls | [Layout and project actions](t3code-presentation-layout.md) | Chat, right-side tabs, floating preview, or Thread details? |
-| Interactive tool results | [MCP Apps](t3code-presentation-mcp-apps.md) | What does T3 support, including Claude? |
-| Existing viewers and syntax | [Files and RouterOS highlighting](t3code-presentation-files.md) | TSV, SQLite, Mermaid, TOML, and `.rsc` |
-| Private credential entry | [Secret requests](t3code-presentation-secrets.md) | What reaches the model, filesystem, and centrs? |
-| Evidence and version pins | [Evidence manifest](t3code-presentation-evidence.json) | Which source and exposed tool contracts support this? |
+| Placement and persistent controls | [Layout and project actions](layout.md) | Chat, right-side tabs, floating preview, or Thread details? |
+| Interactive tool results | [MCP Apps](mcp-apps.md) | What does T3 support, including Claude? |
+| Existing viewers and syntax | [Files and RouterOS highlighting](files.md) | TSV, SQLite, Mermaid, TOML, and `.rsc` |
+| Private credential entry | [Secret requests](secrets.md) | What reaches the model, filesystem, and centrs? |
+| Evidence and version pins | [Evidence manifest](evidence.json) | Which source and exposed tool contracts support this? |
 
 Each reference separates established behavior from untested possibilities and
 has its own follow-up questions, so individual avenues can be refined without
@@ -109,7 +109,7 @@ These are ideas, not accepted requirements or claims about existing centrs flags
 | Private centrs credentials | Avoid putting passwords into prompts or container-wide persistent environment configuration | File delivery, process exposure, cleanup and credential persistence policies |
 | Images or ffmpeg-generated sequences | Alternative for static diagrams, text animation, timelapses or recorded interaction | Useful experiment outside RouterOS too; no such artifact generated here |
 
-The existing [skills/UI patching research](../2026-11-06/t3code-skills-and-ui-patching.md)
+The existing [skills/UI patching research](../2026-11-t3code-integration/README.md)
 addresses deployment and frontend overlays. A maintained frontend patch is a
 different avenue from the supported agent presentation calls catalogued here.
 

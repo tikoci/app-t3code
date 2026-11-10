@@ -1,6 +1,6 @@
 # T3 private secret cards and a future centrs handoff
 
-Part of the [presentation inventory](t3code-presentation-menu.md). This records
+Part of the [presentation inventory](README.md). This records
 the T3 v0.1.7 implementation for future skills and `SECURITY.md` work. It does
 not configure credentials or claim that a centrs handoff has been tested.
 

@@ -34,7 +34,7 @@ Tracking: [groups/inventories #5](https://github.com/tikoci/app-t3code/issues/5)
 
 Proposed control: `T3CODE_TOOL_GROUPS="capture labs"` (space, `+`, or comma
 separated; operators cannot set commas through `/app/set environment=`, see
-[app-set-environment.md](app-set-environment.md)); `none` is core only,
+[the `/app/set` environment research](../2026-11-app-set-environment/README.md)); `none` is core only,
 and `all` selects every defined group. Defaults and ENV/settings precedence
 remain implementation questions.
 

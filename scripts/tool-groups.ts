@@ -106,7 +106,7 @@ export interface Smoke {
 /**
  * A pcapng with one Ethernet/IPv4/UDP TZSP frame (RouterOS sniffer stream)
  * carrying an Ethernet/IPv4/UDP DNS query for routeros.example. Synthetic,
- * from docs/research/2026-11-05/packet-tools-probe.json.
+ * from docs/research/2026-11-agent-tools/packet-tools-probe.json.
  */
 export const TZSP_DNS_PCAPNG =
 	"Cg0NChwAAABNPCsaAQAAAP//////////HAAAAAEAAAAUAAAAAQAAAP//AAAUAAAABgAAAJwAAAAAAAAAAAAAAEBCDwB7AAAAewAAAAIAAAAAAgIAAAAAAQgARQAAbQAAAABAEfZ8wAACAcAAAgKn+JCQAFkAAAEAAAEBAgAAAAACAgAAAAABCABFAAA+AAAAAEAR9qvAAAIBwAACAjA5ADUAKgAAEjQBAAABAAAAAAAACHJvdXRlcm9zB2V4YW1wbGUAAAEAAQCcAAAA";
@@ -241,7 +241,7 @@ export const GROUPS: readonly GroupDef[] = [
 		checks: cmd("wg", "swanctl", "pki", "openvpn", "ike-scan"),
 		privileges:
 			"None: `wg genkey`/`wg pubkey`, `pki` keys and certificates, `openvpn --genkey`, `ike-scan --sport=0`. CAP_NET_ADMIN: WireGuard interfaces (`ip link add type wireguard` + `wg set`; kernel module, no /dev/net/tun). CAP_NET_ADMIN plus /dev/net/tun: OpenVPN tunnels. Root: `wg-quick` (it re-executes itself with sudo, which the image lacks) and charon (shipped, not wired). CAP_NET_BIND_SERVICE: ike-scan's default source port 500 where ports below 1024 are restricted.",
-		// Measured on amd64 (2026-11-06): see docs/research/2026-11-06/vpn-routing-payloads.md.
+		// Measured on amd64 (2026-11-06): see docs/research/2026-11-tool-group-payloads/vpn-routing-payloads.md.
 		approxBytes: 16 * 1024 * 1024,
 		// swanctl --version asks charon over VICI; --help prints the version line offline.
 		versionArgs: { pki: ["--help"], swanctl: ["--help"] },
@@ -273,7 +273,7 @@ export const GROUPS: readonly GroupDef[] = [
 		checks: cmd("bird", "birdc", "rdisc6", "ndisc6", "arping", "arp-scan", "nft", "conntrack", "nmap"),
 		privileges:
 			"None: BIRD config parsing and BGP on ports >=1024 (birdc needs only its socket), nmap connect scans and NSE data. CAP_NET_RAW: ARP/ND probes (arping, arp-scan, rdisc6, ndisc6), nmap raw scans and raw NSE scripts, BIRD OSPF. CAP_NET_BIND_SERVICE: BGP on port 179 where the namespace restricts ports below 1024. CAP_NET_ADMIN and netfilter netlink: nft (even `nft -c`) and conntrack operations, BIRD kernel route sync.",
-		// Measured on amd64 (2026-11-06): see docs/research/2026-11-06/vpn-routing-payloads.md.
+		// Measured on amd64 (2026-11-06): see docs/research/2026-11-tool-group-payloads/vpn-routing-payloads.md.
 		approxBytes: 40 * 1024 * 1024,
 		versionArgs: {
 			birdc: ["-s", "/nonexistent/bird.ctl", "show", "status"],

@@ -144,7 +144,7 @@ For `/app`, this can ship through an ordinary image update with **no YAML
 change**. If a selector is later added to YAML, give it the same Dockerfile
 `ENV` default. Operator `environment=` updates replace the entire environment
 list and split on commas: use the already documented update procedure, not a
-YAML edit. The [environment research](../2026-11-05/app-set-environment.md)
+YAML edit. The [environment research](../2026-11-app-set-environment/README.md)
 records these facts and the YAML volume-reset reproduction on 7.25.1 and
 7.26beta5. If YAML ever must change, follow the complete offline backup/restore
 procedure in the [README](../../../README.md#what-survives-an-image-replacement),
@@ -326,7 +326,7 @@ To reproduce the measured offline subset with an available local image:
 ```sh
 docker run --rm -i --network none --user 0 \
   -e T3CODE_RESEARCH_DISPOSABLE=1 --entrypoint bun app-t3code:slice4 - \
-  < docs/research/2026-11-06/t3code-integration-probe.ts
+  < docs/research/2026-11-t3code-integration/t3code-integration-probe.ts
 ```
 
 Do not attach an operator's home to that command: the fixture deliberately

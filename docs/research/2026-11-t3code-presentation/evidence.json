@@ -257,7 +257,7 @@
       },
       "browserPreview": {
         "method": "preview_status then preview_open with open:true",
-        "url": "https://github.com/tikoci/app-t3code/blob/cd183c1ee9c89e97bcf241f478d46ddefcfa722f/docs/research/2026-11-09/t3code-presentation-mcp-apps.md",
+        "url": "https://github.com/tikoci/app-t3code/blob/cd183c1ee9c89e97bcf241f478d46ddefcfa722f/docs/research/2026-11-t3code-presentation/mcp-apps.md",
         "hostReported": {
           "available": true,
           "visible": true,

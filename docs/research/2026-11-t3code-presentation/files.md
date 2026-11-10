@@ -1,6 +1,6 @@
 # File viewers, TOML and RouterOS syntax
 
-Part of the [presentation inventory](t3code-presentation-menu.md). Source
+Part of the [presentation inventory](README.md). Source
 baseline: T3 v0.1.7. No GUI rendering was exercised in this research.
 
 ## Existing viewers to reuse
