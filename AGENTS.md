@@ -107,9 +107,11 @@ reference. Every area follows these rules:
   (inventory, skills #46, credential handoff #47, a `t3 triage`-style
   support command) is a new module and a line in `t3app.ts`, never a new
   binary in `bin/`.
-- **Exit codes:** `help`/`--help` exits 0 on stdout. An unknown command or
-  an extra argument exits 2 with usage on stderr, before anything runs
-  (including the switch to the payload owner). 1 means the operation
+- **Exit codes:** `help`, `--help` or `-h` alone, or `<command> --help`,
+  exits 0 on stdout. An unknown command or an extra argument, including
+  with a help flag (`help extra`, `install now --help`), exits 2 with usage
+  on stderr, before anything runs (including the switch to the payload
+  owner). `helpRequest` in `lib/runtime.ts` is the shared rule. 1 means the operation
   failed; 3 means the wrong user.
 - **`--json` only on status:** `t3app status --json` is the agent form;
   `tools status` and `providers status` keep theirs for the image build and

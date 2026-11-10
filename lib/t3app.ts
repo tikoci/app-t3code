@@ -5,6 +5,7 @@
 // new binaries. AGENTS.md "CLI conventions" has the rules every area follows.
 // The image copies lib/ to /usr/local/lib/t3app/ and bin/t3app runs this file.
 import { buildProviderStatus, formatProviderStatus, installLogPath as providersLog, PROVIDERS_ENV, main as providersMain } from "./providers.ts";
+import { helpRequest } from "./runtime.ts";
 import { SELECTOR_ENV } from "./tool-catalog.ts";
 import { installLogPath as toolsLog, main as toolsMain } from "./tool-groups.ts";
 import { defaultRoot } from "./tool-payloads.ts";
@@ -139,15 +140,11 @@ async function init(rest: string[]): Promise<number> {
 /** The t3app CLI; returns the process exit code. */
 export async function main(argv: string[]): Promise<number> {
 	const [command = "status", ...rest] = argv;
-	if (command === "help" || command === "-h" || command === "--help") {
-		if (rest.length > 0) return usageError();
-		process.stdout.write(USAGE);
-		return 0;
-	}
 	if (command === "tools") return toolsMain(rest);
 	if (command === "providers") return providersMain(rest);
-	if (rest.includes("--help") || rest.includes("-h")) {
-		if (!["status", "pairing", "init"].includes(command)) return usageError();
+	const help = helpRequest(command, rest, ["help", "status", "pairing", "init"]);
+	if (help === "usage") return usageError();
+	if (help === "help") {
 		process.stdout.write(USAGE);
 		return 0;
 	}

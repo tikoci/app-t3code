@@ -260,11 +260,14 @@ test.skipIf(!image)(
 			await docker("exec", "-u", "0", name, "t3app", "tools", "prune");
 			// A long verb answers at once and leaves the work in the background.
 			const asked = Date.now();
-			expect(await docker("exec", "-u", "0", name, "t3app", "tools", "install")).toContain("started in the background");
+			const started = await docker("exec", "-u", "0", name, "t3app", "tools", "install");
+			expect(started).toContain("started in the background");
 			expect(Date.now() - asked).toBeLessThan(15_000);
-			for (let i = 0; i < 60; i++) {
-				const now = JSON.parse(await run("t3app", "status", "--json"));
-				if (now.tools.groups.every((g: { payload?: { installer: unknown } }) => !g.payload?.installer)) break;
+			// Wait for that run itself (its pid), not the advisory installer record.
+			const pid = /\(pid (\d+)\)/.exec(started)?.[1] as string;
+			const gone = Date.now() + 60_000;
+			while (Bun.spawnSync(["docker", "exec", name, "test", "-d", `/proc/${pid}`]).exitCode === 0) {
+				if (Date.now() > gone) throw new Error(`background tools install (pid ${pid}) still running after 60 s`);
 				await Bun.sleep(1000);
 			}
 			expect(await run("cat", "/data/.local/state/t3code/tool-groups.log")).toContain("t3app: tools install started in the background");

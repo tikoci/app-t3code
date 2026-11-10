@@ -6,7 +6,7 @@
 // background install.
 import { accessSync, constants, existsSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { APP_HOME, DISK_RESERVE_BYTES, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, startInBackground, stateDir } from "./runtime.ts";
+import { APP_HOME, DISK_RESERVE_BYTES, helpRequest, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, startInBackground, stateDir } from "./runtime.ts";
 import {
 	CORE_CHECKS,
 	DEFAULT_TOOL_GROUPS,
@@ -48,7 +48,8 @@ Commands
       a /container/shell reply after about 60 s) with the log to follow;
       "t3app status" shows progress. If an install is already running it says
       so and starts nothing. --wait runs it here instead: ${INTERACTIVE_BACKOFF_MS.length + 1} attempts per
-      group over about ${fmtWait(INTERACTIVE_BACKOFF_MS.reduce((a, b) => a + b, 0))}, exit 1 if a group ended failed.
+      group over about ${fmtWait(INTERACTIVE_BACKOFF_MS.reduce((a, b) => a + b, 0))}, exit 1 if a group ended failed or another
+      install or a prune holds the lock.
   prune
       Delete payloads no selected group uses (deselected groups, the previous
       payload kept after a refresh), interrupted installs and kept downloads.
@@ -190,13 +191,10 @@ function startInstall(): number {
 export async function main(argv: string[]): Promise<number> {
 	const [command = "status", ...rest] = argv;
 	const raw = process.env[SELECTOR_ENV];
-	if (command === "-h" || command === "--help" || command === "help" || rest.includes("--help") || rest.includes("-h")) {
-		if (command !== "-h" && command !== "--help" && !(COMMANDS as readonly string[]).includes(command)) {
-			process.stderr.write(USAGE);
-			return 2;
-		}
-		process.stdout.write(USAGE);
-		return 0;
+	const help = helpRequest(command, rest, COMMANDS);
+	if (help) {
+		(help === "help" ? process.stdout : process.stderr).write(USAGE);
+		return help === "help" ? 0 : 2;
 	}
 	// Reject stray arguments before anything else, including the switch to the owner.
 	const strayArgs =
@@ -236,9 +234,11 @@ export async function main(argv: string[]): Promise<number> {
 	if (command === "install") {
 		const selection = parseToolGroups(raw);
 		const env = defaultPayloadEnv(PAYLOAD_SPEC_DIR);
-		if (rest.includes("--keep-trying")) env.backoffMs = KEEP_TRYING_BACKOFF_MS;
+		if (rest.includes("--keep-trying")) Object.assign(env, { backoffMs: KEEP_TRYING_BACKOFF_MS, keepTrying: true });
 		const result = await installGroups(GROUPS.filter(isPayloadGroup), selection.selected, env, () => writeRuntimeStatus(raw));
 		writeRuntimeStatus(raw);
+		// Never got the lock (another install or a prune holds it): nothing was done here.
+		if (!result.locked) return 1;
 		return Object.values(result.results).some((r) => r.state === "failed") ? 1 : 0;
 	}
 	if (command === "prune") {

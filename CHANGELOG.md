@@ -31,10 +31,13 @@ gives them their `-app.<N>` heading.
     background and answer at once with their log, because RouterOS drops a
     `/container/shell` reply after about 60 s. If one is already running
     they say so and start nothing. `--wait` runs them in place (the old
-    behavior).
-  - Usage errors exit 2 with usage on stderr across `t3app`; `providers`
-    now also rejects an unknown command with `--help`, and the internal
-    `init` rejects arguments.
+    behavior), and `tools install --wait` now exits 1 when another install
+    or a prune holds the lock. The startup tool-group run no longer gives
+    up when a manual install holds the lock as it starts: it waits and
+    keeps its day of retries.
+  - Usage errors exit 2 with usage on stderr across `t3app`, including a
+    help flag with anything extra (`help extra`, `install now --help`); the
+    internal `init` rejects arguments.
   - The shipped modules move to `/usr/local/lib/t3app`. Paths in `/data`
     (`~/.local/share/t3code-tools`, `~/.local/state/t3code`) don't change.
 

@@ -2,8 +2,8 @@
 // and provider CLIs (providers.ts). Each keeps its own lifecycle; this file
 // holds only what both already need: the app's home and state directory,
 // disk and retry budgets, process identity, stopping an orphaned child, the
-// kernel lock and starting an install in the background. Nothing here knows
-// about groups or providers.
+// kernel lock, starting an install in the background, and the help rule every
+// t3app area shares. Nothing here knows about groups or providers.
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, writeSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { dlopen, FFIType } from "bun:ffi";
@@ -111,6 +111,21 @@ export function startInBackground(name: string, argv: readonly string[], log: st
 	} finally {
 		closeSync(fd);
 	}
+}
+
+const isHelpFlag = (arg: string | undefined) => arg === "--help" || arg === "-h";
+
+/**
+ * The t3app help rule (AGENTS.md "CLI conventions"): `help`, `--help` or
+ * `-h` alone, or `<command> --help` for a known command, is a help request
+ * ("help", exit 0). Any of them with anything else ("help extra",
+ * "install now --help", "bogus --help") is a usage error ("usage", exit 2).
+ * null: not about help at all.
+ */
+export function helpRequest(command: string, rest: readonly string[], commands: readonly string[]): "help" | "usage" | null {
+	if (command !== "help" && !isHelpFlag(command) && !rest.some(isHelpFlag)) return null;
+	if (rest.length === 0) return "help";
+	return rest.length === 1 && isHelpFlag(rest[0]) && commands.includes(command) ? "help" : "usage";
 }
 
 export const LOCK_EX = 2;

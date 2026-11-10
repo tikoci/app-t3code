@@ -124,6 +124,12 @@ export interface PayloadEnv {
 	 * `prune` are never blocked by a back-off.
 	 */
 	backoffMs: readonly number[];
+	/**
+	 * The entrypoint's day-long run (--keep-trying): a lock that is busy at
+	 * the first round is waited out like any later round, so a manual
+	 * install that won the race at start never ends the retries.
+	 */
+	keepTrying?: boolean;
 	/** Per-attempt install timeout. */
 	installTimeoutMs: number;
 }
@@ -895,7 +901,7 @@ export async function installGroups(
 		for (let round = 0; round < attempts; ) {
 			clearWait(env);
 			if (!(await acquireLock(env, "install"))) {
-				if (round === 0) {
+				if (round === 0 && !env.keepTrying) {
 					env.log("another installer or prune is running; leaving it to finish");
 					return { locked: false, results };
 				}
@@ -903,7 +909,7 @@ export async function installGroups(
 				// wait as long again and retry, at most `attempts` times.
 				if (++busy > attempts) break;
 				env.log(`round ${round + 1}/${attempts}: another installer or prune holds the lock; trying again later`);
-				await env.sleep(env.backoffMs[round - 1] as number);
+				await env.sleep(env.backoffMs[Math.max(round - 1, 0)] as number);
 				continue;
 			} else {
 				locked = true;

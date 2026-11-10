@@ -275,6 +275,36 @@ describe("npm payload groups", () => {
 		expect(npmCalls()).toBe(2);
 	});
 
+	test("--keep-trying waits out a lock that is busy at the first round; a terminal install leaves it", async () => {
+		// A manual `t3app tools install` that took the lock just before the
+		// entrypoint's day-long run must not end that run's retries (#45).
+		env.backoffMs = [0];
+		const lock = join(env.root, "install.lock");
+		mkdirSync(env.root, { recursive: true });
+		const holder = Bun.spawn(["flock", "-o", lock, "sleep", "30"]);
+		try {
+			for (let i = 0; i < 100 && Bun.spawnSync(["flock", "-n", lock, "true"]).exitCode === 0; i++) await Bun.sleep(20);
+			const terminal = await installGroups(npmGroups, ["dev"], { ...env, sleep: async () => {} });
+			expect(terminal).toEqual({ locked: false, results: {} });
+			let sleeps = 0;
+			const startup = await installGroups(npmGroups, ["dev"], {
+				...env,
+				keepTrying: true,
+				sleep: async () => {
+					sleeps++;
+					holder.kill();
+					await holder.exited;
+				},
+			});
+			expect(sleeps).toBe(1);
+			expect(startup.locked).toBe(true);
+			expect(startup.results["dev"]).toMatchObject({ state: "ready", attempt: 1 });
+			expect(npmCalls()).toBe(1);
+		} finally {
+			holder.kill();
+		}
+	});
+
 	test("a group that failed on low disk counts as ready once another run installed it", async () => {
 		cpSync(join(tmp, "spec", "dev"), join(tmp, "spec", "dev2"), { recursive: true });
 		const groups = [...npmGroups, { ...dev, name: "dev2" }];

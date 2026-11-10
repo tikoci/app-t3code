@@ -63,6 +63,11 @@ describe("t3app command reference", () => {
 
 	test("areas get their own reference and argument checks", async () => {
 		expect((await cli(["tools", "help"])).out).toStartWith("t3app tools:");
+		for (const argv of [["tools", "status", "--help"], ["tools", "install", "-h"], ["tools", "-h"], ["providers", "install", "--help"], ["providers", "help", "--help"]]) {
+			const { code, out } = await cli(argv);
+			expect(code, argv.join(" ")).toBe(0);
+			expect(out).toStartWith(`t3app ${argv[0]}:`);
+		}
 		expect((await cli(["providers", "--help"])).out).toStartWith("t3app providers:");
 		for (const argv of [
 			["tools", "bogus"],
@@ -74,6 +79,13 @@ describe("t3app command reference", () => {
 			["providers", "install", "--all"],
 			["providers", "init", "x"],
 			["providers", "bogus", "--help"],
+			// Help with anything extra is a usage error too (review on #51).
+			["tools", "help", "extra"],
+			["tools", "install", "now", "--help"],
+			["tools", "-h", "status"],
+			["providers", "help", "extra"],
+			["status", "extra", "--help"],
+			["pairing", "label", "--help"],
 		]) {
 			expect((await cli(argv)).code, argv.join(" ")).toBe(2);
 		}

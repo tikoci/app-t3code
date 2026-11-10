@@ -19,6 +19,7 @@ import { HARNESSES, type Harness, type Install } from "./harnesses.ts";
 import {
 	type Child,
 	DISK_RESERVE_BYTES,
+	helpRequest,
 	INTERACTIVE_BACKOFF_MS,
 	isSameProcess,
 	KEEP_TRYING_BACKOFF_MS,
@@ -470,13 +471,10 @@ function startInstall(): number {
 export async function main(argv: string[]): Promise<number> {
 	const [command = "status", ...rest] = argv;
 	const raw = process.env[PROVIDERS_ENV];
-	if (command === "help" || command === "-h" || command === "--help" || rest.includes("--help") || rest.includes("-h")) {
-		if (command !== "-h" && command !== "--help" && !COMMANDS.includes(command)) {
-			process.stderr.write(USAGE);
-			return 2;
-		}
-		process.stdout.write(USAGE);
-		return 0;
+	const help = helpRequest(command, rest, COMMANDS);
+	if (help) {
+		(help === "help" ? process.stdout : process.stderr).write(USAGE);
+		return help === "help" ? 0 : 2;
 	}
 	if (command === "init") {
 		if (rest.length > 0) {
