@@ -190,12 +190,19 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: T3CODE_VER=${{ steps.tags.outputs.ver }}
           outputs: type=local,dest=image-inventory
+      # The metadata reaches the script as text, not through `env:`: since
+      # build-push-action v7 each platform's provenance carries the whole
+      # GitHub event payload (~200 KB on a PR), and one environment variable
+      # over 128 KB fails the step ("Argument list too long"). The quoted
+      # heredoc expands nothing, and its delimiter cannot be a line of JSON.
       - name: Record build identity
         env:
-          BUILD_METADATA: ${{ steps.image.outputs.metadata }}
           IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
         run: |
-          printf '%s\n' "$BUILD_METADATA" > image-inventory/build-metadata.json
+          cat > image-inventory/build-metadata.json <<'BUILD_METADATA_JSON'
+          ${{ steps.image.outputs.metadata }}
+          BUILD_METADATA_JSON
+          jq -e 'has("buildx.build.ref")' image-inventory/build-metadata.json
           printf '%s\n' "$IMAGE_DIGEST" > image-inventory/image-digest.txt
           printf '%s\n' "$GITHUB_SHA" > image-inventory/source-commit.txt
       - name: Record runtime tool-group status with every group selected

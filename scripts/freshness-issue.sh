@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Keep one open `freshness` issue in step with the scheduled freshness run
-# (.github/workflows/freshness.yml), so drift is a notification, not only a
-# red run nobody opened:
+# Keep one open `freshness` issue in step with the freshness run on main
+# (scheduled or manual; .github/workflows/freshness.yml), so drift is a
+# notification, not only a red run nobody opened:
 #
 #   red, no open issue        -> open one with the report
 #   red, report changed       -> rewrite the body and comment with the run link
@@ -34,7 +34,7 @@ report="${report//::error title=freshness::/}"
 report="${report//%0A/$'\n'}"
 fence='```'
 body="$(printf '%s\n\n%stext\n%s\n%s\n\n%s\n' \
-  "The scheduled freshness run (scripts/freshness.ts) found drift against upstream. Each failing line says what to bump; test/app-yaml.test.ts \"release sync\" lists the T3 pins." \
+  "The freshness run (scripts/freshness.ts) found drift against upstream. Each failing line says what to bump; test/app-yaml.test.ts \"release sync\" lists the T3 pins." \
   "$fence" "$report" "$fence" \
   "This issue tracks the latest report: its body changes when the report does, and the next green run closes it.")"
 

@@ -1,5 +1,5 @@
 # Version updates for GitHub Actions only. Workflows pin each action to a
-# commit SHA with its release in a comment (`@<sha> # v6.1.0`); Dependabot
+# commit SHA with its release in a comment (`@<sha> # v7.0.1`); Dependabot
 # moves both. A workflow change counts as image-relevant in CI, so a merge
 # rebuilds and promotes the image: one grouped PR a month keeps that rare.
 #
