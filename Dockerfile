@@ -36,7 +36,7 @@ ENV T3CODE_PORT=3773
 # RouterOS `/app/set environment=` replaces the whole env list, so anything
 # the /app YAML sets must also be an image default here (issue #5).
 ENV T3CODE_TELEMETRY_ENABLED=false
-# Optional tool groups (lib/tool-groups.ts DEFAULT_TOOL_GROUPS): an
+# Optional tool groups (lib/tool-catalog.ts DEFAULT_TOOL_GROUPS): an
 # explicit list, so a group added later is never enabled silently. Operators
 # remove names, or set `none` for core only, with /app/set environment=.
 ENV T3CODE_TOOL_GROUPS="capture labs vpn routing dev"
@@ -218,7 +218,7 @@ COPY lib /usr/local/lib/t3code
 # Must stay after every apt layer: the closure is computed against them.
 # HOME=/root: Bun run as root would otherwise seed a root-owned /data/.bun.
 RUN apt-get update && \
-    HOME=/root t3code-tools deb-lock && \
+    HOME=/root bun /usr/local/lib/t3code/deb-lock.ts && \
     rm -rf /var/lib/apt/lists/*
 
 RUN install -d -o node -g node /usr/share/t3code/inventory

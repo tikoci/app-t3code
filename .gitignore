@@ -4,7 +4,7 @@ dist/
 *.tgz
 .DS_Store
 image-inventory/
-# Generated at image build time (t3code-tools deb-lock)
+# Generated at image build time (lib/deb-lock.ts)
 lib/groups/*/debs.lock.json
 # Agents' non-durable dump (AGENTS.md "Layout")
 scratch/

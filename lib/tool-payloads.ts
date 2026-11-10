@@ -43,7 +43,6 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
-import { dlopen, FFIType } from "bun:ffi";
 import {
 	DEB_CACHE_DIR,
 	DEB_LOCK_FILE,
@@ -58,23 +57,24 @@ import {
 	SNAPSHOT_BASE,
 	sha256File,
 } from "./deb-payloads.ts";
-import type { GroupDef } from "./tool-groups.ts";
+import {
+	appHome,
+	type Child,
+	DISK_RESERVE_BYTES,
+	INTERACTIVE_BACKOFF_MS,
+	isSameProcess,
+	kernelFlock,
+	LOCK_EX,
+	LOCK_NB,
+	MiB,
+	type ProcessId,
+	processStartTicks,
+	stopChild,
+	waitGone,
+} from "./runtime.ts";
+import type { GroupDef } from "./tool-catalog.ts";
 
 export const PAYLOAD_SCHEMA = 1;
-const MiB = 1024 * 1024;
-/** Free space kept for projects and VMs on top of a group's own budget. */
-export const DISK_RESERVE_BYTES = 256 * MiB;
-
-/** `t3code-tools install` from a terminal: three attempts within about 75 s. */
-export const INTERACTIVE_BACKOFF_MS: readonly number[] = [15_000, 60_000];
-
-/**
- * `t3code-tools install --keep-trying` (the entrypoint's background run): a
- * router often starts the container before its uplink or DNS is up, so keep
- * retrying for about a day: 15 s, 1, 5, 15 and 30 min, then hourly. Verified
- * .debs are kept between attempts, so a retry downloads only what is missing.
- */
-export const KEEP_TRYING_BACKOFF_MS: readonly number[] = [15_000, 60_000, 5 * 60_000, 15 * 60_000, 30 * 60_000, ...Array<number>(23).fill(60 * 60_000)];
 const LOG_CAP_BYTES = 1 * MiB;
 
 /** Runtime an npm payload must match. */
@@ -128,17 +128,13 @@ export interface PayloadEnv {
 	installTimeoutMs: number;
 }
 
-/** The app's home: the image's `ENV HOME` and node's passwd home. */
-export const APP_HOME = "/data";
-
 /**
  * The payload root: T3CODE_TOOLS_HOME, else under HOME. Root always uses the
  * app's home: a root shell (RouterOS /container/shell, `docker exec -u 0`)
  * may carry HOME=/root, and the payloads are the app's, not root's.
  */
 export function defaultRoot(env: NodeJS.ProcessEnv = process.env, uid: number | undefined = process.getuid?.()): string {
-	const home = uid === 0 ? APP_HOME : env["HOME"] || APP_HOME;
-	return env["T3CODE_TOOLS_HOME"] || join(home, ".local/share/t3code-tools");
+	return env["T3CODE_TOOLS_HOME"] || join(appHome(env, uid), ".local/share/t3code-tools");
 }
 
 let cachedCompat: Compat | null | undefined;
@@ -468,46 +464,14 @@ function writeState(env: PayloadEnv, group: string, record: StateRecord) {
 	renameSync(`${path}.tmp`, path);
 }
 
-export interface ProcessId {
-	pid: number;
-	/** Kernel start time (/proc/<pid>/stat field 22): pid + start time identify a process even when pids are recycled. */
-	startTicks: string | null;
-}
-
 /** Owner record kept in install.lock. Exclusion itself is the kernel flock on that file. */
 export interface LockInfo extends ProcessId {
 	command: string;
 	startedAt: string;
 	/** The payload child the holder is running, so a successor can stop it if the holder died first. */
-	child?: ProcessId & { processGroup?: boolean };
+	child?: Child;
 	/** In install.wait only: when the waiting installer (which holds no lock) retries. */
 	waitingUntil?: string;
-}
-
-/** Start time of a process in clock ticks since boot, or null if it does not exist. */
-export function processStartTicks(pid: number): string | null {
-	try {
-		const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
-		// Fields after the parenthesised command name; starttime is field 22.
-		return stat.slice(stat.lastIndexOf(")") + 2).split(" ")[19] ?? null;
-	} catch {
-		return null;
-	}
-}
-
-/** Whether pid still names the same process (not a recycled pid). */
-export function isSameProcess(id: ProcessId | undefined): boolean {
-	if (!id || !Number.isInteger(id.pid) || id.pid <= 0) return false;
-	const ticks = processStartTicks(id.pid);
-	if (ticks !== null) return ticks === id.startTicks;
-	// No /proc (not Linux): fall back to pid existence.
-	if (existsSync("/proc/self/stat")) return false;
-	try {
-		process.kill(id.pid, 0);
-		return true;
-	} catch {
-		return false;
-	}
 }
 
 function readLockInfo(path: string): LockInfo | null {
@@ -548,24 +512,6 @@ function clearWait(env: PayloadEnv) {
 	if (readLockInfo(waitPath(env))?.pid === process.pid) rmSync(waitPath(env), { force: true });
 }
 
-export const LOCK_EX = 2;
-export const LOCK_NB = 4;
-let flockFn: ((fd: number, op: number) => number) | null | undefined;
-/** flock(2) via libc. The kernel drops the lock when the holder dies, so there is no stale-lock recovery to race. */
-export function kernelFlock(fd: number, op: number): boolean {
-	if (flockFn === undefined) {
-		try {
-			const lib = process.platform === "darwin" ? "/usr/lib/libSystem.B.dylib" : "libc.so.6";
-			const { symbols } = dlopen(lib, { flock: { args: [FFIType.i32, FFIType.i32], returns: FFIType.i32 } });
-			flockFn = (f, o) => symbols.flock(f, o) as number;
-		} catch {
-			flockFn = null;
-		}
-	}
-	if (flockFn === null) throw new Error("flock(2) is unavailable; cannot lock the payload root");
-	return flockFn(fd, op) === 0;
-}
-
 /** Open lock fds by payload root (closed on release, or by the kernel on exit). */
 const heldLocks = new Map<string, number>();
 
@@ -579,12 +525,7 @@ async function stopOrphan(env: PayloadEnv, previous: LockInfo | null) {
 	const child = previous?.child;
 	if (!child || !isSameProcess(child)) return;
 	env.log(`stopping payload child (pid ${child.pid}) left running by an interrupted ${previous?.command ?? "installer"}`);
-	try {
-		process.kill(child.processGroup ? -child.pid : child.pid, "SIGKILL");
-	} catch {
-		return;
-	}
-	for (let i = 0; i < 100 && isSameProcess(child); i++) await Bun.sleep(50);
+	if (stopChild(child)) await waitGone(child);
 }
 
 async function acquireLock(env: PayloadEnv, command: string): Promise<boolean> {

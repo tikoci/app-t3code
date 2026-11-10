@@ -13,11 +13,11 @@ mirror their place in the image.
 | `app/` | routers (`/app add`) | The `/app` YAML and app-store document |
 | `Dockerfile`, `docker-entrypoint.sh`, `profile.sh` | image | The build, the server start, the login-shell PATH |
 | `bin/` | `/usr/local/bin` | Entry points (`t3code-init`, `t3code-tools`, `t3code-providers`, …) |
-| `lib/` | `/usr/local/lib/t3code` | Shipped runtime modules: tool groups and payloads, providers, the harness catalog, image inventory; `lib/groups/` holds payload specs and locks |
+| `lib/` | `/usr/local/lib/t3code` | Shipped runtime modules: tool groups (catalog, status, payloads, CLI), providers, shared runtime, the harness catalog, image inventory, the build-only `deb-lock.ts`; `lib/groups/` holds payload specs and locks |
 | `client/` | T3's web client, at build time | Deliberate UI overlays (`scripts/install-pairing-help.sh` installs them) |
 | `scripts/` | never | Build, CI and repo upkeep: freshness, runner inventory, `home-manifest.ts` for CHR runs |
 | `test/` | never | Bun tests, plus the shell smoke tests the image tests run |
-| `docs/notes/`, `docs/research/` | never | Logbook and research topics (Workflow below). Probes sit next to their evidence and are frozen: type-checked and linted, but not maintained, and not shell-linted |
+| `docs/notes/`, `docs/research/` | never | Logbook and research topics (Workflow below). Probes sit next to their evidence and are frozen: type-checked and linted, not shell-linted. A probe that imports `lib/` gets mechanical import and path fixes when `lib/` moves; changing what it measures is new research |
 | `.agents/skills/` | never | Skills for developing this repo (`.claude/skills` links here) |
 | `scratch/` | never | Git-ignored dump for files agents need (a `/tmp` that lasts a few sessions). Never referenced from docs, tests or skills |
 
@@ -73,6 +73,27 @@ it doesn't exist yet.
   CI never pushes release tags directly: `main` pushes `:sha-<commit>`, the
   arm64 image runs the replacement test on `ubuntu-24.04-arm`, then
   `promote` retags it. `integration.yml` follows via `workflow_run`.
+
+## Tests
+
+Where each suite runs and what it needs. CI's `lint-test` (`ubuntu-24.04`,
+`bun run test`) runs every row above `container-replacement`; the rest need
+an image or a CHR. On macOS, only the first four rows are meaningful today:
+the others hang or fail rather than skip, because they need Linux tools
+(#30 "CI modularity" tracks gating them).
+
+| Suite | Checks | Runs on | Needs |
+| --- | --- | --- | --- |
+| `app-yaml` | `/app` YAML and store doc, release and Bun/runner pins, selector parsing, docs ↔ image contract | any host | nothing (reads files) |
+| `freshness` | drift checks with GitHub mocked, the README share link | any host | nothing |
+| `pairing-help` | the pairing UI overlay and its install script | any host | `sh` |
+| `providers` | `T3CODE_PROVIDERS` selection, install steps, installer state | any host | fakes; lock via FFI `flock` |
+| `init` | `t3code-init` signal forwarding and reaping | Linux | bash ≥ 5.1 (skipped on macOS's 3.2) |
+| `entrypoint` | background installs, log rotation and fallbacks | Linux | GNU `stat`; two tests skip as root |
+| `tool-payloads`, `deb-payloads` | npm and deb payload lifecycles: install, activate, recover, prune, locks, CLI | Linux | util-linux `flock`, `/proc`, `setpriv` as root; fake npm, dpkg-deb, mirror |
+| `install-claude-code` | the Claude installer against a fake download server | Linux | util-linux `flock`, `setpriv` as root (runs as `nobody`); `zstd` optional |
+| `container-replacement` | the built image: start, replacement with the same home, every tool group's smoke script (`test/*-tools.sh`, run only inside the image) | CI `build` (amd64) and `arm64` jobs | Docker, `APP_T3CODE_DOCKER_IMAGE` (skips without it) |
+| `integration/app-install` | `/app` install on a real CHR and the web UI answering | `integration.yml`: after each successful `ci` push to `main`, weekly, on dispatch | QEMU, network, quickchr, centrs, `APP_T3CODE_INTEGRATION=1` |
 
 ## Workflow
 
@@ -235,8 +256,12 @@ it doesn't exist yet.
   the *whole* env list (YAML env is only the initial value), and the CLI and
   REST split values on commas. See
   `docs/research/2026-11-app-set-environment/README.md`.
-- Tool groups (`T3CODE_TOOL_GROUPS`, issue #5) live in
-  `lib/tool-groups.ts`, shipped as `t3code-tools`. Any key added to the
+- Tool groups (`T3CODE_TOOL_GROUPS`, issue #5): the groups and selection
+  parsing are in `lib/tool-catalog.ts`, the report in `lib/tool-status.ts`,
+  installs in `lib/tool-payloads.ts`, and the `t3code-tools` CLI in
+  `lib/tool-groups.ts`. `lib/runtime.ts` holds only what payloads and
+  providers both use (app home, state dir, budgets, process identity,
+  orphan stop, `flock`); it is not an installer framework. Any key added to the
   YAML `environment:` must also be a Dockerfile `ENV` default with the same
   value (a test enforces it), because an operator's `environment=` set
   drops the YAML values. Never document group changes as a YAML edit.
@@ -292,7 +317,7 @@ it doesn't exist yet.
   offline reuse.
 - `capture` (issue #5 slice 3) is a deb payload: `lib/deb-payloads.ts`.
   The Dockerfile pins its Debian closure from apt metadata with
-  `t3code-tools deb-lock` after the last apt layer (run with `HOME=/root`, or
+  `lib/deb-lock.ts` after the last apt layer (run with `HOME=/root`, or
   Bun seeds a root-owned `/data/.bun`). The closure is "what the image lacks",
   so any apt-layer change can change the lock and every home's payload id
   (a re-download on next start). Wrappers set `LD_LIBRARY_PATH` per process

@@ -17,7 +17,7 @@ import { closeSync, ftruncateSync, mkdirSync, openSync, readFileSync, renameSync
 import { join } from "node:path";
 import { HARNESSES, type Harness, type Install } from "./harnesses.ts";
 import {
-	APP_HOME,
+	type Child,
 	DISK_RESERVE_BYTES,
 	INTERACTIVE_BACKOFF_MS,
 	isSameProcess,
@@ -25,9 +25,11 @@ import {
 	kernelFlock,
 	LOCK_EX,
 	LOCK_NB,
-	type ProcessId,
 	processStartTicks,
-} from "./tool-payloads.ts";
+	stateDir,
+	stopChild,
+	waitGone,
+} from "./runtime.ts";
 
 export const PROVIDERS_ENV = "T3CODE_PROVIDERS";
 /** The shipped default: an explicit list, so a provider added later is never enabled silently. */
@@ -48,15 +50,6 @@ const NOT_SELECTABLE = new Map(
 		.filter((h) => !h.token)
 		.map((h) => [h.label.toLowerCase().replace(/\s+/g, "-"), h.label]),
 );
-
-/**
- * Where installer state, the lock and the background logs live: persistent,
- * in the home. Root always means the app's home, as in defaultRoot: a root
- * shell (/container/shell, `docker exec -u 0`) may carry HOME=/root.
- */
-export function stateDir(env: NodeJS.ProcessEnv = process.env, uid: number | undefined = process.getuid?.()): string {
-	return join(uid === 0 ? APP_HOME : env.HOME || APP_HOME, ".local", "state", "t3code");
-}
 
 export interface ProviderSelection {
 	variable: string;
@@ -115,7 +108,7 @@ export interface InstallerRecord {
 	/** Set while the installer waits between rounds (it holds no lock then). */
 	waitingUntil?: string;
 	/** The install step running now, in its own process group. */
-	child?: ProcessId & { processGroup?: boolean };
+	child?: Child;
 }
 
 export interface ProviderState {
@@ -232,8 +225,6 @@ export function formatProviderStatus(status: ProvidersStatus): string {
 /** Longest one provider install may run before it is stopped and retried. */
 export const INSTALL_TIMEOUT_MS = 2 * 60 * 60_000;
 
-export type Child = ProcessId & { processGroup?: boolean };
-
 export interface InstallEnv {
 	dir: string;
 	which: Which;
@@ -244,17 +235,6 @@ export interface InstallEnv {
 	freeBytes: (path: string) => number;
 	/** Runs one installer step and reports its process; resolves to its exit code. */
 	run: (argv: string[], env: Record<string, string>, onSpawn: (child: Child) => void) => Promise<number>;
-}
-
-/** SIGKILL an install step and everything it started, if it is still the same process. */
-export function stopChild(child: Child): boolean {
-	if (!isSameProcess(child)) return false;
-	try {
-		process.kill(child.processGroup ? -child.pid : child.pid, "SIGKILL");
-	} catch {
-		return false;
-	}
-	return true;
 }
 
 export function defaultInstallEnv(keepTrying: boolean): InstallEnv {
@@ -370,7 +350,7 @@ export async function installProviders(selected: readonly string[], env: Install
 				const orphan = state.installer?.child;
 				if (orphan && stopChild(orphan)) {
 					env.log(`stopping install step pid ${orphan.pid}, left running by an interrupted installer`);
-					for (let i = 0; i < 100 && isSameProcess(orphan); i++) await Bun.sleep(50);
+					await waitGone(orphan);
 				}
 				state.installer = { ...me };
 				missing = wanted.filter((p) => p.cli && !env.which(p.cli));

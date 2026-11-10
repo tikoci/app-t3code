@@ -73,7 +73,7 @@ refused "nmap -sS" nmap -sS -p 1 127.0.0.1
 
 # arp-scan's vendor files come from the payload through its wrapper: decode
 # an ARP reply from a MikroTik OUI out of a capture (ARP_REPLY_PCAP in
-# lib/tool-groups.ts), no interface or privilege needed. A later
+# lib/tool-catalog.ts), no interface or privilege needed. A later
 # --ouifile from the caller still wins over the wrapper's.
 printf %s '1MOyoQIABAAAAAAAAAAAAP//AAABAAAAAAAAAAAAAAA8AAAAPAAAAAIAAAAAAUxeDBEiMwgGAAEIAAYEAAJMXgwRIjPAAAIBAgAAAAABwAACAgAAAAAAAAAAAAAAAAAAAAAAAA==' | base64 -d >arp-reply.pcap
 arp_out=$(arp-scan --readpktfromfile=arp-reply.pcap 192.0.2.1 2>&1)

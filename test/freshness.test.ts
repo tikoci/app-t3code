@@ -28,7 +28,7 @@ import {
 	versionArg,
 } from "../scripts/freshness.ts";
 import { HARNESSES } from "../lib/harnesses.ts";
-import { CORE_CHECKS } from "../lib/tool-groups.ts";
+import { CORE_CHECKS } from "../lib/tool-catalog.ts";
 
 const ROOT = join(import.meta.dir, "..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
