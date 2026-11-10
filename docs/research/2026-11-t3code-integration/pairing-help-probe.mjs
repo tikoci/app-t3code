@@ -4,7 +4,7 @@
 //
 //   PLAYWRIGHT=<t3 dir>/node_modules/playwright-core/index.mjs \
 //   CHROMIUM=/usr/bin/chromium \
-//   bun docs/research/2026-11-08/pairing-help-probe.mjs <base-url> <token> <screenshot.png>
+//   bun docs/research/2026-11-t3code-integration/pairing-help-probe.mjs <base-url> <token> <screenshot.png>
 //
 // <token> is a fresh one from `t3 auth pairing create` (or `t3-pairing-link`)
 // against the same home. It is passed as an argument and never printed.

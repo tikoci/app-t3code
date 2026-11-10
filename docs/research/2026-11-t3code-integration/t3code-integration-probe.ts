@@ -2,7 +2,7 @@
  * Offline research fixture; use ONLY in a disposable container, with no mounts:
  * docker run --rm -i --network none --user 0 \
  *   -e T3CODE_RESEARCH_DISPOSABLE=1 --entrypoint bun app-t3code:slice4 - \
- *   < docs/research/2026-11-06/t3code-integration-probe.ts
+ *   < docs/research/2026-11-t3code-integration/t3code-integration-probe.ts
  * No model calls, provider credentials, RouterOS writes, or host ports.
  * Patches the disposable container's index.html to check static delivery only.
  */

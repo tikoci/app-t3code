@@ -167,8 +167,8 @@ Recollect the local image without its entrypoint or network:
 
 ```sh
 bun scripts/image-inventory.ts --image app-t3code:agent-tools \
-  --output docs/research/2026-11-05/image-amd64
-bun scripts/compare-runner-packages.ts docs/research/2026-11-05
+  --output docs/research/2026-11-agent-tools/image-amd64
+bun scripts/compare-runner-packages.ts docs/research/2026-11-agent-tools
 ```
 
 Cost simulation needs network access for apt indexes and a disposable root

@@ -68,7 +68,7 @@ Through the shims on PATH (`/data/.local/share/t3code-tools/bin`), with no
 `LD_LIBRARY_PATH` in the shell environment or in PID 1:
 
 - `tshark -r` decodes the synthetic TZSP-in-pcapng fixture
-  (`TZSP_DNS_PCAPNG`, from the [2026-11-05 probe](../2026-11-05/packet-tools-probe.json)) to
+  (`TZSP_DNS_PCAPNG`, from the [2026-11-05 probe](../2026-11-agent-tools/packet-tools-probe.json)) to
   `tzsp.encap=1`, `dns.qry.name=routeros.example`, as fields and JSON.
 - `tshark -G folders` reports Program, Global configuration and Global Plugins
   inside the payload (`…/groups/capture/<id>/root/usr/…`). Debian's Wireshark

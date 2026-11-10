@@ -1,6 +1,6 @@
 # T3 Code MCP Apps: support, placement and callbacks
 
-Part of the [presentation inventory](t3code-presentation-menu.md). This note
+Part of the [presentation inventory](README.md). This note
 concerns T3's implementation, not MCP Apps compatibility across other hosts.
 Baseline: v0.1.7, commit `322f6544dfad0a3c8a0c8cbecf2c7f7874b14268`.
 
@@ -51,7 +51,7 @@ can reset state the app did not save.
 
 No app-tool argument was found that selects the Thread details card or
 right-side tab as its destination. Those are separate
-[layout surfaces](t3code-presentation-layout.md).
+[layout surfaces](layout.md).
 
 ## What interaction can do
 

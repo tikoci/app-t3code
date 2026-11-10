@@ -103,7 +103,7 @@ Groups now take a list of smoke tests. `vpn`: `pki --gen --type ed25519`
 ### PPP-based peers and lldpd move to the `labs` guest
 
 `ppp`, `xl2tpd`, `pppoe` and `sstp-client` were in `vpn` by the
-[2026-11-05 proposal](../2026-11-05/routeros-protocol-map.md). None of them
+[2026-11-05 proposal](../2026-11-agent-tools/routeros-protocol-map.md). None of them
 can work from a payload. `pppd` requires root for anything, and as a
 non-root user it fails on the missing `/etc/ppp/options` before reading
 its arguments. `xl2tpd` and `sstpc` start `/usr/sbin/pppd` by that

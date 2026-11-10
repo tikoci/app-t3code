@@ -7,7 +7,7 @@ Sources read via unauthenticated public HTTPS (no checkout created):
 - <https://github.com/tikoci/app-t3code/issues/5>
 - <https://github.com/tikoci/app-t3code/blob/main/README.md>
 - <https://github.com/tikoci/app-t3code/blob/main/AGENTS.md>
-- <https://github.com/tikoci/app-t3code/blob/main/docs/research/2026-11-07/final-tooling-slice.md>
+- <https://github.com/tikoci/app-t3code/blob/main/docs/notes/2026-11-07-final-tooling-slice.md>
 - Public test/tool-payloads.test.ts, test/deb-payloads.test.ts, test/container-replacement.test.ts inspected as text only.
 
 No subagents, installs, repo modifications, service restart, auth/settings/network/capability changes, or source suite/build execution. Temporary fixtures only under /tmp/app5-review, cleaned after report. No auth contents or environment secrets read/printed. Generated ephemeral keys were withheld. A first report-write attempt was rejected by command policy for rm -rf cleanup before execution; corrected to scoped Python cleanup.

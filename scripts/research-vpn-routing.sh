@@ -7,7 +7,7 @@
 #
 #   docker run --rm -u root --entrypoint bash \
 #     -v "$PWD/scripts:/probe:ro" -v "$PWD/test:/tests:ro" <image> \
-#     /probe/research-vpn-routing.sh > docs/research/2026-11-06/vpn-routing-amd64.txt 2>&1
+#     /probe/research-vpn-routing.sh > docs/research/2026-11-tool-group-payloads/vpn-routing-amd64.txt 2>&1
 set -u
 export LC_ALL=C
 TOOLS=/data/.local/share/t3code-tools

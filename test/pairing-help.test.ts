@@ -2,7 +2,7 @@
 // The browser panel, the container log line and the README must give the
 // same RouterOS command, and the Dockerfile must wire the helper in with its
 // build-time guards. Browser behavior was verified against the real T3
-// client (docs/research/2026-11-08/pairing-help.md); this test keeps the
+// client (docs/research/2026-11-t3code-integration/pairing-help.md); this test keeps the
 // pieces from drifting apart.
 import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -33,7 +33,7 @@ describe("RouterOS pairing help", () => {
 
 	// The command is copied by hand (no Copy button, #30), so it must stay
 	// selectable and reachable by Tab. The browser side of this is the probe's
-	// selection check (docs/research/2026-11-08/pairing-help-probe.mjs).
+	// selection check (docs/research/2026-11-t3code-integration/pairing-help-probe.mjs).
 	test("the command stays selectable and keyboard-reachable", () => {
 		expect(helper).toContain(".rph-cmd code{overflow-wrap:anywhere;-webkit-user-select:all;user-select:all}");
 		expect(helper).not.toMatch(/user-select:\s*(none|text|contain)/);

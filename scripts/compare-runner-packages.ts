@@ -1,7 +1,7 @@
 // Render a complete comparison of GitHub's published apt tables with a saved
 // image inventory. Uses explicit mappings instead of treating Ubuntu/Debian
 // package renames as missing capabilities. Does not compare version equality.
-const directory = process.argv[2] ?? "docs/research/2026-11-05";
+const directory = process.argv[2] ?? "docs/research/2026-11-agent-tools";
 const source = await Bun.file(`${directory}/runner-packages.json`).json();
 const image = await Bun.file(`${directory}/image-amd64/inventory.json`).json();
 const installed = new Map<string, string>(image.packages.map((p: { name: string; version: string }) => [p.name.replace(/:.*$/, ""), p.version]));

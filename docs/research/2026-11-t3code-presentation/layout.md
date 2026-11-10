@@ -1,6 +1,6 @@
 # Where T3 Code shows agent output
 
-Part of the [presentation inventory](t3code-presentation-menu.md), pinned to
+Part of the [presentation inventory](README.md), pinned to
 T3 v0.1.7. Findings below are from source and exposed tool contracts, not a
 recorded browser walkthrough. The later demonstration below records limited
 runtime evidence separately.

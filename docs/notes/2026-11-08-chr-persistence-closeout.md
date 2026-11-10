@@ -2,7 +2,7 @@
 
 Live run, 2026-11-08 UTC, on both test CHRs, driven from the x86_64 host
 with quickchr 0.5.5 and centrs 0.1.9. It covers the two items left open in
-`docs/research/2026-11-07/chr-0.1.7-upgrade.md`: a `gh` login, and
+`docs/notes/2026-11-08-chr-0.1.7-upgrade.md`: a `gh` login, and
 uncommitted checkout/worktree files, each across a digest-changing
 `/app/update`. The recipe is `.claude/skills/chr-app-lab/SKILL.md`.
 

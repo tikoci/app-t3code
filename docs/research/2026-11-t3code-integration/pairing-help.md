@@ -3,7 +3,7 @@
 2026-11-08, Habitat C (orca, x86_64). T3 Code **0.1.7** (tag `v0.1.7`,
 release archive `t3-0.1.7-linux-x64.tar.gz`). Builds on the fork-less UI
 research from 2026-11-06, recovered from orca's checkout in this PR:
-[t3code-skills-and-ui-patching.md](../2026-11-06/t3code-skills-and-ui-patching.md).
+[T3 skills and UI patching](README.md).
 
 **Result:** a fork-less helper works. The image adds one `<script>` tag to the
 upstream client's `index.html`; the script puts a "Running on MikroTik
