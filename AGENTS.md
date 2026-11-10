@@ -93,7 +93,7 @@ the others hang or fail rather than skip, because they need Linux tools
 | `tool-payloads`, `deb-payloads` | npm and deb payload lifecycles: install, activate, recover, prune, locks, CLI | Linux | util-linux `flock`, `/proc`, `setpriv` as root; fake npm, dpkg-deb, mirror |
 | `install-claude-code` | the Claude installer against a fake download server | Linux | util-linux `flock`, `setpriv` as root (runs as `nobody`); `zstd` optional |
 | `container-replacement` | the built image: start, replacement with the same home, every tool group's smoke script (`test/*-tools.sh`, run only inside the image) | CI `build` (amd64) and `arm64` jobs | Docker, `APP_T3CODE_DOCKER_IMAGE` (skips without it) |
-| `integration/app-install` | `/app` install on a real CHR and the web UI answering | `integration.yml`: after each successful `ci` run on a push, weekly, on dispatch | QEMU, network, quickchr, centrs, `APP_T3CODE_INTEGRATION=1` |
+| `integration/app-install` | `/app` install on a real CHR and the web UI answering | `integration.yml`: after each successful `ci` push to `main`, weekly, on dispatch | QEMU, network, quickchr, centrs, `APP_T3CODE_INTEGRATION=1` |
 
 ## Workflow
 
