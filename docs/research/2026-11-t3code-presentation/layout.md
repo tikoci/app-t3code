@@ -177,4 +177,4 @@ does not create a custom status row in the card.
 [items]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/threadDetailsItems.ts
 [servers]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/apps/web/src/components/chat/ThreadServersPanel.tsx
 [settings]: https://github.com/pingdotgg/t3code/blob/322f6544dfad0a3c8a0c8cbecf2c7f7874b14268/docs/user/project-settings.md
-[demo-file]: https://github.com/tikoci/app-t3code/blob/cd183c1ee9c89e97bcf241f478d46ddefcfa722f/docs/research/2026-11-t3code-presentation/mcp-apps.md
+[demo-file]: https://github.com/tikoci/app-t3code/blob/cd183c1ee9c89e97bcf241f478d46ddefcfa722f/docs/research/2026-11-09/t3code-presentation-mcp-apps.md

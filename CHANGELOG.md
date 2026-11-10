@@ -23,7 +23,7 @@ gives them their `-app.<N>` heading.
 
 ## 0.1.7-app.142 — 2026-11-10
 
-`sha-69660fb`. The last build of T3 0.1.7 before the 0.1.8 bump; see the
+`sha-69660fb`. The newest build when 0.1.7 was closed out (2026-11-10); see the
 [0.1.7 closeout](docs/notes/2026-11-10-t3-0.1.7-closeout.md).
 
 - Repository: every workflow action is pinned to a commit SHA (with its
