@@ -159,6 +159,36 @@ export function startOnce(name: string, argv: readonly string[], log: string, bu
 	}
 }
 
+/**
+ * Who holds the kernel lock on an installer's lock file, for a launcher's
+ * `busy` check: an installer takes the lock before it writes its record, and
+ * the providers installer may stop an orphaned step in between, so the
+ * record alone can miss a run that has started. Tries the lock without
+ * waiting and lets go at once; an installer trying it at that same instant
+ * finds it busy, which it already handles (--keep-trying waits a round).
+ * The holder's pid is whatever its record names so far (0 if none yet).
+ */
+export function lockHolder(path: string): Running | null {
+	if (!existsSync(path)) return null;
+	const fd = openSync(path, "r");
+	try {
+		if (kernelFlock(fd, LOCK_EX | LOCK_NB)) return null;
+	} finally {
+		closeSync(fd); // drops the lock if the try took it
+	}
+	let pid = 0;
+	let command: string | undefined;
+	try {
+		const text = readFileSync(path, "utf8");
+		const record = text.trimStart().startsWith("{") ? (JSON.parse(text) as Partial<Running>) : { pid: Number.parseInt(text, 10) };
+		pid = Number.isInteger(record.pid) ? (record.pid as number) : 0;
+		command = record.command;
+	} catch {
+		// A record mid-write: the lock is what counts.
+	}
+	return { pid, startTicks: null, startedAt: statSync(path).mtime.toISOString(), ...(command ? { command } : {}) };
+}
+
 const isHelpFlag = (arg: string | undefined) => arg === "--help" || arg === "-h";
 
 /**

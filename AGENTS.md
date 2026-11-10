@@ -121,7 +121,9 @@ reference. Every area follows these rules:
   its work in the background (`startOnce` in `lib/runtime.ts`: the
   check and the start are atomic, and the log rotates at 1 MiB), answers at once with what started and its log, and leaves progress to
   `t3app status`. `--wait` runs it in place. If one is already running, it
-  says so and starts nothing. Measured on the lab CHRs, idle: `t3app status`
+  says so and starts nothing; "running" includes the installer's kernel lock
+  (`lockHolder`), not only its record, since a run started elsewhere (the
+  entrypoint) takes the lock before it writes the record. Measured on the lab CHRs, idle: `t3app status`
   stays within a few seconds on x86 and about 6 s on arm64 under TCG.
 - **Users:** `/container/shell` runs as `node` (uid 1000) unless given
   `user=root` (measured on 7.25 x86 and 7.25.1 arm64). Commands that write

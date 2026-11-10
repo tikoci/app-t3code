@@ -6,7 +6,7 @@
 // background install.
 import { accessSync, constants, existsSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { APP_HOME, DISK_RESERVE_BYTES, helpRequest, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, startOnce, stateDir } from "./runtime.ts";
+import { APP_HOME, DISK_RESERVE_BYTES, helpRequest, INTERACTIVE_BACKOFF_MS, KEEP_TRYING_BACKOFF_MS, lockHolder, startOnce, stateDir } from "./runtime.ts";
 import {
 	CORE_CHECKS,
 	DEFAULT_TOOL_GROUPS,
@@ -175,8 +175,10 @@ function runAsOwner(command: string, argv: string[]): number | null {
 function startInstall(): number {
 	const log = installLogPath();
 	const launch = startOnce("tools install", [process.execPath, import.meta.path, "install", "--wait"], log, () => {
-		const holder = liveInstaller(defaultPayloadEnv(PAYLOAD_SPEC_DIR));
-		return holder && !holder.waitingUntil ? holder : null;
+		const env = defaultPayloadEnv(PAYLOAD_SPEC_DIR);
+		const holder = liveInstaller(env);
+		if (holder && !holder.waitingUntil) return holder;
+		return lockHolder(join(env.root, "install.lock"));
 	});
 	if (launch.started) {
 		process.stdout.write(`t3app tools install: started in the background (pid ${launch.pid})\nlog: ${log}\nprogress: t3app status\n`);

@@ -5,10 +5,10 @@
  * Runs on any host: nothing here installs anything.
  */
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { isSameProcess, LOG_ROTATE_BYTES, processStartTicks, startInBackground, startOnce } from "../lib/runtime.ts";
+import { dirname, join } from "node:path";
+import { isSameProcess, kernelFlock, LOCK_EX, LOCK_NB, LOG_ROTATE_BYTES, processStartTicks, startInBackground, startOnce } from "../lib/runtime.ts";
 import { ignoredLegacyEnv, LEGACY_ENV, legacyEnvLine, main, USAGE } from "../lib/t3app.ts";
 
 const ROOT = join(import.meta.dir, "..");
@@ -256,6 +256,43 @@ describe("install starts in the background", () => {
 		const pruning = await cli(["tools", "install"]);
 		expect(pruning.code).toBe(1);
 		expect(pruning.err).toContain(`a prune is running (pid ${process.pid})`);
+	});
+
+	/** Hold the kernel lock on `path` from this process (another open file, so the CLI's try conflicts), as an installer does before its record exists. */
+	const holdLock = (path: string) => {
+		mkdirSync(dirname(path), { recursive: true });
+		const fd = openSync(path, "a+");
+		expect(kernelFlock(fd, LOCK_EX | LOCK_NB)).toBe(true);
+		return () => closeSync(fd);
+	};
+
+	test.skipIf(process.getuid?.() === 0)("tools and providers: a lock taken before its holder's record is written still counts as running", async () => {
+		const logs = join(home, ".local/state/t3code");
+		// The entrypoint's --keep-trying run has the lock but has not written its record yet.
+		const releaseTools = holdLock(join(home, "tools", "install.lock"));
+		try {
+			const tools = await cli(["tools", "install"]);
+			expect(tools.code).toBe(0);
+			expect(tools.out).toStartWith("t3app tools install: already running (pid 0, since ");
+		} finally {
+			releaseTools();
+		}
+		// providers.lock names its pid as soon as it is taken; providers.json may lag (an orphaned step being stopped).
+		const releaseProviders = holdLock(join(logs, "providers.lock"));
+		try {
+			writeFileSync(join(logs, "providers.lock"), `${process.pid}\n`);
+			const providers = await cli(["providers", "install"]);
+			expect(providers.code).toBe(0);
+			expect(providers.out).toStartWith(`t3app providers install: already running (pid ${process.pid}, since `);
+		} finally {
+			releaseProviders();
+		}
+		expect(existsSync(join(logs, "tool-groups.log"))).toBe(false);
+		expect(existsSync(join(logs, "providers.log"))).toBe(false);
+		// Once let go, the try takes and drops the lock, and a start goes ahead.
+		const started = await cli(["tools", "install"]);
+		expect(started.out).toContain("started in the background");
+		await waitForRun(started.out);
 	});
 
 	test.skipIf(process.getuid?.() === 0)("tools: a --keep-trying run waiting out its back-off is no reason not to start (retry now)", async () => {

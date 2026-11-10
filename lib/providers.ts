@@ -26,6 +26,7 @@ import {
 	kernelFlock,
 	LOCK_EX,
 	LOCK_NB,
+	lockHolder,
 	processStartTicks,
 	startOnce,
 	stateDir,
@@ -460,7 +461,8 @@ function startInstall(): number {
 	const log = installLogPath();
 	const launch = startOnce("providers install", [process.execPath, import.meta.path, "install", "--wait"], log, () => {
 		const installer = readProviderState(stateDir()).installer;
-		return installer && !installer.waitingUntil && isSameProcess(installer) ? installer : null;
+		if (installer && !installer.waitingUntil && isSameProcess(installer)) return installer;
+		return lockHolder(join(stateDir(), "providers.lock"));
 	});
 	if (launch.started) {
 		process.stdout.write(`t3app providers install: started in the background (pid ${launch.pid})\nlog: ${log}\nprogress: t3app status\n`);
