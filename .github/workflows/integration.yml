@@ -32,9 +32,33 @@ permissions:
   contents: read
 
 jobs:
-  chr:
-    # After ci.yml: only when it succeeded on a push (so promote ran).
+  candidate:
+    # After ci.yml: only when it succeeded on a push. That alone doesn't mean
+    # an image exists: a docs-only push (a CHANGELOG stamp) passes ci with
+    # build and promote skipped, so there is no :sha-<commit> to install, and
+    # the CHR waited out its whole budget for a pull that could never finish
+    # (runs 32 and 34). Run only when promote succeeded.
     if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+    outputs:
+      test: ${{ steps.promote.outputs.test }}
+    steps:
+      - id: promote
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          if [ -z "$RUN_ID" ]; then echo "test=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          promote="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs" --paginate --jq '.jobs[] | select(.name == "promote") | .conclusion')"
+          echo "ci run $RUN_ID promote: ${promote:-absent}"
+          if [ "$promote" = "success" ]; then echo "test=true"; else echo "test=false"; fi >> "$GITHUB_OUTPUT"
+          if [ "$promote" != "success" ]; then echo "::notice::ci published no image for this commit (promote: ${promote:-absent}); nothing new to install"; fi
+
+  chr:
+    needs: candidate
+    if: needs.candidate.outputs.test == 'true'
     strategy:
       fail-fast: false
       matrix:
