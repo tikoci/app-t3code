@@ -186,8 +186,6 @@ describe("release sync", () => {
 			["Makefile", /^T3CODE_VER \?= (\S+)$/gm],
 			[".github/workflows/ci.yml", inputDefault],
 			[".github/workflows/ci.yml", fallback],
-			[".github/workflows/integration.yml", inputDefault],
-			[".github/workflows/integration.yml", fallback],
 			["README.md", /`ghcr\.io\/tikoci\/app-t3code:([^`]+)` — exact release/g],
 		];
 		for (const [file, pattern] of pins) {
@@ -198,6 +196,15 @@ describe("release sync", () => {
 				found: [version],
 			});
 		}
+	});
+
+	test("integration.yml pins no T3CODE_VER: the checked-out commit's package.json decides", () => {
+		// A workflow_run uses main's copy of the workflow but tests an older
+		// commit's image, so a version here could disagree with that image.
+		const wf = readFileSync(join(import.meta.dir, "..", ".github", "workflows", "integration.yml"), "utf8");
+		const inputDefault = /^ {6}t3code_ver:\n(?: {8}.*\n)*? {8}default: "([^"]*)"$/gm;
+		expect([...wf.matchAll(inputDefault)].map((m) => m[1])).toEqual([""]);
+		expect(wf).toContain("APP_T3CODE_T3VER: ${{ github.event.inputs.t3code_ver }}\n");
 	});
 });
 

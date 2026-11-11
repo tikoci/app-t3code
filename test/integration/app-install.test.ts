@@ -10,7 +10,7 @@
  * Knobs (all optional):
  *   APP_T3CODE_ROS      RouterOS version ("7.25") or channel ("stable")
  *   APP_T3CODE_ARCH     "x86" | "arm64" (default: host arch)
- *   APP_T3CODE_T3VER    expected T3 Code serverVersion (default: package.json version)
+ *   APP_T3CODE_T3VER    expected T3 Code serverVersion (unset or empty: package.json version)
  *   APP_T3CODE_NAME     CHR machine name (default: per-arch fixed name)
  *   APP_T3CODE_KEEP=1   leave the CHR machine behind for inspection (default: removed)
  *   APP_T3CODE_IMAGE    image to install instead of the YAML's `image:` (CI passes the
@@ -51,7 +51,7 @@ const KEEP = process.env["APP_T3CODE_KEEP"] === "1";
 const pkg = JSON.parse(readFileSync(join(import.meta.dir, "..", "..", "package.json"), "utf8")) as {
 	version: string;
 };
-const EXPECTED_T3VER = process.env["APP_T3CODE_T3VER"] ?? pkg.version;
+const EXPECTED_T3VER = process.env["APP_T3CODE_T3VER"] || pkg.version;
 
 type Instance = Awaited<ReturnType<typeof QuickCHR.start>>;
 
