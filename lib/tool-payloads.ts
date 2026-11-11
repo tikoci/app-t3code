@@ -59,6 +59,7 @@ import {
 } from "./deb-payloads.ts";
 import {
 	appHome,
+	cachedProbe,
 	type Child,
 	DISK_RESERVE_BYTES,
 	INTERACTIVE_BACKOFF_MS,
@@ -143,19 +144,16 @@ export function defaultRoot(env: NodeJS.ProcessEnv = process.env, uid: number | 
 	return env["T3APP_TOOLS_HOME"] || join(appHome(env, uid), ".local/share/t3code-tools");
 }
 
-let cachedCompat: Compat | null | undefined;
-/** Ask the image's Node (not Bun, which runs this module) for its ABI. */
-export function nodeCompat(): Compat | null {
-	if (cachedCompat !== undefined) return cachedCompat;
+/** Ask the image's Node (not Bun, which runs this module) for its ABI. Null when it doesn't answer, for now (#53). */
+export const nodeCompat = cachedProbe((): Compat | null => {
 	try {
 		const proc = Bun.spawnSync(["node", "-p", "[process.platform, process.arch, process.versions.modules, process.version].join(' ')"], { timeout: 10_000 });
 		const [platform, arch, nodeAbi, node] = proc.stdout.toString().trim().split(" ");
-		cachedCompat = proc.exitCode === 0 && platform && arch && nodeAbi && node ? { platform, arch, nodeAbi, node } : null;
+		return proc.exitCode === 0 && platform && arch && nodeAbi && node ? { platform, arch, nodeAbi, node } : null;
 	} catch {
-		cachedCompat = null;
+		return null;
 	}
-	return cachedCompat;
-}
+});
 
 export function defaultPayloadEnv(specDir: string, env: NodeJS.ProcessEnv = process.env): PayloadEnv {
 	const root = defaultRoot(env);
@@ -236,7 +234,11 @@ export const WRAPPER_FORMAT = 1;
 
 const idHash = (parts: readonly (string | number)[]) => createHash("sha256").update(parts.join("\n")).digest("hex").slice(0, 16);
 
-function desiredNpm(group: GroupDef, env: PayloadEnv): Desired | { error: string } {
+/** Why no payload id can be computed. `retry`: the runtime probe failed, which may pass next round (#53); otherwise permanent for this image. */
+type NoPayload = { error: string; retry?: boolean };
+
+/** npm: the payload id covers the lockfile, platform, arch and Node ABI, so any of them changing means a new payload. */
+function desiredNpm(group: GroupDef, env: PayloadEnv): Desired | NoPayload {
 	const dir = join(env.specDir, group.name);
 	let lock: string;
 	let pkg: { dependencies?: Record<string, string> };
@@ -247,13 +249,14 @@ function desiredNpm(group: GroupDef, env: PayloadEnv): Desired | { error: string
 		return { error: `payload spec missing in ${dir}: ${String(error)}` };
 	}
 	const compat = env.compat();
-	if (!compat) return { error: "node is not usable, so the payload runtime cannot be determined" };
+	if (!compat) return { error: "node is not usable, so the payload runtime cannot be determined", retry: true };
 	const lockSha256 = createHash("sha256").update(lock).digest("hex");
 	const id = `${compat.arch}-abi${compat.nodeAbi}-${idHash([PAYLOAD_SCHEMA, group.name, lockSha256, compat.platform, compat.arch, compat.nodeAbi])}`;
 	return { id, lockSha256, compat, packages: pkg.dependencies ?? {} };
 }
 
-function desiredDeb(group: GroupDef, env: PayloadEnv): Desired | { error: string } {
+/** deb: the payload id covers the Debian lock, arch, release and wiring rules; a lock built for another arch or release is no payload at all. */
+function desiredDeb(group: GroupDef, env: PayloadEnv): Desired | NoPayload {
 	const path = join(env.specDir, group.name, DEB_LOCK_FILE);
 	let text: string;
 	let lock: DebLock;
@@ -264,7 +267,7 @@ function desiredDeb(group: GroupDef, env: PayloadEnv): Desired | { error: string
 		return { error: `no Debian lock for ${group.name} in this image (${path}): ${error instanceof Error ? error.message : String(error)}` };
 	}
 	const compat = env.debCompat();
-	if (!compat) return { error: "dpkg or /etc/os-release is not usable, so the payload runtime cannot be determined" };
+	if (!compat) return { error: "dpkg or /etc/os-release is not usable, so the payload runtime cannot be determined", retry: true };
 	if (lock.arch !== compat.arch || lock.distro !== compat.distro) {
 		return { error: `the ${group.name} lock is for ${lock.arch} ${lock.distro}, this runtime is ${compat.arch} ${compat.distro}` };
 	}
@@ -282,11 +285,11 @@ function desiredDeb(group: GroupDef, env: PayloadEnv): Desired | { error: string
 }
 
 /** The payload this image wants for a group, or an error explaining why none can be computed. */
-export function desiredPayload(group: GroupDef, env: PayloadEnv): Desired | { error: string } {
+export function desiredPayload(group: GroupDef, env: PayloadEnv): Desired | NoPayload {
 	return group.delivery === "deb" ? desiredDeb(group, env) : desiredNpm(group, env);
 }
 
-/** The runtime a group's payloads must match, or null if it is unusable. */
+/** The runtime a group's payloads must match, or null if its probe didn't answer (for now: see cachedProbe). */
 const runtimeOf = (group: GroupDef, env: PayloadEnv): RuntimeId | null => (group.delivery === "deb" ? env.debCompat() : env.compat());
 /** Runtime keys a payload must match to be used at all; others (Node ABI) only make it stale. */
 const HARD_KEYS: Record<PayloadDelivery, readonly string[]> = { npm: ["platform", "arch"], deb: ["platform", "arch", "distro"] };
@@ -690,6 +693,14 @@ export function activate(groups: readonly GroupDef[], selected: readonly string[
 			unlinkShims(env, group);
 			continue;
 		}
+		const runtime = runtimeOf(group, env);
+		if (runtime === null) {
+			// The runtime didn't answer (a probe that missed its timeout under
+			// load, #53). Leave this group's links as they are: they were right
+			// when last checked, and the installer asks again next round.
+			needInstall.push(group.name);
+			continue;
+		}
 		const desired = desiredPayload(group, env);
 		const dir = groupDir(env, group.name);
 		const wanted = "id" in desired ? desired.id : null;
@@ -699,7 +710,7 @@ export function activate(groups: readonly GroupDef[], selected: readonly string[
 			needInstall.push(group.name);
 		}
 		const current = readLink(currentLink(env, group.name));
-		const check = current ? verifyPayload(join(dir, current), group, current, runtimeOf(group, env), env.imageRoot) : null;
+		const check = current ? verifyPayload(join(dir, current), group, current, runtime, env.imageRoot) : null;
 		if (current && check?.ok && (current === wanted || stillRuns(join(dir, current), group, env.imageRoot))) {
 			linkShims(env, group, payloadBins(group, check.manifest));
 		} else {
@@ -987,7 +998,11 @@ async function reconcile(groups: readonly GroupDef[], selected: readonly string[
 		for (const name of names) {
 			const rec = results[name] as StateRecord;
 			if (!missing.includes(name)) {
-				results[name] = { state: "ready", payloadId: rec.payloadId, attempt: rec.attempt, updatedAt: now() };
+				// On disk too: a round that only relinked (a probe that recovered,
+				// #53) left this run's `installing` record behind.
+				results[name] = { state: "ready", payloadId: readLink(currentLink(env, name)) ?? rec.payloadId, attempt: rec.attempt, updatedAt: now() };
+				writeState(env, name, results[name] as StateRecord);
+				onChange();
 			} else if (rec.state === "installing") {
 				results[name] = unfinished(rec);
 				writeState(env, name, results[name] as StateRecord);
@@ -1011,6 +1026,11 @@ async function installRound(
 	const desired = desiredPayload(group, env);
 	const rec = (state: StateRecord["state"], extra: Partial<StateRecord> = {}) =>
 		record({ state, payloadId: "id" in desired ? desired.id : "", attempt, updatedAt: new Date().toISOString(), ...extra });
+	if ("error" in desired && desired.retry) {
+		rec(last ? "failed" : "installing", { error: desired.error });
+		env.log(`${name}: ${desired.error}${last ? " (giving up until the next start or a manual t3app tools install)" : "; trying again next round"}`);
+		return last ? "failed" : "retry";
+	}
 	if ("error" in desired) {
 		rec("failed", { error: desired.error, permanent: true });
 		env.log(`${name}: ${desired.error}`);

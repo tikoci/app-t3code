@@ -41,6 +41,24 @@ export const INTERACTIVE_BACKOFF_MS: readonly number[] = [15_000, 60_000];
  */
 export const KEEP_TRYING_BACKOFF_MS: readonly number[] = [15_000, 60_000, 5 * 60_000, 15 * 60_000, 30 * 60_000, ...Array<number>(23).fill(60 * 60_000)];
 
+/**
+ * A runtime probe (Node's ABI, dpkg's architecture) that keeps an answer for
+ * good but a failure only for `retryMs`. Under load, a probe can miss its
+ * timeout, and a failure kept for the whole run would outlast every retry
+ * round (#53). The default is shorter than the first back-off.
+ */
+export function cachedProbe<T>(probe: () => T | null, retryMs = 10_000, now: () => number = Date.now): () => T | null {
+	let value: T | null = null;
+	let failedAt = Number.NEGATIVE_INFINITY;
+	return () => {
+		if (value !== null) return value;
+		if (now() - failedAt < retryMs) return null;
+		value = probe();
+		if (value === null) failedAt = now();
+		return value;
+	};
+}
+
 export interface ProcessId {
 	pid: number;
 	/** Kernel start time (/proc/<pid>/stat field 22): pid + start time identify a process even when pids are recycled. */
