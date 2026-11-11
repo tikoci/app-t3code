@@ -18,9 +18,9 @@ on:
         required: false
         default: "stable"
       t3code_ver:
-        description: "Expected T3 Code serverVersion"
+        description: "Expected T3 Code serverVersion (empty: the checked-out commit's package.json version)"
         required: false
-        default: "0.1.7"
+        default: ""
   schedule:
     - cron: "37 4 * * 1"
   workflow_run:
@@ -68,11 +68,17 @@ jobs:
           ls -la /dev/kvm || echo "::warning::no /dev/kvm — TCG fallback (slow)"
       - run: bun install
       - name: CHR app install + web UI probe
-        run: APP_T3CODE_INTEGRATION=1 bun test test/integration/
+        # No version here: a workflow_run uses main's copy of this file but
+        # tests an older commit's image, so the test reads the expected
+        # version from the checked-out commit's package.json. Unset it when
+        # empty: tests from before 0.1.8 only fall back when it is unset.
+        run: |
+          if [ -z "${APP_T3CODE_T3VER}" ]; then unset APP_T3CODE_T3VER; fi
+          APP_T3CODE_INTEGRATION=1 bun test test/integration/
         env:
           APP_T3CODE_ROS: ${{ github.event.inputs.ros || 'stable' }}
           APP_T3CODE_ARCH: ${{ matrix.arch }}
-          APP_T3CODE_T3VER: ${{ github.event.inputs.t3code_ver || '0.1.7' }}
+          APP_T3CODE_T3VER: ${{ github.event.inputs.t3code_ver }}
           APP_T3CODE_NAME: app-t3code-ci-${{ matrix.arch }}
           # After a publish: that commit's candidate, not :0.1 (a newer
           # promotion may have moved it). Weekly/manual runs test :0.1.

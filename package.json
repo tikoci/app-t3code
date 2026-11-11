@@ -1,6 +1,6 @@
 {
 	"name": "@tikoci/app-t3code",
-	"version": "0.1.7",
+	"version": "0.1.8",
 	"description": "RouterOS /app container for T3 Code (x86_64 + ARM64, GHCR, CHR-tested)",
 	"private": false,
 	"type": "module",

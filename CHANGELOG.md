@@ -14,6 +14,16 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+- T3 Code 0.1.8 (#6). The image now ships upstream
+  [v0.1.8](https://github.com/pingdotgg/t3code/releases/tag/v0.1.8);
+  `:0.1`, `:0` and `:latest` move to it, and builds are now named
+  `0.1.8-app.<N>`. The provider list is unchanged (the same 11 drivers),
+  and so are `T3APP_PROVIDERS`, the tool groups and the RouterOS pairing
+  help. Upstream changes that show up here: agents ask for secrets
+  through a `request_secret` card instead of chat, Claude tool calls can
+  render MCP Apps, `/clear` starts a fresh session in the same thread, and
+  the T3 Connect tunnel restarts when Cloudflare drops it.
+
 ## 0.1.7-app.181 — 2026-11-11
 
 `sha-fd69fe4`.
