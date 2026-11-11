@@ -205,6 +205,8 @@ describe("release sync", () => {
 		const inputDefault = /^ {6}t3code_ver:\n(?: {8}.*\n)*? {8}default: "([^"]*)"$/gm;
 		expect([...wf.matchAll(inputDefault)].map((m) => m[1])).toEqual([""]);
 		expect(wf).toContain("APP_T3CODE_T3VER: ${{ github.event.inputs.t3code_ver }}\n");
+		// Older commits' tests use `??`, so an empty value must not reach them.
+		expect(wf).toContain('if [ -z "${APP_T3CODE_T3VER}" ]; then unset APP_T3CODE_T3VER; fi\n');
 	});
 });
 
