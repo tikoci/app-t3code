@@ -20,7 +20,7 @@ on:
       t3code_ver:
         description: "Expected T3 Code serverVersion"
         required: false
-        default: "0.1.7"
+        default: "0.1.8"
   schedule:
     - cron: "37 4 * * 1"
   workflow_run:
@@ -72,7 +72,7 @@ jobs:
         env:
           APP_T3CODE_ROS: ${{ github.event.inputs.ros || 'stable' }}
           APP_T3CODE_ARCH: ${{ matrix.arch }}
-          APP_T3CODE_T3VER: ${{ github.event.inputs.t3code_ver || '0.1.7' }}
+          APP_T3CODE_T3VER: ${{ github.event.inputs.t3code_ver || '0.1.8' }}
           APP_T3CODE_NAME: app-t3code-ci-${{ matrix.arch }}
           # After a publish: that commit's candidate, not :0.1 (a newer
           # promotion may have moved it). Weekly/manual runs test :0.1.
