@@ -14,6 +14,10 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+## 0.1.7-app.181 — 2026-11-11
+
+`sha-fd69fe4`.
+
 - Tool groups survive a slow start (#53). When the router is busy enough
   that `node -p` or `dpkg` misses its 10 s probe, the installer used to
   unlink a group's working tools (seen with `dev` on an arm64 CHR) and give
