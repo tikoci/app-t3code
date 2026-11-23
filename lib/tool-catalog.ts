@@ -213,6 +213,9 @@ export const GROUPS: readonly GroupDef[] = [
 		approxBytes: 32 * 1024 * 1024,
 		// swanctl --version asks charon over VICI; --help prints the version line offline.
 		versionArgs: { pki: ["--help"], swanctl: ["--help"], "zerotier-one": ["-v"], "zerotier-cli": ["-v"], "zerotier-idtool": ["-h"] },
+		// idtool has no successful version/help flag: help prints its version
+		// and exits 1. Identity generation is checked separately below.
+		versionExit: { "zerotier-idtool": { code: 1, expect: "ZeroTier One version" } },
 		// strongSwan reads /etc/strongswan.conf (and swanctl /etc/swanctl) and
 		// loads plugins from /usr/lib/ipsec/plugins, all compiled in. The
 		// wrapper defaults STRONGSWAN_CONF and SWANCTL_DIR to the payload's
