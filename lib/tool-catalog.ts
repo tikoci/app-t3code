@@ -209,7 +209,8 @@ export const GROUPS: readonly GroupDef[] = [
 		checks: cmd("wg", "swanctl", "pki", "openvpn", "ike-scan", "zerotier-one", "zerotier-cli", "zerotier-idtool"),
 		privileges:
 			"None: `wg genkey`/`wg pubkey`, `pki` keys and certificates, `openvpn --genkey`, `ike-scan --sport=0`, ZeroTier identity tools. CAP_NET_ADMIN: WireGuard interfaces (`ip link add type wireguard` + `wg set`; kernel module, no /dev/net/tun). CAP_NET_ADMIN plus /dev/net/tun: OpenVPN and ZeroTier tunnels. Root: `wg-quick` (it re-executes itself with sudo, which the image lacks), charon and the ZeroTier daemon (shipped, not started). zerotier-cli needs a running daemon and its authorization token. CAP_NET_BIND_SERVICE: ike-scan's default source port 500 where ports below 1024 are restricted.",
-		// Measured on amd64 (2026-11-06): see docs/research/2026-11-tool-group-payloads/vpn-routing-payloads.md.
+		// amd64 image lock (2026-11-23, PR #61): 6.6 MiB download,
+		// 22.8 MiB unpacked including ZeroTier; allow headroom in the estimate.
 		approxBytes: 32 * 1024 * 1024,
 		// swanctl --version asks charon over VICI; --help prints the version line offline.
 		versionArgs: { pki: ["--help"], swanctl: ["--help"], "zerotier-one": ["-v"], "zerotier-cli": ["-v"], "zerotier-idtool": ["-h"] },

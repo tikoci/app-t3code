@@ -342,7 +342,14 @@ export interface Verification {
  * between amd64 and arm64 routers) is rejected; a Node ABI difference alone
  * is not, so a stale payload keeps serving while its refresh installs.
  */
-export function verifyPayload(dir: string, group: GroupDef, expectedId?: string, compat?: RuntimeId | null, imageRoot?: string): Verification {
+export function verifyPayload(
+	dir: string,
+	group: GroupDef,
+	expectedId?: string,
+	compat?: RuntimeId | null,
+	imageRoot?: string,
+	requirements: "current" | "recorded" = "current",
+): Verification {
 	let manifest: Manifest;
 	try {
 		manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
@@ -365,12 +372,14 @@ export function verifyPayload(dir: string, group: GroupDef, expectedId?: string,
 			return { ok: false, missing: [], manifest, error: `built for ${show(manifest.compat)}, this runtime is ${show(compat)}` };
 		}
 	}
-	// Every linked command must be present, and every required one in the
-	// payload or (deb only) provided by the image itself.
+	// A stale payload serves its recorded commands while the expanded group
+	// downloads. The desired payload must satisfy this image's full contract.
+	// Every linked command must still exist in either case.
 	const linked = payloadBins(group, manifest);
+	const required = requirements === "recorded" ? Object.keys(manifest.versions) : groupBins(group);
 	const missing = [
 		...linked.filter((bin) => !existsSync(join(dir, binRel(group, bin)))),
-		...groupBins(group).filter((bin) => !linked.includes(bin) && !(group.delivery === "deb" && imageRoot !== undefined && imageCommand(imageRoot, bin))),
+		...required.filter((bin) => !linked.includes(bin) && !(group.delivery === "deb" && imageRoot !== undefined && imageCommand(imageRoot, bin))),
 		...groupFiles(group).filter((file) => !isRegularFile(join(dir, "root", file))),
 	];
 	return { ok: missing.length === 0, missing, manifest, ...(missing.length ? { error: "payload files missing" } : {}) };
@@ -381,11 +390,11 @@ export function verifyPayload(dir: string, group: GroupDef, expectedId?: string,
  * libraries against this image before it is linked. Payloads built from this
  * image's own lock skip the probe.
  */
-function stillRuns(dir: string, group: GroupDef, imageRoot: string): boolean {
+function stillRuns(dir: string, group: GroupDef, imageRoot: string, manifest: Manifest): boolean {
 	if (group.delivery !== "deb") return true;
 	// Every required command the payload provides: each binary has its own
 	// library set (tshark's is the largest, but tcpdump's and nfdump's differ).
-	for (const bin of groupBins(group)) {
+	for (const bin of Object.keys(manifest.versions)) {
 		if (imageCommand(imageRoot, bin)) continue; // the obsolete payload copy is never linked
 		const path = join(dir, binRel(group, bin));
 		if (!existsSync(path)) continue; // provided by the image instead
@@ -633,8 +642,9 @@ function unlinkShims(env: PayloadEnv, group: GroupDef) {
 
 export function payloadInfo(group: GroupDef, env: PayloadEnv): PayloadInfo {
 	const desired = desiredPayload(group, env);
+	const wanted = "id" in desired ? desired.id : null;
 	const current = readLink(currentLink(env, group.name));
-	const activeCheck = current ? verifyPayload(join(groupDir(env, group.name), current), group, current, runtimeOf(group, env), env.imageRoot) : null;
+	const activeCheck = current ? verifyPayload(join(groupDir(env, group.name), current), group, current, runtimeOf(group, env), env.imageRoot, current === wanted ? "current" : "recorded") : null;
 	const active = activeCheck?.ok ? current : null;
 	const owned = (bin: string) => (group.delivery === "deb" ? imageCommand(env.imageRoot, bin) : null);
 	const shimOk = (bin: string) => readLink(join(binDir(env), bin)) === shimTarget(group, bin) && existsSync(join(binDir(env), bin));
@@ -648,7 +658,7 @@ export function payloadInfo(group: GroupDef, env: PayloadEnv): PayloadInfo {
 	);
 	return {
 		root: env.root,
-		desired: "id" in desired ? desired.id : null,
+		desired: wanted,
 		...("error" in desired ? { desiredError: desired.error } : {}),
 		active,
 		activeVersions: activeCheck?.ok ? (activeCheck.manifest?.versions ?? null) : null,
@@ -710,8 +720,8 @@ export function activate(groups: readonly GroupDef[], selected: readonly string[
 			needInstall.push(group.name);
 		}
 		const current = readLink(currentLink(env, group.name));
-		const check = current ? verifyPayload(join(dir, current), group, current, runtime, env.imageRoot) : null;
-		if (current && check?.ok && (current === wanted || stillRuns(join(dir, current), group, env.imageRoot))) {
+		const check = current ? verifyPayload(join(dir, current), group, current, runtime, env.imageRoot, current === wanted ? "current" : "recorded") : null;
+		if (current && check?.ok && check.manifest && (current === wanted || stillRuns(join(dir, current), group, env.imageRoot, check.manifest))) {
 			linkShims(env, group, payloadBins(group, check.manifest));
 		} else {
 			// Nothing usable here (built for another CPU or release, or a stale

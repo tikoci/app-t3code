@@ -2,9 +2,10 @@
 # Functional check of the `vpn` payload inside the container, run by
 # test/container-replacement.test.ts as node with no capabilities: WireGuard
 # keys, a strongSwan CA and host certificate (the RouterOS IKEv2 workflow)
-# with the payload's own config and plugins, an OpenVPN static key, and an
-# unprivileged IKE probe. No tunnel is started (CAP_NET_ADMIN, and /dev/net/tun
-# for OpenVPN; wg-quick needs root): see #7.
+# with the payload's own config and plugins, an OpenVPN static key, an
+# unprivileged IKE probe, and ZeroTier identity generation and validation.
+# No tunnel is started (CAP_NET_ADMIN, and /dev/net/tun for OpenVPN and
+# ZeroTier; wg-quick and the ZeroTier daemon need root): see #7.
 set -euo pipefail
 cd /tmp
 rm -rf /tmp/vpn-check && mkdir /tmp/vpn-check && cd /tmp/vpn-check

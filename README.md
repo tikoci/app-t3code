@@ -484,6 +484,9 @@ still names them logs an unknown-group warning and otherwise works.
 | `routing` | BIRD 2 (`bird`, `birdc`), ndisc6, arping, arp-scan, nftables, conntrack, nmap | 8.3 MiB → 33 MiB (21 packages) |
 | `dev` | TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks; project lockfiles win | npm packages → about 154 MiB |
 
+The `vpn` size was measured from the amd64 image lock on 2026-11-23
+([PR #61](https://github.com/tikoci/app-t3code/pull/61)).
+
 Installing a tool does not grant the privileges to use it, and a group
 being `ready` means its files are installed and load, not that every
 operation is allowed. Live capture, raw-socket peers, tunnels and firewall
@@ -587,6 +590,8 @@ The image build checksum-checks the release key, scopes it with `signed-by`
 and allows only `zerotier-one` from that origin. The usual payload lock
 pins its version, architecture, size and SHA256. Its service scripts are
 not run, so installing the group starts no daemon and joins no network.
+After an image upgrade, an older VPN payload keeps its existing tools
+available offline; the ZeroTier commands appear once the refresh finishes.
 
 The identity tool works in a normal T3 terminal without root or a tunnel:
 
