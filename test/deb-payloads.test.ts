@@ -22,7 +22,7 @@ import {
 } from "../lib/deb-payloads.ts";
 import { processStartTicks } from "../lib/runtime.ts";
 import { AARCH64_PSCI_OFF, BIRD_BGP_CONF, type GroupDef, GROUPS, NETWORK_PACKAGE_ASSIGNMENT, QEMU_SYSTEM_COMMANDS, TZSP_DNS_PCAPNG } from "../lib/tool-catalog.ts";
-import { activate, desiredPayload, installGroups, type Manifest, type PayloadEnv, payloadInfo, prunePayloads, readState } from "../lib/tool-payloads.ts";
+import { activate, desiredPayload, installGroups, type Manifest, type PayloadEnv, payloadInfo, prunePayloads, readState, versionProbeOk } from "../lib/tool-payloads.ts";
 import { buildStatus, groupStatus, type Probe } from "../lib/tool-status.ts";
 
 const capture = GROUPS.find((g) => g.name === "capture");
@@ -984,6 +984,63 @@ describe("vpn and routing group definitions", () => {
 	const routing = GROUPS.find((g) => g.name === "routing");
 	if (!vpn || !routing) throw new Error("vpn or routing group missing");
 
+	test("idtool help accepts only its declared nonzero exit and version banner", () => {
+		expect(versionProbeOk(vpn, "zerotier-idtool", 1, "ZeroTier One version 1.16.2\nUsage: zerotier-idtool")).toBe(true);
+		expect(versionProbeOk(vpn, "zerotier-idtool", 2, "ZeroTier One version 1.16.2")).toBe(false);
+		expect(versionProbeOk(vpn, "zerotier-idtool", 1, "error while loading shared libraries")).toBe(false);
+	});
+
+	test("an offline pre-ZeroTier vpn payload keeps serving until the expanded group installs", async () => {
+		// Use the real old/new command contracts with fake tools; this tests
+		// activation and refresh, not the tools' own crypto or plugin loading.
+		const current: GroupDef = { ...vpn, wrappers: [], smoke: [] };
+		const previous: GroupDef = {
+			...current,
+			packages: current.packages.filter((pkg) => pkg !== "zerotier-one"),
+			checks: current.checks.filter((check) => !check.name.startsWith("zerotier-")),
+		};
+		const commands = previous.checks.filter((check) => check.kind === "command").map((check) => check.name);
+		const legacy: FakePkg = { name: "vpn-peers", version: "1", files: Object.fromEntries(commands.map((bin) => [`usr/bin/${bin}`, tool(bin)])) };
+		publish([legacy], "amd64", "vpn");
+		await installGroups([previous], ["vpn"], env);
+		const first = payloadInfo(previous, env).active;
+		expect(first).toBeString();
+		const zerotier: FakePkg = {
+			name: "zerotier-one",
+			version: "1.16.2",
+			files: {
+				"usr/sbin/zerotier-one": tool("zerotier-one"),
+				"usr/sbin/zerotier-cli": tool("zerotier-cli"),
+				"usr/sbin/zerotier-idtool": '#!/bin/sh\necho "ZeroTier One version 1.16.2"\nexit 1\n',
+			},
+		};
+		publish([legacy, zerotier], "amd64", "vpn");
+		const online = new Map(served);
+		served.clear();
+		expect(activate([current], ["vpn"], env)).toEqual(["vpn"]);
+		expect(payloadInfo(current, env)).toMatchObject({ active: first, stale: true, linked: true });
+		const failed = await installGroups([current], ["vpn"], env);
+		expect(failed.results["vpn"]?.state).toBe("failed");
+		for (const bin of commands) expect(Bun.spawnSync([shim(bin)]).exitCode).toBe(0);
+		for (const bin of ["zerotier-one", "zerotier-cli", "zerotier-idtool"]) expect(existsSync(shim(bin))).toBe(false);
+		expect(payloadInfo(current, env)).toMatchObject({ active: first, stale: true, linked: true });
+
+		// Fresh installs must still reject a payload missing the new commands.
+		served = online;
+		publish([legacy], "amd64", "vpn");
+		const freshEnv = { ...env, root: join(tmp, "fresh-home") };
+		const incomplete = await installGroups([current], ["vpn"], freshEnv);
+		expect(incomplete.results["vpn"]?.error).toContain("neither the payload nor the image provides zerotier-one, zerotier-cli, zerotier-idtool");
+		expect(payloadInfo(current, freshEnv).active).toBeNull();
+
+		publish([legacy, zerotier], "amd64", "vpn");
+		const refreshed = await installGroups([current], ["vpn"], env);
+		expect(refreshed.results["vpn"]?.state).toBe("ready");
+		expect(payloadInfo(current, env)).toMatchObject({ stale: false, linked: true });
+		expect(payloadInfo(current, env).active).not.toBe(first);
+		expect(Bun.spawnSync([shim("zerotier-one")]).exitCode).toBe(0);
+	});
+
 	test("both are Debian payloads with probes for every special command and a functional smoke test", () => {
 		for (const group of [vpn, routing]) {
 			expect(group.delivery).toBe("deb");
@@ -998,7 +1055,7 @@ describe("vpn and routing group definitions", () => {
 		expect(rule?.commands).toEqual(expect.arrayContaining(["pki", "swanctl"]));
 		expect(rule?.env?.["STRONGSWAN_CONF"]).toBe("{root}/etc/strongswan.conf");
 		expect(rule?.preload).toEqual({ libraries: ["usr/lib/ipsec/libstrongswan.so.0"], pluginDir: "usr/lib/ipsec/plugins" });
-		expect(vpn.smoke?.map((s) => s.command)).toEqual(["pki", "wg"]);
+		expect(vpn.smoke?.map((s) => s.command)).toEqual(["pki", "wg", "zerotier-idtool"]);
 		expect(routing.smoke?.find((s) => s.command === "bird")?.inputBase64).toBe(Buffer.from(BIRD_BGP_CONF).toString("base64"));
 	});
 

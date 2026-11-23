@@ -217,8 +217,17 @@ COPY lib /usr/local/lib/t3app
 # Debian security updates and the payload id follows them.
 # Must stay after every apt layer: the closure is computed against them.
 # HOME=/root: Bun run as root would otherwise seed a root-owned /data/.bun.
-RUN apt-get update && \
+# ZeroTier is not in Debian main. Trust its release key only for its own
+# repository, allow only zerotier-one from that origin, and remove the apt
+# configuration after recording the lock. Key fingerprint:
+# 74A5 E9C4 58E1 A431 F1DA 57A7 1657 1988 23E5 2A61.
+RUN curl -fsSL --retry 3 https://download.zerotier.com/contact%40zerotier.com.gpg -o /usr/share/keyrings/zerotier.asc && \
+    echo 'bc3e1dc91a891aab76d730c3683b3b93515fe52cda4f83980c8694fa782fba3c  /usr/share/keyrings/zerotier.asc' | sha256sum -c - && \
+    printf '%s\n' "deb [arch=${TARGETARCH} signed-by=/usr/share/keyrings/zerotier.asc] https://download.zerotier.com/debian/trixie trixie main" > /etc/apt/sources.list.d/zerotier.list && \
+    printf '%s\n' 'Package: zerotier-one' 'Pin: origin download.zerotier.com' 'Pin-Priority: 500' '' 'Package: *' 'Pin: origin download.zerotier.com' 'Pin-Priority: -1' > /etc/apt/preferences.d/zerotier && \
+    apt-get update --error-on=any && \
     HOME=/root bun /usr/local/lib/t3app/deb-lock.ts && \
+    rm -f /etc/apt/sources.list.d/zerotier.list /etc/apt/preferences.d/zerotier /usr/share/keyrings/zerotier.asc && \
     rm -rf /var/lib/apt/lists/*
 
 RUN install -d -o node -g node /usr/share/t3code/inventory

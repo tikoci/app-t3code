@@ -14,6 +14,14 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+- Add ZeroTier (`zerotier-one`, `zerotier-cli`, `zerotier-idtool`) to the
+  `vpn` tool group on amd64 and arm64, from ZeroTier's signed Debian
+  repository. It installs into `/data` with the other VPN tools; no daemon
+  starts and no network is joined automatically. Offline identity tools
+  work as `node`; tunnels need root, `CAP_NET_ADMIN` and `/dev/net/tun`.
+  An older VPN payload keeps its working tools linked while the expanded
+  group downloads, including when the router is offline during an upgrade.
+
 ## 0.1.8-app.188 — 2026-11-11
 
 `sha-9313be5`.
