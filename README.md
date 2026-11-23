@@ -480,7 +480,7 @@ still names them logs an unknown-group warning and otherwise works.
 |---|---|---|
 | `capture` | tcpdump, TShark (`dumpcap`, `capinfos`, `editcap`, `mergecap`, `text2pcap`), nfdump (`nfcapd`) | 31.1 MiB → 156 MiB (46 packages) |
 | `labs` | quickchr, QEMU x86/ARM64 emulators, qemu-img, SeaBIOS and ARM64 UEFI firmware | 32.7 MiB → about 309 MiB after pruning firmware (32 packages); quickchr is in the image |
-| `vpn` | WireGuard tools (`wg`, `wg-quick`), strongSwan (`pki`, `swanctl`, charon), OpenVPN, ike-scan; no tunnel or service starts by default | 3.6 MiB → 12 MiB (15 packages) |
+| `vpn` | WireGuard tools (`wg`, `wg-quick`), strongSwan (`pki`, `swanctl`, charon), OpenVPN, ike-scan, ZeroTier (`zerotier-one`, `zerotier-cli`, `zerotier-idtool`); no tunnel or service starts by default | 6.6 MiB → 22.8 MiB (16 packages) |
 | `routing` | BIRD 2 (`bird`, `birdc`), ndisc6, arping, arp-scan, nftables, conntrack, nmap | 8.3 MiB → 33 MiB (21 packages) |
 | `dev` | TypeScript, CSpell, markdownlint-cli2 and Biome fallbacks; project lockfiles win | npm packages → about 154 MiB |
 
@@ -499,10 +499,10 @@ At a glance, by what the operation needs beyond installation:
 |---|---|---|---|---|---|---|
 | Nothing | client tools, UDP traceroute, `ip`/`ethtool` queries | capture files, `dumpcap -D`, `nfcapd` ≥1024 | TCG guests, user networking, `qemu-img` | keys, certificates, `ike-scan --sport=0` | BIRD ≥1024, `nmap -sT`, ARP decode from files | everything |
 | `CAP_NET_RAW` | `traceroute -T`/`-I`, `radsniff` live, `mtr` (bounding set), `ping` without `ping_group_range` | live capture | — | — | ARP/ND probes, raw scans, OSPF | — |
-| `CAP_NET_ADMIN` | `ip`/`ethtool` changes | — | TAP (with `/dev/net/tun`) | WireGuard and OpenVPN tunnels (OpenVPN with `/dev/net/tun`) | `nft`, `conntrack`, kernel route sync | — |
+| `CAP_NET_ADMIN` | `ip`/`ethtool` changes | — | TAP (with `/dev/net/tun`) | WireGuard, OpenVPN and ZeroTier tunnels (OpenVPN and ZeroTier with `/dev/net/tun`) | `nft`, `conntrack`, kernel route sync | — |
 | `CAP_NET_BIND_SERVICE` (ports <1024, where restricted) | low-port listeners | — | — | `ike-scan` source port 500 | BGP on 179 | — |
-| A device | — | — | `/dev/kvm` for acceleration | `/dev/net/tun` for OpenVPN | — | — |
-| Root | — | — | — | `wg-quick`, charon | — | — |
+| A device | — | — | `/dev/kvm` for acceleration | `/dev/net/tun` for OpenVPN and ZeroTier | — | — |
+| Root | — | — | — | `wg-quick`, charon, ZeroTier daemon | — | — |
 
 RouterOS 7.25 added a per-service privileged mode to app YAML. That is a
 deployment control; which effective capabilities the non-root app process
@@ -541,6 +541,9 @@ run here as `node` with `CapEff 0` under Docker (habitat C): *works* or
 | `vpn` | OpenVPN tunnel | `CAP_NET_ADMIN` and `/dev/net/tun` | expected |
 | `vpn` | charon (IKE daemon) | **Root**; shipped but not wired or proven | expected |
 | `vpn` | `ike-scan` default source port 500 | `CAP_NET_BIND_SERVICE` where ports below 1024 are restricted | expected |
+| `vpn` | `zerotier-idtool generate`/`validate`/`getpublic`, ZeroTier version queries | None | works |
+| `vpn` | `zerotier-cli` operations | A running daemon and its authorization token | no daemon (reported, not refused) |
+| `vpn` | `zerotier-one` tunnel | Root, `CAP_NET_ADMIN` and `/dev/net/tun`; see [ZeroTier's container guide](https://docs.zerotier.com/docker/) | expected |
 | `routing` | `bird -p`, BGP on ports ≥1024, `birdc` on its socket | None | works (eBGP prefix exchange) |
 | `routing` | BGP on port 179 | `CAP_NET_BIND_SERVICE` where ports below 1024 are restricted (Docker sets `ip_unprivileged_port_start=0`) | expected |
 | `routing` | BIRD OSPF; kernel route sync | `CAP_NET_RAW`; `CAP_NET_ADMIN` | expected |
@@ -575,6 +578,35 @@ Tools changed or moved because of privileges, not size:
   a netfilter netlink socket even for `--version`. If a kernel (or QEMU
   user-mode emulation) lacks it, their probe still counts the tool as
   loaded, so one missing kernel feature does not fail `routing`.
+
+#### ZeroTier in the vpn group
+
+Selecting `vpn` installs `zerotier-one`, `zerotier-cli` and
+`zerotier-idtool` from [ZeroTier's signed Debian repository](https://download.zerotier.com/debian/trixie/).
+The image build checksum-checks the release key, scopes it with `signed-by`
+and allows only `zerotier-one` from that origin. The usual payload lock
+pins its version, architecture, size and SHA256. Its service scripts are
+not run, so installing the group starts no daemon and joins no network.
+
+The identity tool works in a normal T3 terminal without root or a tunnel:
+
+```sh
+umask 077
+zerotier-idtool generate identity.secret identity.public
+zerotier-idtool validate identity.secret
+```
+
+Keep `identity.secret` private. For an explicitly started daemon, choose a
+persistent home such as `/data/.zerotier-one`: pass that directory as the
+daemon's positional home argument and use
+`zerotier-cli -D/data/.zerotier-one …` for its CLI. The directory holds the
+node identity, network memberships and `authtoken.secret`; the default
+`/var/lib/zerotier-one` is outside the persistent home. The daemon needs
+root, `CAP_NET_ADMIN` and `/dev/net/tun` to create tunnel interfaces
+([upstream container requirements](https://docs.zerotier.com/docker/)).
+Tunnel operation on RouterOS remains unproven under
+[#7](https://github.com/tikoci/app-t3code/issues/7); readiness checks only
+exercise versions and offline identity generation.
 
 #### Group status for agents
 
@@ -635,8 +667,8 @@ lifecycle:
   `--version` (or its group's declared probe) before the payload gets a
   `manifest.json` and is activated. The Debian groups also run functional
   smoke tests: `capture` decodes a test capture, `vpn` generates a strongSwan
-  key and a WireGuard key, `routing` loads nmap's NSE help and parses a BIRD
-  BGP config. A payload without a manifest is never trusted.
+  key, a WireGuard key and a ZeroTier identity, `routing` loads nmap's NSE
+  help and parses a BIRD BGP config. A payload without a manifest is never trusted.
 - **Versioned and atomic.** The payload id is derived from the lock and the
   runtime: CPU architecture and Node's module ABI for `dev`, dpkg
   architecture and Debian release for the Debian groups. Payloads live in
@@ -709,22 +741,26 @@ the app user with no root at runtime:
   the last apt layer. It asks apt for the group's dependency closure that the
   image does not already have, and records each package's version,
   architecture, size and SHA256 from the apt indexes. apt has already checked
-  those indexes against Debian's signing keys. The lock is
+  those indexes against Debian's signing keys, or ZeroTier's scoped release
+  key for `zerotier-one`. The lock is
   `/usr/local/lib/t3app/groups/<group>/debs.lock.json` (also in the build
   inventory as `<group>-debs.lock.json`). Every image rebuild picks up Debian
   security updates, and a changed lock is a new payload id, which refreshes
   as described above. An unchanged lock keeps the same id, so nothing is
   downloaded again.
 - **Verified before extraction.** Each `.deb` is downloaded from
-  `deb.debian.org` (https first) and must match its pinned size and SHA256.
+  `deb.debian.org` (https first), or `download.zerotier.com` for ZeroTier,
+  and must match its pinned size and SHA256.
   A download is cut off as soon as it exceeds the pinned size.
   Its control fields must also name the pinned package, version and
   architecture. Only then is it unpacked with `dpkg-deb -x`. Maintainer
-  scripts never run. If a superseded version has left the mirror, it is
+  scripts never run. If a superseded Debian version has left the mirror, it is
   fetched from `snapshot.debian.org` and checked the same way. Verified
   downloads survive an interrupted install in `groups/<group>/.cache-debs`,
   so a slow link resumes rather than starting over. They are removed once
-  the payload is ready.
+  the payload is ready. ZeroTier's packages are not archived by Debian;
+  if its repository removes a pinned version, rebuild the image to record
+  the available version.
 - **No global library path, no `/usr` overlay.** Each command gets a small
   wrapper in the payload's `bin/` that sets `LD_LIBRARY_PATH` to the
   payload's own library directory for that process and its children only,
@@ -861,10 +897,10 @@ assigned here. `t3app tools groups` prints the same table as JSON.
 |---|---|
 | core (in the image) | `iproute2`, `iputils-ping`, `bind9-dnsutils`, `netcat-openbsd`, `socat`, `traceroute`, `mtr-tiny`, `iperf3`, `ethtool`, `whois`, `snmp`, `freeradius-utils`, `mosquitto-clients` |
 | `capture` | `tcpdump`, `tshark`, `wireshark-common`, `nfdump` |
-| `vpn` | `wireguard-tools`, `strongswan-swanctl`, `strongswan-pki`, `strongswan-charon`, `openvpn`, `ike-scan` |
+| `vpn` | `wireguard-tools`, `strongswan-swanctl`, `strongswan-pki`, `strongswan-charon`, `openvpn`, `ike-scan`, `zerotier-one` (ZeroTier's repository) |
 | `routing` | `bird2`, `ndisc6`, `arping`, `arp-scan`, `nftables`, `conntrack`, `nmap` |
 | A Linux guest you boot under `labs` and provision yourself (not shipped) | FRR, keepalived, a FreeRADIUS server, `lldpd` (needs root and a `_lldpd` user), and the PPP-based peers `sstp-client`, `ppp`, `xl2tpd`, `pppoe` (they need root and `/usr/sbin/pppd`) |
-| not shipped | `pptp-linux` (legacy), `zerotier-one` (not in Debian main), `smbclient` (large Samba dependencies), `snmptrapd` (port 162 needs bind privilege; use a uvx `pysnmp` receiver), `eapoltest` and `ntpsec-ntpdate` (on request) |
+| not shipped | `pptp-linux` (legacy), `smbclient` (large Samba dependencies), `snmptrapd` (port 162 needs bind privilege; use a uvx `pysnmp` receiver), `eapoltest` and `ntpsec-ntpdate` (on request) |
 
 Core gets only small user-space clients. With dependencies, their image
 layer measured 29.3 MB uncompressed on amd64. The largest are `snmp` (9 MiB

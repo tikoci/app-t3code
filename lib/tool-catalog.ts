@@ -203,16 +203,16 @@ export const GROUPS: readonly GroupDef[] = [
 	},
 	{
 		name: "vpn",
-		summary: "WireGuard, strongSwan and OpenVPN peer and key tools, ike-scan (no default tunnel or service)",
+		summary: "WireGuard, strongSwan, OpenVPN and ZeroTier peer and key tools, ike-scan (no default tunnel or service)",
 		delivery: "deb",
-		packages: ["wireguard-tools", "strongswan-swanctl", "strongswan-pki", "strongswan-charon", "openvpn", "ike-scan"],
-		checks: cmd("wg", "swanctl", "pki", "openvpn", "ike-scan"),
+		packages: ["wireguard-tools", "strongswan-swanctl", "strongswan-pki", "strongswan-charon", "openvpn", "ike-scan", "zerotier-one"],
+		checks: cmd("wg", "swanctl", "pki", "openvpn", "ike-scan", "zerotier-one", "zerotier-cli", "zerotier-idtool"),
 		privileges:
-			"None: `wg genkey`/`wg pubkey`, `pki` keys and certificates, `openvpn --genkey`, `ike-scan --sport=0`. CAP_NET_ADMIN: WireGuard interfaces (`ip link add type wireguard` + `wg set`; kernel module, no /dev/net/tun). CAP_NET_ADMIN plus /dev/net/tun: OpenVPN tunnels. Root: `wg-quick` (it re-executes itself with sudo, which the image lacks) and charon (shipped, not wired). CAP_NET_BIND_SERVICE: ike-scan's default source port 500 where ports below 1024 are restricted.",
+			"None: `wg genkey`/`wg pubkey`, `pki` keys and certificates, `openvpn --genkey`, `ike-scan --sport=0`, ZeroTier identity tools. CAP_NET_ADMIN: WireGuard interfaces (`ip link add type wireguard` + `wg set`; kernel module, no /dev/net/tun). CAP_NET_ADMIN plus /dev/net/tun: OpenVPN and ZeroTier tunnels. Root: `wg-quick` (it re-executes itself with sudo, which the image lacks), charon and the ZeroTier daemon (shipped, not started). zerotier-cli needs a running daemon and its authorization token. CAP_NET_BIND_SERVICE: ike-scan's default source port 500 where ports below 1024 are restricted.",
 		// Measured on amd64 (2026-11-06): see docs/research/2026-11-tool-group-payloads/vpn-routing-payloads.md.
-		approxBytes: 16 * 1024 * 1024,
+		approxBytes: 32 * 1024 * 1024,
 		// swanctl --version asks charon over VICI; --help prints the version line offline.
-		versionArgs: { pki: ["--help"], swanctl: ["--help"] },
+		versionArgs: { pki: ["--help"], swanctl: ["--help"], "zerotier-one": ["-v"], "zerotier-cli": ["-v"], "zerotier-idtool": ["-h"] },
 		// strongSwan reads /etc/strongswan.conf (and swanctl /etc/swanctl) and
 		// loads plugins from /usr/lib/ipsec/plugins, all compiled in. The
 		// wrapper defaults STRONGSWAN_CONF and SWANCTL_DIR to the payload's
@@ -230,8 +230,9 @@ export const GROUPS: readonly GroupDef[] = [
 		smoke: [
 			{ command: "pki", args: ["--gen", "--type", "ed25519", "--outform", "pem"], expect: "BEGIN PRIVATE KEY" },
 			{ command: "wg", args: ["genkey"], expect: "=" },
+			{ command: "zerotier-idtool", args: ["generate"], expect: ":0:" },
 		],
-		note: "Persistent payload of Debian packages under the home, like capture. strongSwan's pki and swanctl get the payload's config and plugins through their wrappers; charon is shipped but not wired or proven (it needs root). PPP-based peers (SSTP, L2TP, PPPoE) are not here: pppd needs root and /etc/ppp, and xl2tpd and sstpc start /usr/sbin/pppd by a compiled-in path.",
+		note: "Persistent payload of Debian packages under the home, like capture; zerotier-one comes from ZeroTier's signed apt repository. strongSwan's pki and swanctl get the payload's config and plugins through their wrappers; charon and ZeroTier's daemon are shipped but not started or proven as tunnel peers. Give ZeroTier an explicit home under /data to persist its identity and token. PPP-based peers (SSTP, L2TP, PPPoE) are not here: pppd needs root and /etc/ppp, and xl2tpd and sstpc start /usr/sbin/pppd by a compiled-in path.",
 	},
 	{
 		name: "routing",
@@ -397,7 +398,7 @@ export const NETWORK_PACKAGE_ASSIGNMENT: Readonly<Record<string, string>> = {
 	keepalived: "lab-guest",
 	"freeradius (server)": "lab-guest",
 	"pptp-linux": "not-shipped: legacy PPTP, on request only",
-	"zerotier-one": "not-shipped: not in Debian main; RouterOS-side feature",
+	"zerotier-one": "vpn",
 	smbclient: "not-shipped: large Samba dependency set",
 	snmptrapd: "not-shipped: port 162 needs bind privilege; use a uvx pysnmp receiver on >=1024",
 	eapoltest: "not-shipped: niche 802.1X test client, on request only",

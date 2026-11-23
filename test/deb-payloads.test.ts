@@ -998,7 +998,7 @@ describe("vpn and routing group definitions", () => {
 		expect(rule?.commands).toEqual(expect.arrayContaining(["pki", "swanctl"]));
 		expect(rule?.env?.["STRONGSWAN_CONF"]).toBe("{root}/etc/strongswan.conf");
 		expect(rule?.preload).toEqual({ libraries: ["usr/lib/ipsec/libstrongswan.so.0"], pluginDir: "usr/lib/ipsec/plugins" });
-		expect(vpn.smoke?.map((s) => s.command)).toEqual(["pki", "wg"]);
+		expect(vpn.smoke?.map((s) => s.command)).toEqual(["pki", "wg", "zerotier-idtool"]);
 		expect(routing.smoke?.find((s) => s.command === "bird")?.inputBase64).toBe(Buffer.from(BIRD_BGP_CONF).toString("base64"));
 	});
 

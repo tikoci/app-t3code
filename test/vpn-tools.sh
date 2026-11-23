@@ -11,8 +11,9 @@ rm -rf /tmp/vpn-check && mkdir /tmp/vpn-check && cd /tmp/vpn-check
 
 # Tools come from the payload shims, not the image, with no global library path.
 tools=${T3APP_TOOLS_HOME:-/data/.local/share/t3code-tools}/bin
-for c in wg pki swanctl openvpn ike-scan; do test "$(command -v "$c")" = "$tools/$c"; done
+for c in wg pki swanctl openvpn ike-scan zerotier-one zerotier-cli zerotier-idtool; do test "$(command -v "$c")" = "$tools/$c"; done
 test ! -e /usr/bin/wg && test ! -e /usr/bin/pki
+test ! -e /usr/sbin/zerotier-one
 test -z "${LD_LIBRARY_PATH:-}" && test -z "${LD_PRELOAD:-}" && test -z "${STRONGSWAN_CONF:-}"
 
 # WireGuard: a key pair (what /interface/wireguard/peers needs from a Linux peer).
@@ -41,5 +42,15 @@ grep -q 'BEGIN OpenVPN Static key' ovpn.key
 # Assigned on its own line so set -e stops on a failed or timed-out probe.
 ike_output=$(timeout 20 ike-scan --sport=0 --retry=1 127.0.0.1 2>&1)
 grep -q '1 hosts scanned' <<<"$ike_output"
+
+# ZeroTier's multicall binary selects its personality from argv[0]. Exercise
+# all three payload wrappers without a daemon, network or privileges.
+test "$(zerotier-one -v)" = "$(zerotier-cli -v)"
+zerotier-idtool generate identity.secret identity.public
+zerotier-idtool validate identity.secret | grep -q 'is a valid identity'
+zerotier-idtool getpublic identity.secret >derived.public
+cmp identity.public derived.public
+if zerotier-cli -D/tmp/vpn-check info >out.txt 2>&1; then echo "zerotier-cli found a daemon" >&2; exit 1; fi
+grep -q 'zerotier-one.port not found' out.txt
 
 echo "vpn ok: $(wg --version | cut -d' ' -f1-2); $(pki --help 2>/dev/null | sed -n 1p); $(openvpn --version | sed -n 1p | cut -d' ' -f1-2)"

@@ -89,7 +89,15 @@ version is not fixed by the image:
 | Codex, OpenCode, Pi (`T3APP_PROVIDERS`) | npm registry, latest | npm's registry integrity; not pinned, by design, so T3's **Update now** can manage them |
 | Grok, Muse (`T3APP_PROVIDERS`) | the vendor's `install.sh` over HTTPS | whatever the vendor's installer checks |
 | `dev` tool group | npm, from a committed lockfile | lockfile integrity hashes |
-| `capture`, `labs`, `vpn`, `routing` tool groups | Debian packages pinned at image build | size and SHA-256 from apt's signed indexes |
+| `capture`, `labs`, `vpn`, `routing` tool groups | Debian packages pinned at image build; `vpn` also uses ZeroTier's repository for `zerotier-one` | size and SHA-256 from apt's signed indexes; ZeroTier's repository key is checksum-pinned and scoped with `signed-by`, and only `zerotier-one` is allowed from that origin |
+
+The `vpn` group installs ZeroTier's daemon, CLI and identity tool without
+starting a service or joining a network. Offline identity operations run
+as `node`. A ZeroTier tunnel needs root, `CAP_NET_ADMIN` and
+`/dev/net/tun`; the image grants none of these. If started explicitly, the
+daemon opens its own network and local control sockets. Keep its home under
+`/data` to persist its private identity and authorization token, and treat
+those files as credentials. See [ZeroTier in the vpn group](README.md#zerotier-in-the-vpn-group).
 
 Provider CLIs update through T3 or their own updaters after install, the
 same as on any T3 host. `T3APP_PROVIDERS=none` and
