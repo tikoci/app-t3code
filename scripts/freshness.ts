@@ -363,10 +363,10 @@ export async function checkUpstream(version = pinnedVersion()): Promise<Report> 
 export const TOOL_PINS = [
 	{ name: "gh", repo: "cli/cli", tagPrefix: "v", file: "Dockerfile", pattern: /^ARG GH_VER=(\S+)$/gm, bump: "GH_VER (the build checks gh's own checksums)" },
 	{ name: "uv", repo: "astral-sh/uv", tagPrefix: "", file: "Dockerfile", pattern: /^ARG UV_VER=(\S+)$/gm, bump: "UV_VER (the ghcr.io/astral-sh/uv image tag)" },
-	{ name: "Bun", repo: "oven-sh/bun", tagPrefix: "bun-v", file: "Dockerfile", pattern: /^ARG BUN_VER=(\S+)$/gm, bump: 'BUN_VER and every workflow\'s setup-bun `bun-version` ("release sync" test)' },
-	{ name: "hadolint", repo: "hadolint/hadolint", tagPrefix: "v", file: ".github/workflows/ci.yml", pattern: /^ +HADOLINT_VER: "([^"]+)"$/gm, bump: "HADOLINT_VER and HADOLINT_SHA256" },
-	{ name: "ShellCheck", repo: "koalaman/shellcheck", tagPrefix: "v", file: ".github/workflows/ci.yml", pattern: /^ +SHELLCHECK_VER: "([^"]+)"$/gm, bump: "SHELLCHECK_VER and SHELLCHECK_SHA256" },
-	{ name: "actionlint", repo: "rhysd/actionlint", tagPrefix: "v", file: ".github/workflows/ci.yml", pattern: /^ +ACTIONLINT_VER: "([^"]+)"$/gm, bump: "ACTIONLINT_VER and ACTIONLINT_SHA256" },
+	{ name: "Bun", repo: "oven-sh/bun", tagPrefix: "bun-v", file: "Dockerfile", pattern: /^ARG BUN_VER=(\S+)$/gm, bump: 'BUN_VER, every workflow\'s setup-bun `bun-version` ("release sync" test) and mise.toml' },
+	{ name: "hadolint", repo: "hadolint/hadolint", tagPrefix: "v", file: ".github/workflows/ci.yml", pattern: /^ +HADOLINT_VER: "([^"]+)"$/gm, bump: "HADOLINT_VER and HADOLINT_SHA256, and mise.toml" },
+	{ name: "ShellCheck", repo: "koalaman/shellcheck", tagPrefix: "v", file: ".github/workflows/ci.yml", pattern: /^ +SHELLCHECK_VER: "([^"]+)"$/gm, bump: "SHELLCHECK_VER and SHELLCHECK_SHA256, and mise.toml" },
+	{ name: "actionlint", repo: "rhysd/actionlint", tagPrefix: "v", file: ".github/workflows/ci.yml", pattern: /^ +ACTIONLINT_VER: "([^"]+)"$/gm, bump: "ACTIONLINT_VER and ACTIONLINT_SHA256, and mise.toml" },
 ] as const;
 
 export type ToolPin = (typeof TOOL_PINS)[number];
