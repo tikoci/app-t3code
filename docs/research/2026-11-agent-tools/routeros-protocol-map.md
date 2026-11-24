@@ -32,7 +32,13 @@ RouterOS state that changes the answer (rosetta changelog search, DB v0.11.3):
 
 - **7.24 added privileged containers** (`/container … privileged=`), and
   `/container` has a `devices=` pass-through. The `/app` YAML documents
-  `devices` (7.23+); a YAML equivalent for `privileged` is **unverified**.
+  `devices` (7.23+). *Update 2026-11-24:* the YAML equivalent is a
+  service-level `privileged: true`, which works from **7.25** and is ignored
+  by 7.24.7. `yes` silently stays unprivileged. First measurements on a
+  7.25.2 CHR (alpine, as root, and as `nobody`) are in
+  [#7](https://github.com/tikoci/app-t3code/issues/7#issuecomment-7137563446):
+  the capability set is the same with and without privileged mode, `/dev`
+  grows from 18 to 405 entries, and `ping_group_range` changes.
 - What an *unprivileged* RouterOS container actually gets (capability set,
   `ping_group_range`, `/dev/net/tun`, `/dev/ppp`, `/dev/kvm`, kernel modules
   for wireguard/l2tp/gre/vxlan/xfrm/tun) is **unmeasured**. This is the
