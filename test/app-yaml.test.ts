@@ -235,12 +235,11 @@ describe("dev tool pins", () => {
 			shellcheck: one(ci, /^ +SHELLCHECK_VER: "([^"]+)"$/gm),
 			actionlint: one(ci, /^ +ACTIONLINT_VER: "([^"]+)"$/gm),
 		};
-		const tools = read("mise.toml").split("[tools]")[1] ?? "";
-		const pinned = Object.fromEntries(
-			Object.keys(expected).map((name) => [name, one(tools, new RegExp(`^${name} = "([^"]+)"$`, "gm"))]),
-		);
-		expect(pinned).toEqual(expected);
 		for (const versions of Object.values(expected)) expect(versions).toHaveLength(1);
+		// Parsed, not matched: a commented-out `[tools]` or pin must not count.
+		const { tools } = Bun.TOML.parse(read("mise.toml")) as { tools?: Record<string, unknown> };
+		const pinned = Object.fromEntries(Object.keys(expected).map((name) => [name, [tools?.[name]]]));
+		expect(pinned).toEqual(expected);
 	});
 });
 
