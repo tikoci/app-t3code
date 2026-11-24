@@ -507,10 +507,16 @@ At a glance, by what the operation needs beyond installation:
 | A device | — | — | `/dev/kvm` for acceleration | `/dev/net/tun` for OpenVPN and ZeroTier | — | — |
 | Root | — | — | — | `wg-quick`, charon, ZeroTier daemon | — | — |
 
-RouterOS 7.25 added a per-service privileged mode to app YAML. That is a
-deployment control; which effective capabilities the non-root app process
-then receives, and which devices and kernel features a given router
-provides, is unproven and tracked in
+RouterOS 7.25 added a per-service privileged mode to app YAML:
+`privileged: true` under a service (7.24.7 ignores the key). Only `true`
+works; `privileged: yes` silently leaves the container unprivileged. On a
+7.25.2 CHR it widened `/dev` from 18 entries to 405 but did not change the
+capability set: root had the full set either way, and a non-root user had
+none either way ([measurements](https://github.com/tikoci/app-t3code/issues/7#issuecomment-7137563446)).
+So for the `node` app process, privileged mode alone is not expected to
+grant any capability in the table above. It also turned unprivileged ICMP
+sockets off (`ping_group_range` went from `65534 65534` to `1 0`). The
+T3 image as `node`, `devices=` passthrough and real hardware remain open in
 [#7](https://github.com/tikoci/app-t3code/issues/7).
 
 #### Privileges by tool
