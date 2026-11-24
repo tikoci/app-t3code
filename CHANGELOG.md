@@ -27,6 +27,9 @@ gives them their `-app.<N>` heading.
   response, theme customization, and resuming a stopped thread without a
   new message. The startup pairing details in `/container/log` can now end
   with T3's plain-HTTP warning, since the server itself listens on HTTP.
+  T3's new preview tunnel, on by default, lets paired clients reach the
+  container's loopback ports through T3's listener; `SECURITY.md` says
+  what that exposes and where to turn it off.
 - gh 2.103.3 → 2.105.0, uv 0.13.7 → 0.13.10, Bun 1.4.4 → 1.4.5.
 
 ## 0.1.8-app.198 — 2026-11-23

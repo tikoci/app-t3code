@@ -45,6 +45,16 @@ The trust boundaries, from the outside in:
   `/app` YAML maps it through RouterOS. Use `use-https=yes` (RouterOS
   `/ip/cloud` or your own domain) for anything beyond a lab. `use-https=no`
   is for CHR labs, where there is no `/ip/cloud`.
+- **Paired clients can reach the container's loopback ports.** Since T3
+  0.1.11, the preview tunnel (`/api/preview/tunnel`, on by default) lets a
+  paired client with the `terminal:operate` scope open TCP connections to
+  `127.0.0.1` ports inside the container through T3's own listener. That is
+  how T3's in-app browser opens a dev server an agent started. It adds no
+  listener and no access a paired terminal lacks, but a service bound to
+  loopback in the container (a dev server, or a lab CHR's forwarded ports)
+  is no longer private to the container. It reaches only the container's
+  network namespace, not the router's, and refuses T3's own port. Turn it
+  off in T3 under **Settings → Connections → Allow the preview tunnel**.
 
 ## Known exposures
 
