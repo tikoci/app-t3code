@@ -1,4 +1,4 @@
-T3CODE_VER ?= 0.1.8
+T3CODE_VER ?= 0.1.11
 IMAGE ?= ghcr.io/tikoci/app-t3code
 PLATFORMS ?= linux/amd64,linux/arm64
 

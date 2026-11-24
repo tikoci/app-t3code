@@ -14,6 +14,25 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+- T3 Code 0.1.11 (#60). The image now ships upstream
+  [v0.1.11](https://github.com/pingdotgg/t3code/releases/tag/v0.1.11)
+  (which includes 0.1.9 and 0.1.10); `:0.1`, `:0` and `:latest` move to
+  it, and builds are now named `0.1.11-app.<N>`. The provider list is
+  unchanged (the same 11 drivers), and so are `T3APP_PROVIDERS`, the tool
+  groups, the server paths under `/data/.t3` and the RouterOS pairing help.
+  Upstream changes that show up here: directly paired devices renew their
+  session instead of pairing again every 30 days, an Issues page (GitHub,
+  GitLab, Forgejo, Linear, Azure DevOps), a dev server an agent starts in
+  the container opens in T3's in-app browser, replies to a specific
+  response, theme customization, and resuming a stopped thread without a
+  new message. The startup pairing details in `/container/log` can now end
+  with T3's plain-HTTP warning, since the server itself listens on HTTP.
+- gh 2.103.3 → 2.105.0, uv 0.13.7 → 0.13.10, Bun 1.4.4 → 1.4.5.
+
+## 0.1.8-app.198 — 2026-11-23
+
+`sha-8a5c797`.
+
 - Add ZeroTier (`zerotier-one`, `zerotier-cli`, `zerotier-idtool`) to the
   `vpn` tool group on amd64 and arm64, from ZeroTier's signed Debian
   repository. It installs into `/data` with the other VPN tools; no daemon
