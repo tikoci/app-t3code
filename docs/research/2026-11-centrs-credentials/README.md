@@ -278,8 +278,13 @@ From the discussion on #47 and in the session that ran this research:
 
 1. T3 → provider sessions: does a variable in T3's own env (`LAB_ROUTER`), or
    one set as a Codex provider-instance env in `settings.json`
-   (`LAB_PROBE_ENV`), reach the processes Codex starts? Waiting on Codex's
-   install over the capped link ([`probe/provider-env.sh`](probe/provider-env.sh)).
+   (`LAB_PROBE_ENV`), reach the processes Codex starts? Measured so far:
+   the container env reaches PID 1, `t3 serve` and T3's resource monitor.
+   With Codex installed (about 24 minutes over the capped link) but no
+   session, nothing Codex-related ran in a 330 s sample past T3's re-probe
+   interval ([`probe/env-sampler.sh`](probe/env-sampler.sh)). The check
+   needs a signed-in Codex (or Claude) session started from T3; then
+   [`probe/provider-env.sh`](probe/provider-env.sh) answers it.
 2. A secret request card's file across a T3 restart.
 3. The `/container` env leak on a 7.26 beta; then report it to MikroTik.
 4. Seeding the CDB at first start: once, then left alone (like skills), or
