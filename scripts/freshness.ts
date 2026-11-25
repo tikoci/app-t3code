@@ -5,7 +5,7 @@
 //   bun scripts/freshness.ts pinned [--version X]   the pinned T3 release (CI on every PR)
 //   bun scripts/freshness.ts upstream [--version X] the newest stable T3 release (scheduled)
 //   bun scripts/freshness.ts claude                 Claude Code's download contract (scheduled)
-//   bun scripts/freshness.ts tools                  the other upstream tool pins (scheduled)
+//   bun scripts/freshness.ts tools                  the other upstream tool pins and npm pins (scheduled)
 //
 // The version defaults to package.json's; CI passes the T3CODE_VER it builds,
 // which a workflow_dispatch can override.
@@ -17,7 +17,9 @@
 // and binaries still have the shape bin/install-claude-code reads (a 404 and a
 // changed manifest schema left every new home without Claude until #13).
 // `tools` checks that every other pinned tool (TOOL_PINS: gh, uv and Bun in the
-// image, the CI linters) is its upstream's latest release.
+// image, the CI linters) is its upstream's latest release, and that every
+// npm package lib/ ships (NPM_PINS, package.json "dependencies") is pinned
+// exactly to the registry's latest.
 // Network checks read GitHub; set GH_TOKEN or GITHUB_TOKEN to avoid the
 // anonymous API rate limit.
 
@@ -405,6 +407,51 @@ export async function checkTools(): Promise<Report> {
 	return { ok: true, lines: [`tool pins: ${TOOL_PINS.map((p) => p.name).join(", ")} are each upstream's latest release`] };
 }
 
+// --- npm pins ------------------------------------------------------------------
+
+/**
+ * npm packages the image installs beside lib/ (package.json "dependencies",
+ * frozen lockfile). Each is pinned to one exact version, and its bump note
+ * says what to re-check: the lockfile, and what lib/ relies on.
+ */
+export const NPM_PINS = [
+	{
+		name: "skills",
+		bump: 'package.json "dependencies" (exact) and bun.lock (bun install); re-check lib/skills.ts against its release notes: skillDirs() paths, the lock format, installSkills results',
+	},
+] as const;
+
+/** The exact version package.json pins `name` to; throws on a range or a missing pin. */
+export function npmPinVersion(name: string, pkg: { dependencies?: Record<string, string> }): string {
+	const spec = pkg.dependencies?.[name];
+	if (!spec) throw new Error(`package.json: no "dependencies" entry for ${name}`);
+	if (!/^\d+\.\d+\.\d+$/.test(spec)) throw new Error(`package.json: ${name} is "${spec}", not an exact version`);
+	return spec;
+}
+
+export function npmPinReport(pin: (typeof NPM_PINS)[number], pinned: string, latest: string): Report {
+	if (latest === pinned) return { ok: true, lines: [`${pin.name} ${pinned} is npm's latest`] };
+	return { ok: false, lines: [`${pin.name}: npm's latest is ${latest}; package.json pins ${pinned}. Bump ${pin.bump}.`] };
+}
+
+/** Every NPM_PINS entry against the registry's `latest` dist-tag, each on its own like checkTools. */
+export async function checkNpmPins(): Promise<Report> {
+	const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { dependencies?: Record<string, string> };
+	const reports: Report[] = [];
+	for (const pin of NPM_PINS) {
+		try {
+			const pinned = npmPinVersion(pin.name, pkg);
+			const res = await fetchOk(`https://registry.npmjs.org/${pin.name}/latest`, { Accept: "application/json" });
+			reports.push(npmPinReport(pin, pinned, ((await res.json()) as { version: string }).version));
+		} catch (error) {
+			reports.push({ ok: false, lines: [`${pin.name}: not checked: ${error instanceof Error ? error.message : String(error)}`] });
+		}
+	}
+	const stale = reports.filter((r) => !r.ok);
+	if (stale.length) return { ok: false, lines: stale.flatMap((r) => r.lines) };
+	return { ok: true, lines: [`npm pins: ${NPM_PINS.map((p) => p.name).join(", ")} ${NPM_PINS.length === 1 ? "is" : "are each"} npm's latest`] };
+}
+
 /**
  * Claude Code's `channel` pointer names a version whose manifest has both
  * Linux platforms, each binary answers with the manifest's size, and each has
@@ -477,8 +524,8 @@ const CHECKS: Record<string, (args: string[]) => Array<() => Report | Promise<Re
 	pinned: (args) => [() => checkPinned(versionArg(args))],
 	upstream: (args) => [() => checkUpstream(versionArg(args))],
 	claude: () => [() => checkClaude()],
-	tools: () => [() => checkTools()],
-	all: (args) => [() => checkShareLink(), () => checkPinned(versionArg(args)), () => checkUpstream(versionArg(args)), () => checkClaude(), () => checkTools()],
+	tools: () => [() => checkTools(), () => checkNpmPins()],
+	all: (args) => [() => checkShareLink(), () => checkPinned(versionArg(args)), () => checkUpstream(versionArg(args)), () => checkClaude(), () => checkTools(), () => checkNpmPins()],
 };
 
 /** CLI entry: exit 0 when every check passes, 1 on drift or error, 2 on usage. */

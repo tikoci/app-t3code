@@ -19,6 +19,7 @@
         T3CODE_TELEMETRY_ENABLED: "false"
         T3APP_TOOL_GROUPS: "capture labs vpn routing dev"
         T3APP_PROVIDERS: "claude codex"
+        T3APP_SKILLS: "tikoci/routeros-skills"
       volumes:
         - t3code-data:/data
       restart: unless-stopped

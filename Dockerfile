@@ -5,7 +5,8 @@
 # release binaries need), per-arch t3 tarball from pingdotgg/t3code with
 # SHA256 verification, the GitHub CLI, uv/uvx and Bun/RouterOS tools baked
 # in. No provider CLI is baked: the T3APP_PROVIDERS selection (#13) installs
-# Claude Code, Codex and the others into the volume in the background.
+# Claude Code, Codex and the others into the volume in the background, and
+# T3APP_SKILLS (#46) imports agent skills there the same way.
 #
 # Build:
 #   docker buildx build --platform linux/amd64,linux/arm64 \
@@ -44,6 +45,10 @@ ENV T3APP_TOOL_GROUPS="capture labs vpn routing dev"
 # DEFAULT_PROVIDERS): an explicit list, like the groups above. OpenCode, Pi,
 # Grok and Muse are opt-in; Cursor and Antigravity come with T3 itself.
 ENV T3APP_PROVIDERS="claude codex"
+# Agent skills imported into the home at start (lib/skills.ts
+# DEFAULT_SKILLS, #46): GitHub sources in the skills CLI's syntax, refreshed
+# in the background. Operators add tokens, or set `none`.
+ENV T3APP_SKILLS="tikoci/routeros-skills"
 # uv uses the image's Python 3 and never fetches a managed Python by itself;
 # `uv python install` still works when asked for explicitly.
 ENV UV_PYTHON_DOWNLOADS=manual
@@ -206,6 +211,16 @@ ENV PATH="/data/.local/bin:/data/.bun/bin:/data/.local/share/t3code-tools/bin:/o
 COPY docker-entrypoint.sh /
 COPY bin /usr/local/bin
 COPY profile.sh /etc/profile.d/t3code.sh
+# lib/'s runtime dependencies (package.json "dependencies": the `skills`
+# library for T3APP_SKILLS, #46), pinned exactly and installed beside it from
+# the frozen lockfile, without install scripts. bin/t3app runs Bun with
+# --no-install, so nothing is fetched at runtime. HOME=/root keeps Bun's
+# cache out of /data; it is removed in the same layer.
+COPY package.json bun.lock /tmp/t3app-deps/
+RUN HOME=/root bun install --cwd /tmp/t3app-deps --production --frozen-lockfile --ignore-scripts && \
+    mkdir -p /usr/local/lib/t3app && \
+    mv /tmp/t3app-deps/node_modules /usr/local/lib/t3app/node_modules && \
+    rm -rf /tmp/t3app-deps /root/.bun /root/.cache
 # lib/ is the shipped runtime (AGENTS.md "Layout"); scripts/ never ships.
 COPY lib /usr/local/lib/t3app
 

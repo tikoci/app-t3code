@@ -38,7 +38,7 @@ app disk, so logins, the T3 database, and `~/projects` survive reboots.
 
 ### Preview or edit the YAML
 
-[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++HOME%3A+%2Fdata%0A++++++T3CODE_HOME%3A+%2Fdata%2F.t3%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++++%23+Optional+tool+groups%2C+installed+into+%2Fdata+in+the+background+after%0A++++++%23+start.+Remove+names+to+skip+them%3B+%22none%22+is+core+only.+On+an+installed%0A++++++%23+app+change+this+with+%2Fapp%2Fset+environment%3D+%28README%29%2C+never+yaml%3D.%0A++++++T3APP_TOOL_GROUPS%3A+%22capture+labs+vpn+routing+dev%22%0A++++++%23+Provider+CLIs+to+install+into+%2Fdata+in+the+background%3A+claude+codex%0A++++++%23+cursor+grok+opencode+antigravity+pi+muse%2C+or+%22none%22.+Same+rules.%0A++++++T3APP_PROVIDERS%3A+%22claude+codex%22%0A++++volumes%3A%0A++++++%23+Keep+this+name+and+destination+when+upgrading%3A+the+whole+home%2C%0A++++++%23+including+.t3%2Fuserdata%2C+projects%2C+worktrees%2C+and+provider+logins.%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
+[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++HOME%3A+%2Fdata%0A++++++T3CODE_HOME%3A+%2Fdata%2F.t3%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++++%23+Optional+tool+groups%2C+installed+into+%2Fdata+in+the+background+after%0A++++++%23+start.+Remove+names+to+skip+them%3B+%22none%22+is+core+only.+On+an+installed%0A++++++%23+app+change+this+with+%2Fapp%2Fset+environment%3D+%28README%29%2C+never+yaml%3D.%0A++++++T3APP_TOOL_GROUPS%3A+%22capture+labs+vpn+routing+dev%22%0A++++++%23+Provider+CLIs+to+install+into+%2Fdata+in+the+background%3A+claude+codex%0A++++++%23+cursor+grok+opencode+antigravity+pi+muse%2C+or+%22none%22.+Same+rules.%0A++++++T3APP_PROVIDERS%3A+%22claude+codex%22%0A++++++%23+Agent+skills+to+import+into+%2Fdata+at+each+start+%28GitHub+owner%2Frepo%2C%0A++++++%23+owner%2Frepo%40skill%2C+owner%2Frepo%23ref%2C+space-separated%29%2C+or+%22none%22.%0A++++++T3APP_SKILLS%3A+%22tikoci%2Frouteros-skills%22%0A++++volumes%3A%0A++++++%23+Keep+this+name+and+destination+when+upgrading%3A+the+whole+home%2C%0A++++++%23+including+.t3%2Fuserdata%2C+projects%2C+worktrees%2C+and+provider+logins.%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
 the single-app definition in our sister project, [tikoci/restraml](https://github.com/tikoci/restraml).
 The share link embeds the YAML as a snapshot; the downloads below track the
 current published files. Both YAML files include schema comments for editor validation.
@@ -108,6 +108,7 @@ your home comes from the existing disk volume.
 | `/data/projects` | Repositories you create or clone here |
 | `/data/.config`, `/data/.local/share`, provider homes | Provider configuration, logins, and session history |
 | `/data/.local`, `/data/.bun` | User-installed tools and Bun global packages |
+| `/data/.agents/skills`, `/data/.claude/skills` | Agent skills: [`T3APP_SKILLS`](#skills-t3app_skills) imports and your own |
 
 Projects outside `/data` need their own persistent mount. A project record
 in the database does not preserve a checkout stored in the container's
@@ -225,29 +226,31 @@ pairing URL instead of a raw token.
 
 ### The `t3app` command
 
-`t3app` is the image's operator command: status, tool groups, provider CLIs
-and pairing, one command with an area and a verb. From RouterOS it runs
+`t3app` is the image's operator command: status, tool groups, provider CLIs,
+skills and pairing, one command with an area and a verb. From RouterOS it runs
 through `/container/shell`, as the app user (`node`):
 
 ```routeros
 /container/shell app-t3code cmd="t3app status"
 /container/shell app-t3code cmd="t3app tools install"
 /container/shell app-t3code cmd="t3app providers install"
+/container/shell app-t3code cmd="t3app skills update"
 /container/shell app-t3code cmd="t3app tools prune"
 :put [/container/shell app-t3code cmd="t3app pairing" as-value]
 ```
 
 | Command | What it does |
 |---|---|
-| `t3app status [--json]` | Tool groups and provider CLIs in one report: selections, states, last errors, log paths. Read-only |
+| `t3app status [--json]` | Tool groups, provider CLIs and skills in one report: selections, states, last errors, log paths. Read-only |
 | `t3app tools status\|install\|prune\|groups` | [Optional tool groups](#optional-tool-groups); `t3app tools help` has the details |
 | `t3app providers status\|install` | [Provider CLIs](#providers-t3app_providers); `t3app providers help` |
+| `t3app skills status\|install\|update` | [Agent skills](#skills-t3app_skills); `t3app skills help` |
 | `t3app pairing [label]` | A fresh pairing token (a full link with `PUBLIC_URL` set) |
 | `t3app help` | The command reference |
 
 RouterOS drops a `/container/shell` command's output after about 60 s, so
-`tools install` and `providers install` start in the background and answer
-at once with the log to follow. `t3app status` shows the progress. In a T3
+`tools install`, `providers install` and `skills install|update` start in
+the background and answer at once with the log to follow. `t3app status` shows the progress. In a T3
 terminal, `--wait` runs them in place instead. A mistyped command or an
 extra argument prints the usage and exits 2, and nothing runs:
 
@@ -258,7 +261,7 @@ extra argument prints the usage and exits 2, and nothing runs:
 Exit codes are 0 for ok, 1 when the operation failed, 2 for usage, and 3 for
 the wrong user. The shell runs as `node` unless you add `user=root`. As root,
 the tool commands switch to `node` (no file in `/data` becomes root-owned),
-and `providers install` refuses with exit 3.
+and `providers install` and `skills install|update` refuse with exit 3.
 
 > [!IMPORTANT]
 > **Renamed settings and commands (breaking).** `T3CODE_TOOL_GROUPS`,
@@ -279,6 +282,7 @@ and `providers install` refuses with exit 3.
 | `T3CODE_TELEMETRY_ENABLED` | `false` (image default and YAML) | set `true` to opt back in |
 | `T3APP_TOOL_GROUPS` | `capture labs vpn routing dev` (image default and YAML) | optional tool groups; remove names to skip them, `none` for core only; see [below](#optional-tool-groups) |
 | `T3APP_PROVIDERS` | `claude codex` (image default and YAML) | provider CLIs to install into the home; see [Providers](#providers-t3app_providers) |
+| `T3APP_SKILLS` | `tikoci/routeros-skills` (image default and YAML) | agent skills to import into the home at each start; see [Skills](#skills-t3app_skills) |
 | `UV_PYTHON_DOWNLOADS` | `manual` (image default) | uv uses the image's Python 3 and downloads another only on `uv python install` |
 | `PUBLIC_URL` | unset | base URL baked into pairing links |
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, … | inherited | agents see container env |
@@ -338,8 +342,9 @@ How the installs behave:
   pinned, so the vendor's own updater keeps working; the trust is the
   vendor's endpoint, as it is for a user running that command.
 - **Logs.** All background installs log under `/data/.local/state/t3code/`:
-  `providers.log` (the provider installs, including Claude's) and
-  `tool-groups.log` (the tool groups). Each start appends; the logs rotate at
+  `providers.log` (the provider installs, including Claude's),
+  `skills.log` ([skills](#skills-t3app_skills)) and `tool-groups.log` (the
+  tool groups). Each start appends; the logs rotate at
   about 1 MiB and survive image replacement.
 
 Codex also has a second path in T3: **Continue with ChatGPT** downloads
@@ -361,6 +366,80 @@ live in the home.
 > is a download of about 166 MiB, then about 437 MiB in `/data`). OpenCode is
 > no longer installed by default: add `opencode` to `T3APP_PROVIDERS` to
 > keep it. Logins, settings and sessions in `/data` stay either way.
+
+#### Skills (`T3APP_SKILLS`)
+
+[Agent skills](https://agentskills.io) are folders with a `SKILL.md` that
+an agent loads when a task matches. `T3APP_SKILLS` imports them from GitHub
+into the home at each start, in the background, with the
+[`skills`](https://github.com/vercel-labs/skills) library (the one behind
+`npx skills`, pinned in the image). The default, **`tikoci/routeros-skills`**,
+is tikoci's RouterOS skills, all of them.
+
+Tokens are separated by spaces and use the `skills` CLI's syntax:
+
+| Token | Imports |
+|---|---|
+| `owner/repo` | every skill in the GitHub repository |
+| `owner/repo@skill` | one skill from it |
+| `owner/repo#ref` | pinned to a branch, tag or commit (also `owner/repo#ref@skill`) |
+| `none` | nothing |
+
+Large repositories are easier to take a few at a time.
+[wiresage/routeros-skills](https://github.com/wiresage/routeros-skills) has
+35 skills; to add only its BGP and OSPF ones beside the default:
+
+```text
+T3APP_SKILLS="tikoci/routeros-skills wiresage/routeros-skills@routeros-bgp wiresage/routeros-skills@routeros-ospf"
+```
+
+Tokens from the same repository and ref are fetched once. Set it with
+`/app/set environment=` like the groups (see
+[Changing groups on RouterOS](#changing-groups-on-routeros), with
+`T3APP_SKILLS=` as the key). Use spaces, never commas: RouterOS splits
+`environment=` values on commas.
+
+Where they go: each skill's files land in `/data/.agents/skills/<name>`,
+which Codex reads (and other agents that read the shared `~/.agents/skills`
+directory). Claude Code gets a link to it in `/data/.claude/skills/<name>`
+(or `$CLAUDE_CONFIG_DIR/skills`). After skills change, use **Restart agent
+session** in T3 for a running agent to see them.
+
+How the imports behave:
+
+- **Refreshed at start.** Each start fetches every selected repository
+  once, installs what is missing, and moves skills from a token without
+  `#ref` to the repository's newest commit. Pin `#ref` for stability.
+  `t3app skills update` does the same now; `t3app skills install` only adds
+  what is missing or whose token changed.
+- **The earlier token wins a clash.** Two repositories can share a skill
+  name (tikoci's and wiresage's both have `routeros-firewall`,
+  `-fundamentals`, `-hotspot` and `-scripting`). Every token is resolved
+  before anything is written, each name goes to the first token that has
+  it, and the later one is reported as `skipped (clash)`.
+- **Your skills win.** A skill folder (or Claude entry) this image did not
+  install is never written over: it shows as `skipped (not ours)`. A skill
+  you edited after it was installed is left alone and shows as `modified`.
+  To take the upstream version again, delete its folder and run
+  `t3app skills install`.
+- **Deselecting deletes nothing.** Removing a token stops future imports;
+  the files stay (`kept`). `npx skills remove -g <name>` removes one.
+- **Offline is fine.** Installed skills live in `/data` and survive image
+  replacement. If GitHub can't be reached, nothing changes and the
+  background run retries for about a day, like the provider installs.
+- **Rate limits.** The library uses `GH_TOKEN` or `GITHUB_TOKEN` when set;
+  otherwise GitHub allows 60 anonymous requests an hour per address, and a
+  start makes one per repository. A rate-limit failure says so in
+  `t3app skills status`.
+- **Telemetry off.** The import turns off the library's usage telemetry.
+  An `npx skills` you run yourself follows its own defaults.
+
+What this image installed is recorded in
+`/data/.local/state/t3code/skills.json` (per skill: token, source, commit
+and a hash of the folder), beside `skills.log`. The library also records
+the skills in its own lock, `/data/.agents/.skill-lock.json`, so
+`npx skills list -g` shows them; leave `XDG_STATE_HOME` unset (the image
+does), or `npx skills` looks for that lock somewhere else.
 
 ### Installed package inventory
 

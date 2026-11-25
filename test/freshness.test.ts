@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
 	checkShareLink,
+	checkNpmPins,
 	checkTools,
 	checkUpstream,
 	compareVersions,
@@ -21,6 +22,9 @@ import {
 	shareLinks,
 	stableTagVersions,
 	stableVersion,
+	NPM_PINS,
+	npmPinReport,
+	npmPinVersion,
 	TOOL_PINS,
 	toolPinReport,
 	toolPinVersion,
@@ -324,6 +328,43 @@ describe("tool pins", () => {
 		expect(report.lines).toHaveLength(2);
 		expect(report.lines[0]).toStartWith("gh: not checked: https://api.github.com/repos/cli/cli/releases/latest: HTTP 404");
 		expect(report.lines[1]).toStartWith("actionlint: rhysd/actionlint's latest release is v9.9.9;");
+	});
+});
+
+describe("npm pins", () => {
+	const realFetch = globalThis.fetch;
+	afterEach(() => {
+		globalThis.fetch = realFetch;
+	});
+	const pkg = () => JSON.parse(read("package.json")) as { dependencies: Record<string, string> };
+
+	test("every runtime dependency of lib/ is an npm pin, set to one exact version", () => {
+		expect(Object.keys(pkg().dependencies).sort()).toEqual(NPM_PINS.map((p) => p.name).sort());
+		for (const pin of NPM_PINS) expect(npmPinVersion(pin.name, pkg())).toMatch(/^\d+\.\d+\.\d+$/);
+		expect(() => npmPinVersion("skills", { dependencies: { skills: "^1.9.0" } })).toThrow('is "^1.9.0", not an exact version');
+		expect(() => npmPinVersion("skills", {})).toThrow('no "dependencies" entry for skills');
+	});
+
+	test("the registry's latest must equal the pin", () => {
+		const pin = NPM_PINS[0];
+		expect(npmPinReport(pin, "1.9.0", "1.9.0").ok).toBe(true);
+		const stale = npmPinReport(pin, "1.9.0", "1.10.0");
+		expect(stale.ok).toBe(false);
+		expect(stale.lines[0]).toStartWith("skills: npm's latest is 1.10.0; package.json pins 1.9.0. Bump package.json");
+	});
+
+	test("checkNpmPins asks the registry's latest for each pin", async () => {
+		const asked: string[] = [];
+		globalThis.fetch = (async (input: string | URL | Request) => {
+			const url = new URL(input instanceof Request ? input.url : input);
+			if (url.hostname !== "registry.npmjs.org") throw new Error(`unexpected ${url}`);
+			asked.push(url.pathname);
+			return Response.json({ version: "99.0.0" });
+		}) as typeof fetch;
+		const report = await checkNpmPins();
+		expect(asked).toEqual(NPM_PINS.map((p) => `/${p.name}/latest`));
+		expect(report.ok).toBe(false);
+		expect(report.lines[0]).toStartWith("skills: npm's latest is 99.0.0;");
 	});
 });
 

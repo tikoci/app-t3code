@@ -56,13 +56,17 @@ background() {
 # payloads install while missing; provider CLIs (#13) install while missing
 # from PATH (npm into /data/.local, the vendor's installer, or
 # install-claude-code, since Claude's license forbids baking it in), and a
-# CLI already on PATH is never replaced. --keep-trying: routers often start
-# containers before the uplink is up, so these runs retry for about a day
-# (`t3app tools install` and `t3app providers install` retry now).
+# CLI already on PATH is never replaced. Skills (T3APP_SKILLS, #46) refresh:
+# missing ones install, floating ones move to their source's newest commit,
+# and a skill the user edited or did not get from us is left alone.
+# --keep-trying: routers often start containers before the uplink is up, so
+# these runs retry for about a day (`t3app tools install`, `t3app providers
+# install` and `t3app skills install` retry now).
 if [ -x /usr/local/bin/t3app ]; then
 	timeout 40 /usr/local/bin/t3app init || echo "t3app: init failed; continuing" >&2
 	background tool-groups /usr/local/bin/t3app tools install --keep-trying
 	background providers /usr/local/bin/t3app providers install --keep-trying
+	background skills /usr/local/bin/t3app skills update --keep-trying
 fi
 
 # Pairing hint for the container log (#18). T3 prints its own startup
