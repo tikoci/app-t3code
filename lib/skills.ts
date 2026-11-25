@@ -135,6 +135,11 @@ export function sourceKey(source: string): string {
 	return hash < 0 ? source.toLowerCase() : `${source.slice(0, hash).toLowerCase()}${source.slice(hash)}`;
 }
 
+/** A selection's tokens in order, for telling two selections apart (unset and the default are the same). */
+export function selectionKey(selection: SkillSelection): string {
+	return selection.tokens.map((t) => t.token).join(" ");
+}
+
 /** Tokens that share a source, in first-seen order. */
 export function groupTokens(tokens: readonly SkillToken[]): { source: string; tokens: SkillToken[] }[] {
 	const groups = new Map<string, { source: string; tokens: SkillToken[] }>();
@@ -191,12 +196,13 @@ export function folderHash(dir: string): string {
 
 /**
  * What is on disk for one skill name. `shared`: a real directory, nothing, or
- * something else (a file, a link). `claude`: our link (pointing at the shared
- * copy), nothing, or something else.
+ * something else (a file, a link). `claude`: ours (the link to the shared
+ * copy, or the library's fallback copy with the same content), nothing, or
+ * something else.
  */
 export interface DiskState {
 	shared: "dir" | "absent" | "other";
-	claude: "link" | "absent" | "other";
+	claude: "ours" | "absent" | "other";
 	hash: string | null;
 }
 
@@ -218,7 +224,7 @@ export function diskState(name: string, dirs: SkillDirs): DiskState {
 		claudeState = "other";
 		if (claude.isSymbolicLink()) {
 			try {
-				if (resolve(dirname(claudePath), readlinkSync(claudePath)) === resolve(sharedPath)) claudeState = "link";
+				if (resolve(dirname(claudePath), readlinkSync(claudePath)) === resolve(sharedPath)) claudeState = "ours";
 			} catch {
 				// Unreadable: not ours.
 			}
@@ -231,6 +237,14 @@ export function diskState(name: string, dirs: SkillDirs): DiskState {
 			hash = folderHash(sharedPath);
 		} catch {
 			hash = null;
+		}
+	}
+	// The library falls back to a copy when it cannot link: the same content is ours too.
+	if (claudeState === "other" && claude?.isDirectory() && hash !== null) {
+		try {
+			if (folderHash(claudePath) === hash) claudeState = "ours";
+		} catch {
+			// Unreadable: not ours.
 		}
 	}
 	return { shared: shared ? (isDir ? "dir" : "other") : "absent", claude: claudeState, hash };
@@ -247,6 +261,8 @@ export interface OwnedSkill {
 	hash: string;
 	installedAt: string;
 	updatedAt: string;
+	/** An install that failed partway: what it wrote is ours, and the next run installs it again. */
+	incomplete?: boolean;
 }
 
 export type SkillResultState = "installed" | "skipped" | "modified" | "failed";
@@ -274,6 +290,8 @@ export interface TokenResult {
 }
 
 export interface SkillsRun {
+	/** Unique per pass, so a waiting run can tell whether another pass ran since its own. */
+	id: string;
 	at: string;
 	mode: "install" | "update";
 	selection: string | null;
@@ -395,6 +413,7 @@ export function planSkills(
 		else if (on.claude === "other") plan.skills.push(entry("modified", "Claude's entry is no longer the link to the shared copy"));
 		else if (on.shared === "dir" && on.hash !== record.hash) plan.skills.push(entry("modified", "edited since it was installed"));
 		else if (on.shared === "absent" || on.claude === "absent") plan.skills.push(entry("install", "missing"));
+		else if (record.incomplete) plan.skills.push(entry("install", "the last install failed partway"));
 		else if (sourceKey(record.source) !== sourceKey(token.source)) plan.skills.push(entry("install", `source changed from ${record.source}`));
 		else if (mode === "update" && commit && record.commit !== commit) plan.skills.push(entry("install", `moved from ${record.commit?.slice(0, 7) ?? "unknown"}`));
 		else plan.skills.push(entry("keep"));
@@ -512,7 +531,7 @@ function describeFailure(error: unknown): { error: string; code?: string } {
  * the run; the caller holds the lock and writes the state.
  */
 export async function syncOnce(selection: SkillSelection, mode: "install" | "update", state: SkillsState, env: SyncEnv): Promise<SkillsRun> {
-	const run: SkillsRun = { at: new Date().toISOString(), mode, selection: selection.raw, tokens: {}, results: {}, clashes: [] };
+	const run: SkillsRun = { id: crypto.randomUUID(), at: new Date().toISOString(), mode, selection: selection.raw, tokens: {}, results: {}, clashes: [] };
 	if (selection.tokens.length === 0) return run;
 	const groups = groupTokens(selection.tokens);
 	const handles = new Map<string, ResolvedSource>();
@@ -575,6 +594,15 @@ export async function syncOnce(selection: SkillSelection, mode: "install" | "upd
 				const failed = outcome.failed.find((f) => f.skill === p.name);
 				if (failed || !outcome.installed.includes(p.name)) {
 					record(p, "failed", { detail: failed?.message ?? "not installed", code: failed?.code ?? "NOT_INSTALLED" });
+					// Whatever the library wrote before failing is ours: own it as
+					// incomplete so the next run installs it again, rather than
+					// finding a folder without a record (not ours) or one whose hash
+					// moved (modified) and leaving it as it is.
+					const on = diskState(p.name, env.dirs);
+					if (on.shared === "dir" && on.hash) {
+						const now = new Date().toISOString();
+						state.owned[p.name] = { token: p.token.token, source: p.token.source, commit: p.commit, hash: on.hash, installedAt: state.owned[p.name]?.installedAt ?? now, updatedAt: now, incomplete: true };
+					}
 					continue;
 				}
 				let hash: string;
@@ -622,16 +650,21 @@ const NO_SUCH_SKILL = "SKILLS_NO_MATCHING_SKILLS";
  * Sync the selection in rounds: one pass per round, then the back-off while
  * something failed (offline, rate-limited). The lock is held only during a
  * pass, so `t3app skills install` can run while the background run waits.
- * Returns 0 when the last pass had no failure, 1 otherwise or when another
- * run holds the lock (interactive only).
+ * A waiting run whose selection is no longer the latest (another run with a
+ * different selection finished meanwhile, say from a terminal with its own
+ * T3APP_SKILLS) stops instead of applying its older one. Returns 0 when the
+ * last pass had no failure or the run was superseded, 1 otherwise or when
+ * another run holds the lock (interactive only).
  */
 export async function syncSkills(selection: SkillSelection, mode: "install" | "update", env: SyncEnv): Promise<number> {
 	const keepTrying = env.backoffMs.length > INTERACTIVE_BACKOFF_MS.length;
 	const me: InstallerRecord = { pid: process.pid, startTicks: processStartTicks(process.pid), startedAt: new Date().toISOString() };
+	let mine: string | null = null;
 	for (let round = 0; ; round++) {
 		const fd = tryLock(env.dir);
 		let failed = true;
 		let retry = true;
+		let superseded: SkillsRun | null = null;
 		if (fd === null) {
 			if (!keepTrying) {
 				env.log("another skills run is in progress; try again when it finishes (t3app skills status)");
@@ -641,19 +674,33 @@ export async function syncSkills(selection: SkillSelection, mode: "install" | "u
 		} else {
 			try {
 				const state = readSkillsState(env.dir);
-				state.installer = { ...me };
-				writeSkillsState(env.dir, state);
-				const run = await syncOnce(selection, mode, state, env);
-				state.last = run;
-				failed = runFailed(run);
-				retry = runRetryable(run);
-				const wait = env.backoffMs[round];
-				if (retry && wait !== undefined) state.installer = { ...me, waitingUntil: new Date(Date.now() + wait).toISOString() };
-				else delete state.installer;
-				writeSkillsState(env.dir, state);
+				const other = state.last;
+				if (round > 0 && other && other.id !== mine && selectionKey(parseSkills(other.selection)) !== selectionKey(selection)) {
+					superseded = other;
+					if (state.installer?.pid === me.pid && state.installer.startTicks === me.startTicks) {
+						delete state.installer;
+						writeSkillsState(env.dir, state);
+					}
+				} else {
+					state.installer = { ...me };
+					writeSkillsState(env.dir, state);
+					const run = await syncOnce(selection, mode, state, env);
+					state.last = run;
+					mine = run.id;
+					failed = runFailed(run);
+					retry = runRetryable(run);
+					const wait = env.backoffMs[round];
+					if (retry && wait !== undefined) state.installer = { ...me, waitingUntil: new Date(Date.now() + wait).toISOString() };
+					else delete state.installer;
+					writeSkillsState(env.dir, state);
+				}
 			} finally {
 				closeSync(fd);
 			}
+		}
+		if (superseded) {
+			env.log(`stopping: a run at ${superseded.at} applied another selection (${JSON.stringify(superseded.selection)}); it stands`);
+			return 0;
 		}
 		if (!retry) return failed ? 1 : 0;
 		const wait = env.backoffMs[round];
@@ -702,8 +749,7 @@ export function buildSkillsStatus(raw: string | undefined | null, dir = stateDir
 	const state = readSkillsState(dir);
 	const installer = state.installer && isSameProcess(state.installer) ? state.installer : null;
 	const last = state.last ?? null;
-	const tokenList = (s: SkillSelection) => s.tokens.map((t) => t.token).join(" ");
-	const current = last !== null && tokenList(parseSkills(last.selection)) === tokenList(selection);
+	const current = last !== null && selectionKey(parseSkills(last.selection)) === selectionKey(selection);
 	const tokens: TokenStatus[] = selection.tokens.map((t) => {
 		const result = current ? last.tokens[t.token] : undefined;
 		if (!result) return { token: t.token, source: t.source, state: "pending", commit: null, skills: 0 };
@@ -737,6 +783,7 @@ export function buildSkillsStatus(raw: string | undefined | null, dir = stateDir
 			if (on.shared === "absent") entry = { ...entry, state: "missing", detail: "files gone; the next run installs it again while selected" };
 			else if (on.shared === "other" || on.claude === "other" || on.hash !== owned.hash) entry = { ...entry, state: "modified", detail: entry.detail ?? "edited since it was installed; left alone" };
 			else if (entry.state === "modified") entry = { name, state: "installed", token: owned.token, source: owned.source, commit: owned.commit };
+			else if (owned.incomplete && entry.state !== "failed") entry = { ...entry, state: "failed", detail: "the last install failed partway; the next run installs it again" };
 		}
 		skills.push(entry);
 	}

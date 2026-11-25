@@ -138,6 +138,10 @@ interface FakeSource {
 class FakeLibrary {
 	sources = new Map<string, FakeSource>();
 	offline = false;
+	/** Names whose Claude link the next installs fail to write (the shared copy is written first, as the library does). */
+	failClaude = new Set<string>();
+	/** Names Claude gets a copy of instead of a link (the library's fallback when linking fails). */
+	copyClaude = new Set<string>();
 	resolved: string[] = [];
 	installs: string[][] = [];
 	constructor(private dirs: SkillDirs) {}
@@ -154,17 +158,25 @@ class FakeLibrary {
 				skills: Object.keys(snapshot.skills),
 				install: async (names) => {
 					this.installs.push([...names]);
+					const failed: { skill: string; code: string; message: string }[] = [];
 					for (const name of names) {
 						const shared = join(this.dirs.shared, name);
 						rmSync(shared, { recursive: true, force: true });
 						mkdirSync(shared, { recursive: true });
 						writeFileSync(join(shared, "SKILL.md"), snapshot.skills[name] as string);
 						const link = join(this.dirs.claude, name);
+						if (this.failClaude.has(name)) {
+							failed.push({ skill: name, code: "SKILLS_INSTALL_FAILED", message: "EACCES: permission denied" });
+							continue;
+						}
 						rmSync(link, { recursive: true, force: true });
 						mkdirSync(dirname(link), { recursive: true });
-						symlinkSync(relative(dirname(link), shared), link);
+						if (this.copyClaude.has(name)) {
+							mkdirSync(link);
+							writeFileSync(join(link, "SKILL.md"), snapshot.skills[name] as string);
+						} else symlinkSync(relative(dirname(link), shared), link);
 					}
-					return { installed: [...names], failed: [] };
+					return { installed: names.filter((n) => !failed.some((f) => f.skill === n)), failed };
 				},
 				dispose: async () => {},
 			};
@@ -348,6 +360,76 @@ describe("sync", () => {
 		await sync("o/r");
 		expect(lib.installs).toEqual([["good"]]);
 		expect(skillState("o/r")).toEqual({ "Bad Name": "skipped", good: "installed" });
+	});
+
+	test("a waiting --keep-trying run stops when a run with another selection finished meanwhile", async () => {
+		lib.offline = true;
+		const e = { ...env, sleep: async (ms: number) => {
+			slept.push(ms);
+			// Meanwhile, from a terminal with its own T3APP_SKILLS, online.
+			lib.offline = false;
+			expect(await sync("wiresage/routeros-skills@routeros-bgp", "install")).toBe(0);
+		} };
+		expect(await sync("tikoci/routeros-skills", "update", e)).toBe(0);
+		expect(slept).toEqual([15_000]);
+		// The older selection was never applied, and the newer run's record stands.
+		expect(lib.installs).toEqual([["routeros-bgp"]]);
+		expect(existsSync(join(dirs.shared, "routeros-mndp"))).toBe(false);
+		const state = readSkillsState(env.dir);
+		expect(state.last?.selection).toBe("wiresage/routeros-skills@routeros-bgp");
+		expect(state.installer).toBeUndefined();
+		expect(logs.at(-1)).toContain("stopping: a run at");
+	});
+
+	test("a waiting run keeps retrying when the run meanwhile had the same selection", async () => {
+		lib.offline = true;
+		let calls = 0;
+		const e = { ...env, sleep: async (ms: number) => {
+			slept.push(ms);
+			// Same selection from a terminal, still offline: the background run must not give up because of it.
+			if (++calls === 1) expect(await sync("tikoci/routeros-skills", "install", { ...env, backoffMs: [] })).toBe(1);
+			else lib.offline = false;
+		} };
+		expect(await sync("tikoci/routeros-skills", "update", e)).toBe(0);
+		expect(slept).toEqual([15_000, 60_000]);
+		expect(content("routeros-mndp")).toBe("tikoci mndp v1");
+	});
+
+	test("an install that fails partway is ours and is installed again next time, not orphaned", async () => {
+		lib.failClaude.add("routeros-mndp");
+		expect(await sync("tikoci/routeros-skills", "install", { ...env, backoffMs: [] })).toBe(1);
+		expect(readSkillsState(env.dir).owned["routeros-mndp"]).toMatchObject({ incomplete: true });
+		expect(status("tikoci/routeros-skills").skills.find((k) => k.name === "routeros-mndp")).toMatchObject({ state: "failed", code: "SKILLS_INSTALL_FAILED" });
+		lib.failClaude.clear();
+		lib.installs = [];
+		expect(await sync("tikoci/routeros-skills", "install")).toBe(0);
+		expect(lib.installs).toEqual([["routeros-mndp"]]);
+		expect(content("routeros-mndp")).toBe("tikoci mndp v1");
+		expect(readSkillsState(env.dir).owned["routeros-mndp"]?.incomplete).toBeUndefined();
+		expect(skillState("tikoci/routeros-skills")["routeros-mndp"]).toBe("installed");
+	});
+
+	test("an update that fails after rewriting the folder is not mistaken for a user edit", async () => {
+		await sync("tikoci/routeros-skills");
+		lib.sources.set("tikoci/routeros-skills", { commit: "c".repeat(40), skills: { "routeros-firewall": "tikoci fw v2", "routeros-mndp": "tikoci mndp v2" } });
+		rmSync(join(dirs.claude, "routeros-mndp"));
+		lib.failClaude.add("routeros-mndp");
+		await sync("tikoci/routeros-skills", "update", { ...env, backoffMs: [] });
+		expect(skillState("tikoci/routeros-skills")["routeros-mndp"]).not.toBe("modified");
+		lib.failClaude.clear();
+		await sync("tikoci/routeros-skills");
+		expect(content("routeros-mndp")).toBe("tikoci mndp v2");
+		expect(skillState("tikoci/routeros-skills")["routeros-mndp"]).toBe("installed");
+	});
+
+	test("Claude's fallback copy (when the library cannot link) counts as ours", async () => {
+		lib.copyClaude.add("routeros-mndp");
+		await sync("tikoci/routeros-skills");
+		expect(lstatSync(join(dirs.claude, "routeros-mndp")).isDirectory()).toBe(true);
+		expect(skillState("tikoci/routeros-skills")["routeros-mndp"]).toBe("installed");
+		lib.installs = [];
+		await sync("tikoci/routeros-skills");
+		expect(lib.installs).toEqual([]);
 	});
 
 	test("another run holding the lock: an interactive run says so and exits 1", async () => {
