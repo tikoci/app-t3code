@@ -73,9 +73,12 @@ From the container, the router answered on the gateway and on `[routerIP]`:
 TCP 22, 80, 8728 and 8729 open, 443 closed (no certificate), and REST as
 `admin` with an empty password returned `{"name":"CHR"}`. So on a default
 quickchr CHR the host is reachable at `[networkRouterIP]` with `admin` and no
-password, with no router setup. centrs still needs that address as its
-`<target>` (positional or `--host`; `CENTRS_HOST` alone doesn't select one,
-see "Inside the image"), or a CDB record for it. A real router has a password,
+password, with no router setup. centrs still has to be told the target:
+a positional `<target>` (the address, or a name a CDB record resolves) is
+the single-target form, and a matching record supplies its credentials.
+`--host` alone stands in for the target but skips the CDB lookup, and a
+selector such as `--group host` works but turns the call into a fan-out.
+`CENTRS_HOST` alone selects nothing (see "Inside the image"). A real router has a password,
 and its `/ip/service` `address=` lists and firewall may not allow the app
 network, which defaults to 172.18.0.0/24 here.
 
@@ -134,8 +137,8 @@ and API or web access can read it.
   provider). **Accepted as is** (owner): like RouterOS's policy model, it's a
   security choice made upstream. Router passwords don't belong there for
   good. Importing a secret card's file into the CDB (centrs#672 item 3)
-  shortens their stay but doesn't avoid it; see "Secret request cards"
-  below.
+  shortens their stay; the brief plaintext before the import is accepted
+  (see "Secret request cards" below).
 - **Provider environment variables** (Settings → Providers, per provider
   instance) take a plain value, a value marked sensitive (kept in the secret
   store) or a secret-provider reference (`op://vault/item/field` with
@@ -169,8 +172,11 @@ and API or web access can read it.
   then hourly (lines 422–444), so a file can outlive 24 h by up to an hour,
   or longer if T3 isn't running. This is the "temporary secret delivery"
   recipe of #47, and it means a typed password sits in plain text on `/data`
-  until it's imported and the file removed: an exception to the "no plain
-  password on `/data`" direction, not yet decided. The 2026-11-24 CHR run found the
+  until it's imported and the file removed. **Accepted (owner,
+  2026-11-25):** that is how T3 works, and the same is true for anything
+  else T3 and an agent do with a secret, on RouterOS or not. On RouterOS,
+  an admin who can read `/file` can read the volume's files anyway, so who
+  holds RouterOS admin is the boundary that matters. The 2026-11-24 CHR run found the
   card refuses an empty value (#29), which matters for `admin` with no password.
 
 ## centrs side (0.2.0-next)
@@ -304,13 +310,15 @@ From the discussion on #47 and in the session that ran this research:
   asks for `CENTRS_CDB_PASSWORD_FILE` / `--cdb-password-file`,
   `CENTRS_PASSWORD_FILE` / `--password-file` for parity, and
   `devices add|set --password-file` that can remove the file after import
-  (for T3's secret-card files; that route still leaves the typed password
-  in plain text on `/data` until the import, an exception still to be
-  decided). Option 2 above. With it,
+  (for T3's secret-card files; the typed password sits in plain text on
+  `/data` until the import, which is accepted as how T3 works). Option 2
+  above. With it,
   `CENTRS_CDB_PASSWORD_FILE=/run/secrets/<name>` is an ordinary, non-secret
   setting for the YAML and the image `ENV`.
 - **The host goes in the CDB,** seeded by startup from `[networkRouterIP]`
-  or the gateway, not in env.
+  or the gateway, not in env. Agents still name it as a positional target
+  (the address, or an identity once the record carries one); the record
+  supplies the credentials.
 - **No `op` shim; T3's secret store stays as T3 made it.**
 - **quickchr inside the container:** pass `MIKROTIK_WEB_ACCOUNT` /
   `MIKROTIK_WEB_PASSWORD` through (as secrets, by the same file route:
@@ -336,8 +344,8 @@ From the discussion on #47 and in the session that ran this research:
    [`probe/agent-shell-env.sh`](probe/agent-shell-env.sh) from its own
    shell: it prints its PID and parent chain and both markers' presence,
    zeros included.
-2. A secret request card's file across a T3 restart, and the owner's call on
-   its temporary plaintext on `/data` (see "Secret request cards").
+2. A secret request card's file across a T3 restart (its temporary
+   plaintext on `/data` is accepted; see "Secret request cards").
 3. The `/container` env leak on a 7.26 beta; then report it to MikroTik.
 4. Seeding the CDB at first start: once, then left alone (like skills), or
    reconciled each start; what happens when the operator changes the secret
@@ -348,7 +356,10 @@ From the discussion on #47 and in the session that ran this research:
 
 ## Reproduce
 
+From the repository root:
+
 ```sh
+cd docs/research/2026-11-centrs-credentials
 quickchr add --name credprobe --arch x86 --version 7.25.2 --cpu 2 --mem 1024 \
   --add-disk 2G --device-mode-enable container --add-package container
 quickchr start credprobe
@@ -369,6 +380,10 @@ The image steps use a CHR with `--boot-size 8G --add-disk 10G --mem 2048`,
 the same disk and `/app/settings` setup, `probe/t3code-lab.tikapp.yaml`
 instead of the probe YAML, and the `probe/*.sh` scripts uploaded to
 `pcie1/apps/t3code/t3code_root/tmp/<new-name>` and run with
-`/container/shell app-t3code cmd="bash /tmp/<new-name>"`.
-`host-account.sh` expects the router-side `/user/group/add` and `/user/add`
-above to have run.
+`/container/shell app-t3code cmd="bash /tmp/<new-name>"`. Order:
+`in-container.sh` first (it creates the encrypted CDB, `__default__` and the
+host record), then the router-side `/user/group/add` and `/user/add` above,
+then `host-account.sh`, which switches that existing record to `t3code`
+(it doesn't create one). `set-provider-env.sh`, `provider-env.sh` and
+`env-sampler.sh` are independent of those; `agent-shell-env.sh` is run by
+an agent from its own shell in a T3 session, not through `/container/shell`.
