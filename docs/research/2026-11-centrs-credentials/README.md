@@ -136,9 +136,11 @@ and API or web access can read it.
   would need T3 itself to support it (an at-rest key, or a pluggable secret
   provider). **Accepted as is** (owner): like RouterOS's policy model, it's a
   security choice made upstream. Router passwords don't belong there for
-  good. Importing a secret card's file into the CDB (centrs#672 item 3)
-  shortens their stay; the brief plaintext before the import is accepted
-  (see "Secret request cards" below).
+  good. Importing a secret card's file into the CDB with the existing
+  `devices add|set --password-stdin < <file>` shortens their stay; deleting
+  the file afterwards is the agent's step (or T3's sweep), not centrs's. The
+  brief plaintext before the import is accepted (see "Secret request cards"
+  below).
 - **Provider environment variables** (Settings → Providers, per provider
   instance) take a plain value, a value marked sensitive (kept in the secret
   store) or a secret-provider reference (`op://vault/item/field` with
@@ -231,7 +233,10 @@ as `t3code` (sources `cdb`), and `/system/identity/set` was refused by
 RouterOS (`routeros/permission-denied`, `not enough permissions (9)`); the
 identity was unchanged. So the one generated value served as the CDB key
 and as the account password, and the agent's limits were the RouterOS
-group's.
+group's. That was a lab shortcut. centrs's triage of #672 says its docs won't
+present one value for both as the recommended pattern; app-t3code can declare
+two app secrets (the CDB key and the account password) at the cost of one more
+`/user/add` value to wire. Which one app-t3code uses is still open.
 
 **Free license, measured on the side:** RouterOS pulled the image (about
 1 GB) and started the container in 73 s, but traffic *into* the container
@@ -306,15 +311,28 @@ From the discussion on #47 and in the session that ran this research:
 
 ### Decided (owner, 2026-11-25)
 
-- **The key reaches centrs through a file:** [centrs#672](https://github.com/tikoci/centrs/issues/672)
-  asks for `CENTRS_CDB_PASSWORD_FILE` / `--cdb-password-file`,
-  `CENTRS_PASSWORD_FILE` / `--password-file` for parity, and
-  `devices add|set --password-file` that can remove the file after import
-  (for T3's secret-card files; the typed password sits in plain text on
-  `/data` until the import, which is accepted as how T3 works). Option 2
-  above. With it,
+- **The key reaches centrs through a file:** [centrs#672](https://github.com/tikoci/centrs/issues/672),
+  as triaged in centrs on 2026-11-25 (option 2 above):
+  `CENTRS_CDB_PASSWORD_FILE` / `--cdb-password-file` (also for
+  `centrs mcp`) and `CENTRS_PASSWORD_FILE` / `--password-file`, re-read on
+  each CDB load; a missing, unreadable or empty file is
+  `cdb/password-unavailable`. The original item 3 (`devices add|set
+  --password-file` with delete-after) was dropped: `--password-stdin <
+  <file>` already imports a secret-card file, and deleting it afterwards is
+  the host's job (here, the agent's recipe or T3's sweep), never centrs's.
+  Only a flag or the process environment may name a `*_FILE` path, never
+  `centrs.env` or a workspace file. The `/app` YAML `environment:` and the
+  image `ENV` are process environment, so
   `CENTRS_CDB_PASSWORD_FILE=/run/secrets/<name>` is an ordinary, non-secret
-  setting for the YAML and the image `ENV`.
+  setting there.
+  - **Don't set `CENTRS_PASSWORD_FILE` in the container env.** The env tier
+    outranks CDB records (args → env → record → `__default__`), so it would
+    replace every router's password, not only the host's. Router passwords
+    live in CDB records.
+  - **centrs#666 matters here too.** Until Bun's `.env` auto-load is off for
+    the installed `centrs`, a project's `.env` lands in the process
+    environment, so it could name a `*_FILE` path the "process environment
+    only" rule is meant to keep out. Raised on centrs#672.
 - **The host goes in the CDB,** seeded by startup from `[networkRouterIP]`
   or the gateway, not in env. Agents still name it as a positional target
   (the address, or an identity once the record carries one); the record
@@ -351,7 +369,13 @@ From the discussion on #47 and in the session that ran this research:
    reconciled each start; what happens when the operator changes the secret
    (`/app/set secrets=`) after the CDB was keyed with the old one.
 5. centrs's MCP server on the same encrypted CDB.
-6. Docker/Podman equivalents (#72): `/run/secrets` from compose secrets, the
+6. One app secret or two (CDB key and account password), see "Inside the image".
+7. What centrs does when `CENTRS_CDB_PASSWORD_FILE` names a missing file
+   but no key is needed (an open CDB, no CDB yet, or Docker without the
+   secret). The image `ENV` default would set it everywhere, so a hard
+   `cdb/password-unavailable` there would break plain use. Raised on
+   centrs#672.
+8. Docker/Podman equivalents (#72): `/run/secrets` from compose secrets, the
    bridge gateway, no router there.
 
 ## Reproduce
