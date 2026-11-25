@@ -14,6 +14,14 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+- Tool groups: a group whose wanted payload is already active and linked
+  no longer keeps an old `failed` or `installing` record in its saved state
+  (#64). `t3app status --json` could show `last: failed, permanent: true`
+  from before #54 for a group that was `ready`; the record now settles to
+  `ready` at the next start, offline and without reinstalling. A refresh
+  that really failed, while the older payload keeps serving, keeps its
+  `failed` record.
+
 - Agent skills at runtime (#46). New `T3APP_SKILLS` (image default and
   YAML: `tikoci/routeros-skills`) imports agent skills from GitHub into the
   home at each start, in the background, with the

@@ -632,6 +632,31 @@ function linkShims(env: PayloadEnv, group: GroupDef, bins: readonly string[]) {
 	}
 }
 
+function shimLinked(env: PayloadEnv, group: GroupDef, bin: string): boolean {
+	return readLink(join(binDir(env), bin)) === shimTarget(group, bin) && existsSync(join(binDir(env), bin));
+}
+
+/** Every command of the payload answers on PATH: its shim, or (deb) the image's own command. */
+function commandsLinked(env: PayloadEnv, group: GroupDef, manifest: Manifest | null): boolean {
+	return payloadBins(group, manifest).every((bin) => (group.delivery === "deb" && imageCommand(env.imageRoot, bin) !== null) || shimLinked(env, group, bin));
+}
+
+/**
+ * The desired payload is active and linked, so whatever the saved record
+ * says about this group is history (#64): a failure from before the payload
+ * was in place (an old image, a pre-#54 probe error), or an `installing`
+ * left by a run that never got to write its result. Callers hold the
+ * lock, so no installer is mid-way through this group. A failed refresh
+ * never reaches here: its desired payload is not on disk.
+ */
+function settleRecord(env: PayloadEnv, group: string, payloadId: string) {
+	const rec = readState(env)[group];
+	if (!rec) return;
+	const settled = rec.state === "ready" && rec.payloadId === payloadId && rec.error === undefined && rec.permanent === undefined && rec.nextAttemptAt === undefined;
+	if (settled) return;
+	writeState(env, group, { state: "ready", payloadId, attempt: rec.attempt, updatedAt: new Date().toISOString() });
+}
+
 /** Remove every shim that points into this group's directory. */
 function unlinkShims(env: PayloadEnv, group: GroupDef) {
 	const dir = binDir(env);
@@ -647,8 +672,8 @@ export function payloadInfo(group: GroupDef, env: PayloadEnv): PayloadInfo {
 	const activeCheck = current ? verifyPayload(join(groupDir(env, group.name), current), group, current, runtimeOf(group, env), env.imageRoot, current === wanted ? "current" : "recorded") : null;
 	const active = activeCheck?.ok ? current : null;
 	const owned = (bin: string) => (group.delivery === "deb" ? imageCommand(env.imageRoot, bin) : null);
-	const shimOk = (bin: string) => readLink(join(binDir(env), bin)) === shimTarget(group, bin) && existsSync(join(binDir(env), bin));
-	const linked = active !== null && payloadBins(group, activeCheck?.manifest ?? null).every((bin) => owned(bin) !== null || shimOk(bin));
+	const shimOk = (bin: string) => shimLinked(env, group, bin);
+	const linked = active !== null && commandsLinked(env, group, activeCheck?.manifest ?? null);
 	const commandPaths = Object.fromEntries(groupBins(group).map((bin) => [bin, owned(bin) ?? (shimOk(bin) ? join(binDir(env), bin) : null)]));
 	const filePaths = Object.fromEntries(
 		groupFiles(group).map((file) => {
@@ -691,8 +716,10 @@ export async function activateIfIdle(groups: readonly GroupDef[], selected: read
 /**
  * Fast, offline, idempotent: point selected groups at their best verified
  * payload (the desired one if present, else keep the current one) and link
- * their shims; unlink shims of deselected groups. Returns the selected groups
- * that still need the installer. Mutates links: callers hold the install lock
+ * their shims; unlink shims of deselected groups. A group whose desired
+ * payload is active and linked gets a `ready` record if its saved one says
+ * otherwise (#64). Returns the selected groups that still need the
+ * installer. Mutates links and state.json: callers hold the install lock
  * (installGroups, prunePayloads, activateIfIdle).
  */
 export function activate(groups: readonly GroupDef[], selected: readonly string[], env: PayloadEnv): string[] {
@@ -714,7 +741,8 @@ export function activate(groups: readonly GroupDef[], selected: readonly string[
 		const desired = desiredPayload(group, env);
 		const dir = groupDir(env, group.name);
 		const wanted = "id" in desired ? desired.id : null;
-		if ("id" in desired && verifyPayload(join(dir, desired.id), group, desired.id, desired.compat, env.imageRoot).ok) {
+		const inPlace = "id" in desired && verifyPayload(join(dir, desired.id), group, desired.id, desired.compat, env.imageRoot).ok;
+		if (inPlace) {
 			swapLink(currentLink(env, group.name), desired.id);
 		} else {
 			needInstall.push(group.name);
@@ -723,6 +751,7 @@ export function activate(groups: readonly GroupDef[], selected: readonly string[
 		const check = current ? verifyPayload(join(dir, current), group, current, runtime, env.imageRoot, current === wanted ? "current" : "recorded") : null;
 		if (current && check?.ok && check.manifest && (current === wanted || stillRuns(join(dir, current), group, env.imageRoot, check.manifest))) {
 			linkShims(env, group, payloadBins(group, check.manifest));
+			if (inPlace && current === wanted && commandsLinked(env, group, check.manifest)) settleRecord(env, group.name, current);
 		} else {
 			// Nothing usable here (built for another CPU or release, or a stale
 			// native payload that no longer loads): no shims to it.

@@ -613,6 +613,67 @@ await installGroups(GROUPS.filter((g) => g.delivery === "npm"), ["dev"], {
 		expect(npmCalls()).toBe(1);
 	});
 
+	test("an obsolete failed record for an active payload settles to ready offline (#64)", async () => {
+		await installGroups(npmGroups, ["dev"], env);
+		const active = readlinkSync(join(env.root, "groups", "dev", "current"));
+		// The arm64 CHR after 0.1.8: a pre-#54 probe failure, saved as permanent,
+		// that no later run rewrote because the payload was already in place.
+		const statePath = join(env.root, "state.json");
+		const saved = JSON.parse(readFileSync(statePath, "utf8"));
+		saved.groups.dev = {
+			state: "failed",
+			payloadId: "",
+			attempt: 1,
+			updatedAt: "2026-11-10T22:26:00.000Z",
+			error: "node is not usable: probe timed out",
+			permanent: true,
+		};
+		writeFileSync(statePath, JSON.stringify(saved));
+		expect(devState()?.payload?.last).toMatchObject({ state: "failed", permanent: true });
+
+		// Startup activation alone settles it, without the installer.
+		expect(await activateIfIdle(npmGroups, ["dev"], env)).toEqual([]);
+		const settled = readState(env)["dev"];
+		expect(settled).toMatchObject({ state: "ready", payloadId: active, attempt: 1 });
+		expect(settled?.error).toBeUndefined();
+		expect(settled?.permanent).toBeUndefined();
+		expect(settled?.nextAttemptAt).toBeUndefined();
+		const status = devState();
+		expect(status?.state).toBe("ready");
+		expect(status?.payload).toMatchObject({ active, stale: false, linked: true, last: { state: "ready", payloadId: active } });
+
+		// So does the background installer, which has nothing to install.
+		saved.groups.dev = { state: "installing", payloadId: active, attempt: 2, updatedAt: "2026-11-10T22:26:00.000Z", error: "x", nextAttemptAt: "2026-11-10T22:27:00.000Z" };
+		writeFileSync(statePath, JSON.stringify(saved));
+		const result = await installGroups(npmGroups, ["dev"], env);
+		expect(result.results).toEqual({});
+		expect(readState(env)["dev"]).toEqual({ state: "ready", payloadId: active, attempt: 2, updatedAt: expect.any(String) });
+		expect(npmCalls()).toBe(1);
+
+		// A record that is already right is left as it was.
+		const before = readFileSync(statePath, "utf8");
+		activate(npmGroups, ["dev"], env);
+		expect(readFileSync(statePath, "utf8")).toBe(before);
+	});
+
+	test("a failed refresh keeps its record while the older payload serves (#64)", async () => {
+		await installGroups(npmGroups, ["dev"], env);
+		const older = devState()?.payload?.active;
+		compat = { ...compat, nodeAbi: "141" };
+		writeFileSync(join(tmp, "fail"), "");
+		await installGroups(npmGroups, ["dev"], env);
+		const failed = readState(env)["dev"];
+		expect(failed).toMatchObject({ state: "failed", error: expect.stringContaining("registry unreachable") });
+
+		// Startup and later activations leave the real failure alone.
+		expect(await activateIfIdle(npmGroups, ["dev"], env)).toEqual(["dev"]);
+		activate(npmGroups, ["dev"], env);
+		expect(readState(env)["dev"]).toEqual(failed as NonNullable<typeof failed>);
+		const status = devState();
+		expect(status?.state).toBe("ready");
+		expect(status?.payload).toMatchObject({ active: older, stale: true, last: { state: "failed", payloadId: status?.payload?.desired } });
+	});
+
 	test("cachedProbe keeps an answer for good and a failure only briefly (#53)", () => {
 		let clock = 0;
 		let answer: string | null = null;
