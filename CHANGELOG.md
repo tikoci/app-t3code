@@ -14,6 +14,10 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+## 0.1.11-app.221 — 2026-11-25
+
+`sha-aa5a7a9`.
+
 - Tool groups: a group whose wanted payload is already active and linked
   no longer keeps an old `failed` or `installing` record in its saved state
   (#64). `t3app status --json` could show `last: failed, permanent: true`
@@ -21,6 +25,10 @@ gives them their `-app.<N>` heading.
   `ready` at the next start, offline and without reinstalling. A refresh
   that really failed, while the older payload keeps serving, keeps its
   `failed` record.
+
+## 0.1.11-app.218 — 2026-11-25
+
+`sha-5a05c2d`.
 
 - Agent skills at runtime (#46). New `T3APP_SKILLS` (image default and
   YAML: `tikoci/routeros-skills`) imports agent skills from GitHub into the
@@ -39,6 +47,11 @@ gives them their `-app.<N>` heading.
   `/data/.agents/skills` or `/data/.claude/skills` folders of the same name
   are kept and reported as `skipped (not ours)`. Use **Restart agent
   session** in T3 for a running agent to see new skills.
+
+## 0.1.11-app.206 — 2026-11-25
+
+`sha-8f32a45`.
+
 - T3 Code 0.1.11 (#60). The image now ships upstream
   [v0.1.11](https://github.com/pingdotgg/t3code/releases/tag/v0.1.11)
   (which includes 0.1.9 and 0.1.10); `:0.1`, `:0` and `:latest` move to
