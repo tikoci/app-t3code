@@ -223,6 +223,26 @@ describe("Bun pin", () => {
 	});
 });
 
+describe("dev tool pins", () => {
+	test("mise.toml pins the image's BUN_VER and ci.yml's linter versions", () => {
+		const root = join(import.meta.dir, "..");
+		const read = (path: string) => readFileSync(join(root, path), "utf8");
+		const one = (text: string, pattern: RegExp) => [...text.matchAll(pattern)].map((m) => m[1]);
+		const ci = read(".github/workflows/ci.yml");
+		const expected = {
+			bun: one(read("Dockerfile"), /^ARG BUN_VER=(\S+)$/gm),
+			hadolint: one(ci, /^ +HADOLINT_VER: "([^"]+)"$/gm),
+			shellcheck: one(ci, /^ +SHELLCHECK_VER: "([^"]+)"$/gm),
+			actionlint: one(ci, /^ +ACTIONLINT_VER: "([^"]+)"$/gm),
+		};
+		for (const versions of Object.values(expected)) expect(versions).toHaveLength(1);
+		// Parsed, not matched: a commented-out `[tools]` or pin must not count.
+		const { tools } = Bun.TOML.parse(read("mise.toml")) as { tools?: Record<string, unknown> };
+		const pinned = Object.fromEntries(Object.keys(expected).map((name) => [name, [tools?.[name]]]));
+		expect(pinned).toEqual(expected);
+	});
+});
+
 describe("runner pin", () => {
 	// `ubuntu-latest` moves on GitHub's schedule (24.04 -> 26.04 from 2026-10-19);
 	// a new Ubuntu here should be its own commit.

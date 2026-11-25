@@ -9,13 +9,13 @@
 #
 # Build:
 #   docker buildx build --platform linux/amd64,linux/arm64 \
-#     --build-arg T3CODE_VER=0.1.8 -t ghcr.io/tikoci/app-t3code:0.1 .
+#     --build-arg T3CODE_VER=0.1.11 -t ghcr.io/tikoci/app-t3code:0.1 .
 # Run (plain HTTP on 3773; terminate TLS in front for remote use):
 #   docker run -p 3773:3773 -v t3code:/data -e PUBLIC_URL=https://t3.example.com ghcr.io/tikoci/app-t3code:0.1
 
 ARG NODE_VER=24
-ARG BUN_VER=1.4.4
-ARG UV_VER=0.13.7
+ARG BUN_VER=1.4.5
+ARG UV_VER=0.13.10
 
 FROM oven/bun:${BUN_VER}-slim AS bun
 
@@ -25,10 +25,10 @@ FROM ghcr.io/astral-sh/uv:${UV_VER} AS uv
 FROM node:${NODE_VER}-trixie-slim AS runtime
 
 ARG TARGETARCH
-ARG T3CODE_VER=0.1.8
+ARG T3CODE_VER=0.1.11
 ARG QUICKCHR_VER=next
 ARG CENTRS_VER=next
-ARG GH_VER=2.103.3
+ARG GH_VER=2.105.0
 
 ENV T3CODE_VER="${T3CODE_VER}"
 ENV T3CODE_HOST=0.0.0.0
@@ -120,7 +120,7 @@ WORKDIR /tmp
 
 RUN set -eu; \
     if [ -z "${T3CODE_VER}" ]; then \
-      echo "T3CODE_VER is required (example: 0.1.8)"; \
+      echo "T3CODE_VER is required (example: 0.1.11)"; \
       exit 1; \
     fi; \
     case "${TARGETARCH}" in \

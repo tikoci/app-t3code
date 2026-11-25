@@ -36,7 +36,8 @@ it doesn't exist yet.
 - `make lint-shell` — hadolint on the `Dockerfile` and ShellCheck on the
   shipped and test shell scripts (`.hadolint.yaml` lists the ignores and why).
   Needs `hadolint` and `shellcheck` on PATH; CI installs pinned,
-  checksum-verified copies.
+  checksum-verified copies. Locally, `mise install` gets the same versions
+  (and the image's Bun) from `mise.toml`; a test keeps them equal to CI's.
 - `make lint-actions` — actionlint on `.github/workflows/` (it also runs
   ShellCheck on every `run:` script). Pinned in CI the same way.
   `make lint` runs every lint gate CI runs.

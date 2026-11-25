@@ -1,0 +1,8 @@
+# Local dev tools, pinned to what CI runs: bun to the Dockerfile's BUN_VER,
+# the linters to ci.yml's HADOLINT_VER, SHELLCHECK_VER and ACTIONLINT_VER
+# (test/app-yaml.test.ts "dev tool pins" keeps them equal). `mise install`.
+[tools]
+bun = "1.4.5"
+hadolint = "2.15.1"
+shellcheck = "0.11.0"
+actionlint = "1.7.12"

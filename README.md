@@ -119,10 +119,10 @@ preserve project records while losing their worktrees or scratch files.
 Do not clear `.t3` during upgrades. Its `runtime`, `tools`, and `caches`
 directories contain downloadable runtimes and caches, but worktrees and
 userdata contain user work. Use T3's
-[storage cleanup settings](https://github.com/pingdotgg/t3code/blob/v0.1.8/docs/user/project-settings.md#storage-cleanup)
+[storage cleanup settings](https://github.com/pingdotgg/t3code/blob/v0.1.11/docs/user/project-settings.md#storage-cleanup)
 to manage disk use. The paths above are grounded in upstream's
-[server path definitions](https://github.com/pingdotgg/t3code/blob/v0.1.8/apps/server/src/config.ts)
-and [workspace folders](https://github.com/pingdotgg/t3code/blob/v0.1.8/docs/user/thread-sidebar.md).
+[server path definitions](https://github.com/pingdotgg/t3code/blob/v0.1.11/apps/server/src/config.ts)
+and [workspace folders](https://github.com/pingdotgg/t3code/blob/v0.1.11/docs/user/thread-sidebar.md).
 
 Back up the complete `/data` volume with the app stopped before upgrading
 (databases and their sidecars must be copied together). Keep external project
@@ -955,7 +955,7 @@ open work.
 
 ### Bun and RouterOS tools for agents
 
-The image includes [Bun 1.4.4](https://bun.sh/docs/installation), `bunx`, and
+The image includes [Bun 1.4.5](https://bun.sh/docs/installation), `bunx`, and
 global installations of:
 
 - [`@tikoci/quickchr@next` — README](https://github.com/tikoci/quickchr/blob/main/README.md): create disposable RouterOS CHR labs. QEMU for x86 and ARM64, `qemu-img`, and the firmware come with the `labs` group, not the image.
@@ -999,7 +999,7 @@ workload (agents + browser), not from a datasheet.
 Images track upstream **stable** T3 Code releases only — no nightlies
 (CI still accepts any `T3CODE_VER` input for one-off builds):
 
-- `ghcr.io/tikoci/app-t3code:0.1.8` — exact release
+- `ghcr.io/tikoci/app-t3code:0.1.11` — exact release
 - `ghcr.io/tikoci/app-t3code:0.1`, `:0`, `:latest` — stability aliases
 - `ghcr.io/tikoci/app-t3code:<version>-app.<N>` — one promoted build, never
   moved. `N` is the `ci` workflow's run number. PR and branch runs use
