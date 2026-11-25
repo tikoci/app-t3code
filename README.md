@@ -409,7 +409,9 @@ How the imports behave:
 
 - **Refreshed at start.** Each start fetches every selected repository
   once, installs what is missing, and moves skills from a token without
-  `#ref` to the repository's newest commit. Pin `#ref` for stability.
+  `#ref` to the repository's newest commit. A pinned `#ref` is never moved
+  (a branch or tag that moves upstream stays where it was installed until
+  the token changes), so pin `#ref` for stability.
   `t3app skills update` does the same now; `t3app skills install` only adds
   what is missing or whose token changed.
 - **The earlier token wins a clash.** Two repositories can share a skill
@@ -425,8 +427,10 @@ How the imports behave:
 - **Deselecting deletes nothing.** Removing a token stops future imports;
   the files stay (`kept`). `npx skills remove -g <name>` removes one.
 - **Offline is fine.** Installed skills live in `/data` and survive image
-  replacement. If GitHub can't be reached, nothing changes and the
-  background run retries for about a day, like the provider installs.
+  replacement. If any selected repository can't be fetched, that pass
+  installs and updates nothing (which token wins a name is known only when
+  every repository resolved), and the background run retries for about a
+  day, like the provider installs.
 - **Rate limits.** The library uses `GH_TOKEN` or `GITHUB_TOKEN` when set;
   otherwise GitHub allows 60 anonymous requests an hour per address, and a
   start makes one per repository. A rate-limit failure says so in

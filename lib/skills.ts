@@ -204,6 +204,8 @@ export interface DiskState {
 	shared: "dir" | "absent" | "other";
 	claude: "ours" | "absent" | "other";
 	hash: string | null;
+	/** Claude's entry when it is a real folder (the library's fallback copy): its folderHash. */
+	claudeHash: string | null;
 }
 
 function lstatOrNull(path: string) {
@@ -214,7 +216,8 @@ function lstatOrNull(path: string) {
 	}
 }
 
-export function diskState(name: string, dirs: SkillDirs): DiskState {
+/** `claudeHash`: the hash recorded for our own Claude copy (see OwnedSkill), also accepted as ours. */
+export function diskState(name: string, dirs: SkillDirs, claudeHash?: string | null): DiskState {
 	const sharedPath = join(dirs.shared, name);
 	const shared = lstatOrNull(sharedPath);
 	const claudePath = join(dirs.claude, name);
@@ -239,15 +242,18 @@ export function diskState(name: string, dirs: SkillDirs): DiskState {
 			hash = null;
 		}
 	}
-	// The library falls back to a copy when it cannot link: the same content is ours too.
-	if (claudeState === "other" && claude?.isDirectory() && hash !== null) {
+	// The library falls back to a copy when it cannot link: the shared copy's
+	// content, or what we recorded for that copy, is ours too.
+	let copyHash: string | null = null;
+	if (claudeState === "other" && claude?.isDirectory()) {
 		try {
-			if (folderHash(claudePath) === hash) claudeState = "ours";
+			copyHash = folderHash(claudePath);
 		} catch {
-			// Unreadable: not ours.
+			copyHash = null;
 		}
+		if (copyHash !== null && (copyHash === hash || (claudeHash && copyHash === claudeHash))) claudeState = "ours";
 	}
-	return { shared: shared ? (isDir ? "dir" : "other") : "absent", claude: claudeState, hash };
+	return { shared: shared ? (isDir ? "dir" : "other") : "absent", claude: claudeState, hash, claudeHash: copyHash };
 }
 
 // --- state ---------------------------------------------------------------------
@@ -263,6 +269,15 @@ export interface OwnedSkill {
 	updatedAt: string;
 	/** An install that failed partway: what it wrote is ours, and the next run installs it again. */
 	incomplete?: boolean;
+	/** When Claude's entry is a copy (not the link), its folderHash as we last saw it after our own write. */
+	claudeHash?: string;
+}
+
+/** Names an install call is about to write, persisted first, so a run killed mid-write can tell its own leftovers from a user's folder. */
+export interface PendingInstall {
+	runId: string;
+	at: string;
+	skills: Record<string, { token: string; source: string; commit: string | null }>;
 }
 
 export type SkillResultState = "installed" | "skipped" | "modified" | "failed";
@@ -299,6 +314,8 @@ export interface SkillsRun {
 	results: Record<string, SkillResult>;
 	/** Names a later token also had, from another source: not installed from it. */
 	clashes: { name: string; token: string; winner: string }[];
+	/** Set when nothing was written: a source failed to resolve, so which token wins each name is unknown. */
+	held?: string;
 }
 
 export interface InstallerRecord extends ProcessId {
@@ -309,6 +326,7 @@ export interface InstallerRecord extends ProcessId {
 export interface SkillsState {
 	installer?: InstallerRecord;
 	owned: Record<string, OwnedSkill>;
+	pending?: PendingInstall;
 	last?: SkillsRun;
 }
 
@@ -363,13 +381,15 @@ export interface Plan {
  * record whose folder or Claude entry exists is not ours (skip); an owned one
  * whose folder no longer hashes to its record, or whose Claude entry is no
  * longer our link, is user-modified (left alone); an owned one that is
- * missing, came from another source, or (on update) moved, is installed.
+ * missing, came from another source, or (on update, for a token without
+ * #ref) moved, is installed. A pinned ref is never moved: only a changed ref
+ * installs.
  */
 export function planSkills(
 	tokens: readonly SkillToken[],
 	resolved: ReadonlyMap<string, Resolved>,
 	owned: Readonly<Record<string, OwnedSkill>>,
-	disk: (name: string) => DiskState,
+	disk: (name: string, claudeHash?: string | null) => DiskState,
 	mode: "install" | "update",
 ): Plan {
 	const plan: Plan = { skills: [], clashes: [], missing: [] };
@@ -402,7 +422,7 @@ export function planSkills(
 			continue;
 		}
 		const record = owned[name];
-		const on = disk(name);
+		const on = disk(name, record?.claudeHash);
 		if (!record) {
 			if (on.shared !== "absent") plan.skills.push(entry("skip", "not ours: a skill folder by that name exists in the shared directory"));
 			else if (on.claude !== "absent") plan.skills.push(entry("skip", "not ours: Claude's skills directory has an entry by that name"));
@@ -415,7 +435,7 @@ export function planSkills(
 		else if (on.shared === "absent" || on.claude === "absent") plan.skills.push(entry("install", "missing"));
 		else if (record.incomplete) plan.skills.push(entry("install", "the last install failed partway"));
 		else if (sourceKey(record.source) !== sourceKey(token.source)) plan.skills.push(entry("install", `source changed from ${record.source}`));
-		else if (mode === "update" && commit && record.commit !== commit) plan.skills.push(entry("install", `moved from ${record.commit?.slice(0, 7) ?? "unknown"}`));
+		else if (mode === "update" && token.ref === null && commit && record.commit !== commit) plan.skills.push(entry("install", `moved from ${record.commit?.slice(0, 7) ?? "unknown"}`));
 		else plan.skills.push(entry("keep"));
 	}
 	return plan;
@@ -527,11 +547,63 @@ function describeFailure(error: unknown): { error: string; code?: string } {
 }
 
 /**
+ * An install call that never finished (the process was killed between the
+ * library's writes and the state write): whatever exists under its names is
+ * what that call wrote, since it ran only where nothing was or the skill was
+ * ours. Own it as incomplete, so the next install replaces it; a name with
+ * nothing on disk keeps its old record, if any (missing: installed again).
+ */
+export function recoverPending(state: SkillsState, dirs: SkillDirs, now = new Date().toISOString()): string[] {
+	const pending = state.pending;
+	if (!pending) return [];
+	const recovered: string[] = [];
+	for (const [name, from] of Object.entries(pending.skills)) {
+		const on = diskState(name, dirs);
+		if (on.shared === "absent" && on.claude === "absent") continue;
+		const old = state.owned[name];
+		state.owned[name] = {
+			...from,
+			hash: on.hash ?? "",
+			installedAt: old?.installedAt ?? pending.at,
+			updatedAt: now,
+			incomplete: true,
+			...(on.claudeHash ? { claudeHash: on.claudeHash } : {}),
+		};
+		recovered.push(name);
+	}
+	delete state.pending;
+	return recovered;
+}
+
+/** The ownership record for what is on disk now under `name`, written by us. */
+function ownRecord(state: SkillsState, p: PlannedSkill, on: DiskState, incomplete: boolean): OwnedSkill {
+	const now = new Date().toISOString();
+	return {
+		token: p.token.token,
+		source: p.token.source,
+		commit: p.commit,
+		hash: on.hash ?? "",
+		installedAt: state.owned[p.name]?.installedAt ?? now,
+		updatedAt: now,
+		...(incomplete ? { incomplete: true } : {}),
+		...(on.claudeHash ? { claudeHash: on.claudeHash } : {}),
+	};
+}
+
+/**
  * One pass: resolve every source, plan, install the winners, record. Returns
- * the run; the caller holds the lock and writes the state.
+ * the run; the caller holds the lock and writes the final state. The state is
+ * also written before and after each install call (`pending`, then the
+ * ownership records), so a run killed in between leaves its writes
+ * recoverable rather than looking like a user's folders.
  */
 export async function syncOnce(selection: SkillSelection, mode: "install" | "update", state: SkillsState, env: SyncEnv): Promise<SkillsRun> {
 	const run: SkillsRun = { id: crypto.randomUUID(), at: new Date().toISOString(), mode, selection: selection.raw, tokens: {}, results: {}, clashes: [] };
+	const recovered = recoverPending(state, env.dirs);
+	if (recovered.length) {
+		env.log(`an earlier run stopped while installing ${recovered.join(" ")}; they will be installed again`);
+		writeSkillsState(env.dir, state);
+	}
 	if (selection.tokens.length === 0) return run;
 	const groups = groupTokens(selection.tokens);
 	const handles = new Map<string, ResolvedSource>();
@@ -556,7 +628,20 @@ export async function syncOnce(selection: SkillSelection, mode: "install" | "upd
 				for (const token of group.tokens) run.tokens[token.token] = { state: "failed", source: token.source, commit: null, ...failure };
 			}
 		}
-		const plan = planSkills(selection.tokens, handles, state.owned, (name) => diskState(name, env.dirs), mode);
+		// Which token wins a name is known only when every source resolved: a
+		// failed earlier source would hand its names to a later one. Write
+		// nothing this pass; the retry decides.
+		const unresolved = groups.filter((g) => !handles.has(g.source)).map((g) => g.source);
+		if (unresolved.length) {
+			run.held = `nothing installed or updated: ${unresolved.join(", ")} could not be fetched, and every source must resolve to decide which token wins each name`;
+			env.log(run.held);
+			for (const token of selection.tokens) {
+				const handle = handles.get(token.source);
+				if (handle) run.tokens[token.token] = { state: "resolved", source: token.source, commit: handle.commit };
+			}
+			return run;
+		}
+		const plan = planSkills(selection.tokens, handles, state.owned, (name, claudeHash) => diskState(name, env.dirs, claudeHash), mode);
 		for (const token of selection.tokens) {
 			const handle = handles.get(token.source);
 			if (!handle) continue;
@@ -583,6 +668,9 @@ export async function syncOnce(selection: SkillSelection, mode: "install" | "upd
 			const names = plan.skills.filter((p) => p.action === "install" && group.tokens.includes(p.token)).map((p) => p.name);
 			if (!handle || names.length === 0) continue;
 			env.log(`${group.source}: installing ${names.join(" ")}`);
+			const planned = plan.skills.filter((p) => names.includes(p.name));
+			state.pending = { runId: run.id, at: new Date().toISOString(), skills: Object.fromEntries(planned.map((p) => [p.name, { token: p.token.token, source: p.token.source, commit: p.commit }])) };
+			writeSkillsState(env.dir, state);
 			let outcome: InstallOutcome;
 			try {
 				outcome = await handle.install(names);
@@ -590,32 +678,26 @@ export async function syncOnce(selection: SkillSelection, mode: "install" | "upd
 				const failure = describeFailure(error);
 				outcome = { installed: [], failed: names.map((skill) => ({ skill, code: failure.code ?? "INSTALL_FAILED", message: failure.error })) };
 			}
-			for (const p of plan.skills.filter((p) => names.includes(p.name))) {
+			for (const p of planned) {
 				const failed = outcome.failed.find((f) => f.skill === p.name);
-				if (failed || !outcome.installed.includes(p.name)) {
-					record(p, "failed", { detail: failed?.message ?? "not installed", code: failed?.code ?? "NOT_INSTALLED" });
+				const on = diskState(p.name, env.dirs);
+				if (failed || !outcome.installed.includes(p.name) || on.shared !== "dir" || on.hash === null) {
+					record(p, "failed", {
+						detail: failed?.message ?? (outcome.installed.includes(p.name) ? "installed, but its folder cannot be read back" : "not installed"),
+						code: failed?.code ?? "NOT_INSTALLED",
+					});
 					// Whatever the library wrote before failing is ours: own it as
-					// incomplete so the next run installs it again, rather than
-					// finding a folder without a record (not ours) or one whose hash
-					// moved (modified) and leaving it as it is.
-					const on = diskState(p.name, env.dirs);
-					if (on.shared === "dir" && on.hash) {
-						const now = new Date().toISOString();
-						state.owned[p.name] = { token: p.token.token, source: p.token.source, commit: p.commit, hash: on.hash, installedAt: state.owned[p.name]?.installedAt ?? now, updatedAt: now, incomplete: true };
-					}
+					// incomplete, with what each target holds now, so the next run
+					// installs it again instead of finding a folder without a record
+					// (not ours) or one whose hash moved (modified).
+					if (on.shared !== "absent" || on.claude !== "absent") state.owned[p.name] = ownRecord(state, p, on, true);
 					continue;
 				}
-				let hash: string;
-				try {
-					hash = folderHash(join(env.dirs.shared, p.name));
-				} catch (error) {
-					record(p, "failed", { detail: `installed, but cannot read it back: ${message(error)}`, code: "NOT_INSTALLED" });
-					continue;
-				}
-				const now = new Date().toISOString();
-				state.owned[p.name] = { token: p.token.token, source: p.token.source, commit: p.commit, hash, installedAt: state.owned[p.name]?.installedAt ?? now, updatedAt: now };
+				state.owned[p.name] = ownRecord(state, p, on, false);
 				record(p, "installed", { commit: p.commit });
 			}
+			delete state.pending;
+			writeSkillsState(env.dir, state);
 		}
 		for (const clash of plan.clashes) env.log(`${clash.name}: from ${clash.winner.token}; ${clash.token.token} also has it (earlier token wins)`);
 		const counts = countResults(run);
@@ -775,15 +857,17 @@ export function buildSkillsStatus(raw: string | undefined | null, dir = stateDir
 		// Ours but not chosen by the last run: deselected, or gone from a source that resolved.
 		let kept: string | null = null;
 		if (owned && !result && !selectedTokens.has(owned.token)) kept = "no longer selected; deselecting deletes nothing";
-		else if (owned && !result && current && last.tokens[owned.token]?.state === "resolved") kept = `no longer in ${owned.source}; nothing deletes it`;
+		else if (owned && !result && current && !last.held && last.tokens[owned.token]?.state === "resolved") kept = `no longer in ${owned.source}; nothing deletes it`;
 		if (owned && kept) entry = { name, state: "kept", token: owned.token, source: owned.source, commit: owned.commit, detail: kept };
-		else if (owned && entry.state !== "skipped") {
-			// Live: the user may have edited or removed it since the last run.
-			const on = diskState(name, dirs);
+		else if (owned && entry.state !== "skipped" && entry.state !== "failed") {
+			// Live: the user may have edited or removed it since the last run. A
+			// failure stays a failure (with its error) until the next run.
+			const on = diskState(name, dirs, owned.claudeHash);
 			if (on.shared === "absent") entry = { ...entry, state: "missing", detail: "files gone; the next run installs it again while selected" };
+			else if (on.claude === "absent") entry = { ...entry, state: "missing", detail: `Claude's entry (${join(dirs.claude, name)}) is gone; the next run installs it again while selected` };
 			else if (on.shared === "other" || on.claude === "other" || on.hash !== owned.hash) entry = { ...entry, state: "modified", detail: entry.detail ?? "edited since it was installed; left alone" };
 			else if (entry.state === "modified") entry = { name, state: "installed", token: owned.token, source: owned.source, commit: owned.commit };
-			else if (owned.incomplete && entry.state !== "failed") entry = { ...entry, state: "failed", detail: "the last install failed partway; the next run installs it again" };
+			else if (owned.incomplete) entry = { ...entry, state: "failed", detail: "the last install failed partway; the next run installs it again" };
 		}
 		skills.push(entry);
 	}
@@ -791,7 +875,7 @@ export function buildSkillsStatus(raw: string | undefined | null, dir = stateDir
 	return {
 		selector: selection,
 		installer,
-		lastRun: last ? { at: last.at, mode: last.mode, selection: last.selection, current } : null,
+		lastRun: last ? { at: last.at, mode: last.mode, selection: last.selection, current, ...(last.held ? { held: last.held } : {}) } : null,
 		tokens,
 		skills,
 		clashes,
@@ -835,6 +919,7 @@ export function formatSkillsStatus(status: SkillsStatus, full = true): string {
 	if (!full) lines.push(`summary: ${skillsSummary(status)}`);
 	if (status.installer?.waitingUntil) lines.push(`run waiting; retrying at ${status.installer.waitingUntil} (t3app skills install retries now)`);
 	else if (status.installer) lines.push(`run in progress (pid ${status.installer.pid}, since ${status.installer.startedAt})`);
+	if (status.lastRun?.current && status.lastRun.held) lines.push(`last run: ${status.lastRun.held}`);
 	if (status.lastRun && !status.lastRun.current) lines.push("the selection changed since the last run; the next start or t3app skills install applies it");
 	else if (!status.lastRun && sel.tokens.length) lines.push("no run yet; the next start or t3app skills install runs one");
 	for (const warning of sel.warnings) lines.push(`warning: ${warning}`);
@@ -865,7 +950,8 @@ Commands
       source changed. Skills already installed stay at their commit.
   update [--wait]
       Like install, and also move skills from a floating token (no #ref) to
-      the source's newest commit. The container runs this at every start.
+      the source's newest commit; a pinned #ref is never moved. If any
+      source cannot be fetched, the pass writes nothing. The container runs this at every start.
       Both start in the background and answer at once (RouterOS drops a
       /container/shell reply after about 60 s) with the log to follow; "t3app
       status" shows progress. --wait runs it here: ${INTERACTIVE_BACKOFF_MS.length + 1} attempts, exit 1 if
