@@ -17,6 +17,7 @@ import {
 	groupTokens,
 	parseSkills,
 	parseSkillToken,
+	errorLine,
 	readSkillsState,
 	type SkillDirs,
 	type SkillsBackend,
@@ -85,6 +86,16 @@ describe("T3APP_SKILLS selection", () => {
 		const selection = parseSkills(example);
 		expect(selection.warnings).toEqual([]);
 		expect(selection.tokens.map((t) => t.skill)).toEqual([null, "routeros-bgp", "routeros-ospf"]);
+	});
+});
+
+describe("error lines", () => {
+	test("a failed clone keeps git's cause, not only its first line", () => {
+		const clone = new Error("Failed to clone https://github.com/o/r.git: Cloning into '/tmp/skills-x'...\nfatal: unable to access 'https://github.com/o/r.git/': Could not resolve host: github.com\n");
+		expect(errorLine(clone)).toBe("Failed to clone https://github.com/o/r.git: Cloning into '/tmp/skills-x'... (fatal: unable to access 'https://github.com/o/r.git/': Could not resolve host: github.com)");
+		expect(errorLine(new Error("one line"))).toBe("one line");
+		expect(errorLine(new Error("first\nsome detail\nerror: RPC failed; HTTP 403"))).toBe("first (error: RPC failed; HTTP 403)");
+		expect(errorLine("plain string\nmore")).toBe("plain string");
 	});
 });
 

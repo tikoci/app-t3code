@@ -559,7 +559,22 @@ function tryLock(dir: string): number | null {
 	return null;
 }
 
-const message = (error: unknown) => (error instanceof Error ? error.message : String(error)).split("\n")[0] ?? "";
+/**
+ * One line for logs and status: the first line, plus git's `fatal:` (or
+ * `error:`) line when a later line has it. A failed clone's first line is
+ * only "Cloning into …"; the cause ("Could not resolve host") comes after.
+ */
+export function errorLine(error: unknown): string {
+	const lines = (error instanceof Error ? error.message : String(error))
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean);
+	const first = lines[0] ?? "";
+	const cause = lines.slice(1).find((line) => /^fatal:/i.test(line)) ?? lines.slice(1).find((line) => /^error:/i.test(line));
+	return cause ? `${first} (${cause})` : first;
+}
+
+const message = errorLine;
 
 /** A failed resolve, with a hint when GitHub's anonymous limit is the cause. */
 function describeFailure(error: unknown): { error: string; code?: string } {
