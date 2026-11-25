@@ -341,6 +341,13 @@ describe("install starts in the background", () => {
 		writeFileSync(join(state, "skills.json"), JSON.stringify({ owned: {}, installer: me() }));
 		const running = await cli(["skills", "update"]);
 		expect(running.out).toStartWith(`t3app skills update: already running (pid ${process.pid}`);
+		// The entrypoint's `update --keep-trying` (started by its own `background`
+		// helper, so it writes no .launch record) waiting out its back-off is alive
+		// but holds no lock: install starts now (retry now).
+		writeFileSync(join(state, "skills.json"), JSON.stringify({ owned: {}, installer: { ...me(), waitingUntil: "2026-11-10T01:00:00.000Z" } }));
+		const retry = await cli(["skills", "install"]);
+		expect(retry.out).toMatch(/^t3app skills install: started in the background \(pid \d+\)\n/);
+		await waitForRun(retry.out);
 		// A held lock counts before skills.json names its holder; skills.lock names it at once.
 		writeFileSync(join(state, "skills.json"), JSON.stringify({ owned: {} }));
 		const release = holdLock(join(state, "skills.lock"));
