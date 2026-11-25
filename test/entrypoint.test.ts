@@ -40,6 +40,7 @@ describe("entrypoint", () => {
 		expect(ENTRYPOINT.split("\n").filter((line) => !line.trim().startsWith("#") && line.includes("install-claude-code"))).toEqual([]);
 		expect(ENTRYPOINT).toContain("background providers /usr/local/bin/t3app providers install --keep-trying");
 		expect(ENTRYPOINT).toContain("background tool-groups /usr/local/bin/t3app tools install --keep-trying");
+		expect(ENTRYPOINT).toContain("background skills /usr/local/bin/t3app skills update --keep-trying");
 		expect(ENTRYPOINT).toContain("timeout 40 /usr/local/bin/t3app init");
 	});
 });

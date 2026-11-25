@@ -110,8 +110,11 @@ test.skipIf(!image)(
 		// Every start sets its selection explicitly, except `null`, which checks
 		// the image's own group default. Every start pins providers to Codex (a
 		// real npm install into the home, #13), so the test never downloads Claude.
-		const start = (groups: string | null, offline = false, extraEnv: string[] = []) =>
-			docker(
+		// Skills keep the image default (one anonymous GitHub fetch, #46).
+		let startedAt = 0;
+		const start = (groups: string | null, offline = false, extraEnv: string[] = []) => {
+			startedAt = Date.now() - 1000;
+			return docker(
 				"run",
 				"--detach",
 				"--name",
@@ -125,6 +128,7 @@ test.skipIf(!image)(
 				...extraEnv.flatMap((pair) => ["--env", pair]),
 				image as string,
 			);
+		};
 		/** The agent-facing status (live) and the runtime JSON the entrypoint wrote. */
 		const toolStatus = async () => {
 			type Status = {
@@ -170,6 +174,30 @@ test.skipIf(!image)(
 					last = String(error);
 				}
 				if (Date.now() > deadline) throw new Error(`${group} not settled (${last}):\n${await run("cat", "/data/.local/share/t3code-tools/install.log").catch(() => "")}`);
+				await Bun.sleep(2000);
+			}
+		};
+		/** Wait for this container's first skills run (#46) to finish a pass: done, or waiting to retry. */
+		type Skills = {
+			selector: { raw: string | null };
+			installer: { waitingUntil?: string } | null;
+			lastRun: { at: string } | null;
+			tokens: { token: string; state: string; commit: string | null; error?: string }[];
+			skills: { name: string; state: string }[];
+		};
+		const skillsSettled = async (timeoutMs: number) => {
+			const since = new Date(startedAt).toISOString();
+			const deadline = Date.now() + timeoutMs;
+			let last = "no status yet";
+			for (;;) {
+				try {
+					const status = JSON.parse(await run("t3app", "skills", "status", "--json")) as Skills;
+					last = JSON.stringify({ lastRun: status.lastRun, installer: status.installer, tokens: status.tokens });
+					if (status.lastRun && status.lastRun.at >= since && (!status.installer || status.installer.waitingUntil)) return status;
+				} catch (error) {
+					last = String(error);
+				}
+				if (Date.now() > deadline) throw new Error(`skills not settled (${last}):\n${await run("cat", "/data/.local/state/t3code/skills.log").catch(() => "")}`);
 				await Bun.sleep(2000);
 			}
 		};
@@ -238,6 +266,19 @@ test.skipIf(!image)(
 			expect(await run("cat", "/data/.local/state/t3code/providers.log")).toContain("codex: ready");
 			expect(await run("realpath", "/data/.local/bin/codex")).toStartWith("/data/.local/lib/node_modules/@openai/codex/");
 			expect(Bun.spawnSync(["docker", "exec", name, "bash", "-lc", "command -v muse"]).exitCode).not.toBe(0);
+			// Skills (#46): the image default imports tikoci/routeros-skills from
+			// GitHub (anonymous, one repository) into the home in the background.
+			const skillsFirst = await skillsSettled(180_000);
+			expect(skillsFirst.selector.raw).toBe("tikoci/routeros-skills");
+			expect(skillsFirst.tokens).toEqual([expect.objectContaining({ token: "tikoci/routeros-skills", state: "resolved", commit: expect.stringMatching(/^[0-9a-f]{40}$/) })]);
+			expect(skillsFirst.skills.length).toBeGreaterThan(0);
+			expect(skillsFirst.skills.filter((s) => s.state !== "installed")).toEqual([]);
+			const skill = skillsFirst.skills.find((s) => s.name === "routeros-fundamentals")?.name ?? (skillsFirst.skills[0]?.name as string);
+			expect(await run("readlink", `/data/.claude/skills/${skill}`)).toBe(`../../.agents/skills/${skill}`);
+			expect(await run("stat", "-c", "%U %a", `/data/.agents/skills/${skill}`)).toBe("node 755");
+			expect(await run("head", "-1", `/data/.claude/skills/${skill}/SKILL.md`)).toBe("---");
+			expect(JSON.parse(await run("cat", "/data/.agents/.skill-lock.json")).skills[skill]).toMatchObject({ source: "tikoci/routeros-skills" });
+			expect(Bun.spawnSync(["docker", "exec", "-u", "0", name, "t3app", "skills", "update"]).exitCode).toBe(3);
 			for (const shell of ["-c", "-lc"]) {
 				const shellStatus = JSON.parse(await run("bash", shell, "t3app tools status --json"));
 				expect(shellStatus.core).toMatchObject({ state: "ready", missing: [] });
@@ -251,6 +292,7 @@ test.skipIf(!image)(
 			// t3app (#45): one status for both areas; argument errors run nothing.
 			const combined = JSON.parse(await run("t3app", "status", "--json"));
 			expect(combined.tools.selector.selected).toEqual(all.selector.selected);
+			expect(combined.skills.tokens[0]).toMatchObject({ state: "resolved" });
 			expect(combined.providers.providers.find((p: { token: string }) => p.token === "codex")).toMatchObject({ state: "ready" });
 			expect(combined.ignoredEnv).toEqual([]);
 			expect(Bun.spawnSync(["docker", "exec", name, "t3app", "tools", "install", "now"]).exitCode).toBe(2);
@@ -432,6 +474,13 @@ t3 project add /data/projects/survivor --title 'Survivor'
 			// Codex came back from the home with no network: nothing to reinstall.
 			expect(await codexReady(0)).toMatchObject({ state: "ready", path: "/data/.local/bin/codex" });
 			await run("codex", "--version");
+			// Skills too: GitHub is out of reach, the refresh fails and waits to
+			// retry, and every skill is still installed, unchanged.
+			const skillsOffline = await skillsSettled(120_000);
+			expect(skillsOffline.tokens[0]).toMatchObject({ state: "failed" });
+			expect(skillsOffline.installer?.waitingUntil).toBeString();
+			expect(skillsOffline.skills.map((s) => [s.name, s.state])).toEqual(skillsFirst.skills.map((s) => [s.name, "installed"]));
+			expect(await run("head", "-1", `/data/.claude/skills/${skill}/SKILL.md`)).toBe("---");
 			// The native groups deselected: their shims are gone, their payloads stay on disk.
 			const nativeFirst = { capture: captureFirst, labs: labsFirst, vpn: vpnFirst, routing: routingFirst };
 			const probes = { capture: "tshark", labs: "qemu-system-x86_64", vpn: "pki", routing: "bird" };

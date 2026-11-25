@@ -112,7 +112,7 @@ describe("legacy T3CODE_* keys", () => {
 
 	test("the image reads only T3APP_*: the legacy names appear nowhere it ships but t3app.ts", () => {
 		const shipped = ["Dockerfile", "docker-entrypoint.sh", "profile.sh", "app/t3code.tikapp.yaml", "app/t3code.tikappstore.yaml", "bin/t3app"];
-		const libs = ["tool-catalog.ts", "tool-groups.ts", "tool-payloads.ts", "tool-status.ts", "providers.ts", "runtime.ts", "harnesses.ts"].map((f) => `lib/${f}`);
+		const libs = ["tool-catalog.ts", "tool-groups.ts", "tool-payloads.ts", "tool-status.ts", "providers.ts", "skills.ts", "runtime.ts", "harnesses.ts"].map((f) => `lib/${f}`);
 		for (const path of [...shipped, ...libs]) {
 			for (const key of Object.keys(LEGACY_ENV)) expect(read(path), `${path} names ${key}`).not.toContain(key);
 		}
@@ -122,7 +122,7 @@ describe("legacy T3CODE_* keys", () => {
 describe("t3app status", () => {
 	let saved: Record<string, string | undefined>;
 	beforeEach(() => {
-		saved = { T3APP_TOOL_GROUPS: process.env["T3APP_TOOL_GROUPS"], T3APP_PROVIDERS: process.env["T3APP_PROVIDERS"], T3CODE_PROVIDERS: process.env["T3CODE_PROVIDERS"] };
+		saved = { T3APP_TOOL_GROUPS: process.env["T3APP_TOOL_GROUPS"], T3APP_PROVIDERS: process.env["T3APP_PROVIDERS"], T3APP_SKILLS: process.env["T3APP_SKILLS"], T3CODE_PROVIDERS: process.env["T3CODE_PROVIDERS"] };
 	});
 	afterEach(() => {
 		for (const [key, value] of Object.entries(saved)) {
@@ -131,9 +131,10 @@ describe("t3app status", () => {
 		}
 	});
 
-	test("--json carries both areas, the ignored keys and the logs", async () => {
+	test("--json carries every area, the ignored keys and the logs", async () => {
 		process.env["T3APP_TOOL_GROUPS"] = "vpn";
 		process.env["T3APP_PROVIDERS"] = "codex";
+		process.env["T3APP_SKILLS"] = "wiresage/routeros-skills@routeros-bgp";
 		process.env["T3CODE_PROVIDERS"] = "claude";
 		const { code, out } = await cli(["status", "--json"]);
 		expect(code).toBe(0);
@@ -143,15 +144,19 @@ describe("t3app status", () => {
 		expect(status.ignoredEnv).toEqual([{ key: "T3CODE_PROVIDERS", replacement: "T3APP_PROVIDERS" }]);
 		expect(status.logs.tools).toEndWith("/.local/state/t3code/tool-groups.log");
 		expect(status.logs.providers).toEndWith("/.local/state/t3code/providers.log");
+		expect(status.skills.selector).toMatchObject({ variable: "T3APP_SKILLS", raw: "wiresage/routeros-skills@routeros-bgp" });
+		expect(status.skills.selector.tokens).toEqual([expect.objectContaining({ repo: "wiresage/routeros-skills", skill: "routeros-bgp" })]);
+		expect(status.logs.skills).toEndWith("/.local/state/t3code/skills.log");
 	});
 
-	test("text shows both areas and the ignored key", async () => {
+	test("text shows every area and the ignored key", async () => {
 		process.env["T3APP_TOOL_GROUPS"] = "none";
 		process.env["T3CODE_PROVIDERS"] = "claude";
 		const { code, out } = await cli([]);
 		expect(code).toBe(0);
 		expect(out).toContain("== tools (t3app tools help)\nT3APP_TOOL_GROUPS=");
 		expect(out).toContain("== providers (t3app providers help)\nT3APP_PROVIDERS=");
+		expect(out).toContain("== skills (t3app skills help; every skill: t3app skills status)\nT3APP_SKILLS=");
 		expect(out).toContain("t3app: ignoring T3CODE_PROVIDERS (now T3APP_PROVIDERS)");
 	});
 });
@@ -211,11 +216,11 @@ describe("background start", () => {
 describe("install starts in the background", () => {
 	let home: string;
 	let saved: Record<string, string | undefined>;
-	const keys = ["HOME", "T3APP_TOOLS_HOME", "T3APP_TOOL_GROUPS", "T3APP_PROVIDERS"];
+	const keys = ["HOME", "T3APP_TOOLS_HOME", "T3APP_TOOL_GROUPS", "T3APP_PROVIDERS", "T3APP_SKILLS"];
 	beforeEach(() => {
 		home = mkdtempSync(join(tmpdir(), "t3app-home-"));
 		saved = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
-		Object.assign(process.env, { HOME: home, T3APP_TOOLS_HOME: join(home, "tools"), T3APP_TOOL_GROUPS: "none", T3APP_PROVIDERS: "none" });
+		Object.assign(process.env, { HOME: home, T3APP_TOOLS_HOME: join(home, "tools"), T3APP_TOOL_GROUPS: "none", T3APP_PROVIDERS: "none", T3APP_SKILLS: "none" });
 	});
 	afterEach(() => {
 		for (const [key, value] of Object.entries(saved)) {
@@ -320,6 +325,38 @@ describe("install starts in the background", () => {
 		const retry = await cli(["providers", "install"]);
 		expect(retry.out).toContain("started in the background");
 		await waitForRun(retry.out);
+	});
+
+	test.skipIf(process.getuid?.() === 0)("skills: install and update start in the background, or report a run in progress", async () => {
+		const state = join(home, ".local/state/t3code");
+		for (const verb of ["install", "update"]) {
+			const started = await cli(["skills", verb]);
+			expect(started.code).toBe(0);
+			expect(started.out).toMatch(new RegExp(`^t3app skills ${verb}: started in the background \\(pid \\d+\\)\\n`));
+			expect(started.out).toContain(`log: ${join(state, "skills.log")}\n`);
+			await waitForRun(started.out);
+		}
+		// The background run recorded an empty selection; nothing was fetched.
+		expect(JSON.parse(readFileSync(join(state, "skills.json"), "utf8"))).toMatchObject({ owned: {}, last: { selection: "none", tokens: {}, results: {} } });
+		writeFileSync(join(state, "skills.json"), JSON.stringify({ owned: {}, installer: me() }));
+		const running = await cli(["skills", "update"]);
+		expect(running.out).toStartWith(`t3app skills update: already running (pid ${process.pid}`);
+		// The entrypoint's `update --keep-trying` (started by its own `background`
+		// helper, so it writes no .launch record) waiting out its back-off is alive
+		// but holds no lock: install starts now (retry now).
+		writeFileSync(join(state, "skills.json"), JSON.stringify({ owned: {}, installer: { ...me(), waitingUntil: "2026-11-10T01:00:00.000Z" } }));
+		const retry = await cli(["skills", "install"]);
+		expect(retry.out).toMatch(/^t3app skills install: started in the background \(pid \d+\)\n/);
+		await waitForRun(retry.out);
+		// A held lock counts before skills.json names its holder; skills.lock names it at once.
+		writeFileSync(join(state, "skills.json"), JSON.stringify({ owned: {} }));
+		const release = holdLock(join(state, "skills.lock"));
+		try {
+			writeFileSync(join(state, "skills.lock"), `${process.pid}\n`);
+			expect((await cli(["skills", "install"])).out).toStartWith(`t3app skills install: already running (pid ${process.pid}, since `);
+		} finally {
+			release();
+		}
 	});
 });
 

@@ -99,6 +99,7 @@ version is not fixed by the image:
 | Claude Code (`T3APP_PROVIDERS`) | Anthropic's release manifest, stable channel | size and SHA-256 from the manifest; the manifest's signature is not yet checked ([#13](https://github.com/tikoci/app-t3code/issues/13)) |
 | Codex, OpenCode, Pi (`T3APP_PROVIDERS`) | npm registry, latest | npm's registry integrity; not pinned, by design, so T3's **Update now** can manage them |
 | Grok, Muse (`T3APP_PROVIDERS`) | the vendor's `install.sh` over HTTPS | whatever the vendor's installer checks |
+| Agent skills (`T3APP_SKILLS`) | the selected GitHub repositories, newest commit unless the token pins `#ref`; fetched by the `skills` library, which is pinned in the image | none beyond HTTPS: a skill is instructions and files an agent may follow or run, so select only repositories you trust, and pin `#<commit>` to review before taking changes |
 | `dev` tool group | npm, from a committed lockfile | lockfile integrity hashes |
 | `capture`, `labs`, `vpn`, `routing` tool groups | Debian packages pinned at image build; `vpn` also uses ZeroTier's repository for `zerotier-one` | size and SHA-256 from apt's signed indexes; ZeroTier's repository key is checksum-pinned and scoped with `signed-by`, and only `zerotier-one` is allowed from that origin |
 
@@ -111,7 +112,9 @@ daemon opens its own network and local control sockets. Keep its home under
 those files as credentials. See [ZeroTier in the vpn group](README.md#zerotier-in-the-vpn-group).
 
 Provider CLIs update through T3 or their own updaters after install, the
-same as on any T3 host. `T3APP_PROVIDERS=none` and
+same as on any T3 host. Skills are fetched again at every start; one you
+edit is never overwritten, and a skill folder the image did not install is
+never written over. `T3APP_PROVIDERS=none`, `T3APP_SKILLS=none` and
 `T3APP_TOOL_GROUPS=none` stop this image's own runtime installs. They do
 not stop T3 itself from downloading things: its built-in browser on first
 use, its managed providers (Codex's **Continue with ChatGPT**, Antigravity)
@@ -137,6 +140,11 @@ installed from `/container/shell` by earlier images may be; the
 
 The image sets `T3CODE_TELEMETRY_ENABLED=false`. Set it to `true` to opt back
 in to T3's telemetry. Provider CLIs have their own telemetry settings.
+
+The `skills` library reports installs to `skills.sh` unless told not to.
+The image's skill imports pass `telemetry: false` on every call and run with
+`DO_NOT_TRACK=1`. An `npx skills` command you run yourself follows that
+tool's own defaults (set `DO_NOT_TRACK=1` to turn it off).
 
 ## Build and CI
 

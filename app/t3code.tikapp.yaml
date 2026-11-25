@@ -33,6 +33,9 @@ services:
       # Provider CLIs to install into /data in the background: claude codex
       # cursor grok opencode antigravity pi muse, or "none". Same rules.
       T3APP_PROVIDERS: "claude codex"
+      # Agent skills to import into /data at each start (GitHub owner/repo,
+      # owner/repo@skill, owner/repo#ref, space-separated), or "none".
+      T3APP_SKILLS: "tikoci/routeros-skills"
     volumes:
       # Keep this name and destination when upgrading: the whole home,
       # including .t3/userdata, projects, worktrees, and provider logins.

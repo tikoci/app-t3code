@@ -14,6 +14,23 @@ gives them their `-app.<N>` heading.
 
 ## Not yet numbered
 
+- Agent skills at runtime (#46). New `T3APP_SKILLS` (image default and
+  YAML: `tikoci/routeros-skills`) imports agent skills from GitHub into the
+  home at each start, in the background, with the
+  [`skills`](https://github.com/vercel-labs/skills) library (1.9.0, pinned
+  and shipped beside `t3app`). Each skill lands in `/data/.agents/skills`
+  (Codex) with a link in `/data/.claude/skills` (Claude Code); tokens are
+  `owner/repo`, `owner/repo@skill` and `owner/repo#ref`, space-separated,
+  or `none`. On a name clash the earlier token wins, decided before
+  anything is written; a skill folder the image did not install is never
+  written over, one you edited is left alone, and deselecting deletes
+  nothing. New `t3app skills status|install|update`, and a skills section
+  in `t3app status` (`skills` in `--json`); the background run logs to
+  `/data/.local/state/t3code/skills.log` and records what it installed in
+  `skills.json` there. The library's telemetry is off. The existing
+  `/data/.agents/skills` or `/data/.claude/skills` folders of the same name
+  are kept and reported as `skipped (not ours)`. Use **Restart agent
+  session** in T3 for a running agent to see new skills.
 - T3 Code 0.1.11 (#60). The image now ships upstream
   [v0.1.11](https://github.com/pingdotgg/t3code/releases/tag/v0.1.11)
   (which includes 0.1.9 and 0.1.10); `:0.1`, `:0` and `:latest` move to

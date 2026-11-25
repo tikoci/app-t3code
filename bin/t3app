@@ -1,4 +1,6 @@
 #!/bin/sh
 # t3app: the operator command for this image (`t3app help`). It runs
-# lib/t3app.ts, which calls each area's module in-process.
-exec bun /usr/local/lib/t3app/t3app.ts "$@"
+# lib/t3app.ts, which calls each area's module in-process. --no-install:
+# lib/ imports only what the image installed beside it (frozen lockfile),
+# never a package Bun would fetch at runtime.
+exec bun --no-install /usr/local/lib/t3app/t3app.ts "$@"

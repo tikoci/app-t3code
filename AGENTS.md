@@ -13,7 +13,7 @@ mirror their place in the image.
 | `app/` | routers (`/app add`) | The `/app` YAML and app-store document |
 | `Dockerfile`, `docker-entrypoint.sh`, `profile.sh` | image | The build, the server start, the login-shell PATH |
 | `bin/` | `/usr/local/bin` | Entry points: `t3app` (the operator command), `t3code-init` (PID 1), `install-claude-code` |
-| `lib/` | `/usr/local/lib/t3app` | Shipped runtime modules: tool groups (catalog, status, payloads, CLI), providers, shared runtime, the harness catalog, image inventory, the build-only `deb-lock.ts`; `lib/groups/` holds payload specs and locks |
+| `lib/` | `/usr/local/lib/t3app` | Shipped runtime modules: tool groups (catalog, status, payloads, CLI), providers, skills, shared runtime, the harness catalog, image inventory, the build-only `deb-lock.ts`; `lib/groups/` holds payload specs and locks. Its npm runtime dependencies (package.json `dependencies`, exact pins) install beside it as `node_modules` from the frozen `bun.lock` |
 | `client/` | T3's web client, at build time | Deliberate UI overlays (`scripts/install-pairing-help.sh` installs them) |
 | `scripts/` | never | Build, CI and repo upkeep: freshness, runner inventory, `home-manifest.ts` for CHR runs |
 | `test/` | never | Bun tests, plus the shell smoke tests the image tests run |
@@ -21,8 +21,9 @@ mirror their place in the image.
 | `.agents/skills/` | never | Skills for developing this repo (`.claude/skills` links here) |
 | `scratch/` | never | Git-ignored dump for files agents need (a `/tmp` that lasts a few sessions). Never referenced from docs, tests or skills |
 
-Skills shipped in the image will get their own top-level `skills/` (#46);
-it doesn't exist yet.
+Skills reach the home at runtime through `T3APP_SKILLS` (#46 P1,
+`lib/skills.ts`), not through the image. A top-level `skills/` for skills
+shipped in the image is still reserved; it doesn't exist yet.
 
 ## Commands
 
@@ -90,6 +91,7 @@ the others hang or fail rather than skip, because they need Linux tools
 | `pairing-help` | the pairing UI overlay and its install script | any host | `sh` |
 | `providers` | `T3APP_PROVIDERS` selection, install steps, installer state | any host | fakes; lock via FFI `flock` |
 | `t3app` | the `t3app` CLI: usage errors and exit codes, ignored legacy `T3CODE_*` keys, combined status, background `install` starts and "already running", umask 022 | any host | `sh`; lock via FFI `flock`; skips the start tests as root |
+| `skills` | `T3APP_SKILLS`: token parsing, the clash rule, ownership (`skills.json`), refresh, status, the library's paths and the pins | Linux | fake library backend; the real `skills` package only for its paths (no network) |
 | `init` | `t3code-init` signal forwarding and reaping | Linux | bash ≥ 5.1 (skipped on macOS's 3.2) |
 | `entrypoint` | background installs, log rotation and fallbacks | Linux | GNU `stat`; two tests skip as root |
 | `tool-payloads`, `deb-payloads` | npm and deb payload lifecycles: install, activate, recover, prune, locks, CLI | Linux | util-linux `flock`, `/proc`, `setpriv` as root; fake npm, dpkg-deb, mirror |
@@ -105,7 +107,7 @@ reference. Every area follows these rules:
 
 - **Shape:** `t3app <area> <verb>`. `lib/t3app.ts` calls the area module's
   `main(argv)` in-process, never through a shell string. A new area
-  (inventory, skills #46, credential handoff #47, a `t3 triage`-style
+  (inventory, credential handoff #47, a `t3 triage`-style
   support command) is a new module and a line in `t3app.ts`, never a new
   binary in `bin/`.
 - **Exit codes:** `help`, `--help` or `-h` alone, or `<command> --help`,
@@ -333,7 +335,21 @@ reference. Every area follows these rules:
   driver in T3's `BUILT_IN_DRIVERS`, and a token plus install recipe for the
   selectable ones. A T3 bump fails CI's freshness step until a new or removed
   driver is classified there (0.1.7 added Kiro).
-- Background installers (tool groups, providers) log to
+- Skills (`T3APP_SKILLS`, `lib/skills.ts`, #46 P1): GitHub sources in the
+  `skills` CLI's syntax, default `tikoci/routeros-skills` (Dockerfile `ENV`,
+  both YAMLs and the README; a test ties them). The `skills` npm library
+  (exact pin in package.json, freshness `tools` checks npm's latest) does
+  the fetching and writing; `bin/t3app` runs Bun with `--no-install`, and
+  status never loads the library. Agents are fixed: `codex` writes the
+  real copy to `~/.agents/skills/<name>`, `claude-code` links to it. Every
+  token resolves before anything is written; the earlier token wins a
+  name; a folder without a `skills.json` record is never written over, and
+  one whose hash moved is `modified` and left alone. Deselecting never
+  deletes. `skillDirs()` mirrors the library's paths (a test compares).
+  When probing the library on a dev box, set `HOME` **and** unset or
+  redirect `XDG_STATE_HOME`, or it writes the real
+  `~/.local/state/skills/.skill-lock.json`.
+- Background installers (tool groups, providers, skills) log to
   `/data/.local/state/t3code/<name>.log` through the entrypoint's
   `background` helper (append, one rotation at 1 MiB, container-log
   fallback); provider state is `providers.json` and the lock
