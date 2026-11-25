@@ -129,7 +129,10 @@ and API or web access can read it.
   credentials). On non-persistent storage every restart and `/app/update`
   would unpair every device. Moving only the user's credentials elsewhere
   would need T3 itself to support it (an at-rest key, or a pluggable secret
-  provider).
+  provider). **Accepted as is** (owner): like RouterOS's policy model, it's a
+  security choice made upstream. Router passwords simply don't go there;
+  a T3 secret card's file is imported into the CDB instead (centrs#672
+  item 3).
 - **Provider environment variables** (Settings → Providers, per provider
   instance) take a plain value, a value marked sensitive (kept in the secret
   store) or a secret-provider reference (`op://vault/item/field` with
@@ -148,9 +151,9 @@ and API or web access can read it.
   (`packages/secret-provider-onepassword/src/server/driver.ts`). So an `op`
   on PATH that resolves `op://…` from something we control (the CDB, or
   `/run/secrets`) is technically possible: T3 would read references
-  without storing values. Against it: it poses as 1Password's CLI, T3's UI
-  says 1Password, and any change to the driver's calls breaks it. A note,
-  not a recommendation; a real pluggable provider is T3's call.
+  without storing values. **Rejected by the owner** (2026-11-25): it poses
+  as 1Password's CLI, T3's UI says 1Password, and any change to the
+  driver's calls breaks it. A pluggable provider is T3's call.
 - **Secret request cards** (`SecretRequests.ts`): the value never enters the
   conversation; a `file` request moves it to an owner-only file for the
   agent's own shell, valid about 24 h (`SECRET_REF_TTL_MS`). This is the
@@ -273,6 +276,24 @@ From the discussion on #47 and in the session that ran this research:
 - **Host address:** `CENTRS_HOST` doesn't select a target, so the address
   belongs in the CDB record (seeded by `init` from `[networkRouterIP]` or the
   gateway) or in a `host` group, not in env.
+
+### Decided (owner, 2026-11-25)
+
+- **The key reaches centrs through a file:** [centrs#672](https://github.com/tikoci/centrs/issues/672)
+  asks for `CENTRS_CDB_PASSWORD_FILE` / `--cdb-password-file`,
+  `CENTRS_PASSWORD_FILE` / `--password-file` for parity, and
+  `devices add|set --password-file` that can remove the file after import
+  (for T3's secret-card files). Option 2 above. With it,
+  `CENTRS_CDB_PASSWORD_FILE=/run/secrets/<name>` is an ordinary, non-secret
+  setting for the YAML and the image `ENV`.
+- **The host goes in the CDB,** seeded by startup from `[networkRouterIP]`
+  or the gateway, not in env.
+- **No `op` shim; T3's secret store stays as T3 made it.**
+- **quickchr inside the container:** pass `MIKROTIK_WEB_ACCOUNT` /
+  `MIKROTIK_WEB_PASSWORD` through (as secrets, by the same file route once
+  quickchr reads one) so nested CHRs can be licensed. Trial activations are
+  limited (about 100 per 60 days), which is also why CI can't license every
+  CHR and why Docker-based tests (#72) are a fair CI complement.
 
 ## Still open
 
