@@ -290,8 +290,9 @@ From the discussion on #47 and in the session that ran this research:
   or the gateway, not in env.
 - **No `op` shim; T3's secret store stays as T3 made it.**
 - **quickchr inside the container:** pass `MIKROTIK_WEB_ACCOUNT` /
-  `MIKROTIK_WEB_PASSWORD` through (as secrets, by the same file route once
-  quickchr reads one) so nested CHRs can be licensed. Trial activations are
+  `MIKROTIK_WEB_PASSWORD` through (as secrets, by the same file route:
+  [quickchr#323](https://github.com/tikoci/quickchr/issues/323) asks for
+  `MIKROTIK_WEB_PASSWORD_FILE`) so nested CHRs can be licensed. Trial activations are
   limited (about 100 per 60 days), which is also why CI can't license every
   CHR and why Docker-based tests (#72) are a fair CI complement.
 
