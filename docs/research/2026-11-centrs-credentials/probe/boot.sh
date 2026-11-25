@@ -1,3 +1,4 @@
+#!/bin/sh
 # Runs at every container start (the probe app's command). Appends one
 # record to /data/boots. Records the secret only as length + sha256, so the
 # log shows same/different without the value.
