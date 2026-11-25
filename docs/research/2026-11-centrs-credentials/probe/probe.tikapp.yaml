@@ -1,0 +1,24 @@
+name: credprobe
+descr: app-t3code credentials/context probe (placeholders, secrets, router reachability)
+category: development
+services:
+  probe:
+    image: alpine:3.20
+    command: ["sh", "-c", "sh /data/boot.sh 2>/dev/null || echo no-boot-script >> /data/boots; exec sleep 999999999"]
+    environment:
+      P_ROUTER_IP: "[routerIP]"
+      P_NET_ROUTER_IP: "[networkRouterIP]"
+      P_CONTAINER_IP: "[containerIP]"
+      P_ACCESS_IP: "[accessIP]"
+      P_CONTAINER_IF: "[containerInterface]"
+      P_SECRET_ENV: "[secret:routeros_pw]"
+      P_LITERAL: plain
+    secrets:
+      - routeros_pw
+    volumes:
+      - probe-data:/data
+    restart: unless-stopped
+secrets:
+  routeros_pw:
+volumes:
+  probe-data: {}
