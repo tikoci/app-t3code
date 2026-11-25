@@ -5,7 +5,7 @@
  * Claude's). No network: the docker replacement test covers a real fetch.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { closeSync, existsSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readlinkSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import YAML from "js-yaml";
@@ -179,7 +179,7 @@ class FakeLibrary {
 						if (this.copyClaude.has(name)) {
 							mkdirSync(link);
 							writeFileSync(join(link, "SKILL.md"), snapshot.skills[name] as string);
-						} else symlinkSync(relative(dirname(link), shared), link);
+						} else symlinkSync(relative(realpathSync(dirname(link)), shared), link); // as skills 1.9.0: from the physical directory
 					}
 					return { installed: names.filter((n) => !failed.some((f) => f.skill === n)), failed };
 				},
@@ -371,6 +371,7 @@ describe("sync", () => {
 		lib.offline = true;
 		const e = { ...env, sleep: async (ms: number) => {
 			slept.push(ms);
+			await Bun.sleep(2); // the terminal's pass starts after this run did
 			// Meanwhile, from a terminal with its own T3APP_SKILLS, online.
 			lib.offline = false;
 			expect(await sync("wiresage/routeros-skills@routeros-bgp", "install")).toBe(0);
@@ -384,6 +385,75 @@ describe("sync", () => {
 		expect(state.last?.selection).toBe("wiresage/routeros-skills@routeros-bgp");
 		expect(state.installer).toBeUndefined();
 		expect(logs.at(-1)).toContain("stopping: a run at");
+	});
+
+	test("a pass that started before this run (the lock holder at its start) never stops it", async () => {
+		// An older pass with another selection is the last one recorded, and holds the lock as this run starts.
+		mkdirSync(env.dir, { recursive: true });
+		writeFileSync(join(env.dir, "skills.json"), JSON.stringify({ owned: {}, last: { id: "older", at: "2026-11-24T00:00:00.000Z", mode: "update", selection: "wiresage/routeros-skills@routeros-bgp", tokens: {}, results: {}, clashes: [] } }));
+		const fd = openSync(join(env.dir, "skills.lock"), "a+");
+		expect(kernelFlock(fd, LOCK_EX | LOCK_NB)).toBe(true);
+		// --keep-trying (a longer back-off than an interactive run's): a busy lock waits a round.
+		const e = { ...env, backoffMs: [15_000, 60_000, 300_000], sleep: async (ms: number) => {
+			slept.push(ms);
+			closeSync(fd); // the older pass ends without writing a newer record
+		} };
+		expect(await sync("tikoci/routeros-skills", "update", e)).toBe(0);
+		expect(slept).toEqual([15_000]);
+		expect(lib.installs).toEqual([["routeros-firewall", "routeros-mndp"]]);
+		expect(readSkillsState(env.dir).last?.selection).toBe("tikoci/routeros-skills");
+	});
+
+	test("a folder that appears while an earlier source installs is not written over", async () => {
+		lib.onInstall = (names) => {
+			if (names.includes("routeros-mndp")) {
+				mkdirSync(join(dirs.shared, "routeros-bgp"), { recursive: true });
+				writeFileSync(join(dirs.shared, "routeros-bgp", "SKILL.md"), "made by the user meanwhile");
+			}
+		};
+		await sync("tikoci/routeros-skills wiresage/routeros-skills@routeros-bgp");
+		expect(lib.installs).toEqual([["routeros-firewall", "routeros-mndp"]]);
+		expect(readFileSync(join(dirs.shared, "routeros-bgp", "SKILL.md"), "utf8")).toBe("made by the user meanwhile");
+		expect(readSkillsState(env.dir).owned["routeros-bgp"]).toBeUndefined();
+		expect(status("tikoci/routeros-skills wiresage/routeros-skills@routeros-bgp").skills.find((k) => k.name === "routeros-bgp")).toMatchObject({ state: "skipped", detail: expect.stringContaining("appeared during this run") });
+	});
+
+	test("Claude's skills directory may itself be a link (dotfiles): the library's links still count as ours", async () => {
+		const real = join(home, "config", "dotfiles", "claude-skills"); // deeper than .claude/skills, so the relative target differs
+		mkdirSync(real, { recursive: true });
+		mkdirSync(dirname(dirs.claude), { recursive: true });
+		symlinkSync(real, dirs.claude);
+		await sync("tikoci/routeros-skills");
+		expect(content("routeros-mndp")).toBe("tikoci mndp v1");
+		expect(skillState("tikoci/routeros-skills")).toEqual({ "routeros-firewall": "installed", "routeros-mndp": "installed" });
+		lib.installs = [];
+		await sync("tikoci/routeros-skills");
+		expect(lib.installs).toEqual([]);
+	});
+
+	test("a missing Claude link is put back without moving a pinned skill to a newer commit", async () => {
+		lib.sources.set("tikoci/routeros-skills#stable", { commit: "d".repeat(40), skills: { "routeros-mndp": "mndp stable 1" } });
+		await sync("tikoci/routeros-skills#stable");
+		lib.sources.set("tikoci/routeros-skills#stable", { commit: "e".repeat(40), skills: { "routeros-mndp": "mndp stable 2" } });
+		rmSync(join(dirs.claude, "routeros-mndp"));
+		lib.installs = [];
+		expect(await sync("tikoci/routeros-skills#stable", "update")).toBe(0);
+		expect(lib.installs).toEqual([]);
+		expect(content("routeros-mndp")).toBe("mndp stable 1");
+		expect(skillState("tikoci/routeros-skills#stable")["routeros-mndp"]).toBe("installed");
+		expect(readSkillsState(env.dir).owned["routeros-mndp"]?.commit).toBe("d".repeat(40));
+	});
+
+	test("a floating source that reports no commit is refreshed on update, not kept as unchanged", async () => {
+		lib.sources.set("o/r", { commit: null as unknown as string, skills: { one: "one v1" } });
+		await sync("o/r");
+		lib.sources.set("o/r", { commit: null as unknown as string, skills: { one: "one v2" } });
+		lib.installs = [];
+		await sync("o/r", "install");
+		expect(lib.installs).toEqual([]);
+		await sync("o/r", "update");
+		expect(lib.installs).toEqual([["one"]]);
+		expect(content("one")).toBe("one v2");
 	});
 
 	test("a waiting run keeps retrying when the run meanwhile had the same selection", async () => {

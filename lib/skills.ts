@@ -27,8 +27,8 @@
 // the library). The image copies lib/ to /usr/local/lib/t3app/ with the
 // library installed beside it (node_modules, frozen lockfile); lib/t3app.ts
 // dispatches `t3app skills` here.
-import { closeSync, ftruncateSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, renameSync, writeFileSync, writeSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { closeSync, ftruncateSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, symlinkSync, writeFileSync, writeSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import {
 	appHome,
 	helpRequest,
@@ -216,6 +216,21 @@ function lstatOrNull(path: string) {
 	}
 }
 
+/** A directory's physical path (links resolved), or the path itself when it does not exist. */
+function physical(dir: string): string {
+	try {
+		return realpathSync(dir);
+	} catch {
+		return dir;
+	}
+}
+
+/** Link Claude's entry to the shared copy the way the library does: relative to the physical directory. */
+export function linkClaude(name: string, dirs: SkillDirs): void {
+	mkdirSync(dirs.claude, { recursive: true });
+	symlinkSync(relative(physical(dirs.claude), join(dirs.shared, name)), join(dirs.claude, name));
+}
+
 /** `claudeHash`: the hash recorded for our own Claude copy (see OwnedSkill), also accepted as ours. */
 export function diskState(name: string, dirs: SkillDirs, claudeHash?: string | null): DiskState {
 	const sharedPath = join(dirs.shared, name);
@@ -227,7 +242,11 @@ export function diskState(name: string, dirs: SkillDirs, claudeHash?: string | n
 		claudeState = "other";
 		if (claude.isSymbolicLink()) {
 			try {
-				if (resolve(dirname(claudePath), readlinkSync(claudePath)) === resolve(sharedPath)) claudeState = "ours";
+				// The library writes the link relative to the physical directory
+				// (Claude's skills directory may itself be a link, to dotfiles say).
+				const link = readlinkSync(claudePath);
+				const targets = [resolve(dirname(claudePath), link), resolve(physical(dirname(claudePath)), link)];
+				if (targets.some((t) => t === resolve(sharedPath) || t === join(physical(dirs.shared), name))) claudeState = "ours";
 			} catch {
 				// Unreadable: not ours.
 			}
@@ -355,7 +374,8 @@ export interface Resolved {
 	skills: readonly string[];
 }
 
-export type Action = "install" | "keep";
+/** install: write it with the library; relink: only Claude's link is gone, the shared copy is current; keep: up to date. */
+export type Action = "install" | "relink" | "keep";
 
 export interface PlannedSkill {
 	name: string;
@@ -432,10 +452,13 @@ export function planSkills(
 		if (on.shared === "other") plan.skills.push(entry("modified", "the shared entry is no longer a folder"));
 		else if (on.claude === "other") plan.skills.push(entry("modified", "Claude's entry is no longer the link to the shared copy"));
 		else if (on.shared === "dir" && on.hash !== record.hash) plan.skills.push(entry("modified", "edited since it was installed"));
-		else if (on.shared === "absent" || on.claude === "absent") plan.skills.push(entry("install", "missing"));
+		else if (on.shared === "absent") plan.skills.push(entry("install", "missing"));
 		else if (record.incomplete) plan.skills.push(entry("install", "the last install failed partway"));
 		else if (sourceKey(record.source) !== sourceKey(token.source)) plan.skills.push(entry("install", `source changed from ${record.source}`));
-		else if (mode === "update" && token.ref === null && commit && record.commit !== commit) plan.skills.push(entry("install", `moved from ${record.commit?.slice(0, 7) ?? "unknown"}`));
+		else if (mode === "update" && token.ref === null && commit === null) plan.skills.push(entry("install", "the source reports no commit, so it cannot be shown unchanged"));
+		else if (mode === "update" && token.ref === null && record.commit !== commit) plan.skills.push(entry("install", `moved from ${record.commit?.slice(0, 7) ?? "unknown"}`));
+		// Only Claude's link is gone: put it back, without taking a newer commit for a pinned or unchanged skill.
+		else if (on.claude === "absent") plan.skills.push(entry("relink", "Claude's link was missing"));
 		else plan.skills.push(entry("keep"));
 	}
 	return plan;
@@ -661,14 +684,36 @@ export async function syncOnce(selection: SkillSelection, mode: "install" | "upd
 				record(p, "installed", { commit: owned.commit });
 			} else if (p.action === "skip") record(p, "skipped");
 			else if (p.action === "modified") record(p, "modified", { commit: state.owned[p.name]?.commit ?? null });
+			else if (p.action === "relink" && owned) {
+				try {
+					if (lstatOrNull(join(env.dirs.claude, p.name))) throw new Error("something appeared there during this run");
+					linkClaude(p.name, env.dirs);
+					delete owned.claudeHash;
+					owned.token = p.token.token;
+					record(p, "installed", { commit: owned.commit });
+				} catch (error) {
+					record(p, "failed", { detail: `cannot link Claude's entry: ${message(error)}`, code: "RELINK_FAILED" });
+				}
+			}
 		}
 		// Install the winners, one call per source.
 		for (const group of groups) {
 			const handle = handles.get(group.source);
-			const names = plan.skills.filter((p) => p.action === "install" && group.tokens.includes(p.token)).map((p) => p.name);
+			// Look again just before writing: an earlier source's install takes
+			// time, and a folder that appeared meanwhile (not ours) or an edit
+			// to one of ours must not be written over. The library clears a
+			// destination unconditionally, so this check is the last guard.
+			const planned: PlannedSkill[] = [];
+			for (const p of plan.skills.filter((p) => p.action === "install" && group.tokens.includes(p.token))) {
+				const owned = state.owned[p.name];
+				const on = diskState(p.name, env.dirs, owned?.claudeHash);
+				if (!owned && (on.shared !== "absent" || on.claude !== "absent")) record({ ...p, detail: "not ours: a folder by that name appeared during this run" }, "skipped");
+				else if (owned && (on.shared === "other" || on.claude === "other" || (on.shared === "dir" && on.hash !== owned.hash))) record({ ...p, detail: "edited during this run" }, "modified", { commit: owned.commit });
+				else planned.push(p);
+			}
+			const names = planned.map((p) => p.name);
 			if (!handle || names.length === 0) continue;
 			env.log(`${group.source}: installing ${names.join(" ")}`);
-			const planned = plan.skills.filter((p) => names.includes(p.name));
 			state.pending = { runId: run.id, at: new Date().toISOString(), skills: Object.fromEntries(planned.map((p) => [p.name, { token: p.token.token, source: p.token.source, commit: p.commit }])) };
 			writeSkillsState(env.dir, state);
 			let outcome: InstallOutcome;
@@ -757,7 +802,10 @@ export async function syncSkills(selection: SkillSelection, mode: "install" | "u
 			try {
 				const state = readSkillsState(env.dir);
 				const other = state.last;
-				if (round > 0 && other && other.id !== mine && selectionKey(parseSkills(other.selection)) !== selectionKey(selection)) {
+				// Only a pass that started after this run did can stop it: an
+				// older pass (say, the one holding the lock when this run started)
+				// is not a newer selection.
+				if (round > 0 && other && other.id !== mine && other.at >= me.startedAt && selectionKey(parseSkills(other.selection)) !== selectionKey(selection)) {
 					superseded = other;
 					if (state.installer?.pid === me.pid && state.installer.startTicks === me.startTicks) {
 						delete state.installer;

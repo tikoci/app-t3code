@@ -411,7 +411,10 @@ How the imports behave:
   once, installs what is missing, and moves skills from a token without
   `#ref` to the repository's newest commit. A pinned `#ref` is never moved
   (a branch or tag that moves upstream stays where it was installed until
-  the token changes), so pin `#ref` for stability.
+  the token changes), so pin `#ref` for stability. A floating source that
+  reports no commit is installed again on every update, since it can't be
+  shown unchanged. A missing Claude link is put back on its own, without
+  fetching a newer copy.
   `t3app skills update` does the same now; `t3app skills install` only adds
   what is missing or whose token changed.
 - **The earlier token wins a clash.** Two repositories can share a skill
