@@ -19,6 +19,8 @@ import {
 	parseSkillToken,
 	errorLine,
 	readSkillsState,
+	restoreClaude,
+	diskState,
 	type SkillDirs,
 	type SkillsBackend,
 	type SyncEnv,
@@ -453,6 +455,29 @@ describe("sync", () => {
 		expect(content("routeros-mndp")).toBe("mndp stable 1");
 		expect(skillState("tikoci/routeros-skills#stable")["routeros-mndp"]).toBe("installed");
 		expect(readSkillsState(env.dir).owned["routeros-mndp"]?.commit).toBe("d".repeat(40));
+	});
+
+	test("where links are refused, Claude's entry is restored as a copy that counts as ours", async () => {
+		await sync("tikoci/routeros-skills");
+		rmSync(join(dirs.claude, "routeros-mndp"));
+		const refuse = () => {
+			throw Object.assign(new Error("EPERM: operation not permitted, symlink"), { code: "EPERM" });
+		};
+		const copyHash = restoreClaude("routeros-mndp", dirs, refuse);
+		expect(lstatSync(join(dirs.claude, "routeros-mndp")).isDirectory()).toBe(true);
+		expect(content("routeros-mndp")).toBe("tikoci mndp v1");
+		expect(copyHash).toMatch(/^[0-9a-f]{64}$/);
+		expect(diskState("routeros-mndp", dirs, copyHash).claude).toBe("ours");
+		// Something that appeared at the entry is left alone, never removed.
+		rmSync(join(dirs.claude, "routeros-firewall"));
+		mkdirSync(join(dirs.claude, "routeros-firewall"));
+		writeFileSync(join(dirs.claude, "routeros-firewall", "SKILL.md"), "the user's");
+		expect(() => restoreClaude("routeros-firewall", dirs, refuse)).toThrow("EPERM");
+		expect(content("routeros-firewall")).toBe("the user's");
+		// A link that works records no copy hash.
+		rmSync(join(dirs.claude, "routeros-mndp"), { recursive: true });
+		expect(restoreClaude("routeros-mndp", dirs)).toBeNull();
+		expect(lstatSync(join(dirs.claude, "routeros-mndp")).isSymbolicLink()).toBe(true);
 	});
 
 	test("a floating source that reports no commit is refreshed on update, not kept as unchanged", async () => {

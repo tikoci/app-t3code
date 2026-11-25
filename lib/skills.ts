@@ -27,7 +27,7 @@
 // the library). The image copies lib/ to /usr/local/lib/t3app/ with the
 // library installed beside it (node_modules, frozen lockfile); lib/t3app.ts
 // dispatches `t3app skills` here.
-import { closeSync, ftruncateSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, symlinkSync, writeFileSync, writeSync } from "node:fs";
+import { closeSync, cpSync, ftruncateSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync, writeSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import {
 	appHome,
@@ -225,10 +225,31 @@ function physical(dir: string): string {
 	}
 }
 
-/** Link Claude's entry to the shared copy the way the library does: relative to the physical directory. */
-export function linkClaude(name: string, dirs: SkillDirs): void {
+/**
+ * Put Claude's entry back the way the library does: a link relative to the
+ * physical directory, or, where the filesystem refuses links, a copy of the
+ * shared folder. Returns the copy's folderHash (to record as `claudeHash`),
+ * or null for a link. A failed copy is removed, so it never reads as a user
+ * edit. `link` is replaceable for tests.
+ */
+export function restoreClaude(name: string, dirs: SkillDirs, link: (target: string, path: string) => void = (t, p) => symlinkSync(t, p)): string | null {
 	mkdirSync(dirs.claude, { recursive: true });
-	symlinkSync(relative(physical(dirs.claude), join(dirs.shared, name)), join(dirs.claude, name));
+	const entry = join(dirs.claude, name);
+	const shared = join(dirs.shared, name);
+	try {
+		link(relative(physical(dirs.claude), shared), entry);
+		return null;
+	} catch (linkError) {
+		// Something is there (it appeared meanwhile): not ours, leave it.
+		if (lstatOrNull(entry)) throw linkError;
+		try {
+			cpSync(shared, entry, { recursive: true, errorOnExist: true, force: false });
+			return folderHash(entry);
+		} catch (error) {
+			rmSync(entry, { recursive: true, force: true });
+			throw error;
+		}
+	}
 }
 
 /** `claudeHash`: the hash recorded for our own Claude copy (see OwnedSkill), also accepted as ours. */
@@ -702,8 +723,9 @@ export async function syncOnce(selection: SkillSelection, mode: "install" | "upd
 			else if (p.action === "relink" && owned) {
 				try {
 					if (lstatOrNull(join(env.dirs.claude, p.name))) throw new Error("something appeared there during this run");
-					linkClaude(p.name, env.dirs);
-					delete owned.claudeHash;
+					const copyHash = restoreClaude(p.name, env.dirs);
+					if (copyHash) owned.claudeHash = copyHash;
+					else delete owned.claudeHash;
 					owned.token = p.token.token;
 					record(p, "installed", { commit: owned.commit });
 				} catch (error) {
