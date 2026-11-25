@@ -71,9 +71,11 @@ YAML: `probe:P_EXTRA_GW=[networkRouterIP]` arrived as `172.18.0.1`, and
 
 From the container, the router answered on the gateway and on `[routerIP]`:
 TCP 22, 80, 8728 and 8729 open, 443 closed (no certificate), and REST as
-`admin` with an empty password returned `{"name":"CHR"}`. On a default
-quickchr CHR, `CENTRS_HOST=[networkRouterIP]` with `admin` and no password
-would therefore reach the host with no setup. A real router has a password,
+`admin` with an empty password returned `{"name":"CHR"}`. So on a default
+quickchr CHR the host is reachable at `[networkRouterIP]` with `admin` and no
+password, with no router setup. centrs still needs that address as its
+`<target>` (positional or `--host`; `CENTRS_HOST` alone doesn't select one,
+see "Inside the image"), or a CDB record for it. A real router has a password,
 and its `/ip/service` `address=` lists and firewall may not allow the app
 network, which defaults to 172.18.0.0/24 here.
 
@@ -130,9 +132,10 @@ and API or web access can read it.
   would unpair every device. Moving only the user's credentials elsewhere
   would need T3 itself to support it (an at-rest key, or a pluggable secret
   provider). **Accepted as is** (owner): like RouterOS's policy model, it's a
-  security choice made upstream. Router passwords simply don't go there;
-  a T3 secret card's file is imported into the CDB instead (centrs#672
-  item 3).
+  security choice made upstream. Router passwords don't belong there for
+  good. Importing a secret card's file into the CDB (centrs#672 item 3)
+  shortens their stay but doesn't avoid it; see "Secret request cards"
+  below.
 - **Provider environment variables** (Settings → Providers, per provider
   instance) take a plain value, a value marked sensitive (kept in the secret
   store) or a secret-provider reference (`op://vault/item/field` with
@@ -146,8 +149,10 @@ and API or web access can read it.
 - **Secret providers:** 1Password only (`BUILT_IN_SECRET_PROVIDER_DRIVER_LIST`),
   through `op`, signed in on the server's machine (service account or
   Connect for a headless server). New since the v0.1.7 research. `op` isn't
-  in the image. The driver runs exactly `op read --account=<a> --no-newline
-  <ref>` and `op inject --account=<a> -i <template>`
+  in the image. The driver runs `op --cache=false read --account=<a>
+  --no-newline <ref>` and `op --cache=false inject --account=<a> -i
+  <template>` (`--cache=false` skips the `op` daemon, which can hang on
+  prompts a background server can't show)
   (`packages/secret-provider-onepassword/src/server/driver.ts`). So an `op`
   on PATH that resolves `op://…` from something we control (the CDB, or
   `/run/secrets`) is technically possible: T3 would read references
@@ -155,9 +160,17 @@ and API or web access can read it.
   as 1Password's CLI, T3's UI says 1Password, and any change to the
   driver's calls breaks it. A pluggable provider is T3's call.
 - **Secret request cards** (`SecretRequests.ts`): the value never enters the
-  conversation; a `file` request moves it to an owner-only file for the
-  agent's own shell, valid about 24 h (`SECRET_REF_TTL_MS`). This is the
-  "temporary secret delivery" recipe of #47. The 2026-11-24 CHR run found the
+  conversation. Saving an answer first writes it, as plain JSON, into the
+  secret store (lines 190–204); a `file` request then moves it to an
+  owner-only file under `secrets/files` and removes the stored copy
+  (lines 109–110, 356–372). Both are under `/data/.t3/userdata/secrets` in
+  this image. The one-use reference expires after 24 h
+  (`SECRET_REF_TTL_MS`); delivered files are swept by mtime at startup and
+  then hourly (lines 422–444), so a file can outlive 24 h by up to an hour,
+  or longer if T3 isn't running. This is the "temporary secret delivery"
+  recipe of #47, and it means a typed password sits in plain text on `/data`
+  until it's imported and the file removed: an exception to the "no plain
+  password on `/data`" direction, not yet decided. The 2026-11-24 CHR run found the
   card refuses an empty value (#29), which matters for `admin` with no password.
 
 ## centrs side (0.2.0-next)
@@ -268,11 +281,19 @@ From the discussion on #47 and in the session that ran this research:
      commonly do with `*_FILE`. Then nothing secret is in any env, and
      `CENTRS_CDB_PASSWORD_FILE=/run/secrets/<name>` is safe to put in the YAML,
      the image `ENV` and the README. This conflicts with centrs's current
-     "never from a file" rule, whose reason is a password *persisted*
-     beside the CDB; `/run/secrets` is neither.
+     rule that the CDB password never comes from `centrs.env`
+     (`src/settings.ts`, the remediation text for `cdb-password`). What the
+     file route gains is narrower than "not persisted": the value stays out
+     of env, RouterOS config and `/export`, and out of the `/data` volume.
+     It is still a plaintext file on the router's app disk
+     (`pcie1/apps/<app>/secret-<name>`), it survives reboot, it sits in the
+     same app directory tree as the volume (a backup of that tree includes
+     both), and any RouterOS user who can read `/file` can read it.
   3. Agents prefix `CENTRS_CDB_PASSWORD=$(cat /run/secrets/…)` themselves:
-     works today, but it's a recipe every agent must follow, and it puts the
-     key on command lines in transcripts.
+     works today, but every invocation needs the recipe. The transcript
+     shows only the literal `$(cat …)`; the value is in the `centrs`
+     process's env, and it shows up only with shell tracing (`set -x`),
+     an `echo`, or tooling that records the environment.
 - **Host address:** `CENTRS_HOST` doesn't select a target, so the address
   belongs in the CDB record (seeded by `init` from `[networkRouterIP]` or the
   gateway) or in a `host` group, not in env.
@@ -283,7 +304,9 @@ From the discussion on #47 and in the session that ran this research:
   asks for `CENTRS_CDB_PASSWORD_FILE` / `--cdb-password-file`,
   `CENTRS_PASSWORD_FILE` / `--password-file` for parity, and
   `devices add|set --password-file` that can remove the file after import
-  (for T3's secret-card files). Option 2 above. With it,
+  (for T3's secret-card files; that route still leaves the typed password
+  in plain text on `/data` until the import, an exception still to be
+  decided). Option 2 above. With it,
   `CENTRS_CDB_PASSWORD_FILE=/run/secrets/<name>` is an ordinary, non-secret
   setting for the YAML and the image `ENV`.
 - **The host goes in the CDB,** seeded by startup from `[networkRouterIP]`
@@ -303,11 +326,18 @@ From the discussion on #47 and in the session that ran this research:
    (`LAB_PROBE_ENV`), reach the processes Codex starts? Measured so far:
    the container env reaches PID 1, `t3 serve` and T3's resource monitor.
    With Codex installed (about 24 minutes over the capped link) but no
-   session, nothing Codex-related ran in a 330 s sample past T3's re-probe
-   interval ([`probe/env-sampler.sh`](probe/env-sampler.sh)). The check
-   needs a signed-in Codex (or Claude) session started from T3; then
-   [`probe/provider-env.sh`](probe/provider-env.sh) answers it.
-2. A secret request card's file across a T3 restart.
+   session, no Codex-related process was observed in a 330 s sample past
+   T3's re-probe interval ([`probe/env-sampler.sh`](probe/env-sampler.sh)
+   polls every 0.2 s, so a shorter-lived process could be missed).
+   [`probe/provider-env.sh`](probe/provider-env.sh) lists only processes
+   that carry a marker, so it can't show the negative case (an agent's
+   shell that strips both). The answer needs a signed-in Codex (or Claude)
+   session in T3 whose agent runs
+   [`probe/agent-shell-env.sh`](probe/agent-shell-env.sh) from its own
+   shell: it prints its PID and parent chain and both markers' presence,
+   zeros included.
+2. A secret request card's file across a T3 restart, and the owner's call on
+   its temporary plaintext on `/data` (see "Secret request cards").
 3. The `/container` env leak on a 7.26 beta; then report it to MikroTik.
 4. Seeding the CDB at first start: once, then left alone (like skills), or
    reconciled each start; what happens when the operator changes the secret
