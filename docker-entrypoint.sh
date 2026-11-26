@@ -50,8 +50,9 @@ background() {
 # `install --keep-trying` are its entrypoint-only forms.
 # init: name any ignored legacy T3CODE_* keys, report both selections
 # (warnings go to the container log), relink tool-group payloads already in
-# the home (offline, fast) and write the runtime status JSON. Bounded and
-# never fatal: T3 must start whatever the selections say.
+# the home (offline, fast), write the runtime status JSON and seed the
+# RouterOS host in a new Centrs address book. Bounded and never fatal:
+# T3 must start whatever the selections say.
 # Then the installs run in the background; T3 does not wait. Tool-group
 # payloads install while missing; provider CLIs (#13) install while missing
 # from PATH (npm into /data/.local, the vendor's installer, or

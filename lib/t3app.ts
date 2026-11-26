@@ -5,6 +5,7 @@
 // new binaries. AGENTS.md "CLI conventions" has the rules every area follows.
 // The image copies lib/ to /usr/local/lib/t3app/ and bin/t3app runs this file.
 import { buildProviderStatus, formatProviderStatus, installLogPath as providersLog, PROVIDERS_ENV, main as providersMain } from "./providers.ts";
+import { initHostCdb } from "./router-credentials.ts";
 import { helpRequest } from "./runtime.ts";
 import { buildSkillsStatus, formatSkillsStatus, SKILLS_ENV, installLogPath as skillsLog, main as skillsMain } from "./skills.ts";
 import { SELECTOR_ENV } from "./tool-catalog.ts";
@@ -143,7 +144,8 @@ async function init(rest: string[]): Promise<number> {
 	await providersMain(["init"]);
 	await skillsMain(["init"]);
 	await toolsMain(["init"]);
-	return 0;
+	// Internal startup normally runs as node. A root shell must never seed a root-owned CDB.
+	return process.getuid?.() !== 0 && !initHostCdb() ? 1 : 0;
 }
 
 /** The t3app CLI; returns the process exit code. */

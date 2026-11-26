@@ -36,10 +36,18 @@ services:
       # Agent skills to import into /data at each start (GitHub owner/repo,
       # owner/repo@skill, owner/repo#ref, space-separated), or "none".
       T3APP_SKILLS: "tikoci/routeros-skills"
+      # The host address and key path are ordinary settings. RouterOS
+      # mounts the generated key separately as a file.
+      T3APP_ROUTEROS_HOST: "[networkRouterIP]"
+      CENTRS_CDB_PASSWORD_FILE: "/run/secrets/t3code_cdb_key"
+    secrets:
+      - t3code_cdb_key
     volumes:
       # Keep this name and destination when upgrading: the whole home,
       # including .t3/userdata, projects, worktrees, and provider logins.
       - t3code-data:/data
     restart: unless-stopped
+secrets:
+  t3code_cdb_key:
 volumes:
   t3code-data: {}
