@@ -334,7 +334,7 @@ From the discussion on #47 and in the session that ran this research:
     maintainer, 2026-11-26).
   - **A missing key file when no key is needed is a warning** (`ok:true`): the
     file is read only for an encrypted CDB load, `devices init --encrypt` or
-    `devices add-encryption`. So an image-wide
+    `devices encrypt`. So an image-wide
     `CENTRS_CDB_PASSWORD_FILE` default is safe on plain Docker and before the
     first CDB exists (settled on centrs#672).
   - **centrs#666 is a prerequisite** (settled on centrs#672 and in centrs's
