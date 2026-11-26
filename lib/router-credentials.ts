@@ -1,4 +1,4 @@
-import { closeSync, linkSync, lstatSync, mkdirSync, mkdtempSync, openSync, readdirSync, rmSync } from "node:fs";
+import { closeSync, linkSync, lstatSync, mkdirSync, mkdtempSync, openSync, readdirSync, rmSync, statSync } from "node:fs";
 import { isIP } from "node:net";
 import { join } from "node:path";
 import { kernelFlock, LOCK_EX, LOCK_NB } from "./runtime.ts";
@@ -63,8 +63,11 @@ export function initHostCdb(env: NodeJS.ProcessEnv = process.env, centrs: readon
 
 			const existing = pathInfo(cdb);
 			if (existing) {
+				const target = existing.isSymbolicLink() ? statSync(cdb, { throwIfNoEntry: false }) : existing;
+				if (!target) throw new Error("winbox.cdb symlink points to a missing file");
+				if (!target.isFile()) throw new Error("winbox.cdb must point to a regular file");
 				// Explicitly naming the file keeps centrs list from creating an open CDB if it disappears.
-				if (existing.isFile()) run(["devices", "list", "--cdb-file", cdb]);
+				run(["devices", "list", "--cdb-file", cdb]);
 				return true;
 			}
 			if (!key) throw new Error(`provide the app key file via ${CDB_KEY_FILE}`);

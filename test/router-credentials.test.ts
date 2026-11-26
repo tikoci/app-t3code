@@ -146,10 +146,47 @@ test("a later start clears abandoned staging and preserves a dangling CDB link",
 	const abandoned = join(dirname(cdb), ".t3app-cdb-ABC123");
 	mkdirSync(abandoned, { recursive: true });
 	writeFileSync(join(abandoned, "winbox.cdb"), "abandoned");
-	symlinkSync(join(home, "missing.cdb"), cdb);
-	expect(initHostCdb(env, command)).toBe(true);
+	const missing = join(home, "missing.cdb");
+	symlinkSync(missing, cdb);
+	const log = spyOn(console, "error").mockImplementation(() => {});
+	try {
+		expect(initHostCdb(env, command)).toBe(false);
+		expect(log).toHaveBeenCalledWith("t3app: RouterOS CDB: winbox.cdb symlink points to a missing file");
+	} finally {
+		log.mockRestore();
+	}
 	expect(lstatSync(cdb).isSymbolicLink()).toBe(true);
+	expect(existsSync(missing)).toBe(false);
 	expect(existsSync(abandoned)).toBe(false);
+});
+
+test("an existing symlink is checked through Centrs and its target is preserved", () => {
+	mkdirSync(dirname(cdb), { recursive: true });
+	const target = join(home, "existing.cdb");
+	writeFileSync(target, "encrypted CDB");
+	symlinkSync(target, cdb);
+	const log = spyOn(console, "error").mockImplementation(() => {});
+	try {
+		expect(initHostCdb({ ...env, CENTRS_CDB_PASSWORD_FILE: undefined }, command)).toBe(false);
+		expect(log).toHaveBeenCalledWith("t3app: RouterOS CDB: centrs devices list failed (cdb/password-required)");
+		expect(initHostCdb(env, command)).toBe(true);
+	} finally {
+		log.mockRestore();
+	}
+	expect(lstatSync(cdb).isSymbolicLink()).toBe(true);
+	expect(readFileSync(target, "utf8")).toBe("encrypted CDB");
+});
+
+test("a directory is reported without being treated as an address book", () => {
+	mkdirSync(cdb, { recursive: true });
+	const log = spyOn(console, "error").mockImplementation(() => {});
+	try {
+		expect(initHostCdb(env, command)).toBe(false);
+		expect(log).toHaveBeenCalledWith("t3app: RouterOS CDB: winbox.cdb must point to a regular file");
+	} finally {
+		log.mockRestore();
+	}
+	expect(lstatSync(cdb).isDirectory()).toBe(true);
 });
 
 test("the seed preserves a CDB created by another writer during initialization", () => {

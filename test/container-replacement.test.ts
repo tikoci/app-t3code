@@ -74,6 +74,13 @@ sha256sum ${cdb}`, "CENTRS_SKIP_ENV_FILE= YeS ");
 		const restored = await start(`centrs devices list --json | jq -e '.data | length == 1 and .[0].user == "t3-agent"'
 sha256sum ${cdb}`);
 		expect(restored.split("\n").at(-1)).toBe(fingerprint);
+		const linked = await start(`mv ${cdb} ${cdb}.linked
+ln -s winbox.cdb.linked ${cdb}
+t3app init
+test -L ${cdb}
+sha256sum ${cdb}`);
+		expect(linked.split("\n").at(-1)).toBe(fingerprint);
+		expect(await checkKey("cdb/password-required", "CENTRS_CDB_PASSWORD_FILE=")).toBe(fingerprint);
 	} finally {
 		await docker("volume", "rm", volume).catch(() => {});
 		rmSync(fixtures, { recursive: true, force: true });
