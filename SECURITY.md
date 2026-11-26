@@ -93,13 +93,13 @@ The supported way to pair is still `t3app pairing` (see
 
 On fresh RouterOS installs, the app generates a CDB key and supplies it
 through `/run/secrets/t3code_cdb_key`. The Centrs environment setting holds
-the path. The key's backing file lives under the app directory on the
-router and is readable by anyone with access to that file or a backup
-that includes it. Processes in the app can read the mount. Keep the key
+the path. Processes in the app can read the mount. The router's backing
+file, `<disk>/apps/t3code/secret-t3code_cdb_key`, is readable by anyone
+with access to that file or a backup that includes it. Keep that key
 backup apart from the encrypted CDB.
 
-A configured router password is passed on stdin and stored in the
-host's encrypted CDB record. RouterOS account permissions control what
+A router password imported on stdin is stored in the host's encrypted
+CDB record. RouterOS account permissions control what
 the agent can do. Other targets use their own records. A global Centrs
 target password or a password stored in `__default__` can apply to other
 routers, including targets outside the address book.

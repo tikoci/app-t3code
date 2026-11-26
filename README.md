@@ -179,22 +179,21 @@ to find the address. Pass it as the positional target in
 `centrs retrieve <address> /system/identity`. The appropriate RouterOS
 management service must be reachable from the container.
 
-Startup seeds the address without credentials by default. Set them in
-the host record using the account and permissions you want the agent to
-have. With the account password in a private file accessible to the
-container, run this in its terminal, replacing the example values.
+Startup seeds the address without credentials by default. In the
+container terminal, import the password into that host record from a
+private file. You can use a file delivered by a T3 secret request.
+Replace the example address, account and file path.
 
 ```sh
 centrs devices set 172.18.0.1 --user t3-agent --password-stdin < /path/to/router-password
 ```
 
-On a disposable quickchr lab with passwordless `admin`, use
-`centrs devices set 172.18.0.1 --user admin` with the actual host address.
-For initial seeding before first start, set `T3APP_ROUTEROS_USER` and
-`T3APP_ROUTEROS_PASSWORD_FILE` to the account and its mounted password-file
-path. A lab may set `T3APP_ROUTEROS_USER=admin` alone. Keep the account
-password separate from the CDB key. Preserve
-`T3APP_ROUTEROS_HOST=[networkRouterIP]` if replacing the app's full
+Remove the temporary password file after a successful import. Keep the
+account password separate from the CDB key. For a disposable quickchr lab
+with passwordless `admin`, set `T3APP_ROUTEROS_LAB_ADMIN=yes` before
+first start, or use `centrs devices set 172.18.0.1 --user admin` after
+startup, with the actual host address. Preserve
+`T3APP_ROUTEROS_HOST=[networkRouterIP]` if replacing the full app
 environment list. An existing address book stays in place. Edit it with
 Centrs when the host address or account changes.
 
@@ -202,15 +201,23 @@ An image-only `/app/update` keeps existing installations usable. To add
 automatic seeding to an install with the older YAML, follow the
 [offline backup and volume restore procedure](#what-survives-an-image-replacement)
 before migrating the YAML. Keep the app stopped until volumes are restored
-and any existing CDB uses its original key. Back up the CDB key separately.
-If the mount disappears, restore it. If RouterOS regenerates the key,
-restore the previous secret through the router's secret settings to
-unlock the existing CDB. The app leaves that CDB intact.
+and any existing CDB uses its original key. For CDBs created by this app,
+back up `<disk>/apps/t3code/secret-t3code_cdb_key` separately from `/data`.
+If the key changes, restore the saved value in a private RouterOS admin
+terminal. This updates the mount and restarts an enabled app while keeping
+its volumes. Include any other app secret entries if you customized the
+YAML.
 
-Plain Docker or Podman starts without a host seed by default. If you
-already provide a CDB key in `CENTRS_CDB_PASSWORD`, set
-`CENTRS_CDB_PASSWORD_FILE` to an empty string in your container environment
-so Centrs has a single key source.
+```routeros
+/app/set [find where name="t3code"] secrets="t3code_cdb_key:<saved-key>"
+```
+
+Plain Docker and Podman start without a host seed. T3 startup honors an
+existing `CENTRS_CDB_PASSWORD` and clears the file setting in its own
+environment. Direct sessions such as `/container/shell` and `docker exec`
+get the container's configured environment. When those sessions already
+have a value-based key, or when setting `CENTRS_CDB_PASSWORD` for one
+command, also set `CENTRS_CDB_PASSWORD_FILE=` so Centrs has one key source.
 
 ### Pairing with the web UI
 

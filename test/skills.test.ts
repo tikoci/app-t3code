@@ -110,7 +110,7 @@ describe("the library and the image", () => {
 		expect(dockerfile).toContain("COPY package.json bun.lock /tmp/t3app-deps/");
 		expect(dockerfile).toContain("bun install --cwd /tmp/t3app-deps --production --frozen-lockfile --ignore-scripts");
 		expect(dockerfile).toContain("mv /tmp/t3app-deps/node_modules /usr/local/lib/t3app/node_modules");
-	expect(read("bin/t3app")).toContain("exec bun --no-env-file --no-install /usr/local/lib/t3app/t3app.ts");
+		expect(read("bin/t3app")).toContain("exec bun --no-env-file --no-install /usr/local/lib/t3app/t3app.ts");
 	});
 
 	test("telemetry is off on every call", () => {

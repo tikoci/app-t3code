@@ -16,7 +16,8 @@ gives them their `-app.<N>` heading.
 
 - Fresh RouterOS `/app` installs seed the host address in an encrypted
   Centrs address book using a mounted CDB key. Startup preserves existing
-  address books and supports optional host-specific credentials (#47).
+  address books. Router credentials can be imported into the host record
+  after startup (#47).
 
 ## 0.1.11-app.221 — 2026-11-25
 
