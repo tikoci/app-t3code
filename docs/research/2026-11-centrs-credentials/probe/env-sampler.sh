@@ -12,7 +12,8 @@ while [ "$SECONDS" -lt "$end" ]; do
     case "$cmd" in *codex*) ;; *) continue ;; esac
     e=$(tr '\0' '\n' < "$p/environ" 2>/dev/null) || continue
     seen="$seen$pid "
-    echo "$(date -u +%T) pid=$pid probe=$(grep -c '^LAB_PROBE_ENV=' <<< "$e") router=$(grep -c '^LAB_ROUTER=' <<< "$e") ${cmd:0:90}" >> "$out"
+    # Record the process name (comm), never its command line, which could hold a value.
+    echo "$(date -u +%T) pid=$pid probe=$(grep -c '^LAB_PROBE_ENV=' <<< "$e") router=$(grep -c '^LAB_ROUTER=' <<< "$e") comm=$(cat "$p/comm" 2>/dev/null)" >> "$out"
   done
   sleep 0.2
 done

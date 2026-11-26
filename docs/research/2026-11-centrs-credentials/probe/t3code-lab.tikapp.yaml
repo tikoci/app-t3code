@@ -1,13 +1,15 @@
 # Lab copy of app/t3code.tikapp.yaml for the credentials research: adds an
 # app-level secret (as a file only, no env placeholder) and one address
 # placeholder. Core tools only, Codex only, to keep the pull and install small.
+# Pinned to the measured build (a -app.<N> tag never moves); the 2026-11-25
+# run pulled :0.1, which was 0.1.11-app.221 then.
 name: t3code
 descr: T3 Code server (credentials lab)
 category: development
 url-path: /
 services:
   t3code:
-    image: ghcr.io/tikoci/app-t3code:0.1
+    image: ghcr.io/tikoci/app-t3code:0.1.11-app.221
     ports:
       - "3773:3773:web:tcp"
     environment:
