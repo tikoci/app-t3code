@@ -18,7 +18,7 @@ beforeEach(() => {
 	const cli = join(home, "centrs.ts");
 	writeFileSync(
 		cli,
-		`import { existsSync, writeFileSync } from "node:fs";
+		`import { existsSync, readFileSync, writeFileSync } from "node:fs";
 const args = process.argv.slice(2);
 const path = args[args.indexOf("--cdb-file") + 1];
 function fail(code) {
@@ -35,7 +35,9 @@ if (args[0] === "settings") {
   writeFileSync(path, JSON.stringify(args));
   if (process.env.TEST_CENTRS_CONCURRENT_CDB) writeFileSync(process.env.TEST_CENTRS_CONCURRENT_CDB, "operator CDB");
 } else if (args[1] === "list") {
-  if (!existsSync(process.env.CENTRS_CDB_PASSWORD_FILE)) fail("cdb/password-unavailable");
+  const keyFile = process.env.CENTRS_CDB_PASSWORD_FILE;
+  if (!keyFile && readFileSync(path, "utf8") !== "open CDB") fail("cdb/password-required");
+  if (keyFile && !existsSync(keyFile)) fail("cdb/password-unavailable");
   if (process.env.TEST_CENTRS_WRONG_KEY) fail("cdb/decrypt-failed");
 } else {
   process.exit(2);
@@ -61,6 +63,26 @@ test("standalone containers and user-owned CDB locations are skipped", () => {
 	writeFileSync(config, "CENTRS_PORT=80\n");
 	expect(initHostCdb({ ...env, XDG_CONFIG_HOME: join(home, "xdg") }, command)).toBe(true);
 	expect(existsSync(cdb)).toBe(true);
+});
+
+test("only an enabled Centrs skip flag bypasses the settings file's CDB path", () => {
+	const config = join(dirname(cdb), "centrs.env");
+	const custom = join(home, "custom.cdb");
+	mkdirSync(dirname(config), { recursive: true });
+	writeFileSync(config, `CENTRS_CDB_FILE=${custom}\n`);
+	const configured = { ...env, TEST_CENTRS_CONFIG_CDB: custom };
+	for (const value of ["", "0", "false", "no", "off", "invalid"]) {
+		expect(initHostCdb({ ...configured, CENTRS_SKIP_ENV_FILE: value }, command), value).toBe(true);
+		expect(existsSync(cdb), value).toBe(false);
+	}
+	expect(initHostCdb({ ...configured, CENTRS_SKIP_ENV_FILE: "yes", CENTRS_CDB_FILE: custom }, command)).toBe(true);
+	expect(existsSync(cdb)).toBe(false);
+	for (const value of ["1", "true", " YeS ", "on"]) {
+		expect(initHostCdb({ ...configured, CENTRS_SKIP_ENV_FILE: value }, command), value).toBe(true);
+		expect(existsSync(cdb), value).toBe(true);
+		rmSync(cdb);
+	}
+	expect(existsSync(custom)).toBe(false);
 });
 
 test("the bootstrap uses only the host record and adds admin only for an opted-in lab", () => {
@@ -103,10 +125,21 @@ test("a missing key blocks seeding and a lost or wrong key leaves an existing CD
 		expect(log).toHaveBeenCalledWith("t3app: RouterOS CDB: centrs devices list failed (cdb/password-unavailable)");
 		expect(initHostCdb({ ...env, TEST_CENTRS_WRONG_KEY: "yes" }, command)).toBe(false);
 		expect(log).toHaveBeenCalledWith("t3app: RouterOS CDB: centrs devices list failed (cdb/decrypt-failed)");
+		for (const keyFile of [undefined, ""]) {
+			expect(initHostCdb({ ...env, CENTRS_CDB_PASSWORD_FILE: keyFile }, command)).toBe(false);
+			expect(log).toHaveBeenLastCalledWith("t3app: RouterOS CDB: centrs devices list failed (cdb/password-required)");
+		}
 		expect(readFileSync(cdb, "utf8")).toBe(before);
 	} finally {
 		log.mockRestore();
 	}
+});
+
+test("an existing open CDB remains usable without a key file", () => {
+	mkdirSync(dirname(cdb), { recursive: true });
+	writeFileSync(cdb, "open CDB");
+	expect(initHostCdb({ ...env, CENTRS_CDB_PASSWORD_FILE: undefined }, command)).toBe(true);
+	expect(readFileSync(cdb, "utf8")).toBe("open CDB");
 });
 
 test("a later start clears abandoned staging and preserves a dangling CDB link", () => {

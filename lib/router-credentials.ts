@@ -47,7 +47,9 @@ export function initHostCdb(env: NodeJS.ProcessEnv = process.env, centrs: readon
 	try {
 		// Keep operator-owned locations and value-based keys outside the bootstrap.
 		if (env["CENTRS_CDB_FILE"] || env["CENTRS_CDB_PASSWORD"] !== undefined) return true;
-		if (pathInfo(config) && JSON.parse(run(["settings", "get", "CENTRS_CDB_FILE"]).toString()).data?.value) return true;
+		// Centrs settings get reads the file even when ordinary commands skip it.
+		const skipConfig = /^(1|true|yes|on)$/i.test(env["CENTRS_SKIP_ENV_FILE"]?.trim() ?? "");
+		if (!skipConfig && pathInfo(config) && JSON.parse(run(["settings", "get", "CENTRS_CDB_FILE"]).toString()).data?.value) return true;
 		if (!pathInfo(cdb) && (!key || !pathInfo(key))) throw new Error(`provide the app key file via ${CDB_KEY_FILE}`);
 
 		mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -62,7 +64,7 @@ export function initHostCdb(env: NodeJS.ProcessEnv = process.env, centrs: readon
 			const existing = pathInfo(cdb);
 			if (existing) {
 				// Explicitly naming the file keeps centrs list from creating an open CDB if it disappears.
-				if (key && existing.isFile()) run(["devices", "list", "--cdb-file", cdb]);
+				if (existing.isFile()) run(["devices", "list", "--cdb-file", cdb]);
 				return true;
 			}
 			if (!key) throw new Error(`provide the app key file via ${CDB_KEY_FILE}`);

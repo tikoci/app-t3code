@@ -38,31 +38,38 @@ test.skipIf(!image)("the baked Centrs bootstraps and preserves the encrypted hos
 	];
 	const mount = ["--mount", `type=bind,src=${fixtures},dst=/run/secrets,readonly`];
 	const cdb = "/data/.config/tikoci/winbox.cdb";
-	const start = (script: string) =>
-		docker("run", "--rm", "--network", "none", "--volume", `${volume}:/data`, ...env, ...mount, image as string, "bash", "-o", "pipefail", "-ec", script);
-	const checkKey = async (code: string) => {
+	const start = (script: string, ...extraEnv: string[]) => docker(
+		"run", "--rm", "--network", "none", "--volume", `${volume}:/data`, ...env, ...mount,
+		...extraEnv.flatMap((entry) => ["--env", entry]), image as string, "bash", "-o", "pipefail", "-ec", script,
+	);
+	const checkKey = async (code: string, ...extraEnv: string[]) => {
 		const result = await start(`if centrs devices list --json 2>/tmp/centrs-error; then exit 1; fi
 jq -e '.error.code == "${code}"' /tmp/centrs-error
 if t3app init >/dev/null 2>/tmp/init-error; then exit 1; fi
 grep -F "centrs devices list failed (${code})" /tmp/init-error
-sha256sum ${cdb}`);
+sha256sum ${cdb}`, ...extraEnv);
 		return result.split("\n").at(-1);
 	};
 	try {
 		writeFileSync(key, "fixture CDB key\n", { mode: 0o644 });
 		await docker("volume", "create", volume);
 		await docker("run", "--rm", "--network", "none", "--user", "root", ...env, ...mount, image as string, "test", "!", "-e", cdb);
+		await start(`mkdir -p /data/.config/tikoci
+printf '%s\n' 'CENTRS_CDB_FILE=/data/operator.cdb' > /data/.config/tikoci/centrs.env`, "T3APP_ROUTEROS_HOST=");
 		const first = await start(`centrs --version
 test "$(stat -c %a ${cdb})" = 600
 centrs devices list --json | jq -e '.data | length == 1 and .[0].target == "192.0.2.41" and .[0].group == "host" and .[0].user == "admin"'
+test ! -e /data/operator.cdb
+rm /data/.config/tikoci/centrs.env
 centrs devices set 192.0.2.41 --user t3-agent --password-stdin < /run/secrets/fixture-account >/dev/null
-sha256sum ${cdb}`);
+sha256sum ${cdb}`, "CENTRS_SKIP_ENV_FILE= YeS ");
 		console.log(`Centrs image smoke: ${first.split("\n").find((line) => /^\d+\.\d+\.\d+/.test(line))}`);
 		const fingerprint = first.split("\n").at(-1);
 		writeFileSync(key, "changed fixture key\n");
 		expect(await checkKey("cdb/decrypt-failed")).toBe(fingerprint);
 		rmSync(key);
 		expect(await checkKey("cdb/password-unavailable")).toBe(fingerprint);
+		expect(await checkKey("cdb/password-required", "CENTRS_CDB_PASSWORD_FILE=")).toBe(fingerprint);
 		writeFileSync(key, "fixture CDB key\n", { mode: 0o644 });
 		const restored = await start(`centrs devices list --json | jq -e '.data | length == 1 and .[0].user == "t3-agent"'
 sha256sum ${cdb}`);
