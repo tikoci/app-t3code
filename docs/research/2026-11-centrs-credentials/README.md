@@ -327,12 +327,21 @@ From the discussion on #47 and in the session that ran this research:
   setting there.
   - **Don't set `CENTRS_PASSWORD_FILE` in the container env.** The env tier
     outranks CDB records (args → env → record → `__default__`), so it would
-    replace every router's password, not only the host's. Router passwords
-    live in CDB records.
-  - **centrs#666 matters here too.** Until Bun's `.env` auto-load is off for
-    the installed `centrs`, a project's `.env` lands in the process
-    environment, so it could name a `*_FILE` path the "process environment
-    only" rule is meant to keep out. Raised on centrs#672.
+    replace every router's password, not only the host's, and a set-but-missing
+    file is an error rather than a fallback to the record. Router credentials
+    come in through app-t3code's own (non-`CENTRS_*`) environment names, which
+    `t3app init` writes into the CDB's `__default__` record (owner and centrs
+    maintainer, 2026-11-26).
+  - **A missing key file when no key is needed is a warning** (`ok:true`): the
+    file is read only for an encrypted CDB load, `devices init --encrypt` or
+    `devices add-encryption`. So an image-wide
+    `CENTRS_CDB_PASSWORD_FILE` default is safe on plain Docker and before the
+    first CDB exists (settled on centrs#672).
+  - **centrs#666 is a prerequisite** (settled on centrs#672 and in centrs's
+    matrix): until Bun's `.env` auto-load stops reaching centrs, a project's
+    `.env` lands in the process environment and could name a `*_FILE` path.
+    It lands before #672 or with it. Since an `env -S` shebang breaks
+    BusyBox, #666 now leans toward centrs filtering the `.env` keys itself.
 - **The host goes in the CDB,** seeded by startup from `[networkRouterIP]`
   or the gateway, not in env. Agents still name it as a positional target
   (the address, or an identity once the record carries one); the record
@@ -367,15 +376,14 @@ From the discussion on #47 and in the session that ran this research:
 3. The `/container` env leak on a 7.26 beta; then report it to MikroTik.
 4. Seeding the CDB at first start: once, then left alone (like skills), or
    reconciled each start; what happens when the operator changes the secret
-   (`/app/set secrets=`) after the CDB was keyed with the old one.
+   (`/app/set secrets=`) after the CDB was keyed with the old one; and the
+   names of app-t3code's own router-credential settings that feed
+   `__default__`. An idea for later (owner, not filed): centrs `devices init`
+   could take the `__default__` user and password, so creating and seeding
+   the CDB is one write instead of two.
 5. centrs's MCP server on the same encrypted CDB.
 6. One app secret or two (CDB key and account password), see "Inside the image".
-7. What centrs does when `CENTRS_CDB_PASSWORD_FILE` names a missing file
-   but no key is needed (an open CDB, no CDB yet, or Docker without the
-   secret). The image `ENV` default would set it everywhere, so a hard
-   `cdb/password-unavailable` there would break plain use. Raised on
-   centrs#672.
-8. Docker/Podman equivalents (#72): `/run/secrets` from compose secrets, the
+7. Docker/Podman equivalents (#72): `/run/secrets` from compose secrets, the
    bridge gateway, no router there.
 
 ## Reproduce
