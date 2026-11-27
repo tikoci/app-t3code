@@ -200,13 +200,19 @@ Centrs when the host address or account changes.
 An image-only `/app/update` keeps existing installations usable. To add
 automatic seeding to an install with the older YAML, follow the
 [offline backup and volume restore procedure](#what-survives-an-image-replacement)
-before migrating the YAML. Keep the app stopped until volumes are restored
-and any existing CDB uses its original key. For CDBs created by this app,
-back up `<disk>/apps/t3code/secret-t3code_cdb_key` separately from `/data`.
-If the key changes, restore the saved value in a private RouterOS admin
-terminal. This updates the mount and restarts an enabled app while keeping
-its volumes. Include any other app secret entries if you customized the
-YAML.
+before migrating the YAML. For CDBs created by this app, back up
+`<disk>/apps/t3code/secret-t3code_cdb_key` separately from `/data`.
+On RouterOS 7.25.2, applying the YAML removed all of `<disk>/apps/t3code`,
+including the volume and the key file, and nothing came back until the app
+was enabled. Keep the app disabled, recreate the volume's source directory,
+and restore it with its ownership and mount mapping intact.
+
+If the restore includes an existing CDB, set its original key before the
+first enable, in a private RouterOS admin terminal. RouterOS then writes the
+saved value to the key file instead of generating a new one. The same
+command recovers a key that has already changed. It updates the mount and
+restarts an enabled app while keeping its volumes; a disabled app stays
+disabled. Include any other app secret entries if you customized the YAML.
 
 ```routeros
 /app/set [find where name="t3code"] secrets="t3code_cdb_key:<saved-key>"
