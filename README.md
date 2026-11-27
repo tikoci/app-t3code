@@ -38,7 +38,7 @@ app disk, so logins, the T3 database, and `~/projects` survive reboots.
 
 ### Preview or edit the YAML
 
-[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++HOME%3A+%2Fdata%0A++++++T3CODE_HOME%3A+%2Fdata%2F.t3%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++++%23+Optional+tool+groups%2C+installed+into+%2Fdata+in+the+background+after%0A++++++%23+start.+Remove+names+to+skip+them%3B+%22none%22+is+core+only.+On+an+installed%0A++++++%23+app+change+this+with+%2Fapp%2Fset+environment%3D+%28README%29%2C+never+yaml%3D.%0A++++++T3APP_TOOL_GROUPS%3A+%22capture+labs+vpn+routing+dev%22%0A++++++%23+Provider+CLIs+to+install+into+%2Fdata+in+the+background%3A+claude+codex%0A++++++%23+cursor+grok+opencode+antigravity+pi+muse%2C+or+%22none%22.+Same+rules.%0A++++++T3APP_PROVIDERS%3A+%22claude+codex%22%0A++++++%23+Agent+skills+to+import+into+%2Fdata+at+each+start+%28GitHub+owner%2Frepo%2C%0A++++++%23+owner%2Frepo%40skill%2C+owner%2Frepo%23ref%2C+space-separated%29%2C+or+%22none%22.%0A++++++T3APP_SKILLS%3A+%22tikoci%2Frouteros-skills%22%0A++++volumes%3A%0A++++++%23+Keep+this+name+and+destination+when+upgrading%3A+the+whole+home%2C%0A++++++%23+including+.t3%2Fuserdata%2C+projects%2C+worktrees%2C+and+provider+logins.%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
+[See in /app YAML Editor](https://tikoci.dev/restraml/tikapp.html?version=latest&yaml=%23+yaml-language-server%3A+%24schema%3Dhttps%3A%2F%2Ftikoci.dev%2Frestraml%2Frouteros-app-yaml-schema.latest.json%0A%23+tikoci%2Fapp-t3code+%E2%80%94+RouterOS+%2Fapp+definition+for+the+T3+Code+server.%0A%23%0A%23+Install+on+the+router+%28production%2C+HTTPS+via+%2Fip%2Fcloud+or+your+own+domain%29%3A%0A%23+++%2Fapp%2Fadd+yaml%3D%3Ccontents-of-this-file%3E+use-https%3Dyes%0A%23+On+CHR+%28including+tikoci%2Fquickchr+labs%29%2C+use+use-https%3Dno+instead.%0A%23%0A%23+Image+tags+track+upstream+T3+Code+stable+releases+only+%28no+nightlies%29%3A%0A%23+ghcr.io%2Ftikoci%2Fapp-t3code%3A%3CT3CODE_VER%3E+with+%3A0.1+%2F+%3A0+%2F+%3Alatest+as%0A%23+stability+aliases.+Pin+the+full+version+in+production%3B+%3A0.1+follows%0A%23+patch+releases.%0A%0Aname%3A+t3code%0Adescr%3A+T3+Code+server+%E2%80%94+agentic+coding+in+the+browser+%28GHCR+build+for+RouterOS%29%0Apage%3A+https%3A%2F%2Fgithub.com%2Ftikoci%2Fapp-t3code%0Acategory%3A+development%0Aurl-path%3A+%2F%0Aservices%3A%0A++t3code%3A%0A++++image%3A+ghcr.io%2Ftikoci%2Fapp-t3code%3A0.1%0A++++ports%3A%0A++++++-+%223773%3A3773%3Aweb%3Atcp%22%0A++++environment%3A%0A++++++HOME%3A+%2Fdata%0A++++++T3CODE_HOME%3A+%2Fdata%2F.t3%0A++++++T3CODE_HOST%3A+0.0.0.0%0A++++++T3CODE_PORT%3A+%223773%22%0A++++++T3CODE_TELEMETRY_ENABLED%3A+%22false%22%0A++++++%23+Optional+tool+groups%2C+installed+into+%2Fdata+in+the+background+after%0A++++++%23+start.+Remove+names+to+skip+them%3B+%22none%22+is+core+only.+On+an+installed%0A++++++%23+app+change+this+with+%2Fapp%2Fset+environment%3D+%28README%29%2C+never+yaml%3D.%0A++++++T3APP_TOOL_GROUPS%3A+%22capture+labs+vpn+routing+dev%22%0A++++++%23+Provider+CLIs+to+install+into+%2Fdata+in+the+background%3A+claude+codex%0A++++++%23+cursor+grok+opencode+antigravity+pi+muse%2C+or+%22none%22.+Same+rules.%0A++++++T3APP_PROVIDERS%3A+%22claude+codex%22%0A++++++%23+Agent+skills+to+import+into+%2Fdata+at+each+start+%28GitHub+owner%2Frepo%2C%0A++++++%23+owner%2Frepo%40skill%2C+owner%2Frepo%23ref%2C+space-separated%29%2C+or+%22none%22.%0A++++++T3APP_SKILLS%3A+%22tikoci%2Frouteros-skills%22%0A++++++%23+The+host+address+and+key+path+are+ordinary+settings.+RouterOS%0A++++++%23+mounts+the+generated+key+separately+as+a+file.%0A++++++T3APP_ROUTEROS_HOST%3A+%22%5BnetworkRouterIP%5D%22%0A++++++CENTRS_CDB_PASSWORD_FILE%3A+%22%2Frun%2Fsecrets%2Ft3code_cdb_key%22%0A++++secrets%3A%0A++++++-+t3code_cdb_key%0A++++volumes%3A%0A++++++%23+Keep+this+name+and+destination+when+upgrading%3A+the+whole+home%2C%0A++++++%23+including+.t3%2Fuserdata%2C+projects%2C+worktrees%2C+and+provider+logins.%0A++++++-+t3code-data%3A%2Fdata%0A++++restart%3A+unless-stopped%0Asecrets%3A%0A++t3code_cdb_key%3A%0Avolumes%3A%0A++t3code-data%3A+%7B%7D%0A) to inspect, validate, or customize
 the single-app definition in our sister project, [tikoci/restraml](https://github.com/tikoci/restraml).
 The share link embeds the YAML as a snapshot; the downloads below track the
 current published files. Both YAML files include schema comments for editor validation.
@@ -168,6 +168,62 @@ look like data loss even when the original files are still on disk.
 The container serves plain HTTP on **3773** (`T3CODE_HOST=0.0.0.0`,
 `T3CODE_PORT=3773`). Put HTTPS in front for anything beyond localhost —
 the hosted web/mobile T3 apps require it.
+
+### Reach the RouterOS host with Centrs
+
+On a fresh RouterOS `/app` install, startup creates an encrypted Centrs
+address book at `/data/.config/tikoci/winbox.cdb`. It adds the host's
+`[networkRouterIP]` address to the `host` group. The generated CDB key
+is mounted at `/run/secrets/t3code_cdb_key`. Use `centrs devices list`
+to find the address. Pass it as the positional target in
+`centrs retrieve <address> /system/identity`. The appropriate RouterOS
+management service must be reachable from the container.
+
+Startup seeds the address without credentials by default. In the
+container terminal, import the password into that host record from a
+private file. You can use a file delivered by a T3 secret request.
+Replace the example address, account and file path.
+
+```sh
+centrs devices set 172.18.0.1 --user t3-agent --password-stdin < /path/to/router-password
+```
+
+Remove the temporary password file after a successful import. Keep the
+account password separate from the CDB key. For a disposable quickchr lab
+with passwordless `admin`, set `T3APP_ROUTEROS_LAB_ADMIN=yes` before
+first start, or use `centrs devices set 172.18.0.1 --user admin` after
+startup, with the actual host address. Preserve
+`T3APP_ROUTEROS_HOST=[networkRouterIP]` if replacing the full app
+environment list. An existing address book stays in place. Edit it with
+Centrs when the host address or account changes.
+
+An image-only `/app/update` keeps existing installations usable. To add
+automatic seeding to an install with the older YAML, follow the
+[offline backup and volume restore procedure](#what-survives-an-image-replacement)
+before migrating the YAML. For CDBs created by this app, back up
+`<disk>/apps/t3code/secret-t3code_cdb_key` separately from `/data`.
+On RouterOS 7.25.2, applying the YAML removed all of `<disk>/apps/t3code`,
+including the volume and the key file, and nothing came back until the app
+was enabled. Keep the app disabled, recreate the volume's source directory,
+and restore it with its ownership and mount mapping intact.
+
+If the restore includes an existing CDB, set its original key before the
+first enable, in a private RouterOS admin terminal. RouterOS then writes the
+saved value to the key file instead of generating a new one. The same
+command recovers a key that has already changed. It updates the mount and
+restarts an enabled app while keeping its volumes; a disabled app stays
+disabled. Include any other app secret entries if you customized the YAML.
+
+```routeros
+/app/set [find where name="t3code"] secrets="t3code_cdb_key:<saved-key>"
+```
+
+Plain Docker and Podman start without a host seed. T3 startup honors an
+existing `CENTRS_CDB_PASSWORD` and clears the file setting in its own
+environment. Direct sessions such as `/container/shell` and `docker exec`
+get the container's configured environment. When those sessions already
+have a value-based key, or when setting `CENTRS_CDB_PASSWORD` for one
+command, also set `CENTRS_CDB_PASSWORD_FILE=` so Centrs has one key source.
 
 ### Pairing with the web UI
 

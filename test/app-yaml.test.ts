@@ -463,6 +463,22 @@ describe("tool groups: docs and image contract", () => {
 		}
 	});
 
+	test("both RouterOS documents mount the Centrs key and set only its path", () => {
+		const store = loadYaml(STORE_PATH) as unknown[];
+		for (const doc of [asRecord(loadYaml(YAML_PATH)), asRecord(store[0])]) {
+			const svc = asRecord(asRecord(doc["services"])["t3code"]);
+			const env = asRecord(svc["environment"]);
+			expect(asRecord(doc["secrets"])).toHaveProperty("t3code_cdb_key", null);
+			expect(svc["secrets"]).toEqual(["t3code_cdb_key"]);
+			expect(env["T3APP_ROUTEROS_HOST"]).toBe("[networkRouterIP]");
+			expect(env["CENTRS_CDB_PASSWORD_FILE"]).toBe("/run/secrets/t3code_cdb_key");
+			for (const key of ["CENTRS_CDB_PASSWORD", "CENTRS_PASSWORD", "CENTRS_PASSWORD_FILE"]) {
+				expect(env).not.toHaveProperty(key);
+				expect(dockerfileEnv()).not.toHaveProperty(key);
+			}
+		}
+	});
+
 	test("every network package is assigned once; core ones are installed, group ones are not", () => {
 		const research = readFileSync(join(ROOT, "docs", "research", "2026-11-agent-tools", "research-package-costs.ts"), "utf8");
 		const networkBundle = research.match(/"network-extension": \[([^\]]+)\]/)?.[1] ?? "";

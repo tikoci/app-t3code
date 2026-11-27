@@ -1,6 +1,9 @@
 /** Real image replacement proof; run with APP_T3CODE_DOCKER_IMAGE=<local tag>. */
 import { expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const image = process.env["APP_T3CODE_DOCKER_IMAGE"];
 const expectedVersion = process.env["APP_T3CODE_T3VER"] ??
@@ -21,6 +24,68 @@ async function docker(...args: string[]): Promise<string> {
 		throw new Error(`docker ${args[0]} exited ${code}: ${err}\n${out}`);
 	return out.trim();
 }
+
+test.skipIf(!image)("the baked Centrs bootstraps and preserves the encrypted host CDB", async () => {
+	const volume = `app-t3code-centrs-${randomUUID()}`;
+	const fixtures = mkdtempSync(join(tmpdir(), "app-t3code-centrs-"));
+	chmodSync(fixtures, 0o755); // The container reads these dummy files as node.
+	const key = join(fixtures, "t3code_cdb_key");
+	const account = join(fixtures, "fixture-account");
+	writeFileSync(account, "fixture router password\n", { mode: 0o644 });
+	const env = [
+		"--env", "T3APP_TOOL_GROUPS=none", "--env", "T3APP_PROVIDERS=none", "--env", "T3APP_SKILLS=none",
+		"--env", "T3APP_ROUTEROS_HOST=192.0.2.41", "--env", "T3APP_ROUTEROS_LAB_ADMIN=yes",
+	];
+	const mount = ["--mount", `type=bind,src=${fixtures},dst=/run/secrets,readonly`];
+	const cdb = "/data/.config/tikoci/winbox.cdb";
+	const start = (script: string, ...extraEnv: string[]) => docker(
+		"run", "--rm", "--network", "none", "--volume", `${volume}:/data`, ...env, ...mount,
+		...extraEnv.flatMap((entry) => ["--env", entry]), image as string, "bash", "-o", "pipefail", "-ec", script,
+	);
+	const checkKey = async (code: string, ...extraEnv: string[]) => {
+		const result = await start(`if centrs devices list --json 2>/tmp/centrs-error; then exit 1; fi
+jq -e '.error.code == "${code}"' /tmp/centrs-error
+if t3app init >/dev/null 2>/tmp/init-error; then exit 1; fi
+grep -F "centrs devices list failed (${code})" /tmp/init-error
+sha256sum ${cdb}`, ...extraEnv);
+		return result.split("\n").at(-1);
+	};
+	try {
+		writeFileSync(key, "fixture CDB key\n", { mode: 0o644 });
+		await docker("volume", "create", volume);
+		await docker("run", "--rm", "--network", "none", "--user", "root", ...env, ...mount, image as string, "test", "!", "-e", cdb);
+		await start(`mkdir -p /data/.config/tikoci
+printf '%s\n' 'CENTRS_CDB_FILE=/data/operator.cdb' > /data/.config/tikoci/centrs.env`, "T3APP_ROUTEROS_HOST=");
+		const first = await start(`centrs --version
+test "$(stat -c %a ${cdb})" = 600
+centrs devices list --json | jq -e '.data | length == 1 and .[0].target == "192.0.2.41" and .[0].group == "host" and .[0].user == "admin"'
+test ! -e /data/operator.cdb
+rm /data/.config/tikoci/centrs.env
+centrs devices set 192.0.2.41 --user t3-agent --password-stdin < /run/secrets/fixture-account >/dev/null
+sha256sum ${cdb}`, "CENTRS_SKIP_ENV_FILE= YeS ");
+		console.log(`Centrs image smoke: ${first.split("\n").find((line) => /^\d+\.\d+\.\d+/.test(line))}`);
+		const fingerprint = first.split("\n").at(-1);
+		writeFileSync(key, "changed fixture key\n");
+		expect(await checkKey("cdb/decrypt-failed")).toBe(fingerprint);
+		rmSync(key);
+		expect(await checkKey("cdb/password-unavailable")).toBe(fingerprint);
+		expect(await checkKey("cdb/password-required", "CENTRS_CDB_PASSWORD_FILE=")).toBe(fingerprint);
+		writeFileSync(key, "fixture CDB key\n", { mode: 0o644 });
+		const restored = await start(`centrs devices list --json | jq -e '.data | length == 1 and .[0].user == "t3-agent"'
+sha256sum ${cdb}`);
+		expect(restored.split("\n").at(-1)).toBe(fingerprint);
+		const linked = await start(`mv ${cdb} ${cdb}.linked
+ln -s winbox.cdb.linked ${cdb}
+t3app init
+test -L ${cdb}
+sha256sum ${cdb}`);
+		expect(linked.split("\n").at(-1)).toBe(fingerprint);
+		expect(await checkKey("cdb/password-required", "CENTRS_CDB_PASSWORD_FILE=")).toBe(fingerprint);
+	} finally {
+		await docker("volume", "rm", volume).catch(() => {});
+		rmSync(fixtures, { recursive: true, force: true });
+	}
+}, 120_000);
 
 /** Wait up to two minutes for the expected server version, including logs on timeout. */
 async function waitForServer(name: string): Promise<void> {

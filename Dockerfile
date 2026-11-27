@@ -49,6 +49,12 @@ ENV T3APP_PROVIDERS="claude codex"
 # DEFAULT_SKILLS, #46): GitHub sources in the skills CLI's syntax, refreshed
 # in the background. Operators add tokens, or set `none`.
 ENV T3APP_SKILLS="tikoci/routeros-skills"
+# RouterOS expands the host marker and mounts the key file on new /app
+# installs. A standalone container gets the unexpanded marker.
+ENV T3APP_ROUTEROS_HOST="[networkRouterIP]"
+# This is the mount path. RouterOS supplies the key at runtime.
+# hadolint ignore=DL3064
+ENV CENTRS_CDB_PASSWORD_FILE=/run/secrets/t3code_cdb_key
 # uv uses the image's Python 3 and never fetches a managed Python by itself;
 # `uv python install` still works when asked for explicitly.
 ENV UV_PYTHON_DOWNLOADS=manual

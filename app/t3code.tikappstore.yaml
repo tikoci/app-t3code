@@ -20,8 +20,14 @@
         T3APP_TOOL_GROUPS: "capture labs vpn routing dev"
         T3APP_PROVIDERS: "claude codex"
         T3APP_SKILLS: "tikoci/routeros-skills"
+        T3APP_ROUTEROS_HOST: "[networkRouterIP]"
+        CENTRS_CDB_PASSWORD_FILE: "/run/secrets/t3code_cdb_key"
+      secrets:
+        - t3code_cdb_key
       volumes:
         - t3code-data:/data
       restart: unless-stopped
+  secrets:
+    t3code_cdb_key:
   volumes:
     t3code-data: {}

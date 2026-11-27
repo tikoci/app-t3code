@@ -11,6 +11,14 @@ umask 022
 mkdir -p "${HOME}/projects"
 cd "${HOME}"
 
+# Preserve the existing value-based Centrs setup. Without a RouterOS host
+# or a mounted image-default key, keep the default source unset for agents.
+if [[ -v CENTRS_CDB_PASSWORD ]] ||
+	{ [[ ${CENTRS_CDB_PASSWORD_FILE:-} == /run/secrets/t3code_cdb_key && ! -e $CENTRS_CDB_PASSWORD_FILE ]] &&
+		[[ -z ${T3APP_ROUTEROS_HOST:-} || $T3APP_ROUTEROS_HOST == '[networkRouterIP]' ]]; }; then
+	export CENTRS_CDB_PASSWORD_FILE=
+fi
+
 # The image PATH carries the default tool-group shim dir; a relocated payload
 # root (T3APP_TOOLS_HOME) needs its own, resolved here at runtime so T3 and
 # every agent it starts inherit it. Same slot as profile.d: after the user's
@@ -50,8 +58,9 @@ background() {
 # `install --keep-trying` are its entrypoint-only forms.
 # init: name any ignored legacy T3CODE_* keys, report both selections
 # (warnings go to the container log), relink tool-group payloads already in
-# the home (offline, fast) and write the runtime status JSON. Bounded and
-# never fatal: T3 must start whatever the selections say.
+# the home (offline, fast), write the runtime status JSON and seed the
+# RouterOS host in a new Centrs address book. Bounded and never fatal:
+# T3 must start whatever the selections say.
 # Then the installs run in the background; T3 does not wait. Tool-group
 # payloads install while missing; provider CLIs (#13) install while missing
 # from PATH (npm into /data/.local, the vendor's installer, or

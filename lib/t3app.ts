@@ -5,6 +5,7 @@
 // new binaries. AGENTS.md "CLI conventions" has the rules every area follows.
 // The image copies lib/ to /usr/local/lib/t3app/ and bin/t3app runs this file.
 import { buildProviderStatus, formatProviderStatus, installLogPath as providersLog, PROVIDERS_ENV, main as providersMain } from "./providers.ts";
+import { initHostCdb } from "./router-credentials.ts";
 import { helpRequest } from "./runtime.ts";
 import { buildSkillsStatus, formatSkillsStatus, SKILLS_ENV, installLogPath as skillsLog, main as skillsMain } from "./skills.ts";
 import { SELECTOR_ENV } from "./tool-catalog.ts";
@@ -133,17 +134,19 @@ function pairing(rest: string[]): number {
 
 /**
  * Internal (the entrypoint): name ignored legacy keys, then each area's
- * startup hook. Bounded and never fatal, because T3 must start; providers
- * and skills first, since their hooks are the fast ones (offline reads).
+ * startup hook. Bounded and never fatal, because T3 must start.
  */
 async function init(rest: string[]): Promise<number> {
 	if (rest.length > 0) return usageError();
 	const legacy = legacyEnvLine();
 	if (legacy) console.error(legacy);
+	// Seed before tool relinking so it has time within the entrypoint's budget.
+	// A root shell must never seed a root-owned CDB.
+	const credentialsReady = process.getuid?.() === 0 || initHostCdb();
 	await providersMain(["init"]);
 	await skillsMain(["init"]);
 	await toolsMain(["init"]);
-	return 0;
+	return credentialsReady ? 0 : 1;
 }
 
 /** The t3app CLI; returns the process exit code. */

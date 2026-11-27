@@ -43,6 +43,24 @@ describe("entrypoint", () => {
 		expect(ENTRYPOINT).toContain("background skills /usr/local/bin/t3app skills update --keep-trying");
 		expect(ENTRYPOINT).toContain("timeout 40 /usr/local/bin/t3app init");
 	});
+
+	test("the Centrs key default is cleared for legacy settings and standalone startup", () => {
+		const keyPath = "/run/secrets/t3code_cdb_key";
+		const base = { HOME: join(dir, "home"), PATH: "/usr/bin:/bin", CENTRS_CDB_PASSWORD_FILE: keyPath };
+		const keyFile = join(dir, "custom-key");
+		writeFileSync(keyFile, "dummy key");
+		for (const [overrides, expected] of [
+			[{ T3APP_ROUTEROS_HOST: "[networkRouterIP]" }, ""],
+			[{ T3APP_ROUTEROS_HOST: "172.18.0.1" }, keyPath],
+			[{ CENTRS_CDB_PASSWORD_FILE: keyFile }, keyFile],
+			[{ CENTRS_CDB_PASSWORD_FILE: keyFile, CENTRS_CDB_PASSWORD: "" }, ""],
+			[{ CENTRS_CDB_PASSWORD_FILE: keyFile, CENTRS_CDB_PASSWORD: "dummy key" }, ""],
+		] as const) {
+			const result = Bun.spawnSync(["bash", entrypoint, "printenv", "CENTRS_CDB_PASSWORD_FILE"], { env: { ...base, ...overrides } });
+			expect(result.exitCode).toBe(0);
+			expect(result.stdout.toString().split("\n").at(-2)).toBe(expected);
+		}
+	});
 });
 
 /**
